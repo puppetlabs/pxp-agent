@@ -3,7 +3,7 @@
 
 #include <map>
 #include <string>
-#include <valijson/schema.hpp>
+#include "action.h"
 
 namespace puppetlabs {
 namespace cthun {
@@ -11,7 +11,7 @@ namespace cthun {
 class Module {
 public:
     std::string name;
-    std::map<std::string,valijson::Schema> actions;
+    std::map<std::string,Action> actions;
 };
 
 
