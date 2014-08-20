@@ -10,6 +10,7 @@ namespace cthun {
 
 class Agent {
 public:
+    Agent();
     void run();
 private:
     std::map<std::string,std::unique_ptr<Module>> modules_;
