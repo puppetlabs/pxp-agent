@@ -17,7 +17,7 @@ namespace puppetlabs {
 namespace cthun {
 
 void run_command(std::vector<std::string> command, std::string stdin, std::string &stdout, std::string &stderr) {
-    stdout = "{ \"description\": \"schema test\"}";
+    stdout = R"({ "description": "schema test", "actions": [ { "name": "foo", "input": { "typed": "object" }, "output": {} } ] })";
 }
 
 
@@ -90,7 +90,7 @@ Agent::Agent() {
 
             std::string metadata;
             std::string error;
-            run_command({ file->path().filename().string(), "metadata" }, "", metadata, error);
+            run_command({ file->path().string(), "metadata" }, "", metadata, error);
 
             Json::Value document;
             Json::Reader reader;
@@ -98,7 +98,6 @@ Agent::Agent() {
                 BOOST_LOG_TRIVIAL(error) << "Parse error: " << reader.getFormatedErrorMessages();
                 continue;
             }
-
 
             valijson::Validator validator(metadata_schema);
             valijson::adapters::JsonCppAdapter adapted_document(document);
@@ -116,6 +115,37 @@ Agent::Agent() {
                 continue;
             }
             BOOST_LOG_TRIVIAL(info) << "validation OK";
+
+            std::unique_ptr<Module> loading(new Module);
+            loading->name = file->path().filename().string();
+            const Json::Value actions = document["actions"];
+            for (auto action : actions) {
+                BOOST_LOG_TRIVIAL(info) << "declaring action " << action["name"].asString();
+                valijson::Schema input_schema;
+                valijson::Schema output_schema;
+
+                valijson::SchemaParser parser;
+                valijson::adapters::JsonCppAdapter input_doc_schema(action["input"]);
+                valijson::adapters::JsonCppAdapter output_doc_schema(action["output"]);
+
+                try {
+                    parser.populateSchema(input_doc_schema, input_schema);
+                } catch (...) {
+                    BOOST_LOG_TRIVIAL(info) << "Failed to parse input schema.";
+                    continue;
+                }
+
+                try {
+                    parser.populateSchema(output_doc_schema, output_schema);
+                } catch (...) {
+                    BOOST_LOG_TRIVIAL(info) << "Failed to parse error schema.";
+                    continue;
+                }
+
+                loading->actions[action["name"].asString()] = Action { input_schema, output_schema };
+            }
+
+            modules_[loading->name] = std::move(loading);
         }
     }
 }
