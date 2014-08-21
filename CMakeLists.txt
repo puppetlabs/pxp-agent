@@ -17,7 +17,8 @@ set(EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
 set(VENDOR_DIRECTORY "${PROJECT_SOURCE_DIR}/vendor")
 list(APPEND CMAKE_MODULE_PATH ${VENDOR_DIRECTORY})
 
-find_package(Boost 1.48 COMPONENTS program_options REQUIRED)
+find_package(Boost 1.54 REQUIRED
+  COMPONENTS program_options filesystem system date_time thread log log_setup regex)
 
 # Include vendored libraries
 include(${VENDOR_DIRECTORY}/gmock.cmake)
