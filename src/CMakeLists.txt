@@ -4,6 +4,7 @@ set(SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/main.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/echo.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../vendor/jsoncpp/jsoncpp.cpp"
 )
 
 add_executable(cthun-agent ${SOURCES})

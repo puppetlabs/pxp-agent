@@ -4,7 +4,7 @@ project(MCOLLECTIVE-ZEROMQ-BROKER)
 
 # Set compiler-specific flags
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-tautological-constant-out-of-range-compare")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-unused-parameter -Wno-deprecated-register")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-local-typedefs")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
@@ -22,13 +22,12 @@ find_package(Boost 1.54 REQUIRED
 
 # Include vendored libraries
 include(${VENDOR_DIRECTORY}/gmock.cmake)
-include(${VENDOR_DIRECTORY}/rapidjson.cmake)
 include(${VENDOR_DIRECTORY}/valijson.cmake)
 
 # Set include directories
 include_directories(
     ${Boost_INCLUDE_DIRS}
-    ${RAPIDJSON_INCLUDE_DIRS}
+    "${VENDOR_DIRECTORY}/jsoncpp"
     ${VALIJSON_INCLUDE_DIRS}
 )
 
