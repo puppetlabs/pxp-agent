@@ -20,23 +20,29 @@ namespace cthun {
 
 void run_command(std::string exec, std::vector<std::string> args, std::string stdin, std::string &stdout, std::string &stderr) {
     boost::process::context context;
+    context.stdin_behavior = boost::process::capture_stream();
     context.stdout_behavior = boost::process::capture_stream();
     context.stderr_behavior = boost::process::capture_stream();
 
     boost::process::child child = boost::process::launch(exec, args, context);
-    boost::process::status status = child.wait();
+
+    boost::process::postream &in = child.get_stdin();
+
+    in << stdin;
+    in.close();
 
     boost::process::pistream &out = child.get_stdout();
-    boost::process::pistream &err = child.get_stderr();
-
     std::string line;
     while (std::getline(out, line)) {
         stdout += line;
     }
 
+    boost::process::pistream &err = child.get_stderr();
     while (std::getline(err, line)) {
         stderr += line;
     }
+
+    boost::process::status status = child.wait();
 }
 
 
