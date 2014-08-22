@@ -4,6 +4,8 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
+#include <boost/process.hpp>
+
 #include <json/json.h>
 
 
@@ -16,8 +18,25 @@
 namespace puppetlabs {
 namespace cthun {
 
-void run_command(std::vector<std::string> command, std::string stdin, std::string &stdout, std::string &stderr) {
-    stdout = R"({ "description": "schema test", "actions": [ { "name": "foo", "input": { "typed": "object" }, "output": {} } ] })";
+void run_command(std::string exec, std::vector<std::string> args, std::string stdin, std::string &stdout, std::string &stderr) {
+    boost::process::context context;
+    context.stdout_behavior = boost::process::capture_stream();
+    context.stderr_behavior = boost::process::capture_stream();
+
+    boost::process::child child = boost::process::launch(exec, args, context);
+    boost::process::status status = child.wait();
+
+    boost::process::pistream &out = child.get_stdout();
+    boost::process::pistream &err = child.get_stderr();
+
+    std::string line;
+    while (std::getline(out, line)) {
+        stdout += line;
+    }
+
+    while (std::getline(err, line)) {
+        stderr += line;
+    }
 }
 
 
@@ -90,7 +109,7 @@ Agent::Agent() {
 
             std::string metadata;
             std::string error;
-            run_command({ file->path().string(), "metadata" }, "", metadata, error);
+            run_command(file->path().string(), { "metadata" }, "", metadata, error);
 
             Json::Value document;
             Json::Reader reader;
