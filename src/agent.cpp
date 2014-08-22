@@ -81,6 +81,8 @@ Agent::Agent() {
 
     action_schema.addConstraint(json_type_object);
 
+    action_properties["description"].addConstraint(json_type_string);
+
     action_required.insert("name");
     action_properties["name"].addConstraint(json_type_string);
 
@@ -183,7 +185,44 @@ Agent::Agent() {
     }
 }
 
-void Agent::run() {
+void Agent::run(std::string module, std::string action) {
+    Action do_this = modules_[module]->actions[action];
+
+    Json::Reader reader;
+    Json::Value input;
+
+    BOOST_LOG_TRIVIAL(info) << "loading stdin";
+
+    if (!reader.parse(std::cin, input)) {
+        BOOST_LOG_TRIVIAL(error) << "Parse error: " << reader.getFormatedErrorMessages();
+        return;
+    }
+
+    BOOST_LOG_TRIVIAL(info) << "validating input for " << module << " " << action;
+    if (!validate_against_schema(input, do_this.input_schema)) {
+        return;
+    }
+
+    std::string stdin = input.toStyledString();
+    std::string stdout;
+    std::string stderr;
+    BOOST_LOG_TRIVIAL(info) << stdin;
+
+    run_command("modules/" + module, { module, action }, stdin, stdout, stderr);
+    BOOST_LOG_TRIVIAL(info) << "stdout " << stdout;
+    BOOST_LOG_TRIVIAL(info) << "stderr " << stderr;
+
+    Json::Value output;
+    if (!reader.parse(stdout, output)) {
+        BOOST_LOG_TRIVIAL(error) << "Parse error: " << reader.getFormatedErrorMessages();
+        return;
+    }
+
+    BOOST_LOG_TRIVIAL(info) << "validating output for " << module << " " << action;
+    if (!validate_against_schema(output, do_this.output_schema)) {
+        return;
+    }
+    BOOST_LOG_TRIVIAL(info) << "validated OK: " << output.toStyledString();
 }
 
 

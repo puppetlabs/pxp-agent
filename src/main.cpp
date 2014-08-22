@@ -2,6 +2,6 @@
 
 int main(int argc, char *argv[]) {
     puppetlabs::cthun::Agent agent;
-    agent.run();
+    agent.run(argv[1], argv[2]);
     return 0;
 }
