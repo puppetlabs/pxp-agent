@@ -45,6 +45,25 @@ void run_command(std::string exec, std::vector<std::string> args, std::string st
     boost::process::status status = child.wait();
 }
 
+bool validate_against_schema(const Json::Value& document, const valijson::Schema& schema) {
+    valijson::Validator validator(schema);
+    valijson::adapters::JsonCppAdapter adapted_document(document);
+
+    valijson::ValidationResults validation_results;
+    if (!validator.validate(adapted_document, &validation_results)) {
+        BOOST_LOG_TRIVIAL(error) << "Failed validation";
+        valijson::ValidationResults::Error error;
+        while (validation_results.popError(error)) {
+            for (auto path : error.context) {
+                BOOST_LOG_TRIVIAL(error) << path;
+            }
+            BOOST_LOG_TRIVIAL(error) << error.description;
+        }
+        return false;
+    }
+    return true;
+}
+
 
 Agent::Agent() {
     modules_["echo"] = std::unique_ptr<Module>(new Modules::Echo);
@@ -124,19 +143,8 @@ Agent::Agent() {
                 continue;
             }
 
-            valijson::Validator validator(metadata_schema);
-            valijson::adapters::JsonCppAdapter adapted_document(document);
-            valijson::ValidationResults validation_results;
-            if (!validator.validate(adapted_document, &validation_results)) {
-                BOOST_LOG_TRIVIAL(error) << "Failed validation";
-                valijson::ValidationResults::Error error;
-                while (validation_results.popError(error)) {
-                    for (auto path : error.context) {
-                        BOOST_LOG_TRIVIAL(error) << path;
-                    }
-                    BOOST_LOG_TRIVIAL(error) << error.description;
-                }
 
+            if (!validate_against_schema(document, metadata_schema)) {
                 continue;
             }
             BOOST_LOG_TRIVIAL(info) << "validation OK";
