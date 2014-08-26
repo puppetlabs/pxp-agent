@@ -1,6 +1,8 @@
 #include "agent.h"
 #include "modules/echo.h"
 #include "log.h"
+#include "schemas.h"
+
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
@@ -8,12 +10,9 @@
 
 #include <json/json.h>
 
-
 #include <valijson/adapters/jsoncpp_adapter.hpp>
-#include <valijson/schema.hpp>
 #include <valijson/schema_parser.hpp>
-#include <valijson/validation_results.hpp>
-#include <valijson/validator.hpp>
+
 
 namespace puppetlabs {
 namespace cthun {
@@ -45,87 +44,11 @@ void run_command(std::string exec, std::vector<std::string> args, std::string st
     boost::process::status status = child.wait();
 }
 
-bool validate_against_schema(const Json::Value& document, const valijson::Schema& schema) {
-    valijson::Validator validator(schema);
-    valijson::adapters::JsonCppAdapter adapted_document(document);
-
-    valijson::ValidationResults validation_results;
-    if (!validator.validate(adapted_document, &validation_results)) {
-        BOOST_LOG_TRIVIAL(error) << "Failed validation";
-        valijson::ValidationResults::Error error;
-        while (validation_results.popError(error)) {
-            for (auto path : error.context) {
-                BOOST_LOG_TRIVIAL(error) << path;
-            }
-            BOOST_LOG_TRIVIAL(error) << error.description;
-        }
-        return false;
-    }
-    return true;
-}
-
 
 Agent::Agent() {
     modules_["echo"] = std::unique_ptr<Module>(new Modules::Echo);
-
-    // some common schema constants to reduce typing
-    valijson::constraints::TypeConstraint json_type_object(valijson::constraints::TypeConstraint::kObject);
-    valijson::constraints::TypeConstraint json_type_string(valijson::constraints::TypeConstraint::kString);
-    valijson::constraints::TypeConstraint json_type_array(valijson::constraints::TypeConstraint::kArray);
-
-    // action sub-schema
-    valijson::Schema action_schema;
-    valijson::constraints::PropertiesConstraint::PropertySchemaMap action_properties;
-    valijson::constraints::PropertiesConstraint::PropertySchemaMap action_pattern_properties;
-    valijson::constraints::RequiredConstraint::RequiredProperties action_required;
-
-    action_schema.addConstraint(json_type_object);
-
-    action_properties["description"].addConstraint(json_type_string);
-
-    action_required.insert("name");
-    action_properties["name"].addConstraint(json_type_string);
-
-    action_required.insert("input");
-    action_properties["input"].addConstraint(json_type_object);
-
-    action_required.insert("output");
-    action_properties["output"].addConstraint(json_type_object);
-
-    // constrain the properties to just those in the metadata_properies map
-    action_schema.addConstraint(new valijson::constraints::PropertiesConstraint(
-                                    action_properties,
-                                    action_pattern_properties));
-
-    // specify the required properties
-    action_schema.addConstraint(new valijson::constraints::RequiredConstraint(action_required));
-
-
     // the metadata schema
-    valijson::Schema metadata_schema;
-    valijson::constraints::PropertiesConstraint::PropertySchemaMap metadata_properties;
-    valijson::constraints::PropertiesConstraint::PropertySchemaMap metadata_pattern_properties;
-    valijson::constraints::RequiredConstraint::RequiredProperties metadata_required;
-
-    metadata_schema.addConstraint(json_type_object);
-
-    // description is required
-    metadata_required.insert("description");
-    metadata_properties["description"].addConstraint(json_type_string);
-
-    // actions is an array of the action sub-schema
-    metadata_required.insert("actions");
-    metadata_properties["actions"].addConstraint(json_type_array);
-    valijson::constraints::ItemsConstraint items_of_type_action_schema(action_schema);
-    metadata_properties["actions"].addConstraint(items_of_type_action_schema);
-
-    // constrain the properties to just those in the metadata_properies map
-    metadata_schema.addConstraint(new valijson::constraints::PropertiesConstraint(
-                                      metadata_properties,
-                                      metadata_pattern_properties));
-
-    // specify the required properties
-    metadata_schema.addConstraint(new valijson::constraints::RequiredConstraint(metadata_required));
+    valijson::Schema metadata_schema = Schemas::external_action_metadata();
 
 
     boost::filesystem::path module_path { "modules" };
@@ -145,8 +68,12 @@ Agent::Agent() {
                 continue;
             }
 
-
-            if (!validate_against_schema(document, metadata_schema)) {
+            std::vector<std::string> errors;
+            if (!Schemas::validate(document, metadata_schema, errors)) {
+                BOOST_LOG_TRIVIAL(error) << "Validation failed";
+                for (auto error : errors) {
+                    BOOST_LOG_TRIVIAL(error) << "    " << error;
+                }
                 continue;
             }
             BOOST_LOG_TRIVIAL(info) << "validation OK";
@@ -199,7 +126,12 @@ void Agent::run(std::string module, std::string action) {
     }
 
     BOOST_LOG_TRIVIAL(info) << "validating input for " << module << " " << action;
-    if (!validate_against_schema(input, do_this.input_schema)) {
+    std::vector<std::string> errors;
+    if (!Schemas::validate(input, do_this.input_schema, errors)) {
+        BOOST_LOG_TRIVIAL(error) << "Validation failed";
+        for (auto error : errors) {
+            BOOST_LOG_TRIVIAL(error) << "    " << error;
+        }
         return;
     }
 
@@ -219,9 +151,14 @@ void Agent::run(std::string module, std::string action) {
     }
 
     BOOST_LOG_TRIVIAL(info) << "validating output for " << module << " " << action;
-    if (!validate_against_schema(output, do_this.output_schema)) {
+    if (!Schemas::validate(output, do_this.output_schema, errors)) {
+        BOOST_LOG_TRIVIAL(error) << "Validation failed";
+        for (auto error : errors) {
+            BOOST_LOG_TRIVIAL(error) << "    " << error;
+        }
         return;
     }
+
     BOOST_LOG_TRIVIAL(info) << "validated OK: " << output.toStyledString();
 }
 

@@ -1,6 +1,7 @@
 set(test_SOURCE
     "${CMAKE_CURRENT_LIST_DIR}/agent_test.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../src/agent.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../src/schemas.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../src/modules/echo.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../vendor/jsoncpp/jsoncpp.cpp"
 )
