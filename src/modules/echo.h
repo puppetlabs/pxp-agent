@@ -3,17 +3,15 @@
 
 #include "../module.h"
 
-namespace puppetlabs {
-namespace cthun {
+namespace CthunAgent {
 namespace Modules {
 
-class Echo : public Module {
+class Echo : public CthunAgent::Module {
 public:
     Echo();
 };
 
-}
-}
-}
+}  // namespace Modules
+}  // namespace CthunAgent
 
 #endif  // SRC_MODULES_ECHO_H_

@@ -14,8 +14,7 @@
 #include <valijson/schema_parser.hpp>
 
 
-namespace puppetlabs {
-namespace cthun {
+namespace CthunAgent {
 
 void run_command(std::string exec, std::vector<std::string> args, std::string stdin, std::string &stdout, std::string &stderr) {
     boost::process::context context;
@@ -163,6 +162,4 @@ void Agent::run(std::string module, std::string action) {
 }
 
 
-
-}  // namespace cthun
-}  // namespace puppetlabs
+}  // namespace CthunAgent

@@ -4,9 +4,7 @@
 #include <json/json.h>
 #include <valijson/schema.hpp>
 
-namespace puppetlabs {
-namespace cthun {
-
+namespace CthunAgent {
 
 class Schemas {
 public:
@@ -14,7 +12,6 @@ public:
     static valijson::Schema external_action_metadata();
 };
 
-}
-}
+}  // namespace CthunAgent
 
 #endif  // SRC_SCHEMAS_H_

@@ -6,8 +6,7 @@
 #include <valijson/validator.hpp>
 
 
-namespace puppetlabs {
-namespace cthun {
+namespace CthunAgent {
 
 bool Schemas::validate(const Json::Value& document, const valijson::Schema& schema, std::vector<std::string>& errors) {
     valijson::Validator validator(schema);
@@ -104,5 +103,4 @@ valijson::Schema Schemas::external_action_metadata() {
     return schema;
 }
 
-}
 }

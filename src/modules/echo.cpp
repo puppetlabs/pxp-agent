@@ -1,9 +1,7 @@
 #include "echo.h"
 #include <valijson/constraints/concrete_constraints.hpp>
 
-
-namespace puppetlabs {
-namespace cthun {
+namespace CthunAgent {
 namespace Modules {
 
 Echo::Echo() {
@@ -16,6 +14,5 @@ Echo::Echo() {
     actions["echo"] = Action { input_schema, output_schema };
 }
 
-}
-}
-}
+}  // namespace Modules
+}  // namespace CthunAgent

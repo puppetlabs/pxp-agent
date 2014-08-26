@@ -3,8 +3,7 @@
 
 #include <valijson/schema.hpp>
 
-namespace puppetlabs {
-namespace cthun {
+namespace CthunAgent {
 
 class Action {
 public:
@@ -12,7 +11,6 @@ public:
     valijson::Schema output_schema;
 };
 
-}
-}
+}  // namespace CthunAgent
 
 #endif  // SRC_ACTION_H_

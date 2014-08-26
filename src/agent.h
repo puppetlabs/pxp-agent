@@ -5,8 +5,7 @@
 #include <memory>
 #include "module.h"
 
-namespace puppetlabs {
-namespace cthun {
+namespace CthunAgent {
 
 class Agent {
 public:
@@ -16,9 +15,6 @@ private:
     std::map<std::string,std::unique_ptr<Module>> modules_;
 };
 
-
-}  // namespace cthun
-}  // namespace puppetlabs
-
+}  // namespace CthunAgent
 
 #endif  // SRC_AGENT_H_

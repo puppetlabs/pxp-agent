@@ -5,8 +5,7 @@
 #include <string>
 #include "action.h"
 
-namespace puppetlabs {
-namespace cthun {
+namespace CthunAgent {
 
 class Module {
 public:
@@ -14,9 +13,6 @@ public:
     std::map<std::string,Action> actions;
 };
 
-
-}  // namespace cthun
-}  // namespace puppetlabs
-
+}  // namespace CthunAgent
 
 #endif  // SRC_MODULE_H_
