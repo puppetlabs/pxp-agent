@@ -103,4 +103,96 @@ valijson::Schema Schemas::external_action_metadata() {
     return schema;
 }
 
+valijson::Schema Schemas::network_message() {
+    valijson::Schema schema;
+
+    // some common schema constants to reduce typing
+    valijson::constraints::TypeConstraint json_type_object(valijson::constraints::TypeConstraint::kObject);
+    valijson::constraints::TypeConstraint json_type_string(valijson::constraints::TypeConstraint::kString);
+    valijson::constraints::TypeConstraint json_type_array(valijson::constraints::TypeConstraint::kArray);
+
+    valijson::constraints::PropertiesConstraint::PropertySchemaMap properties;
+    valijson::constraints::PropertiesConstraint::PropertySchemaMap pattern_properties;
+    valijson::constraints::RequiredConstraint::RequiredProperties required_properties;
+
+    schema.addConstraint(json_type_object);
+
+    required_properties.insert("version");
+    properties["version"].addConstraint(json_type_string);
+
+    required_properties.insert("id");
+    properties["id"].addConstraint(json_type_string);
+
+    required_properties.insert("expires");
+    // TODO(richardc): ISO 8061 formatted date string
+    properties["expires"].addConstraint(json_type_string);
+
+    required_properties.insert("sender");
+    // TODO(richardc): endpoint identfier
+    properties["sender"].addConstraint(json_type_string);
+
+    required_properties.insert("endpoints");
+    properties["expires"].addConstraint(json_type_array);
+    // TODO(richardc): array of endpoint identifiers
+
+    required_properties.insert("hops");
+    properties["expires"].addConstraint(json_type_array);
+    // TODO(richardc): array of 'hop' documents - define hop
+
+    required_properties.insert("data_schema");
+    // TODO(richardc): maybe this has a set form
+    properties["data_schema"].addConstraint(json_type_string);
+
+    // data is optional TODO(richardc): this may not be the best way
+    // to mark something optional, as it could be a different json
+    // primitive.  cnc schema will be an object though
+    properties["data"].addConstraint(json_type_object);
+
+    // constrain the properties to just those in the properies and pattern_properties maps
+    schema.addConstraint(new valijson::constraints::PropertiesConstraint(
+                             properties,
+                             pattern_properties));
+
+    // specify the required properties
+    schema.addConstraint(new valijson::constraints::RequiredConstraint(required_properties));
+
+    return schema;
+}
+
+valijson::Schema Schemas::cnc_data() {
+    valijson::Schema schema;
+
+    // some common schema constants to reduce typing
+    valijson::constraints::TypeConstraint json_type_object(valijson::constraints::TypeConstraint::kObject);
+    valijson::constraints::TypeConstraint json_type_string(valijson::constraints::TypeConstraint::kString);
+
+    valijson::constraints::PropertiesConstraint::PropertySchemaMap properties;
+    valijson::constraints::PropertiesConstraint::PropertySchemaMap pattern_properties;
+    valijson::constraints::RequiredConstraint::RequiredProperties required_properties;
+
+    schema.addConstraint(json_type_object);
+
+    required_properties.insert("module");
+    properties["module"].addConstraint(json_type_string);
+
+    required_properties.insert("action");
+    properties["action"].addConstraint(json_type_string);
+
+    // params are optional
+    // TODO(richardc): this may not be the best way
+    // to mark something optional, as it could be a different json
+    // primitive, say a simple scalar
+    properties["params"].addConstraint(json_type_object);
+
+    // constrain the properties to just those in the properies and pattern_properties maps
+    schema.addConstraint(new valijson::constraints::PropertiesConstraint(
+                             properties,
+                             pattern_properties));
+
+    // specify the required properties
+    schema.addConstraint(new valijson::constraints::RequiredConstraint(required_properties));
+
+    return schema;
+}
+
 }
