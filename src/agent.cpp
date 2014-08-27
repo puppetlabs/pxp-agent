@@ -31,7 +31,19 @@ Agent::Agent() {
     }
 }
 
+void Agent::list_modules() {
+    BOOST_LOG_TRIVIAL(info) << "Loaded modules:";
+    for (auto module : modules_) {
+        BOOST_LOG_TRIVIAL(info) << "   " << module.first;
+        for (auto action : module.second->actions) {
+            BOOST_LOG_TRIVIAL(info) << "       " << action.first;
+        }
+    }
+}
+
 void Agent::run(std::string module, std::string action) {
+    list_modules();
+
     Module* the_module = modules_[module].get();
 
     Json::Reader reader;
