@@ -44,7 +44,7 @@ void Agent::list_modules() {
 void Agent::run(std::string module, std::string action) {
     list_modules();
 
-    Module* the_module = modules_[module].get();
+    std::shared_ptr<Module> the_module = modules_[module];
 
     Json::Reader reader;
     Json::Value input;
