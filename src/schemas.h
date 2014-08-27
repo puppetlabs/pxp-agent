@@ -7,7 +7,7 @@
 namespace CthunAgent {
 
 class Schemas {
-public:
+  public:
     static bool validate(const Json::Value& document, const valijson::Schema& schema, std::vector<std::string> &errors);
     static valijson::Schema external_action_metadata();
     static valijson::Schema network_message();

@@ -11,7 +11,7 @@
 namespace CthunAgent {
 
 class Module {
-public:
+  public:
     std::string name;
     std::map<std::string,Action> actions;
     virtual void call_action(std::string action, const Json::Value& input, Json::Value& output) = 0;

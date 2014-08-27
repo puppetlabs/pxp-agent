@@ -8,11 +8,11 @@
 namespace CthunAgent {
 
 class Agent {
-public:
+  public:
     Agent();
     void run(std::string module, std::string action);
     void list_modules();
-private:
+  private:
     std::map<std::string,std::shared_ptr<Module>> modules_;
 };
 

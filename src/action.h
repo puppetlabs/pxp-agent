@@ -6,7 +6,7 @@
 namespace CthunAgent {
 
 class Action {
-public:
+  public:
     valijson::Schema input_schema;
     valijson::Schema output_schema;
 };
