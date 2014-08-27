@@ -44,9 +44,13 @@ void Agent::run(std::string module, std::string action) {
         return;
     }
 
-    Json::Value output;
-    the_module->call_action(action, input, output);
-    BOOST_LOG_TRIVIAL(info) << output.toStyledString();
+    try {
+        Json::Value output;
+        the_module->validate_and_call_action(action, input, output);
+        BOOST_LOG_TRIVIAL(info) << output.toStyledString();
+    } catch (...) {
+        BOOST_LOG_TRIVIAL(error) << "Badness occured";
+    }
 }
 
 

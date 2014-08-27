@@ -100,18 +100,6 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
 }
 
 void ExternalModule::call_action(const std::string action, const Json::Value& input, Json::Value& output) {
-    Action &action_to_invoke = actions[action];
-
-    BOOST_LOG_TRIVIAL(info) << "validating input for " << name << " " << action;
-    std::vector<std::string> errors;
-    if (!Schemas::validate(input, action_to_invoke.input_schema, errors)) {
-        BOOST_LOG_TRIVIAL(error) << "Validation failed";
-        for (auto error : errors) {
-            BOOST_LOG_TRIVIAL(error) << "    " << error;
-        }
-        return;
-    }
-
     std::string stdin = input.toStyledString();
     std::string stdout;
     std::string stderr;
@@ -124,19 +112,8 @@ void ExternalModule::call_action(const std::string action, const Json::Value& in
     Json::Reader reader;
     if (!reader.parse(stdout, output)) {
         BOOST_LOG_TRIVIAL(error) << "Parse error: " << reader.getFormatedErrorMessages();
-        return;
+        throw;
     }
-
-    BOOST_LOG_TRIVIAL(info) << "validating output for " << name << " " << action;
-    if (!Schemas::validate(output, action_to_invoke.output_schema, errors)) {
-        BOOST_LOG_TRIVIAL(error) << "Validation failed";
-        for (auto error : errors) {
-            BOOST_LOG_TRIVIAL(error) << "    " << error;
-        }
-        return;
-    }
-
-    BOOST_LOG_TRIVIAL(info) << "validated OK: " << output.toStyledString();
 }
 
 }
