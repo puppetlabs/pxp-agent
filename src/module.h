@@ -14,7 +14,7 @@ class Module {
 public:
     std::string name;
     std::map<std::string,Action> actions;
-    virtual void call_action(std::string action, const Json::Value& input, Json::Value& output);
+    virtual void call_action(std::string action, const Json::Value& input, Json::Value& output) = 0;
     void validate_and_call_action(std::string action, const Json::Value& input, Json::Value& output);
 };
 
