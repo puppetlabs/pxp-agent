@@ -23,7 +23,7 @@ Agent::Agent() {
 
             try {
                 ExternalModule* external = new ExternalModule(file->path().string());
-                modules_[external->name] = std::unique_ptr<Module>(external);
+                modules_[external->name] = std::shared_ptr<Module>(external);
             } catch (...) {
                 BOOST_LOG_TRIVIAL(error) << "Error loading " << file->path().string();
             }

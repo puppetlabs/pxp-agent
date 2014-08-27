@@ -12,7 +12,7 @@ public:
     Agent();
     void run(std::string module, std::string action);
 private:
-    std::map<std::string,std::unique_ptr<Module>> modules_;
+    std::map<std::string,std::shared_ptr<Module>> modules_;
 };
 
 }  // namespace CthunAgent

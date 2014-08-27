@@ -70,8 +70,6 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
 
     BOOST_LOG_TRIVIAL(info) << "validation OK";
 
-    std::unique_ptr<Module> loading(new Module);
-
     for (auto action : document["actions"]) {
         BOOST_LOG_TRIVIAL(info) << "declaring action " << action["name"].asString();
         valijson::Schema input_schema;
