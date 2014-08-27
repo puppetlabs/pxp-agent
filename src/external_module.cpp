@@ -50,7 +50,7 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
 
     std::string metadata;
     std::string error;
-    run_command(path, { "metadata" }, "", metadata, error);
+    run_command(path, { path, "metadata" }, "", metadata, error);
 
     Json::Value document;
     Json::Reader reader;
