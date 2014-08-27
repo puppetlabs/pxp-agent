@@ -9,6 +9,7 @@ namespace Modules {
 class Echo : public CthunAgent::Module {
 public:
     Echo();
+    void call_action(std::string name,  const Json::Value& input, Json::Value& output);
 };
 
 }  // namespace Modules

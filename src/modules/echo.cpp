@@ -16,5 +16,9 @@ Echo::Echo() {
     actions["echo"] = Action { input_schema, output_schema };
 }
 
+void Echo::call_action(std::string action, const Json::Value& input, Json::Value& output) {
+    output = Json::Value { input.asString() };
+}
+
 }  // namespace Modules
 }  // namespace CthunAgent
