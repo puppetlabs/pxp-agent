@@ -12,7 +12,7 @@ void Module::call_action(std::string action, const Json::Value& input, Json::Val
 }
 
 void Module::validate_and_call_action(std::string action, const Json::Value& input, Json::Value& output) {
-    Action &action_to_invoke = actions[action];
+    const Action& action_to_invoke = actions[action];
 
     BOOST_LOG_TRIVIAL(info) << "validating input for " << name << " " << action;
     std::vector<std::string> errors;
