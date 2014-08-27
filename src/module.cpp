@@ -21,7 +21,7 @@ void Module::validate_and_call_action(std::string action, const Json::Value& inp
         for (auto error : errors) {
             BOOST_LOG_TRIVIAL(error) << "    " << error;
         }
-        throw;
+        throw "input schema mismatch";
     }
 
     call_action(action, input, output);
@@ -32,7 +32,7 @@ void Module::validate_and_call_action(std::string action, const Json::Value& inp
         for (auto error : errors) {
             BOOST_LOG_TRIVIAL(error) << "    " << error;
         }
-        throw;
+        throw "output schema mismatch";
     }
 
     BOOST_LOG_TRIVIAL(info) << "validated OK: " << output.toStyledString();

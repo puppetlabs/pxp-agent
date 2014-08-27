@@ -56,7 +56,7 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
     Json::Reader reader;
     if (!reader.parse(metadata, document)) {
         BOOST_LOG_TRIVIAL(error) << "Parse error: " << reader.getFormatedErrorMessages();
-        throw;
+        throw "failed to parse metadata document";
     }
 
     std::vector<std::string> errors;
@@ -65,7 +65,7 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
         for (auto error : errors) {
             BOOST_LOG_TRIVIAL(error) << "    " << error;
         }
-        throw;
+        throw "metadata did not match schema";
     }
 
     BOOST_LOG_TRIVIAL(info) << "validation OK";
@@ -110,7 +110,7 @@ void ExternalModule::call_action(const std::string action, const Json::Value& in
     Json::Reader reader;
     if (!reader.parse(stdout, output)) {
         BOOST_LOG_TRIVIAL(error) << "Parse error: " << reader.getFormatedErrorMessages();
-        throw;
+        throw "error parsing json";
     }
 }
 
