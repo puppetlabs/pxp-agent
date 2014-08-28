@@ -110,6 +110,7 @@ valijson::Schema Schemas::network_message() {
     valijson::constraints::TypeConstraint json_type_object(valijson::constraints::TypeConstraint::kObject);
     valijson::constraints::TypeConstraint json_type_string(valijson::constraints::TypeConstraint::kString);
     valijson::constraints::TypeConstraint json_type_array(valijson::constraints::TypeConstraint::kArray);
+    valijson::constraints::TypeConstraint json_type_integer(valijson::constraints::TypeConstraint::kInteger);
 
     valijson::constraints::PropertiesConstraint::PropertySchemaMap properties;
     valijson::constraints::PropertiesConstraint::PropertySchemaMap pattern_properties;
@@ -121,7 +122,7 @@ valijson::Schema Schemas::network_message() {
     properties["version"].addConstraint(json_type_string);
 
     required_properties.insert("id");
-    properties["id"].addConstraint(json_type_string);
+    properties["id"].addConstraint(json_type_integer);
 
     required_properties.insert("expires");
     // TODO(richardc): ISO 8061 formatted date string
@@ -132,11 +133,11 @@ valijson::Schema Schemas::network_message() {
     properties["sender"].addConstraint(json_type_string);
 
     required_properties.insert("endpoints");
-    properties["expires"].addConstraint(json_type_array);
+    properties["endpoints"].addConstraint(json_type_array);
     // TODO(richardc): array of endpoint identifiers
 
     required_properties.insert("hops");
-    properties["expires"].addConstraint(json_type_array);
+    properties["hops"].addConstraint(json_type_array);
     // TODO(richardc): array of 'hop' documents - define hop
 
     required_properties.insert("data_schema");
