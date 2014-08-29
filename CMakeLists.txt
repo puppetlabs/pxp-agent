@@ -37,4 +37,4 @@ include_directories(
 add_subdirectory(src)
 
 # Add the test suite
-add_subdirectory(test)
+# add_subdirectory(test)
