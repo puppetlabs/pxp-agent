@@ -19,7 +19,7 @@ class Agent {
   private:
     std::map<std::string,std::shared_ptr<Module>> modules_;
     Client client_;
-    Cthun::Client::Connection_ID connection_;
+    Cthun::Client::Connection_Handle connection_;
 };
 
 }  // namespace CthunAgent
