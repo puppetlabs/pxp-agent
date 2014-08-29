@@ -5,14 +5,18 @@ set(SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/agent.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/schemas.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/module.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/client.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/external_module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/echo.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../vendor/jsoncpp/jsoncpp.cpp"
+    "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/client.cpp"
 )
 
 add_executable(cthun-agent ${SOURCES})
 
 target_link_libraries(cthun-agent
+    ${OPENSSL_SSL_LIBRARY}
+    ${OPENSSL_CRYPTO_LIBRARY}
     ${Boost_LIBRARIES}
 )
 

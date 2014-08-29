@@ -17,8 +17,17 @@ set(EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
 set(VENDOR_DIRECTORY "${PROJECT_SOURCE_DIR}/vendor")
 list(APPEND CMAKE_MODULE_PATH ${VENDOR_DIRECTORY})
 
+# prefer openssl from ports
+if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+    set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /opt/local/lib)
+    set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} /opt/local/include)
+endif()
+
+
 find_package(Boost 1.54 REQUIRED
-  COMPONENTS program_options filesystem system date_time thread log log_setup regex)
+  COMPONENTS program_options filesystem system date_time thread log log_setup regex random)
+
+find_package(OpenSSL REQUIRED)
 
 # Include vendored libraries
 include(${VENDOR_DIRECTORY}/gmock.cmake)
@@ -32,6 +41,7 @@ include_directories(
     ${Boost_Process_INCLUDE_DIRS}
     "${VENDOR_DIRECTORY}/jsoncpp"
     ${WEBSOCKETPP_INCLUDE_DIRS}
+    "${VENDOR_DIRECTORY}/cthun-client"
     ${VALIJSON_INCLUDE_DIRS}
 )
 
