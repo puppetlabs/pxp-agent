@@ -100,22 +100,13 @@ void Agent::connect_and_run() {
         BOOST_LOG_TRIVIAL(info) << "got message" << message;
     };
 
+    client_.onOpen = [this](Cthun::Client::Connection_Handle opened) {
+        connection_ = opened;
+        send_login();
+    };
+
     connection_ = client_.connect("ws://localhost:8080/cthun/");
 
-    // This can actually take a while to resolve
-    while (1) {
-        websocketpp::session::state::value state { client_.getStateOf(connection_) };
-
-        if (state == websocketpp::session::state::open) {
-            break;
-        }
-
-        BOOST_LOG_TRIVIAL(info) << "busy waiting";
-    }
-
-    BOOST_LOG_TRIVIAL(info) << "connection now open";
-
-    send_login();
 
     while(1) {
         sleep(10);
