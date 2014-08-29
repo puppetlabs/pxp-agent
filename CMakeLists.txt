@@ -24,12 +24,14 @@ find_package(Boost 1.54 REQUIRED
 include(${VENDOR_DIRECTORY}/gmock.cmake)
 include(${VENDOR_DIRECTORY}/valijson.cmake)
 include(${VENDOR_DIRECTORY}/boost-process.cmake)
+include(${VENDOR_DIRECTORY}/websocketpp.cmake)
 
 # Set include directories
 include_directories(
     ${Boost_INCLUDE_DIRS}
     ${Boost_Process_INCLUDE_DIRS}
     "${VENDOR_DIRECTORY}/jsoncpp"
+    ${WEBSOCKETPP_INCLUDE_DIRS}
     ${VALIJSON_INCLUDE_DIRS}
 )
 
