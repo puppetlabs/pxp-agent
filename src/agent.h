@@ -14,9 +14,11 @@ class Agent {
     // daemon entry point
     void connect_and_run();
     void run(std::string module, std::string action);
+  private:
     void list_modules();
     void send_login();
-  private:
+    void handle_message(std::string message);
+
     std::map<std::string,std::shared_ptr<Module>> modules_;
     Client client_;
     Cthun::Client::Connection_Handle connection_;

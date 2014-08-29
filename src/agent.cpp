@@ -95,9 +95,64 @@ void Agent::send_login() {
     client_.send(connection_, login.toStyledString());
 }
 
+void Agent::handle_message(std::string message) {
+    BOOST_LOG_TRIVIAL(info) << "got message" << message;
+
+    Json::Value document;
+    Json::Reader reader;
+
+    if (!reader.parse(message, document)) {
+        BOOST_LOG_TRIVIAL(error) << "Validation failed";
+        return;
+    }
+
+    valijson::Schema message_schema = Schemas::network_message();
+    std::vector<std::string> errors;
+
+    if (!Schemas::validate(document, message_schema, errors)) {
+        BOOST_LOG_TRIVIAL(error) << "message schema validation failed";
+        return;
+    }
+
+    if (std::string("http://puppetlabs.com/cncschema").compare(document["data_schema"].asString()) != 0) {
+        BOOST_LOG_TRIVIAL(error) << "message is not of cnc schema";
+        return;
+    }
+
+    valijson::Schema data_schema { Schemas::cnc_data() };
+    if (!Schemas::validate(document, data_schema, errors)) {
+        BOOST_LOG_TRIVIAL(error) << "data schema validation failed";
+        //return;
+    }
+
+    std::shared_ptr<Module> module = modules_[document["data"]["module"].asString()];
+
+    try {
+        Json::Value output;
+        module->validate_and_call_action(document["data"]["action"].asString(), document["data"]["params"], output);
+        BOOST_LOG_TRIVIAL(info) << output.toStyledString();
+
+        Json::Value response {};
+        response["id"] = 2;
+        response["version"] = "1";
+        response["expires"] = "2014-08-28T17:01:05Z";
+        response["sender"] = "localhost/agent";
+        response["endpoints"] = Json::Value { Json::arrayValue };
+        response["endpoints"][0] = document["sender"];
+        response["hops"] = Json::Value { Json::arrayValue };
+        response["data_schema"] = "http://puppetlabs.com/cncresponseschema";
+        response["data"]["response"] = output;
+
+        BOOST_LOG_TRIVIAL(info) << "sending response " << response.toStyledString();
+        client_.send(connection_, response.toStyledString());
+    } catch (...) {
+        BOOST_LOG_TRIVIAL(error) << "Badness occured";
+    }
+}
+
 void Agent::connect_and_run() {
     client_.onMessage = [this](std::string message) {
-        BOOST_LOG_TRIVIAL(info) << "got message" << message;
+        handle_message(message);
     };
 
     client_.onOpen = [this](Cthun::Client::Connection_Handle opened) {

@@ -183,7 +183,8 @@ valijson::Schema Schemas::cnc_data() {
     // TODO(richardc): this may not be the best way
     // to mark something optional, as it could be a different json
     // primitive, say a simple scalar
-    properties["params"].addConstraint(json_type_object);
+    properties["params"] = valijson::Schema {};
+    //.addConstraint(json_type_object);
 
     // constrain the properties to just those in the properies and pattern_properties maps
     schema.addConstraint(new valijson::constraints::PropertiesConstraint(
