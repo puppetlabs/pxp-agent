@@ -65,5 +65,61 @@ void Agent::run(std::string module, std::string action) {
     }
 }
 
+void Agent::send_login() {
+    Json::Value login {};
+    login["id"] = 1;
+    login["version"] = "1";
+    login["expires"] = "2014-08-28T17:01:05Z";
+    login["sender"] = "localhost/agent";
+    login["endpoints"] = Json::Value { Json::arrayValue };
+    login["endpoints"][0] = "cth://server";
+    login["hops"] = Json::Value { Json::arrayValue };
+    login["data_schema"] = "http://puppetlabs.com/loginschema";
+    login["data"]["type"] = "agent";
+    login["data"]["user"] = "agent";
+
+
+    BOOST_LOG_TRIVIAL(error) << login.toStyledString();
+
+    valijson::Schema message_schema = Schemas::network_message();
+    std::vector<std::string> errors;
+
+    if (!Schemas::validate(login, message_schema, errors)) {
+        BOOST_LOG_TRIVIAL(error) << "Validation failed";
+        for (auto error : errors) {
+            BOOST_LOG_TRIVIAL(error) << "    " << error;
+        }
+        throw "input schema mismatch";
+    }
+
+    client_.send(connection_, login.toStyledString());
+}
+
+void Agent::connect_and_run() {
+    client_.onMessage = [this](std::string message) {
+        BOOST_LOG_TRIVIAL(info) << "got message" << message;
+    };
+
+    connection_ = client_.connect("ws://localhost:8080/cthun/");
+
+    // This can actually take a while to resolve
+    while (1) {
+        websocketpp::session::state::value state { client_.getStateOf(connection_) };
+
+        if (state == websocketpp::session::state::open) {
+            break;
+        }
+
+        BOOST_LOG_TRIVIAL(info) << "busy waiting";
+    }
+
+    BOOST_LOG_TRIVIAL(info) << "connection now open";
+
+    send_login();
+
+    while(1) {
+        sleep(10);
+    }
+}
 
 }  // namespace CthunAgent
