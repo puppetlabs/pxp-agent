@@ -7,6 +7,11 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
+// TODO(ale): disable assert() once we're confident with the code...
+// To disable assert()
+// #define NDEBUG
+#include <cassert>
+
 namespace CthunAgent {
 
 Agent::Agent() {
@@ -28,6 +33,22 @@ Agent::Agent() {
                 BOOST_LOG_TRIVIAL(error) << "Error loading " << file->path().string();
             }
         }
+    }
+}
+
+Agent::~Agent() {
+    if (connection_ptr_ != nullptr) {
+        // don't break the WebSocket Endpoint with our "[this]" callbacks
+        Cthun::Client::Connection::Event_Callback onOpen_c =
+            [](Cthun::Client::Client_Type* client_ptr,
+               Cthun::Client::Connection* connection_ptr) {};
+
+        Cthun::Client::Connection::OnMessage_Callback onMessage_c =
+            [](Cthun::Client::Client_Type* client_ptr,
+               Cthun::Client::Connection* connection_ptr, std::string message) {};
+
+        connection_ptr_->setOnOpenCallback(onOpen_c);
+        connection_ptr_->setOnMessageCallback(onMessage_c);
     }
 }
 
@@ -65,7 +86,7 @@ void Agent::run(std::string module, std::string action) {
     }
 }
 
-void Agent::send_login() {
+void Agent::send_login(Cthun::Client::Client_Type* client_ptr) {
     Json::Value login {};
     login["id"] = 1;
     login["version"] = "1";
@@ -92,17 +113,26 @@ void Agent::send_login() {
         throw "input schema mismatch";
     }
 
-    client_.send(connection_, login.toStyledString());
+    auto handle = connection_ptr_->getConnectionHandle();
+    try {
+        client_ptr->send(handle, login.toStyledString(),
+                         Cthun::Client::Frame_Opcode_Values::text);
+    }  catch(Cthun::Client::client_error& e) {
+        BOOST_LOG_TRIVIAL(error) << "failed to send: " << e.what();
+        // TODO(ale): is it correct to rethrow? Any cleanup?
+        throw;
+    }
 }
 
-void Agent::handle_message(std::string message) {
+void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
+                           std::string message) {
     BOOST_LOG_TRIVIAL(info) << "got message" << message;
 
     Json::Value document;
     Json::Reader reader;
 
     if (!reader.parse(message, document)) {
-        BOOST_LOG_TRIVIAL(error) << "Validation failed";
+        BOOST_LOG_TRIVIAL(error) << "json decode of message failed";
         return;
     }
 
@@ -144,24 +174,53 @@ void Agent::handle_message(std::string message) {
         response["data"]["response"] = output;
 
         BOOST_LOG_TRIVIAL(info) << "sending response " << response.toStyledString();
-        client_.send(connection_, response.toStyledString());
+        auto handle = connection_ptr_->getConnectionHandle();
+        client_ptr->send(handle, response.toStyledString(),
+                         Cthun::Client::Frame_Opcode_Values::text);
+    }  catch(Cthun::Client::client_error& e) {
+        BOOST_LOG_TRIVIAL(error) << "failed to send: " << e.what();
+        // TODO(ale): as above, is it correct to rethrow? Any cleanup?
+        throw;
     } catch (...) {
         BOOST_LOG_TRIVIAL(error) << "Badness occured";
     }
 }
 
 void Agent::connect_and_run() {
-    client_.onMessage = [this](std::string message) {
-        handle_message(message);
+    try {
+        connection_ptr_ = Cthun::Client::CONNECTION_MANAGER.createConnection(
+            "ws://127.0.0.1:8080/cthun/");
+    } catch(Cthun::Client::client_error& e) {
+        BOOST_LOG_TRIVIAL(error) << "failed to configure the connection: "
+                                 << e.what();
+        // TODO(ale): as above, is it correct to rethrow? Any cleanup?
+        throw;
+    }
+
+    Cthun::Client::Connection::Event_Callback onOpen_c =
+        [this](Cthun::Client::Client_Type* client_ptr,
+               Cthun::Client::Connection* connection_ptr) {
+        assert(connection_ptr_.get() == connection_ptr);
+        send_login(client_ptr);
     };
 
-    client_.onOpen = [this](Cthun::Client::Connection_Handle opened) {
-        connection_ = opened;
-        send_login();
+    Cthun::Client::Connection::OnMessage_Callback onMessage_c =
+        [this](Cthun::Client::Client_Type* client_ptr,
+               Cthun::Client::Connection* connection_ptr, std::string message) {
+        assert(connection_ptr_.get() == connection_ptr);
+        handle_message(client_ptr, message);
     };
 
-    connection_ = client_.connect("ws://localhost:8080/cthun/");
+    connection_ptr_->setOnOpenCallback(onOpen_c);
+    connection_ptr_->setOnMessageCallback(onMessage_c);
 
+    try {
+        Cthun::Client::CONNECTION_MANAGER.open(connection_ptr_);
+    } catch(Cthun::Client::client_error& e) {
+        BOOST_LOG_TRIVIAL(error) << "failed to connect: " << e.what();
+        // TODO(ale): as above, is it correct to rethrow? Any cleanup?
+        throw;
+    }
 
     while(1) {
         sleep(10);
