@@ -8,8 +8,9 @@ set(SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/external_module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/echo.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../vendor/jsoncpp/jsoncpp.cpp"
-    "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/client.cpp"
-    "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/connection_metadata.cpp"
+    "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/connection.cpp"
+    "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/connection_manager.cpp"
+    "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/endpoint.cpp"
 )
 
 add_executable(cthun-agent ${SOURCES})
