@@ -41,11 +41,11 @@ Agent::~Agent() {
         // don't break the WebSocket Endpoint with our "[this]" callbacks
         Cthun::Client::Connection::Event_Callback onOpen_c =
             [](Cthun::Client::Client_Type* client_ptr,
-               Cthun::Client::Connection* connection_ptr) {};
+               Cthun::Client::Connection::Ptr connection_ptr) {};
 
         Cthun::Client::Connection::OnMessage_Callback onMessage_c =
             [](Cthun::Client::Client_Type* client_ptr,
-               Cthun::Client::Connection* connection_ptr, std::string message) {};
+               Cthun::Client::Connection::Ptr connection_ptr, std::string message) {};
 
         connection_ptr_->setOnOpenCallback(onOpen_c);
         connection_ptr_->setOnMessageCallback(onMessage_c);
@@ -117,7 +117,7 @@ void Agent::send_login(Cthun::Client::Client_Type* client_ptr) {
     try {
         client_ptr->send(handle, login.toStyledString(),
                          Cthun::Client::Frame_Opcode_Values::text);
-    }  catch(Cthun::Client::client_error& e) {
+    }  catch(Cthun::Client::message_error& e) {
         BOOST_LOG_TRIVIAL(error) << "failed to send: " << e.what();
         // TODO(ale): is it correct to rethrow? Any cleanup?
         throw;
@@ -177,7 +177,7 @@ void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
         auto handle = connection_ptr_->getConnectionHandle();
         client_ptr->send(handle, response.toStyledString(),
                          Cthun::Client::Frame_Opcode_Values::text);
-    }  catch(Cthun::Client::client_error& e) {
+    }  catch(Cthun::Client::message_error& e) {
         BOOST_LOG_TRIVIAL(error) << "failed to send: " << e.what();
         // TODO(ale): as above, is it correct to rethrow? Any cleanup?
         throw;
@@ -187,27 +187,20 @@ void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
 }
 
 void Agent::connect_and_run() {
-    try {
-        connection_ptr_ = Cthun::Client::CONNECTION_MANAGER.createConnection(
-            "ws://127.0.0.1:8080/cthun/");
-    } catch(Cthun::Client::client_error& e) {
-        BOOST_LOG_TRIVIAL(error) << "failed to configure the connection: "
-                                 << e.what();
-        // TODO(ale): as above, is it correct to rethrow? Any cleanup?
-        throw;
-    }
+    connection_ptr_ = Cthun::Client::CONNECTION_MANAGER.createConnection(
+        "ws://127.0.0.1:8080/cthun/");
 
     Cthun::Client::Connection::Event_Callback onOpen_c =
         [this](Cthun::Client::Client_Type* client_ptr,
-               Cthun::Client::Connection* connection_ptr) {
-        assert(connection_ptr_.get() == connection_ptr);
+               Cthun::Client::Connection::Ptr connection_ptr_c) {
+        assert(connection_ptr_ == connection_ptr_c);
         send_login(client_ptr);
     };
 
     Cthun::Client::Connection::OnMessage_Callback onMessage_c =
         [this](Cthun::Client::Client_Type* client_ptr,
-               Cthun::Client::Connection* connection_ptr, std::string message) {
-        assert(connection_ptr_.get() == connection_ptr);
+               Cthun::Client::Connection::Ptr connection_ptr_c, std::string message) {
+        assert(connection_ptr_ == connection_ptr_c);
         handle_message(client_ptr, message);
     };
 
@@ -216,7 +209,7 @@ void Agent::connect_and_run() {
 
     try {
         Cthun::Client::CONNECTION_MANAGER.open(connection_ptr_);
-    } catch(Cthun::Client::client_error& e) {
+    } catch(Cthun::Client::connection_error& e) {
         BOOST_LOG_TRIVIAL(error) << "failed to connect: " << e.what();
         // TODO(ale): as above, is it correct to rethrow? Any cleanup?
         throw;
