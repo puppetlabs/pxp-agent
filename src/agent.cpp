@@ -96,7 +96,7 @@ void Agent::send_login(Cthun::Client::Client_Type* client_ptr) {
     login["id"] = 1;
     login["version"] = "1";
     login["expires"] = "2014-08-28T17:01:05Z";
-    login["sender"] = "localhost/agent";
+    login["sender"] = "cth://localhost/agent";
     login["endpoints"] = Json::Value { Json::arrayValue };
     login["endpoints"][0] = "cth://server";
     login["hops"] = Json::Value { Json::arrayValue };
@@ -171,7 +171,7 @@ void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
         response["id"] = 2;
         response["version"] = "1";
         response["expires"] = "2014-08-28T17:01:05Z";
-        response["sender"] = "localhost/agent";
+        response["sender"] = "cth://localhost/agent";
         response["endpoints"] = Json::Value { Json::arrayValue };
         response["endpoints"][0] = document["sender"];
         response["hops"] = Json::Value { Json::arrayValue };
