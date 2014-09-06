@@ -17,6 +17,7 @@ class Agent {
     // daemon entry point
     void connect_and_run();
     void run(std::string module, std::string action);
+
   private:
     void list_modules();
     void send_login(Cthun::Client::Client_Type* client_ptr);

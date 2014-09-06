@@ -1,7 +1,8 @@
 #include "external_module.h"
 #include "schemas.h"
-#include "log.h"
 #include "action.h"
+
+#include <cthun-client/src/log/log.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -11,6 +12,7 @@
 #include <valijson/adapters/jsoncpp_adapter.hpp>
 #include <valijson/schema_parser.hpp>
 
+LOG_DECLARE_NAMESPACE("agent.external_module");
 
 namespace CthunAgent {
 
@@ -55,23 +57,23 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
     Json::Value document;
     Json::Reader reader;
     if (!reader.parse(metadata, document)) {
-        BOOST_LOG_TRIVIAL(error) << "Parse error: " << reader.getFormatedErrorMessages();
+        LOG_ERROR("parse error: %1%", reader.getFormatedErrorMessages());
         throw "failed to parse metadata document";
     }
 
     std::vector<std::string> errors;
     if (!Schemas::validate(document, metadata_schema, errors)) {
-        BOOST_LOG_TRIVIAL(error) << "Validation failed";
+        LOG_ERROR("validation failed");
         for (auto error : errors) {
-            BOOST_LOG_TRIVIAL(error) << "    " << error;
+            LOG_ERROR("    %1%", error);
         }
         throw "metadata did not match schema";
     }
 
-    BOOST_LOG_TRIVIAL(info) << "validation OK";
+    LOG_INFO("validation OK");
 
     for (auto action : document["actions"]) {
-        BOOST_LOG_TRIVIAL(info) << "declaring action " << action["name"].asString();
+        LOG_INFO("declaring action %1%", action["name"].asString());
         valijson::Schema input_schema;
         valijson::Schema output_schema;
 
@@ -82,14 +84,14 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
         try {
             parser.populateSchema(input_doc_schema, input_schema);
         } catch (...) {
-            BOOST_LOG_TRIVIAL(info) << "Failed to parse input schema.";
+            LOG_ERROR("failed to parse input schema");
             throw;
         }
 
         try {
             parser.populateSchema(output_doc_schema, output_schema);
         } catch (...) {
-            BOOST_LOG_TRIVIAL(info) << "Failed to parse error schema.";
+            LOG_ERROR("failed to parse error schema");
             throw;
         }
 
@@ -97,21 +99,23 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
     }
 }
 
-void ExternalModule::call_action(const std::string action, const Json::Value& input, Json::Value& output) {
+void ExternalModule::call_action(const std::string action,
+                                 const Json::Value& input,
+                                 Json::Value& output) {
     std::string stdin = input.toStyledString();
     std::string stdout;
     std::string stderr;
-    BOOST_LOG_TRIVIAL(info) << stdin;
+    LOG_INFO(stdin);
 
     run_command(path_, { path_, action }, stdin, stdout, stderr);
-    BOOST_LOG_TRIVIAL(info) << "stdout " << stdout;
-    BOOST_LOG_TRIVIAL(info) << "stderr " << stderr;
+    LOG_INFO("stdout: %1%", stdout);
+    LOG_INFO("stderr: %1%", stderr);
 
     Json::Reader reader;
     if (!reader.parse(stdout, output)) {
-        BOOST_LOG_TRIVIAL(error) << "Parse error: " << reader.getFormatedErrorMessages();
+        LOG_INFO("parse error: %1%", reader.getFormatedErrorMessages());
         throw "error parsing json";
     }
 }
 
-}
+}  // namespace CthunAgent
