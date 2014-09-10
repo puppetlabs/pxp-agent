@@ -12,6 +12,8 @@ set(SOURCES
     "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/connection_manager.cpp"
     "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/endpoint.cpp"
     "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/log/log.cpp"
+    "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/common/string_utils.cpp"
+    "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/common/file_utils.cpp"
 )
 
 add_executable(cthun-agent ${SOURCES})
