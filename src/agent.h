@@ -7,6 +7,7 @@
 
 #include <map>
 #include <memory>
+#include <string>
 
 namespace CthunAgent {
 
@@ -15,7 +16,7 @@ class Agent {
     Agent();
     ~Agent();
     // daemon entry point
-    void connect_and_run();
+    void connect_and_run(std::string url);
     void run(std::string module, std::string action);
 
   private:

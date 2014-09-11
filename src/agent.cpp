@@ -203,13 +203,10 @@ void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
     }
 }
 
-void Agent::connect_and_run() {
+void Agent::connect_and_run(std::string url) {
     Cthun::Client::CONNECTION_MANAGER.configureSecureEndpoint(
         DEFAULT_CA, DEFAULT_CERT, DEFAULT_KEY);
-
-    // TODO(ale): get this value from command line
-    connection_ptr_ = Cthun::Client::CONNECTION_MANAGER.createConnection(
-        "wss://127.0.0.1:8090/cthun/");
+    connection_ptr_ = Cthun::Client::CONNECTION_MANAGER.createConnection(url);
 
     Cthun::Client::Connection::Event_Callback onOpen_c =
         [this](Cthun::Client::Client_Type* client_ptr,

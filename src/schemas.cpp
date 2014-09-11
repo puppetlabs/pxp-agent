@@ -197,4 +197,4 @@ valijson::Schema Schemas::cnc_data() {
     return schema;
 }
 
-}
+}  //namespace CthunAgent
