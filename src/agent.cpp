@@ -17,11 +17,6 @@ LOG_DECLARE_NAMESPACE("agent.agent");
 
 namespace CthunAgent {
 
-// TODO(ale): move to a configuration namespace; get values from command line
-static std::string DEFAULT_CA { "./test-resources/ssl/ca/ca_crt.pem" };
-static std::string DEFAULT_CERT { "./test-resources/ssl/certs/cthun-client.pem" };
-static std::string DEFAULT_KEY { "./test-resources/ssl/private_keys/cthun-client.pem" };
-
 Agent::Agent() {
     // declare internal modules
     modules_["echo"] = std::unique_ptr<Module>(new Modules::Echo);
@@ -203,7 +198,10 @@ void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
     }
 }
 
-void Agent::connect_and_run(std::string url) {
+void Agent::connect_and_run(std::string url,
+                            std::string ca_crt_path,
+                            std::string client_crt_path,
+                            std::string client_key_path) {
     Cthun::Client::CONNECTION_MANAGER.configureSecureEndpoint(
         DEFAULT_CA, DEFAULT_CERT, DEFAULT_KEY);
     connection_ptr_ = Cthun::Client::CONNECTION_MANAGER.createConnection(url);

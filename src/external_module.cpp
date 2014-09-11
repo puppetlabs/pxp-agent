@@ -40,7 +40,7 @@ void run_command(std::string exec, std::vector<std::string> args, std::string st
         stderr += line;
     }
 
-    boost::process::status status = child.wait();
+    child.wait();
 }
 
 ExternalModule::ExternalModule(std::string path) : path_(path) {
