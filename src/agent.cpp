@@ -161,14 +161,12 @@ void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
     }
 
     valijson::Schema data_schema { Schemas::cnc_data() };
-    if (!Schemas::validate(document, data_schema, errors)) {
+    if (!Schemas::validate(document["data"], data_schema, errors)) {
         // TODO(ale): refactor error logging
         LOG_ERROR("data schema validation failed");
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }
-        // TODO(ale): check; return was commented out (we don't want
-        // to throw an exception from the callback)
         return;
     }
 
