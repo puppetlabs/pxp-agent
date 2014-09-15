@@ -101,7 +101,6 @@ void Agent::send_login(Cthun::Client::Client_Type* client_ptr) {
     login["hops"] = Json::Value { Json::arrayValue };
     login["data_schema"] = "http://puppetlabs.com/loginschema";
     login["data"]["type"] = "agent";
-    login["data"]["user"] = "agent";
 
 
     LOG_INFO("login message:\n%1%", login.toStyledString());
