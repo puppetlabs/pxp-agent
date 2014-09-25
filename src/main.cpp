@@ -6,7 +6,7 @@ LOG_DECLARE_NAMESPACE("agent.main");
 
 static const Cthun::Log::log_level DEFAULT_LOG_LEVEL {
     Cthun::Log::log_level::debug };
-static std::ostream& DEFAULT_LOG_STREAM { std::cout };
+static std::ostream& DEFAULT_LOG_STREAM = std::cout;
 
 // TODO(ale): remove this; it's just for development
 static const std::string DEFAULT_URL { "wss://127.0.0.1:8090/cthun/" };
