@@ -31,7 +31,13 @@ find_package(OpenSSL REQUIRED)
 
 # Include vendored libraries
 include(${VENDOR_DIRECTORY}/gmock.cmake)
+
+# TODO(ale): cthun-agent won't comile with boost 1.56 due to valijson;
+# must investigate valijson compatibility. Error:
+# valijson/schema.hpp:177:16: error:
+#   no viable conversion from 'const boost::optional<std::string>' to 'bool'
 include(${VENDOR_DIRECTORY}/valijson.cmake)
+
 include(${VENDOR_DIRECTORY}/boost-process.cmake)
 include(${VENDOR_DIRECTORY}/websocketpp.cmake)
 

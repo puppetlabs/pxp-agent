@@ -202,7 +202,7 @@ void Agent::connect_and_run(std::string url,
                             std::string client_crt_path,
                             std::string client_key_path) {
     Cthun::Client::CONNECTION_MANAGER.configureSecureEndpoint(
-        DEFAULT_CA, DEFAULT_CERT, DEFAULT_KEY);
+        ca_crt_path, client_crt_path, client_key_path);
     connection_ptr_ = Cthun::Client::CONNECTION_MANAGER.createConnection(url);
 
     Cthun::Client::Connection::Event_Callback onOpen_c =

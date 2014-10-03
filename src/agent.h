@@ -11,11 +11,6 @@
 
 namespace CthunAgent {
 
-// TODO(ale): move to a configuration namespace; get values from command line
-static std::string DEFAULT_CA { "./test-resources/ssl/ca/ca_crt.pem" };
-static std::string DEFAULT_CERT { "./test-resources/ssl/certs/cthun-client.pem" };
-static std::string DEFAULT_KEY { "./test-resources/ssl/private_keys/cthun-client.pem" };
-
 class Agent {
   public:
     Agent();
@@ -23,9 +18,9 @@ class Agent {
     void run(std::string module, std::string action);
     // daemon entry point
     void connect_and_run(std::string url,
-                         std::string ca_crt_path = DEFAULT_CA,
-                         std::string client_crt_path = DEFAULT_CERT,
-                         std::string client_key_path = DEFAULT_KEY);
+                         std::string ca_crt_path,
+                         std::string client_crt_path,
+                         std::string client_key_path);
 
   private:
     void list_modules();
