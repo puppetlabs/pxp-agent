@@ -1,0 +1,5 @@
+
+# todo
+
+ - cthun-agent does not compile with boost 1.56 due to valijson: valijson/schema.hpp:177:16: error:  no viable conversion from 'const boost::optional<std::string>' to 'bool'
+

@@ -1,24 +1,185 @@
 #include "agent.h"
+#include "errors.h"
 
 #include <cthun-client/src/log/log.h>
+#include <cthun-client/src/common/file_utils.h>
+
+#include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 
 LOG_DECLARE_NAMESPACE("agent.main");
 
+namespace po = boost::program_options;
+
+//
+// tokens
+//
+
 static const Cthun::Log::log_level DEFAULT_LOG_LEVEL {
-    Cthun::Log::log_level::debug };
+    Cthun::Log::log_level::info };
+
+// TODO(ale): log on file
 static std::ostream& DEFAULT_LOG_STREAM = std::cout;
 
 // TODO(ale): remove this; it's just for development
-static const std::string DEFAULT_URL { "wss://127.0.0.1:8090/cthun/" };
+static const std::string DEFAULT_SERVER_URL { "wss://127.0.0.1:8090/cthun/" };
+static std::string DEFAULT_CA { "./test-resources/ssl/ca/ca_crt.pem" };
+static std::string DEFAULT_CERT {
+    "./test-resources/ssl/certs/cthun-client.pem" };
+static std::string DEFAULT_KEY {
+    "./test-resources/ssl/private_keys/cthun-client.pem" };
+
+//
+// application options
+//
+
+struct AppOptions {
+    bool help;
+    bool debug;
+    bool trace;
+    std::string server;
+    std::string ca;
+    std::string cert;
+    std::string key;
+
+    AppOptions() : help { false } {}
+};
+
+//
+// parse, process, and validate command line
+//
+
+AppOptions getAppOptions(int argc, char* argv[]) {
+    po::options_description desc { "Allowed options" };
+    po::variables_map vm;
+    bool is_debug_level { false };
+    bool is_trace_level { false };
+
+    desc.add_options()
+        ("help", "display help")
+        ("debug", po::bool_switch(
+            &is_debug_level), "enable logging at debug level")
+        ("trace", po::bool_switch(
+            &is_debug_level), "enable logging at trace level")
+        ("server,s", po::value<std::string>()->default_value(
+            DEFAULT_SERVER_URL), "cthun servers url")
+        ("ca", po::value<std::string>()->default_value(
+            DEFAULT_CA), "CA certificate")
+        ("cert", po::value<std::string>()->default_value(
+            DEFAULT_CERT), "cthun-agent certificate")
+        ("key", po::value<std::string>()->default_value(
+            DEFAULT_KEY), "cthun-agent private key");
+
+    try {
+        po::store(po::command_line_parser(argc, argv)
+                  .options(desc).run(), vm);
+        po::notify(vm);
+    } catch (...) {
+        std::cout << "Failed to parse the command line\n\n"
+                  << desc << std::endl;
+        throw CthunAgent::request_error { "" };
+    }
+
+    AppOptions app_options;
+
+    if (vm.count("help")) {
+        std::cout << desc;
+        app_options.help = true;
+        return app_options;
+    }
+
+    app_options.debug  = is_debug_level;
+    app_options.trace  = is_trace_level;
+    app_options.server = vm["server"].as<std::string>();
+
+    auto getFilePath = [&vm](std::string key) {
+        return Cthun::Common::FileUtils::expandAsDoneByShell(
+            vm[key].as<std::string>());
+    };
+
+    app_options.ca   = getFilePath("ca");
+    app_options.cert = getFilePath("cert");
+    app_options.key  = getFilePath("key");
+
+    return app_options;
+}
+
+void processAndValidateAppOptions(AppOptions& app_options) {
+    // Ensure all files exist
+
+    std::vector<std::string> paths { app_options.ca,
+                                     app_options.cert,
+                                     app_options.key };
+
+    for (auto p : paths) {
+        if (!Cthun::Common::FileUtils::fileExists(p)) {
+            throw CthunAgent::request_error { "invalid certificate " + p };
+        }
+    }
+}
+
+//
+// main
+//
 
 int main(int argc, char *argv[]) {
-    // TODO(ale): implement a Configuration module
-    // TODO(ale): get arguments from command line
+    AppOptions app_options;
 
-    Cthun::Log::configure_logging(DEFAULT_LOG_LEVEL, DEFAULT_LOG_STREAM);
+    // parse command line
 
-    CthunAgent::Agent agent;
-    //agent.run(argv[1], argv[2]);
-    agent.connect_and_run(DEFAULT_URL);
+    try {
+        app_options = getAppOptions(argc, argv);
+    } catch (CthunAgent::request_error) {
+        return 1;
+    }
+
+    // return in case help has been displayed
+
+    if (app_options.help) {
+        return 0;
+    }
+
+    // configure logging
+
+    Cthun::Log::log_level log_level;
+
+    if (app_options.trace) {
+        log_level = Cthun::Log::log_level::trace;
+    } else if (app_options.debug) {
+        log_level = Cthun::Log::log_level::debug;
+    } else {
+        log_level = DEFAULT_LOG_LEVEL;
+    }
+
+    Cthun::Log::configure_logging(log_level, DEFAULT_LOG_STREAM);
+
+    // process and validate options
+
+    try {
+        processAndValidateAppOptions(app_options);
+    } catch (CthunAgent::request_error& e) {
+        std::cout << e.what() << std::endl;
+        return 1;
+    }
+
+    // start the agent
+
+    try {
+        CthunAgent::Agent agent;
+        agent.connect_and_run(app_options.server,
+                              app_options.ca,
+                              app_options.cert,
+                              app_options.key);
+    } catch (CthunAgent::fatal_error&  e) {
+        LOG_ERROR("fatal error: %1%", e.what());
+        return 1;
+    } catch (std::exception&  e) {
+        LOG_ERROR("unexpected error: %1%", e.what());
+        return 1;
+    } catch (...) {
+        LOG_ERROR("unexpected error");
+        return 1;
+    }
+
     return 0;
 }
