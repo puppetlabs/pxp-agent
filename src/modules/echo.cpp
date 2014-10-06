@@ -6,6 +6,7 @@ namespace CthunAgent {
 namespace Modules {
 
 Echo::Echo() {
+    // Set the module name
     name = "echo";
 
     valijson::constraints::TypeConstraint json_type_string(valijson::constraints::TypeConstraint::kString);

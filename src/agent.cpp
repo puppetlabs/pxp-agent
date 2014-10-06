@@ -1,6 +1,7 @@
 #include "agent.h"
 #include "modules/echo.h"
-#include "modules/facts.h"
+#include "modules/inventory.h"
+#include "modules/ping.h"
 #include "external_module.h"
 #include "schemas.h"
 #include "errors.h"
@@ -22,7 +23,8 @@ namespace CthunAgent {
 Agent::Agent() {
     // declare internal modules
     modules_["echo"] = std::unique_ptr<Module>(new Modules::Echo);
-    modules_["facts"] = std::unique_ptr<Module>(new Modules::Facts);
+    modules_["inventory"] = std::unique_ptr<Module>(new Modules::Inventory);
+    modules_["ping"] = std::unique_ptr<Module>(new Modules::Ping);
 
     // load external modules
     boost::filesystem::path module_path { "modules" };
@@ -220,6 +222,8 @@ void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
     }  catch(Cthun::Client::message_error& e) {
         LOG_ERROR("failed to send: %1%", e.what());
         // we don't want to throw anything here
+    } catch (std::exception&  e) {
+        LOG_ERROR("unexpected exception: %1%", e.what());
     } catch (...) {
         LOG_ERROR("badness occured");
     }

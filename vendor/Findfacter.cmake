@@ -1,5 +1,5 @@
 INCLUDE(FindDependency)
-find_dependency(BLKID DISPLAY "facter" HEADERS "facter/facts/collection.hpp" LIBRARY "facter")
+find_dependency(facter DISPLAY "facter" HEADERS "facter/facts/collection.hpp" LIBRARY "facter")
 
 
 INCLUDE(FeatureSummary)

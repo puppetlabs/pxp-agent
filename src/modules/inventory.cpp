@@ -1,4 +1,4 @@
-#include "facts.h"
+#include "inventory.h"
 
 #include <facter/facts/collection.hpp>
 
@@ -8,13 +8,14 @@
 
 #include <sstream>
 
-LOG_DECLARE_NAMESPACE("agent.facts");
+LOG_DECLARE_NAMESPACE("agent.inventory");
 
 namespace CthunAgent {
 namespace Modules {
 
-Facts::Facts() {
-    name = "facts";
+Inventory::Inventory() {
+    // Set the module name
+    name = "inventory";
 
     valijson::constraints::TypeConstraint json_type_string {
         valijson::constraints::TypeConstraint::kString };
@@ -27,12 +28,12 @@ Facts::Facts() {
     valijson::Schema output_schema;
     output_schema.addConstraint(json_type_any);
 
-    actions["facts"] = Action { input_schema, output_schema };
+    actions["inventory"] = Action { input_schema, output_schema };
 }
 
-void Facts::call_action(std::string action,
-                        const Json::Value& input,
-                        Json::Value& output) {
+void Inventory::call_action(std::string action,
+                            const Json::Value& input,
+                            Json::Value& output) {
     std::ostringstream fact_stream;
 
     try {

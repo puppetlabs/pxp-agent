@@ -30,8 +30,6 @@ find_package(Boost 1.54 REQUIRED
 
 find_package(OpenSSL REQUIRED)
 
-find_package(facter REQUIRED)
-
 # Include vendored libraries
 
 include(${VENDOR_DIRECTORY}/gmock.cmake)

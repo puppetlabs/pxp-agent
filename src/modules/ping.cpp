@@ -1,0 +1,55 @@
+#include "ping.h"
+
+#include <cthun-client/src/log/log.h>
+
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <valijson/constraints/concrete_constraints.hpp>
+
+#include <ctime>
+#include <string>
+#include <sstream>
+
+LOG_DECLARE_NAMESPACE("agent.ping");
+
+namespace CthunAgent {
+namespace Modules {
+
+Ping::Ping() {
+    // Set the module name
+    name = "ping";
+
+    valijson::constraints::TypeConstraint json_type_object {
+        valijson::constraints::TypeConstraint::kObject };
+
+    valijson::Schema input_schema;
+    input_schema.addConstraint(json_type_object);
+
+    valijson::Schema output_schema;
+    output_schema.addConstraint(json_type_object);
+
+    actions["ping"] = Action { input_schema, output_schema };
+}
+
+void Ping::ping_action(const Json::Value& input, Json::Value& output) {
+    int sender_timestamp;
+    std::istringstream(input["sender_timestamp"].asString()) >> sender_timestamp;
+
+    boost::posix_time::ptime current_date_microseconds = boost::posix_time::microsec_clock::local_time();
+    long current_date_milliseconds =
+        current_date_microseconds.time_of_day().total_milliseconds();
+    long time_to_agent = current_date_milliseconds - sender_timestamp;
+
+    Json::Value result;
+    result["time_to_agent"] = std::to_string(time_to_agent);
+    result["agent_timestamp"] = std::to_string(current_date_milliseconds);
+    output = result;
+}
+
+void Ping::call_action(std::string action,
+                       const Json::Value& input,
+                       Json::Value& output) {
+    ping_action(input, output);
+}
+
+}  // namespace Modules
+}  // namespace CthunAgent

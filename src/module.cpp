@@ -20,7 +20,8 @@ void Module::validate_and_call_action(std::string action,
                                       const Json::Value& input,
                                       Json::Value& output) {
     if (actions.find(action) == actions.end()) {
-        throw validation_error { "Unknown action: '" + action + "'" };
+        throw validation_error { "unknown action for module " + name
+                                 + ": '" + action + "'" };
     }
 
     const Action& action_to_invoke = actions[action];
