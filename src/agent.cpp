@@ -1,5 +1,6 @@
 #include "agent.h"
 #include "modules/echo.h"
+#include "modules/ping.h"
 #include "external_module.h"
 #include "schemas.h"
 
@@ -20,6 +21,7 @@ namespace CthunAgent {
 Agent::Agent() {
     // declare internal modules
     modules_["echo"] = std::unique_ptr<Module>(new Modules::Echo);
+    modules_["ping"] = std::unique_ptr<Module>(new Modules::Ping);
 
     // load external modules
     boost::filesystem::path module_path { "modules" };

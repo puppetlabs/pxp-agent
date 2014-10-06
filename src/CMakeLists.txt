@@ -7,6 +7,7 @@ set(SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/external_module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/echo.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/modules/ping.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../vendor/jsoncpp/jsoncpp.cpp"
     "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/connection.cpp"
     "${VENDOR_DIRECTORY}/cthun-client/cthun-client/src/connection_manager.cpp"
