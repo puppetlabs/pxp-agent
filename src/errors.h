@@ -24,6 +24,12 @@ class fatal_error : public agent_error {
     explicit fatal_error(std::string const& msg) : agent_error(msg) {}
 };
 
+/// Message validation error class.
+class validation_error : public agent_error {
+  public:
+    explicit validation_error(std::string const& msg) : agent_error(msg) {}
+};
+
 }  // namespace CthunAgent
 
 #endif  // SRC_ERRORS_H_

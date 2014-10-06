@@ -60,7 +60,7 @@ AppOptions getAppOptions(int argc, char* argv[]) {
         ("debug", po::bool_switch(
             &is_debug_level), "enable logging at debug level")
         ("trace", po::bool_switch(
-            &is_debug_level), "enable logging at trace level")
+            &is_trace_level), "enable logging at trace level")
         ("server,s", po::value<std::string>()->default_value(
             DEFAULT_SERVER_URL), "cthun servers url")
         ("ca", po::value<std::string>()->default_value(
@@ -141,6 +141,8 @@ int main(int argc, char *argv[]) {
 
     // configure logging
 
+    // TODO(ale): do we need to configure facter logs?
+
     Cthun::Log::log_level log_level;
 
     if (app_options.trace) {
@@ -166,6 +168,7 @@ int main(int argc, char *argv[]) {
 
     try {
         CthunAgent::Agent agent;
+
         agent.connect_and_run(app_options.server,
                               app_options.ca,
                               app_options.cert,

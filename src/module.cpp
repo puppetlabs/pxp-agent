@@ -1,5 +1,6 @@
 #include "module.h"
 #include "schemas.h"
+#include "errors.h"
 
 #include <cthun-client/src/log/log.h>
 
@@ -18,16 +19,21 @@ void Module::call_action(std::string action, const Json::Value& input,
 void Module::validate_and_call_action(std::string action,
                                       const Json::Value& input,
                                       Json::Value& output) {
+    if (actions.find(action) == actions.end()) {
+        throw validation_error { "Unknown action: '" + action + "'" };
+    }
+
     const Action& action_to_invoke = actions[action];
 
-    LOG_INFO("validating input for %1% %2%", name, action);
+    LOG_INFO("validating input for '%1% %2%'", name, action);
     std::vector<std::string> errors;
     if (!Schemas::validate(input, action_to_invoke.input_schema, errors)) {
         LOG_ERROR("validation failed");
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }
-        throw "input schema mismatch";
+
+        throw validation_error { "Input schema mismatch" };
     }
 
     call_action(action, input, output);
@@ -38,10 +44,9 @@ void Module::validate_and_call_action(std::string action,
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }
-        throw "output schema mismatch";
-    }
 
-    LOG_INFO("validated OK: %1%", output.toStyledString());
+        throw validation_error { "Output schema mismatch" };
+    }
 }
 
 }  // namespace CthunAgent

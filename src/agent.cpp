@@ -1,7 +1,9 @@
 #include "agent.h"
 #include "modules/echo.h"
+#include "modules/facts.h"
 #include "external_module.h"
 #include "schemas.h"
+#include "errors.h"
 
 #include <cthun-client/src/log/log.h>
 
@@ -20,6 +22,7 @@ namespace CthunAgent {
 Agent::Agent() {
     // declare internal modules
     modules_["echo"] = std::unique_ptr<Module>(new Modules::Echo);
+    modules_["facts"] = std::unique_ptr<Module>(new Modules::Facts);
 
     // load external modules
     boost::filesystem::path module_path { "modules" };
@@ -76,7 +79,10 @@ void Agent::run(std::string module, std::string action) {
 
     LOG_INFO("loading stdin");
 
-    if (!reader.parse(std::cin, input)) {
+    std::string command_line;
+    std::getline(std::cin, command_line);
+
+    if (!command_line.empty() && !reader.parse(command_line, input)) {
         LOG_ERROR("parse error: %1%", reader.getFormatedErrorMessages());
         return;
     }
@@ -113,8 +119,8 @@ void Agent::send_login(Cthun::Client::Client_Type* client_ptr) {
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }
-        // TODO(ale): use specific errors
-        throw "input schema mismatch";
+        // Unexpected
+        throw fatal_error { "unexpected invalid login message schema" };
     }
 
     auto handle = connection_ptr_->getConnectionHandle();
@@ -123,8 +129,8 @@ void Agent::send_login(Cthun::Client::Client_Type* client_ptr) {
                          Cthun::Client::Frame_Opcode_Values::text);
     }  catch(Cthun::Client::message_error& e) {
         LOG_ERROR("failed to send: %1%", e.what());
-        // TODO(ale): is it correct to rethrow? Any cleanup?
-        throw;
+        // Fatal; we can't login...
+        throw fatal_error { "failed to send login message" };
     }
 }
 
@@ -132,10 +138,10 @@ void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
                            std::string message) {
     LOG_INFO("received message:\n%1%", message);
 
-    Json::Value document;
+    Json::Value doc;
     Json::Reader reader;
 
-    if (!reader.parse(message, document)) {
+    if (!reader.parse(message, doc)) {
         LOG_ERROR("json decode of message failed");
         return;
     }
@@ -143,19 +149,19 @@ void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
     valijson::Schema message_schema = Schemas::network_message();
     std::vector<std::string> errors;
 
-    if (!Schemas::validate(document, message_schema, errors)) {
+    if (!Schemas::validate(doc, message_schema, errors)) {
         LOG_ERROR("message schema validation failed");
         return;
     }
 
     if (std::string("http://puppetlabs.com/cncschema").compare(
-            document["data_schema"].asString()) != 0) {
+            doc["data_schema"].asString()) != 0) {
         LOG_ERROR("message is not of cnc schema");
         return;
     }
 
     valijson::Schema data_schema { Schemas::cnc_data() };
-    if (!Schemas::validate(document["data"], data_schema, errors)) {
+    if (!Schemas::validate(doc["data"], data_schema, errors)) {
         // TODO(ale): refactor error logging
         LOG_ERROR("data schema validation failed");
         for (auto error : errors) {
@@ -164,15 +170,33 @@ void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
         return;
     }
 
-    std::shared_ptr<Module> module =
-        modules_[document["data"]["module"].asString()];
-
     try {
         Json::Value output;
-        module->validate_and_call_action(document["data"]["action"].asString(),
-                                         document["data"]["params"],
-                                         output);
-        LOG_INFO(output.toStyledString());
+        auto module_name = doc["data"]["module"].asString();
+        auto action_name = doc["data"]["action"].asString();
+
+        if (modules_.find(module_name) != modules_.end()) {
+            std::shared_ptr<Module> module = modules_[module_name];
+
+            try {
+                module->validate_and_call_action(action_name,
+                                                 doc["data"]["params"],
+                                                 output);
+                LOG_DEBUG("%1% %2% output: %3%",
+                          module_name, action_name, output.toStyledString());
+            } catch (validation_error& e) {
+                LOG_ERROR("failed to perform '%1% %2%': %3%",
+                          module_name, action_name, e.what());
+                Json::Value err_result;
+                err_result["error"] = e.what();
+                output = err_result;
+            }
+        } else {
+            LOG_ERROR("invalid request: unknown module %1%", module_name)
+            Json::Value err_result;
+            err_result["error"] = "Unknown module: '" + module_name + "'";
+            output = err_result;
+        }
 
         Json::Value response {};
         response["id"] = 2;
@@ -180,18 +204,22 @@ void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
         response["expires"] = "2014-08-28T17:01:05Z";
         response["sender"] = "cth://localhost/agent";
         response["endpoints"] = Json::Value { Json::arrayValue };
-        response["endpoints"][0] = document["sender"];
+        response["endpoints"][0] = doc["sender"];
         response["hops"] = Json::Value { Json::arrayValue };
         response["data_schema"] = "http://puppetlabs.com/cncresponseschema";
         response["data"]["response"] = output;
 
-        LOG_INFO("sending response %1%", response.toStyledString());
+        auto response_txt = response.toStyledString();
+        LOG_INFO("sending response of size %1%", response_txt.size());
+        LOG_DEBUG("response:\n%1%", response_txt);
+
         auto handle = connection_ptr_->getConnectionHandle();
-        client_ptr->send(handle, response.toStyledString(),
+        client_ptr->send(handle,
+                         response_txt,
                          Cthun::Client::Frame_Opcode_Values::text);
     }  catch(Cthun::Client::message_error& e) {
         LOG_ERROR("failed to send: %1%", e.what());
-        // TODO(ale): check, as above; we don't want to throw here
+        // we don't want to throw anything here
     } catch (...) {
         LOG_ERROR("badness occured");
     }
@@ -226,11 +254,10 @@ void Agent::connect_and_run(std::string url,
         Cthun::Client::CONNECTION_MANAGER.open(connection_ptr_);
     } catch(Cthun::Client::connection_error& e) {
         LOG_ERROR("failed to connect: %1%", e.what());
-        // TODO(ale): is it correct to rethrow? Any cleanup?
-        throw;
+        throw fatal_error { "failed to connect to server" };
     }
 
-    while(1) {
+    while (1) {
         sleep(10);
     }
 }

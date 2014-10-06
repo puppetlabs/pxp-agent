@@ -15,7 +15,10 @@ class Agent {
   public:
     Agent();
     ~Agent();
+
+    // for development purposes
     void run(std::string module, std::string action);
+
     // daemon entry point
     void connect_and_run(std::string url,
                          std::string ca_crt_path,
@@ -28,7 +31,7 @@ class Agent {
     void handle_message(Cthun::Client::Client_Type* client_ptr,
                         std::string message);
 
-    std::map<std::string,std::shared_ptr<Module>> modules_;
+    std::map<std::string, std::shared_ptr<Module>> modules_;
     Cthun::Client::Connection::Ptr connection_ptr_ { nullptr };
 };
 

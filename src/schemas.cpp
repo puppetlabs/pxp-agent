@@ -5,6 +5,7 @@
 #include <valijson/validation_results.hpp>
 #include <valijson/validator.hpp>
 
+// TODO(ale): log messages
 
 namespace CthunAgent {
 
@@ -184,7 +185,7 @@ valijson::Schema Schemas::cnc_data() {
     // to mark something optional, as it could be a different json
     // primitive, say a simple scalar
     properties["params"] = valijson::Schema {};
-    //.addConstraint(json_type_object);
+    // .addConstraint(json_type_object);
 
     // constrain the properties to just those in the properies and pattern_properties maps
     schema.addConstraint(new valijson::constraints::PropertiesConstraint(
@@ -197,4 +198,4 @@ valijson::Schema Schemas::cnc_data() {
     return schema;
 }
 
-}  //namespace CthunAgent
+}  // namespace CthunAgent
