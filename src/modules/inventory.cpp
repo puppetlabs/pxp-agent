@@ -17,16 +17,15 @@ Inventory::Inventory() {
     // Set the module name
     name = "inventory";
 
-    valijson::constraints::TypeConstraint json_type_string {
-        valijson::constraints::TypeConstraint::kString };
-    valijson::constraints::TypeConstraint json_type_any {
-        valijson::constraints::TypeConstraint::kAny };
+    valijson::constraints::TypeConstraint json_type_object {
+        valijson::constraints::TypeConstraint::kObject
+    };
 
     valijson::Schema input_schema;
-    input_schema.addConstraint(json_type_string);
+    input_schema.addConstraint(json_type_object);
 
     valijson::Schema output_schema;
-    output_schema.addConstraint(json_type_any);
+    output_schema.addConstraint(json_type_object);
 
     actions["inventory"] = Action { input_schema, output_schema };
 }
