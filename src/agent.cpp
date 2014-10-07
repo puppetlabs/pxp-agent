@@ -11,6 +11,8 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
+#include <mutex>
+
 // TODO(ale): disable assert() once we're confident with the code...
 // To disable assert()
 // #define NDEBUG
@@ -19,6 +21,60 @@
 LOG_DECLARE_NAMESPACE("agent.agent");
 
 namespace CthunAgent {
+
+//
+// Tokens
+//
+
+static const int DEFAULT_HEARTBEAT_PERIOD { 30 };  // [s]
+
+//
+// HeartbeatTask
+//
+
+HeartbeatTask::HeartbeatTask(Cthun::Client::Connection::Ptr connection_ptr)
+        : must_stop_ { false } {
+    assert(connection_ptr != nullptr);
+    connection_ptr_ = connection_ptr;
+}
+
+HeartbeatTask::~HeartbeatTask() {
+    stop();
+}
+
+void HeartbeatTask::start() {
+    LOG_INFO("starting the heartbeat task");
+    heartbeat_thread_ = std::thread(&HeartbeatTask::heartbeatThread, this);
+}
+
+void HeartbeatTask::stop() {
+    LOG_INFO("stopping the heartbeat task");
+    must_stop_ = true;
+    if (heartbeat_thread_.joinable()) {
+        heartbeat_thread_.join();
+    }
+}
+
+void HeartbeatTask::heartbeatThread() {
+    while (!must_stop_) {
+        try {
+            if (connection_ptr_->getState()
+                    == Cthun::Client::Connection_State_Values::open) {
+                Cthun::Client::CONNECTION_MANAGER.ping(connection_ptr_,
+                                                       binary_payload_);
+            } else {
+                LOG_DEBUG("skipping ping; connection is not open");
+            }
+        } catch (Cthun::Client::message_error& e) {
+            LOG_ERROR(e.what());
+        }
+        sleep(DEFAULT_HEARTBEAT_PERIOD);
+    }
+}
+
+//
+// Agent
+//
 
 Agent::Agent() {
     // declare internal modules
@@ -30,12 +86,14 @@ Agent::Agent() {
     boost::filesystem::path module_path { "modules" };
     boost::filesystem::directory_iterator end;
 
-    for (auto file = boost::filesystem::directory_iterator(module_path); file != end; ++file) {
+    for (auto file = boost::filesystem::directory_iterator(module_path);
+            file != end; ++file) {
         if (!boost::filesystem::is_directory(file->status())) {
             LOG_INFO(file->path().string());
 
             try {
-                ExternalModule* external = new ExternalModule(file->path().string());
+                ExternalModule* external =
+                    new ExternalModule(file->path().string());
                 modules_[external->name] = std::shared_ptr<Module>(external);
             } catch (...) {
                 LOG_ERROR("failed to load: %1%", file->path().string());
@@ -46,18 +104,31 @@ Agent::Agent() {
 
 Agent::~Agent() {
     if (connection_ptr_ != nullptr) {
-        // don't break the WebSocket Endpoint with our "[this]" callbacks
-        LOG_INFO("resetting the event callbacks");
+        // reset callbacks to avoid breaking the WebSocket Endpoint
+        // with invalid references
+
+        LOG_INFO("resetting the WebSocket event callbacks");
+
         Cthun::Client::Connection::Event_Callback onOpen_c =
             [](Cthun::Client::Client_Type* client_ptr,
                Cthun::Client::Connection::Ptr connection_ptr) {};
 
         Cthun::Client::Connection::OnMessage_Callback onMessage_c =
             [](Cthun::Client::Client_Type* client_ptr,
-               Cthun::Client::Connection::Ptr connection_ptr, std::string message) {};
+               Cthun::Client::Connection::Ptr connection_ptr,
+               std::string message) {};
+
+        Cthun::Client::Connection::Pong_Callback onPong_c =
+            [](Cthun::Client::Client_Type* client_ptr,
+               Cthun::Client::Connection::Ptr connection_ptr,
+               std::string message) {};
 
         connection_ptr_->setOnOpenCallback(onOpen_c);
         connection_ptr_->setOnMessageCallback(onMessage_c);
+        connection_ptr_->setOnPongCallback(onPong_c);
+        connection_ptr_->setOnPongTimeoutCallback(onPong_c);
+
+        // NB: the heartbeat task will be destructed by RIIA
     }
 }
 
@@ -117,12 +188,12 @@ void Agent::send_login(Cthun::Client::Client_Type* client_ptr) {
     std::vector<std::string> errors;
 
     if (!Schemas::validate(login, message_schema, errors)) {
-        LOG_ERROR("validation failed");
+        LOG_INFO("validation failed");
         for (auto error : errors) {
-            LOG_ERROR("    %1%", error);
+            LOG_INFO("    %1%", error);
         }
-        // Unexpected
-        throw fatal_error { "unexpected invalid login message schema" };
+        // This is unexpected
+        throw fatal_error { "invalid login message schema" };
     }
 
     auto handle = connection_ptr_->getConnectionHandle();
@@ -130,7 +201,7 @@ void Agent::send_login(Cthun::Client::Client_Type* client_ptr) {
         client_ptr->send(handle, login.toStyledString(),
                          Cthun::Client::Frame_Opcode_Values::text);
     }  catch(Cthun::Client::message_error& e) {
-        LOG_ERROR("failed to send: %1%", e.what());
+        LOG_INFO("failed to send: %1%", e.what());
         // Fatal; we can't login...
         throw fatal_error { "failed to send login message" };
     }
@@ -233,9 +304,13 @@ void Agent::connect_and_run(std::string url,
                             std::string ca_crt_path,
                             std::string client_crt_path,
                             std::string client_key_path) {
+    // Get connection pointer
+
     Cthun::Client::CONNECTION_MANAGER.configureSecureEndpoint(
         ca_crt_path, client_crt_path, client_key_path);
     connection_ptr_ = Cthun::Client::CONNECTION_MANAGER.createConnection(url);
+
+    // Define and set callbacks
 
     Cthun::Client::Connection::Event_Callback onOpen_c =
         [this](Cthun::Client::Client_Type* client_ptr,
@@ -246,23 +321,77 @@ void Agent::connect_and_run(std::string url,
 
     Cthun::Client::Connection::OnMessage_Callback onMessage_c =
         [this](Cthun::Client::Client_Type* client_ptr,
-               Cthun::Client::Connection::Ptr connection_ptr_c, std::string message) {
+               Cthun::Client::Connection::Ptr connection_ptr_c,
+               std::string message) {
         assert(connection_ptr_ == connection_ptr_c);
         handle_message(client_ptr, message);
     };
 
+    // TODO(ale): remove pong / pongTimeout callbacks if not useful
+
+    int consecutive_pong_timeouts { 0 };
+    std::mutex pong_mutex;
+
+    Cthun::Client::Connection::Pong_Callback onPong_c =
+        [&consecutive_pong_timeouts, &pong_mutex](
+            Cthun::Client::Client_Type* client_ptr,
+            Cthun::Client::Connection::Ptr connection_ptr_c,
+            std::string binary_payload) {
+        LOG_DEBUG("received pong - payload: '%1%'", binary_payload);
+        if (consecutive_pong_timeouts > 0){
+            std::lock_guard<std::mutex> lock { pong_mutex };
+            consecutive_pong_timeouts = 0;
+        }
+    };
+
+    Cthun::Client::Connection::Pong_Callback onPongTimeout_c =
+        [&consecutive_pong_timeouts, &pong_mutex](
+            Cthun::Client::Client_Type* client_ptr,
+            Cthun::Client::Connection::Ptr connection_ptr_c,
+            std::string binary_payload) {
+        std::lock_guard<std::mutex> lock { pong_mutex };
+        LOG_WARNING("pong timeout (%1% consecutive) - payload: '%2%'",
+                    consecutive_pong_timeouts, binary_payload);
+        consecutive_pong_timeouts++;
+    };
+
     connection_ptr_->setOnOpenCallback(onOpen_c);
     connection_ptr_->setOnMessageCallback(onMessage_c);
+    connection_ptr_->setOnPongCallback(onPong_c);
+    connection_ptr_->setOnPongTimeoutCallback(onPongTimeout_c);
+
+    // Connect and wait for open
 
     try {
         Cthun::Client::CONNECTION_MANAGER.open(connection_ptr_);
-    } catch(Cthun::Client::connection_error& e) {
-        LOG_ERROR("failed to connect: %1%", e.what());
-        throw fatal_error { "failed to connect to server" };
+        connection_ptr_->waitForOpen();
+    } catch (Cthun::Client::connection_error& e) {
+        LOG_INFO("failed to connect; %1%", e.what());
+        throw fatal_error { "failed to connect" };
     }
 
+    // Start heartbeat task
+
+    heartbeat_task_.reset(new HeartbeatTask { connection_ptr_ });
+    heartbeat_task_->start();
+
+    // Periodically check the connection state
+
     while (1) {
-        sleep(10);
+        if (connection_ptr_->getState()
+                != Cthun::Client::Connection_State_Values::open) {
+            LOG_WARNING("connection was closed; will try to restart in 2 s");
+            sleep(2);
+
+            try {
+                Cthun::Client::CONNECTION_MANAGER.open(connection_ptr_);
+                connection_ptr_->waitForOpen();
+            } catch (Cthun::Client::connection_error& e) {
+                LOG_INFO("failed to reconnect; %1%", e.what());
+                throw fatal_error { "failed to reconnect" };
+            }
+        }
+        sleep(11);
     }
 }
 

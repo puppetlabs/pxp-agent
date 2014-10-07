@@ -35,9 +35,9 @@ void Ping::ping_action(const Json::Value& input, Json::Value& output) {
     std::istringstream(input["sender_timestamp"].asString()) >> sender_timestamp;
 
     boost::posix_time::ptime current_date_microseconds = boost::posix_time::microsec_clock::local_time();
-    long current_date_milliseconds =
+    auto current_date_milliseconds =
         current_date_microseconds.time_of_day().total_milliseconds();
-    long time_to_agent = current_date_milliseconds - sender_timestamp;
+    auto time_to_agent = current_date_milliseconds - sender_timestamp;
 
     Json::Value result;
     result["time_to_agent"] = std::to_string(time_to_agent);
