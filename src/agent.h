@@ -8,8 +8,34 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <thread>
+#include <memory>
 
 namespace CthunAgent {
+
+//
+// HeartbeatTask
+//
+
+class HeartbeatTask {
+  public:
+    explicit HeartbeatTask(Cthun::Client::Connection::Ptr connection_ptr);
+    ~HeartbeatTask();
+    void start();
+    void stop();
+
+  private:
+    bool must_stop_;
+    std::thread heartbeat_thread_;
+    std::string binary_payload_ { "cthun ping payload" };
+    Cthun::Client::Connection::Ptr connection_ptr_ { nullptr };
+
+    void heartbeatThread();
+};
+
+//
+// Agent
+//
 
 class Agent {
   public:
@@ -26,6 +52,8 @@ class Agent {
                          std::string client_key_path);
 
   private:
+    std::unique_ptr<HeartbeatTask> heartbeat_task_;
+
     void list_modules();
     void send_login(Cthun::Client::Client_Type* client_ptr);
     void handle_message(Cthun::Client::Client_Type* client_ptr,
