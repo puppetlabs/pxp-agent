@@ -1,4 +1,4 @@
-#include "agent.h"
+#include "agent_endpoint.h"
 #include "modules/echo.h"
 #include "modules/inventory.h"
 #include "modules/ping.h"
@@ -18,9 +18,10 @@
 // #define NDEBUG
 #include <cassert>
 
-LOG_DECLARE_NAMESPACE("agent.agent");
+LOG_DECLARE_NAMESPACE("agent.agent_endpoint");
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 
 //
 // Tokens
@@ -73,10 +74,10 @@ void HeartbeatTask::heartbeatThread() {
 }
 
 //
-// Agent
+// AgentEndpoint
 //
 
-Agent::Agent() {
+AgentEndpoint::AgentEndpoint() {
     // declare internal modules
     modules_["echo"] = std::unique_ptr<Module>(new Modules::Echo);
     modules_["inventory"] = std::unique_ptr<Module>(new Modules::Inventory);
@@ -94,7 +95,8 @@ Agent::Agent() {
             try {
                 ExternalModule* external =
                     new ExternalModule(file->path().string());
-                modules_[external->name] = std::shared_ptr<Module>(external);
+                modules_[external->module_name] =
+                    std::shared_ptr<Module>(external);
             } catch (...) {
                 LOG_ERROR("failed to load: %1%", file->path().string());
             }
@@ -102,7 +104,7 @@ Agent::Agent() {
     }
 }
 
-Agent::~Agent() {
+AgentEndpoint::~AgentEndpoint() {
     if (connection_ptr_ != nullptr) {
         // reset callbacks to avoid breaking the WebSocket Endpoint
         // with invalid references
@@ -132,7 +134,7 @@ Agent::~Agent() {
     }
 }
 
-void Agent::list_modules() {
+void AgentEndpoint::list_modules() {
     LOG_INFO("loaded modules:");
     for (auto module : modules_) {
         LOG_INFO("   %1%", module.first);
@@ -142,7 +144,7 @@ void Agent::list_modules() {
     }
 }
 
-void Agent::run(std::string module, std::string action) {
+void AgentEndpoint::run(std::string module, std::string action) {
     list_modules();
 
     std::shared_ptr<Module> the_module = modules_[module];
@@ -169,7 +171,7 @@ void Agent::run(std::string module, std::string action) {
     }
 }
 
-void Agent::send_login(Cthun::Client::Client_Type* client_ptr) {
+void AgentEndpoint::send_login(Cthun::Client::Client_Type* client_ptr) {
     Json::Value login {};
     login["id"] = 1;
     login["version"] = "1";
@@ -207,8 +209,8 @@ void Agent::send_login(Cthun::Client::Client_Type* client_ptr) {
     }
 }
 
-void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
-                           std::string message) {
+void AgentEndpoint::handle_message(Cthun::Client::Client_Type* client_ptr,
+                                   std::string message) {
     LOG_INFO("received message:\n%1%", message);
 
     Json::Value doc;
@@ -300,10 +302,10 @@ void Agent::handle_message(Cthun::Client::Client_Type* client_ptr,
     }
 }
 
-void Agent::connect_and_run(std::string url,
-                            std::string ca_crt_path,
-                            std::string client_crt_path,
-                            std::string client_key_path) {
+void AgentEndpoint::connect_and_run(std::string url,
+                                    std::string ca_crt_path,
+                                    std::string client_crt_path,
+                                    std::string client_key_path) {
     // Get connection pointer
 
     Cthun::Client::CONNECTION_MANAGER.configureSecureEndpoint(
@@ -395,4 +397,5 @@ void Agent::connect_and_run(std::string url,
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun

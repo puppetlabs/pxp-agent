@@ -3,18 +3,19 @@
 
 #include "../module.h"
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 namespace Modules {
 
-class Inventory : public CthunAgent::Module {
+class Inventory : public Cthun::Agent::Module {
   public:
     Inventory();
-    void call_action(std::string name,
-                     const Json::Value& input,
+    void call_action(std::string action_name, const Json::Value& input,
                      Json::Value& output);
 };
 
 }  // namespace Modules
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun
 
 #endif  // SRC_MODULES_INVENTORY_H_

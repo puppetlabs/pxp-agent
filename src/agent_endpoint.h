@@ -1,5 +1,5 @@
-#ifndef SRC_AGENT_H_
-#define SRC_AGENT_H_
+#ifndef SRC_AGENT_ENDPOINT_H_
+#define SRC_AGENT_ENDPOINT_H_
 
 #include "module.h"
 
@@ -11,7 +11,8 @@
 #include <thread>
 #include <memory>
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 
 //
 // HeartbeatTask
@@ -34,13 +35,13 @@ class HeartbeatTask {
 };
 
 //
-// Agent
+// Agent Endpoint
 //
 
-class Agent {
+class AgentEndpoint {
   public:
-    Agent();
-    ~Agent();
+    AgentEndpoint();
+    ~AgentEndpoint();
 
     // for development purposes
     void run(std::string module, std::string action);
@@ -63,6 +64,7 @@ class Agent {
     Cthun::Client::Connection::Ptr connection_ptr_ { nullptr };
 };
 
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun
 
-#endif  // SRC_AGENT_H_
+#endif  // SRC_AGENT_ENDPOINT_H_

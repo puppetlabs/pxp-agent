@@ -9,26 +9,27 @@
 
 LOG_DECLARE_NAMESPACE("agent.module");
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 
-void Module::call_action(std::string action, const Json::Value& input,
+void Module::call_action(std::string action_name, const Json::Value& input,
                          Json::Value& output) {
-    LOG_INFO("invoking native action %1%", action);
+    LOG_INFO("invoking native action %1%", action_name);
 }
 
-void Module::validate_and_call_action(std::string action,
+void Module::validate_and_call_action(std::string action_name,
                                       const Json::Value& input,
                                       Json::Value& output) {
-    if (actions.find(action) == actions.end()) {
-        throw validation_error { "unknown action for module " + name
-                                 + ": '" + action + "'" };
+    if (actions.find(action_name) == actions.end()) {
+        throw validation_error { "unknown action for module " + module_name
+                                 + ": '" + action_name + "'" };
     }
 
-    const Action& action_to_invoke = actions[action];
+    const Action& action = actions[action_name];
 
-    LOG_INFO("validating input for '%1% %2%'", name, action);
+    LOG_INFO("validating input for '%1% %2%'", module_name, action_name);
     std::vector<std::string> errors;
-    if (!Schemas::validate(input, action_to_invoke.input_schema, errors)) {
+    if (!Schemas::validate(input, action.input_schema, errors)) {
         LOG_ERROR("validation failed");
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
@@ -37,10 +38,10 @@ void Module::validate_and_call_action(std::string action,
         throw validation_error { "Input schema mismatch" };
     }
 
-    call_action(action, input, output);
+    call_action(action_name, input, output);
 
-    LOG_INFO("validating output for %1% %2%", name, action);
-    if (!Schemas::validate(output, action_to_invoke.output_schema, errors)) {
+    LOG_INFO("validating output for %1% %2%", module_name, action_name);
+    if (!Schemas::validate(output, action.output_schema, errors)) {
         LOG_ERROR("validation failed");
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
@@ -50,4 +51,5 @@ void Module::validate_and_call_action(std::string action,
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun

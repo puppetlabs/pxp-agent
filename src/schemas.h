@@ -4,7 +4,8 @@
 #include <json/json.h>
 #include <valijson/schema.hpp>
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 
 class Schemas {
   public:
@@ -16,6 +17,7 @@ class Schemas {
     static valijson::Schema cnc_data();
 };
 
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun
 
 #endif  // SRC_SCHEMAS_H_

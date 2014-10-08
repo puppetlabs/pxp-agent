@@ -5,16 +5,19 @@
 #include <string>
 #include "module.h"
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 
 class ExternalModule : public Module {
   public:
     explicit ExternalModule(std::string path);
-    void call_action(std::string action, const Json::Value& input, Json::Value& output);
+    void call_action(std::string action_name, const Json::Value& input,
+                     Json::Value& output);
   private:
     std::string path_;
 };
 
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun
 
 #endif  // SRC_EXTERNAL_MODULE_H_

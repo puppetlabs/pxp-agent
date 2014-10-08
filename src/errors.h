@@ -4,7 +4,8 @@
 #include <stdexcept>
 #include <string>
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 
 /// Base error class.
 class agent_error : public std::runtime_error {
@@ -30,6 +31,7 @@ class validation_error : public agent_error {
     explicit validation_error(std::string const& msg) : agent_error(msg) {}
 };
 
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun
 
 #endif  // SRC_ERRORS_H_
