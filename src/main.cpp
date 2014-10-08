@@ -1,4 +1,4 @@
-#include "agent.h"
+#include "agent_endpoint.h"
 #include "errors.h"
 
 #include <cthun-client/src/log/log.h>
@@ -11,12 +11,13 @@ LOG_DECLARE_NAMESPACE("agent.main");
 
 namespace po = boost::program_options;
 
+namespace Cthun {
+
 //
 // tokens
 //
 
-static const Cthun::Log::log_level DEFAULT_LOG_LEVEL {
-    Cthun::Log::log_level::info };
+static const Log::log_level DEFAULT_LOG_LEVEL { Log::log_level::info };
 
 // TODO(ale): log on file
 static std::ostream& DEFAULT_LOG_STREAM = std::cout;
@@ -77,7 +78,7 @@ AppOptions getAppOptions(int argc, char* argv[]) {
     } catch (...) {
         std::cout << "Failed to parse the command line\n\n"
                   << desc << std::endl;
-        throw CthunAgent::request_error { "" };
+        throw Agent::request_error { "" };
     }
 
     AppOptions app_options;
@@ -113,7 +114,7 @@ void processAndValidateAppOptions(AppOptions& app_options) {
 
     for (auto p : paths) {
         if (!Cthun::Common::FileUtils::fileExists(p)) {
-            throw CthunAgent::request_error { "invalid certificate " + p };
+            throw Agent::request_error { "invalid certificate " + p };
         }
     }
 }
@@ -129,7 +130,7 @@ int main(int argc, char *argv[]) {
 
     try {
         app_options = getAppOptions(argc, argv);
-    } catch (CthunAgent::request_error) {
+    } catch (Agent::request_error) {
         return 1;
     }
 
@@ -143,12 +144,12 @@ int main(int argc, char *argv[]) {
 
     // TODO(ale): do we need to configure facter logs?
 
-    Cthun::Log::log_level log_level;
+    Log::log_level log_level;
 
     if (app_options.trace) {
-        log_level = Cthun::Log::log_level::trace;
+        log_level = Log::log_level::trace;
     } else if (app_options.debug) {
-        log_level = Cthun::Log::log_level::debug;
+        log_level = Log::log_level::debug;
     } else {
         log_level = DEFAULT_LOG_LEVEL;
     }
@@ -159,7 +160,7 @@ int main(int argc, char *argv[]) {
 
     try {
         processAndValidateAppOptions(app_options);
-    } catch (CthunAgent::request_error& e) {
+    } catch (Agent::request_error& e) {
         std::cout << e.what() << std::endl;
         return 1;
     }
@@ -167,13 +168,13 @@ int main(int argc, char *argv[]) {
     // start the agent
 
     try {
-        CthunAgent::Agent agent;
+        Agent::AgentEndpoint agent;
 
         agent.connect_and_run(app_options.server,
                               app_options.ca,
                               app_options.cert,
                               app_options.key);
-    } catch (CthunAgent::fatal_error&  e) {
+    } catch (Agent::fatal_error&  e) {
         LOG_ERROR("fatal error: %1%", e.what());
         return 1;
     } catch (std::exception&  e) {
@@ -185,4 +186,10 @@ int main(int argc, char *argv[]) {
     }
 
     return 0;
+}
+
+}  // namespace Cthun
+
+int main(int argc, char** argv) {
+    return Cthun::main(argc, argv);
 }

@@ -3,13 +3,16 @@
 
 #include "../module.h"
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 namespace Modules {
 
-class Ping : public CthunAgent::Module {
+class Ping : public Cthun::Agent::Module {
   public:
     Ping();
-    void call_action(std::string name, const Json::Value& input, Json::Value& output);
+    void call_action(std::string action_name, const Json::Value& input,
+                     Json::Value& output);
+
     /// Ping action calculates the time it took for a message to travel from
     /// the controller to the agent. It will then add that duration and the
     /// current server time in milliseconds to the response.
@@ -17,6 +20,7 @@ class Ping : public CthunAgent::Module {
 };
 
 }  // namespace Modules
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun
 
 #endif  // SRC_MODULES_PING_H_

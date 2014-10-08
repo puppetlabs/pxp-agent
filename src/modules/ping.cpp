@@ -11,12 +11,12 @@
 
 LOG_DECLARE_NAMESPACE("agent.ping");
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 namespace Modules {
 
 Ping::Ping() {
-    // Set the module name
-    name = "ping";
+    module_name = "ping";
 
     valijson::constraints::TypeConstraint json_type_object {
         valijson::constraints::TypeConstraint::kObject };
@@ -45,11 +45,12 @@ void Ping::ping_action(const Json::Value& input, Json::Value& output) {
     output = result;
 }
 
-void Ping::call_action(std::string action,
+void Ping::call_action(std::string action_name,
                        const Json::Value& input,
                        Json::Value& output) {
     ping_action(input, output);
 }
 
 }  // namespace Modules
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun

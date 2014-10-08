@@ -3,16 +3,19 @@
 
 #include "../module.h"
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 namespace Modules {
 
-class Echo : public CthunAgent::Module {
+class Echo : public Cthun::Agent::Module {
   public:
     Echo();
-    void call_action(std::string name,  const Json::Value& input, Json::Value& output);
+    void call_action(std::string action_name, const Json::Value& input,
+                     Json::Value& output);
 };
 
 }  // namespace Modules
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun
 
 #endif  // SRC_MODULES_ECHO_H_

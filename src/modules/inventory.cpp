@@ -10,12 +10,12 @@
 
 LOG_DECLARE_NAMESPACE("agent.inventory");
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 namespace Modules {
 
 Inventory::Inventory() {
-    // Set the module name
-    name = "inventory";
+    module_name = "inventory";
 
     valijson::constraints::TypeConstraint json_type_object {
         valijson::constraints::TypeConstraint::kObject
@@ -30,8 +30,7 @@ Inventory::Inventory() {
     actions["inventory"] = Action { input_schema, output_schema };
 }
 
-void Inventory::call_action(std::string action,
-                            const Json::Value& input,
+void Inventory::call_action(std::string action_name, const Json::Value& input,
                             Json::Value& output) {
     std::ostringstream fact_stream;
 
@@ -61,4 +60,5 @@ void Inventory::call_action(std::string action,
 }
 
 }  // namespace Modules
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun

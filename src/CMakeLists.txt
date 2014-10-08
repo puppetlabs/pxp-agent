@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.12)
 
 set(SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/main.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/agent.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/agent_endpoint.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/schemas.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/external_module.cpp"

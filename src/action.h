@@ -3,7 +3,8 @@
 
 #include <valijson/schema.hpp>
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 
 class Action {
   public:
@@ -11,6 +12,7 @@ class Action {
     valijson::Schema output_schema;
 };
 
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun
 
 #endif  // SRC_ACTION_H_

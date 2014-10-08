@@ -14,9 +14,11 @@
 
 LOG_DECLARE_NAMESPACE("agent.external_module");
 
-namespace CthunAgent {
+namespace Cthun {
+namespace Agent {
 
-void run_command(std::string exec, std::vector<std::string> args, std::string stdin, std::string &stdout, std::string &stderr) {
+void run_command(std::string exec, std::vector<std::string> args,
+                 std::string stdin, std::string &stdout, std::string &stderr) {
     boost::process::context context;
     context.stdin_behavior = boost::process::capture_stream();
     context.stdout_behavior = boost::process::capture_stream();
@@ -46,7 +48,7 @@ void run_command(std::string exec, std::vector<std::string> args, std::string st
 ExternalModule::ExternalModule(std::string path) : path_(path) {
     boost::filesystem::path module_path { path };
 
-    name = module_path.filename().string();
+    module_name = module_path.filename().string();
 
     valijson::Schema metadata_schema = Schemas::external_action_metadata();
 
@@ -99,7 +101,7 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
     }
 }
 
-void ExternalModule::call_action(const std::string action,
+void ExternalModule::call_action(const std::string action_name,
                                  const Json::Value& input,
                                  Json::Value& output) {
     std::string stdin = input.toStyledString();
@@ -107,7 +109,7 @@ void ExternalModule::call_action(const std::string action,
     std::string stderr;
     LOG_INFO(stdin);
 
-    run_command(path_, { path_, action }, stdin, stdout, stderr);
+    run_command(path_, { path_, action_name }, stdin, stdout, stderr);
     LOG_INFO("stdout: %1%", stdout);
     LOG_INFO("stderr: %1%", stderr);
 
@@ -118,4 +120,5 @@ void ExternalModule::call_action(const std::string action,
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace Agent
+}  // namespace Cthun
