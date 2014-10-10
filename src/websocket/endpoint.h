@@ -1,8 +1,8 @@
 #ifndef SRC_WEBSOCKET_ENDPOINT_H_
 #define SRC_WEBSOCKET_ENDPOINT_H_
 
-#include "websocket/connection.h"
-#include "websocket/macros.h"
+#include "src/websocket/connection.h"
+#include "src/websocket/macros.h"
 
 #include <string>
 #include <vector>

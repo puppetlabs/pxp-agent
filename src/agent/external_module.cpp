@@ -1,7 +1,7 @@
-#include "agent/external_module.h"
-#include "agent/schemas.h"
-#include "agent/action.h"
-#include "common/log.h"
+#include "src/agent/external_module.h"
+#include "src/agent/schemas.h"
+#include "src/agent/action.h"
+#include "src/common/log.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>

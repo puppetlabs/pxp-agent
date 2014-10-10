@@ -1,5 +1,5 @@
-#include "agent/modules/inventory.h"
-#include "common/log.h"
+#include "src/agent/modules/inventory.h"
+#include "src/common/log.h"
 
 #include <facter/facts/collection.hpp>
 

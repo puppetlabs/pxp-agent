@@ -1,8 +1,8 @@
 #ifndef SRC_AGENT_AGENT_ENDPOINT_H_
 #define SRC_AGENT_AGENT_ENDPOINT_H_
 
-#include "agent/module.h"
-#include "websocket/connection_manager.h"
+#include "src/agent/module.h"
+#include "src/websocket/connection_manager.h"
 
 #include <map>
 #include <memory>

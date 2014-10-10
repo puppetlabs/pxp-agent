@@ -1,7 +1,7 @@
 #ifndef SRC_AGENT_EXTERNAL_MODULE_H_
 #define SRC_AGENT_EXTERNAL_MODULE_H_
 
-#include "module.h"
+#include "src/agent/module.h"
 
 #include <map>
 #include <string>

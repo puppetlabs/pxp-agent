@@ -1,4 +1,4 @@
-#include "agent/schemas.h"
+#include "src/agent/schemas.h"
 
 #include <valijson/adapters/jsoncpp_adapter.hpp>
 #include <valijson/schema_parser.hpp>

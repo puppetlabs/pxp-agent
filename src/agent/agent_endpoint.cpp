@@ -1,11 +1,11 @@
-#include "agent/agent_endpoint.h"
-#include "agent/modules/echo.h"
-#include "agent/modules/inventory.h"
-#include "agent/modules/ping.h"
-#include "agent/external_module.h"
-#include "agent/schemas.h"
-#include "agent/errors.h"
-#include "common/log.h"
+#include "src/agent/agent_endpoint.h"
+#include "src/agent/modules/echo.h"
+#include "src/agent/modules/inventory.h"
+#include "src/agent/modules/ping.h"
+#include "src/agent/external_module.h"
+#include "src/agent/schemas.h"
+#include "src/agent/errors.h"
+#include "src/common/log.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>

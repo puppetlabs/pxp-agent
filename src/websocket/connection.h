@@ -1,7 +1,7 @@
 #ifndef SRC_WEBSOCKET_CONNECTION_H_
 #define SRC_WEBSOCKET_CONNECTION_H_
 
-#include "websocket/macros.h"
+#include "src/websocket/macros.h"
 
 #include <websocketpp/common/connection_hdl.hpp>
 

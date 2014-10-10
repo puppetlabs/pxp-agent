@@ -1,10 +1,10 @@
 #ifndef SRC_API_WEBSOCKET_H_
 #define SRC_API_WEBSOCKET_H_
 
-#include "websocket/endpoint.h"
-#include "websocket/connection.h"
-#include "websocket/errors.h"
-#include "websocket/macros.h"
+#include "src/websocket/endpoint.h"
+#include "src/websocket/connection.h"
+#include "src/websocket/errors.h"
+#include "src/websocket/macros.h"
 
 #include <vector>
 #include <string>

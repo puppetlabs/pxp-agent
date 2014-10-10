@@ -1,5 +1,5 @@
-#include "common/file_utils.h"
-#include "common/log.h"
+#include "src/common/file_utils.h"
+#include "src/common/log.h"
 
 #include <wordexp.h>
 #include <fstream>
