@@ -1,6 +1,7 @@
-#include "websocket/endpoint.h"
-#include "common/log.h"
-#include "common/string_utils.h"
+#include "src/websocket/endpoint.h"
+#include "src/websocket/errors.h"
+#include "src/common/log.h"
+#include "src/common/string_utils.h"
 
 LOG_DECLARE_NAMESPACE("websocket.endpoint");
 
@@ -13,15 +14,14 @@ Endpoint::Endpoint(const std::string& ca_crt_path,
     : ca_crt_path_ { ca_crt_path },
       client_crt_path_ { client_crt_path },
       client_key_path_ { client_key_path } {
-    // Disable websocketpp logging to avoid clashing with ours
-    // TODO(ale): it could be useful to stream it to a file
-
-    client_.clear_access_channels(websocketpp::log::alevel::all);
-    client_.clear_error_channels(websocketpp::log::elevel::all);
+    // Disable websocketpp logging if we're not at trace level logging
+    if (!LOG_IS_TRACE_ENABLED()) {
+        client_.clear_access_channels(websocketpp::log::alevel::all);
+        client_.clear_error_channels(websocketpp::log::elevel::all);
+    }
 
     // Initialize the transport system. Note that in perpetual mode,
     // the event loop does not terminate when there are no connections
-
     client_.init_asio();
     client_.start_perpetual();
 

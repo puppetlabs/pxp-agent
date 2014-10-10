@@ -1,7 +1,7 @@
-#include "agent/agent_endpoint.h"
-#include "agent/errors.h"
-#include "common/log.h"
-#include "common/file_utils.h"
+#include "src/agent/agent_endpoint.h"
+#include "src/agent/errors.h"
+#include "src/common/log.h"
+#include "src/common/file_utils.h"
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
@@ -16,7 +16,7 @@ namespace Cthun {
 // tokens
 //
 
-static const Log::log_level DEFAULT_LOG_LEVEL { Log::log_level::info };
+static const Common::Log::log_level DEFAULT_LOG_LEVEL { Common::Log::log_level::info };
 
 // TODO(ale): allow configuring log and out files
 static std::ostream& DEFAULT_LOG_STREAM = std::cout;
@@ -143,17 +143,17 @@ int main(int argc, char *argv[]) {
 
     // TODO(ale): do we need to configure facter logs?
 
-    Log::log_level log_level;
+    Common::Log::log_level log_level;
 
     if (app_options.trace) {
-        log_level = Log::log_level::trace;
+        log_level = Common::Log::log_level::trace;
     } else if (app_options.debug) {
-        log_level = Log::log_level::debug;
+        log_level = Common::Log::log_level::debug;
     } else {
         log_level = DEFAULT_LOG_LEVEL;
     }
 
-    Cthun::Log::configure_logging(log_level, DEFAULT_LOG_STREAM);
+    Cthun::Common::Log::configure_logging(log_level, DEFAULT_LOG_STREAM);
 
     // process and validate options
 

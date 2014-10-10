@@ -25,8 +25,7 @@
 // includes
 //
 
-#include "common/uuid.h"
-#include "websocket/errors.h"
+#include "src/common/uuid.h"
 
 #include <websocketpp/common/connection_hdl.hpp>
 #include <websocketpp/client.hpp>

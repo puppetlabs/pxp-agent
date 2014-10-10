@@ -1,4 +1,4 @@
-#include "agent/modules/echo.h"
+#include "src/agent/modules/echo.h"
 
 #include <valijson/constraints/concrete_constraints.hpp>
 

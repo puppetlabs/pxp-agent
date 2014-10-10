@@ -1,7 +1,7 @@
-#include "agent/module.h"
-#include "agent/schemas.h"
-#include "agent/errors.h"
-#include "common/log.h"
+#include "src/agent/module.h"
+#include "src/agent/schemas.h"
+#include "src/agent/errors.h"
+#include "src/common/log.h"
 
 #include <valijson/adapters/jsoncpp_adapter.hpp>
 #include <valijson/schema_parser.hpp>

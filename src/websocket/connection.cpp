@@ -1,6 +1,7 @@
-#include "websocket/connection.h"
-#include "common/uuid.h"
-#include "common/log.h"
+#include "src/websocket/connection.h"
+#include "src/websocket/errors.h"
+#include "src/common/uuid.h"
+#include "src/common/log.h"
 
 #include <string>
 #include <iostream>

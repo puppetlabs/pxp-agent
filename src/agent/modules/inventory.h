@@ -1,7 +1,7 @@
 #ifndef SRC_AGENT_MODULES_INVENTORY_H_
 #define SRC_AGENT_MODULES_INVENTORY_H_
 
-#include "agent/module.h"
+#include "src/agent/module.h"
 
 namespace Cthun {
 namespace Agent {

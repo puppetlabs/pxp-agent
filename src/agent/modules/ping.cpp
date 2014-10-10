@@ -1,5 +1,5 @@
-#include "agent/modules/ping.h"
-#include "common/log.h"
+#include "src/agent/modules/ping.h"
+#include "src/common/log.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <valijson/constraints/concrete_constraints.hpp>

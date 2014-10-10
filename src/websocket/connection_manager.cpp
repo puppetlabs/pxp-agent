@@ -1,6 +1,6 @@
-#include "websocket/connection_manager.h"
-#include "common/log.h"
-#include "common/file_utils.h"
+#include "src/websocket/connection_manager.h"
+#include "src/common/log.h"
+#include "src/common/file_utils.h"
 
 LOG_DECLARE_NAMESPACE("websocket.connection_manager");
 

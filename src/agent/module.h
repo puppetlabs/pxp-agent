@@ -1,7 +1,7 @@
 #ifndef SRC_AGENT_MODULE_H_
 #define SRC_AGENT_MODULE_H_
 
-#include "agent/action.h"
+#include "src/agent/action.h"
 
 #include <json/json.h>
 

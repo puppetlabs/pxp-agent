@@ -1,8 +1,14 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(MCOLLECTIVE-ZEROMQ-BROKER)
 
+# Project Output Paths
+
+SET (MAINFOLDER ${PROJECT_SOURCE_DIR})
+SET (EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
+SET (LIBRARY_OUTPUT_PATH "${MAINFOLDER}/lib")
 
 # Set compiler-specific flags
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-reorder -Wno-unused-parameter -Wno-deprecated-register")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -48,15 +54,18 @@ include_directories(
     ${Boost_Process_INCLUDE_DIRS}
     ${WEBSOCKETPP_INCLUDE_DIRS}
     ${VALIJSON_INCLUDE_DIRS}
+    ${GMOCK_INCLUDE_DIRS}
     "${VENDOR_DIRECTORY}/jsoncpp"
 )
 
 # Add the main binary
+
 add_subdirectory(src)
 
 # Add the test suite
-# add_subdirectory(test)
 
+enable_testing()
+add_subdirectory(test)
 
 # Add cpplint target
 
