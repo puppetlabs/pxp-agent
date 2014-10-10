@@ -1,5 +1,5 @@
-#ifndef SRC_ACTION_H_
-#define SRC_ACTION_H_
+#ifndef SRC_AGENT_ACTION_H_
+#define SRC_AGENT_ACTION_H_
 
 #include <valijson/schema.hpp>
 
@@ -15,4 +15,4 @@ class Action {
 }  // namespace Agent
 }  // namespace Cthun
 
-#endif  // SRC_ACTION_H_
+#endif  // SRC_AGENT_ACTION_H_

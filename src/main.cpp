@@ -1,13 +1,12 @@
-#include "agent_endpoint.h"
-#include "errors.h"
-
-#include <cthun-client/src/log/log.h>
-#include <cthun-client/src/common/file_utils.h>
+#include "agent/agent_endpoint.h"
+#include "agent/errors.h"
+#include "common/log.h"
+#include "common/file_utils.h"
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 
-LOG_DECLARE_NAMESPACE("agent.main");
+LOG_DECLARE_NAMESPACE("agent_main");
 
 namespace po = boost::program_options;
 
@@ -19,7 +18,7 @@ namespace Cthun {
 
 static const Log::log_level DEFAULT_LOG_LEVEL { Log::log_level::info };
 
-// TODO(ale): log on file
+// TODO(ale): allow configuring log and out files
 static std::ostream& DEFAULT_LOG_STREAM = std::cout;
 
 // TODO(ale): remove this; it's just for development

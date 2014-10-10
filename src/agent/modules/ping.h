@@ -1,7 +1,7 @@
-#ifndef SRC_MODULES_PING_H_
-#define SRC_MODULES_PING_H_
+#ifndef SRC_AGENT_MODULES_PING_H_
+#define SRC_AGENT_MODULES_PING_H_
 
-#include "../module.h"
+#include "agent/module.h"
 
 namespace Cthun {
 namespace Agent {
@@ -23,4 +23,4 @@ class Ping : public Cthun::Agent::Module {
 }  // namespace Agent
 }  // namespace Cthun
 
-#endif  // SRC_MODULES_PING_H_
+#endif  // SRC_AGENT_MODULES_PING_H_

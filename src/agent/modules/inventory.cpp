@@ -1,14 +1,13 @@
-#include "inventory.h"
+#include "agent/modules/inventory.h"
+#include "common/log.h"
 
 #include <facter/facts/collection.hpp>
-
-#include <cthun-client/src/log/log.h>
 
 #include <valijson/constraints/concrete_constraints.hpp>
 
 #include <sstream>
 
-LOG_DECLARE_NAMESPACE("agent.inventory");
+LOG_DECLARE_NAMESPACE("agent.modules.inventory");
 
 namespace Cthun {
 namespace Agent {
