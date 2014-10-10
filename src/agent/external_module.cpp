@@ -1,8 +1,7 @@
-#include "external_module.h"
-#include "schemas.h"
-#include "action.h"
-
-#include <cthun-client/src/log/log.h>
+#include "agent/external_module.h"
+#include "agent/schemas.h"
+#include "agent/action.h"
+#include "common/log.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>

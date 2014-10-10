@@ -1,12 +1,11 @@
-#include "agent_endpoint.h"
-#include "modules/echo.h"
-#include "modules/inventory.h"
-#include "modules/ping.h"
-#include "external_module.h"
-#include "schemas.h"
-#include "errors.h"
-
-#include <cthun-client/src/log/log.h>
+#include "agent/agent_endpoint.h"
+#include "agent/modules/echo.h"
+#include "agent/modules/inventory.h"
+#include "agent/modules/ping.h"
+#include "agent/external_module.h"
+#include "agent/schemas.h"
+#include "agent/errors.h"
+#include "common/log.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -33,7 +32,7 @@ static const int DEFAULT_HEARTBEAT_PERIOD { 30 };  // [s]
 // HeartbeatTask
 //
 
-HeartbeatTask::HeartbeatTask(Cthun::Client::Connection::Ptr connection_ptr)
+HeartbeatTask::HeartbeatTask(Cthun::WebSocket::Connection::Ptr connection_ptr)
         : must_stop_ { false } {
     assert(connection_ptr != nullptr);
     connection_ptr_ = connection_ptr;
@@ -60,13 +59,13 @@ void HeartbeatTask::heartbeatThread() {
     while (!must_stop_) {
         try {
             if (connection_ptr_->getState()
-                    == Cthun::Client::Connection_State_Values::open) {
-                Cthun::Client::CONNECTION_MANAGER.ping(connection_ptr_,
-                                                       binary_payload_);
+                    == Cthun::WebSocket::Connection_State_Values::open) {
+                Cthun::WebSocket::CONNECTION_MANAGER.ping(connection_ptr_,
+                                                          binary_payload_);
             } else {
                 LOG_DEBUG("skipping ping; connection is not open");
             }
-        } catch (Cthun::Client::message_error& e) {
+        } catch (Cthun::WebSocket::message_error& e) {
             LOG_ERROR(e.what());
         }
         sleep(DEFAULT_HEARTBEAT_PERIOD);
@@ -111,18 +110,18 @@ AgentEndpoint::~AgentEndpoint() {
 
         LOG_INFO("resetting the WebSocket event callbacks");
 
-        Cthun::Client::Connection::Event_Callback onOpen_c =
-            [](Cthun::Client::Client_Type* client_ptr,
-               Cthun::Client::Connection::Ptr connection_ptr) {};
+        Cthun::WebSocket::Connection::Event_Callback onOpen_c =
+            [](Cthun::WebSocket::Client_Type* client_ptr,
+               Cthun::WebSocket::Connection::Ptr connection_ptr) {};
 
-        Cthun::Client::Connection::OnMessage_Callback onMessage_c =
-            [](Cthun::Client::Client_Type* client_ptr,
-               Cthun::Client::Connection::Ptr connection_ptr,
+        Cthun::WebSocket::Connection::OnMessage_Callback onMessage_c =
+            [](Cthun::WebSocket::Client_Type* client_ptr,
+               Cthun::WebSocket::Connection::Ptr connection_ptr,
                std::string message) {};
 
-        Cthun::Client::Connection::Pong_Callback onPong_c =
-            [](Cthun::Client::Client_Type* client_ptr,
-               Cthun::Client::Connection::Ptr connection_ptr,
+        Cthun::WebSocket::Connection::Pong_Callback onPong_c =
+            [](Cthun::WebSocket::Client_Type* client_ptr,
+               Cthun::WebSocket::Connection::Ptr connection_ptr,
                std::string message) {};
 
         connection_ptr_->setOnOpenCallback(onOpen_c);
@@ -171,7 +170,7 @@ void AgentEndpoint::run(std::string module, std::string action) {
     }
 }
 
-void AgentEndpoint::send_login(Cthun::Client::Client_Type* client_ptr) {
+void AgentEndpoint::send_login(Cthun::WebSocket::Client_Type* client_ptr) {
     Json::Value login {};
     login["id"] = 1;
     login["version"] = "1";
@@ -201,15 +200,15 @@ void AgentEndpoint::send_login(Cthun::Client::Client_Type* client_ptr) {
     auto handle = connection_ptr_->getConnectionHandle();
     try {
         client_ptr->send(handle, login.toStyledString(),
-                         Cthun::Client::Frame_Opcode_Values::text);
-    }  catch(Cthun::Client::message_error& e) {
+                         Cthun::WebSocket::Frame_Opcode_Values::text);
+    }  catch(Cthun::WebSocket::message_error& e) {
         LOG_INFO("failed to send: %1%", e.what());
         // Fatal; we can't login...
         throw fatal_error { "failed to send login message" };
     }
 }
 
-void AgentEndpoint::handle_message(Cthun::Client::Client_Type* client_ptr,
+void AgentEndpoint::handle_message(Cthun::WebSocket::Client_Type* client_ptr,
                                    std::string message) {
     LOG_INFO("received message:\n%1%", message);
 
@@ -291,8 +290,8 @@ void AgentEndpoint::handle_message(Cthun::Client::Client_Type* client_ptr,
         auto handle = connection_ptr_->getConnectionHandle();
         client_ptr->send(handle,
                          response_txt,
-                         Cthun::Client::Frame_Opcode_Values::text);
-    }  catch(Cthun::Client::message_error& e) {
+                         Cthun::WebSocket::Frame_Opcode_Values::text);
+    }  catch(Cthun::WebSocket::message_error& e) {
         LOG_ERROR("failed to send: %1%", e.what());
         // we don't want to throw anything here
     } catch (std::exception&  e) {
@@ -306,24 +305,30 @@ void AgentEndpoint::connect_and_run(std::string url,
                                     std::string ca_crt_path,
                                     std::string client_crt_path,
                                     std::string client_key_path) {
-    // Get connection pointer
+    // Configure secure WebSocket endpoint and get connection pointer
 
-    Cthun::Client::CONNECTION_MANAGER.configureSecureEndpoint(
-        ca_crt_path, client_crt_path, client_key_path);
-    connection_ptr_ = Cthun::Client::CONNECTION_MANAGER.createConnection(url);
+    try {
+        Cthun::WebSocket::CONNECTION_MANAGER.configureSecureEndpoint(
+            ca_crt_path, client_crt_path, client_key_path);
+    } catch (Cthun::WebSocket::endpoint_error& e) {
+        LOG_WARNING("failed to configure the WebSocket endpoint: %1%", e.what());
+        throw fatal_error("failed to configure the WebSocket endpoint");
+    }
+
+    connection_ptr_ = Cthun::WebSocket::CONNECTION_MANAGER.createConnection(url);
 
     // Define and set callbacks
 
-    Cthun::Client::Connection::Event_Callback onOpen_c =
-        [this](Cthun::Client::Client_Type* client_ptr,
-               Cthun::Client::Connection::Ptr connection_ptr_c) {
+    Cthun::WebSocket::Connection::Event_Callback onOpen_c =
+        [this](Cthun::WebSocket::Client_Type* client_ptr,
+               Cthun::WebSocket::Connection::Ptr connection_ptr_c) {
         assert(connection_ptr_ == connection_ptr_c);
         send_login(client_ptr);
     };
 
-    Cthun::Client::Connection::OnMessage_Callback onMessage_c =
-        [this](Cthun::Client::Client_Type* client_ptr,
-               Cthun::Client::Connection::Ptr connection_ptr_c,
+    Cthun::WebSocket::Connection::OnMessage_Callback onMessage_c =
+        [this](Cthun::WebSocket::Client_Type* client_ptr,
+               Cthun::WebSocket::Connection::Ptr connection_ptr_c,
                std::string message) {
         assert(connection_ptr_ == connection_ptr_c);
         handle_message(client_ptr, message);
@@ -334,10 +339,10 @@ void AgentEndpoint::connect_and_run(std::string url,
     int consecutive_pong_timeouts { 0 };
     std::mutex pong_mutex;
 
-    Cthun::Client::Connection::Pong_Callback onPong_c =
+    Cthun::WebSocket::Connection::Pong_Callback onPong_c =
         [&consecutive_pong_timeouts, &pong_mutex](
-            Cthun::Client::Client_Type* client_ptr,
-            Cthun::Client::Connection::Ptr connection_ptr_c,
+            Cthun::WebSocket::Client_Type* client_ptr,
+            Cthun::WebSocket::Connection::Ptr connection_ptr_c,
             std::string binary_payload) {
         LOG_DEBUG("received pong - payload: '%1%'", binary_payload);
         if (consecutive_pong_timeouts > 0){
@@ -346,10 +351,10 @@ void AgentEndpoint::connect_and_run(std::string url,
         }
     };
 
-    Cthun::Client::Connection::Pong_Callback onPongTimeout_c =
+    Cthun::WebSocket::Connection::Pong_Callback onPongTimeout_c =
         [&consecutive_pong_timeouts, &pong_mutex](
-            Cthun::Client::Client_Type* client_ptr,
-            Cthun::Client::Connection::Ptr connection_ptr_c,
+            Cthun::WebSocket::Client_Type* client_ptr,
+            Cthun::WebSocket::Connection::Ptr connection_ptr_c,
             std::string binary_payload) {
         std::lock_guard<std::mutex> lock { pong_mutex };
         LOG_WARNING("pong timeout (%1% consecutive) - payload: '%2%'",
@@ -365,9 +370,9 @@ void AgentEndpoint::connect_and_run(std::string url,
     // Connect and wait for open
 
     try {
-        Cthun::Client::CONNECTION_MANAGER.open(connection_ptr_);
+        Cthun::WebSocket::CONNECTION_MANAGER.open(connection_ptr_);
         connection_ptr_->waitForOpen();
-    } catch (Cthun::Client::connection_error& e) {
+    } catch (Cthun::WebSocket::connection_error& e) {
         LOG_INFO("failed to connect; %1%", e.what());
         throw fatal_error { "failed to connect" };
     }
@@ -381,14 +386,14 @@ void AgentEndpoint::connect_and_run(std::string url,
 
     while (1) {
         if (connection_ptr_->getState()
-                != Cthun::Client::Connection_State_Values::open) {
+                != Cthun::WebSocket::Connection_State_Values::open) {
             LOG_WARNING("connection was closed; will try to restart in 2 s");
             sleep(2);
 
             try {
-                Cthun::Client::CONNECTION_MANAGER.open(connection_ptr_);
+                Cthun::WebSocket::CONNECTION_MANAGER.open(connection_ptr_);
                 connection_ptr_->waitForOpen();
-            } catch (Cthun::Client::connection_error& e) {
+            } catch (Cthun::WebSocket::connection_error& e) {
                 LOG_INFO("failed to reconnect; %1%", e.what());
                 throw fatal_error { "failed to reconnect" };
             }

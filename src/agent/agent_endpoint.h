@@ -1,9 +1,8 @@
-#ifndef SRC_AGENT_ENDPOINT_H_
-#define SRC_AGENT_ENDPOINT_H_
+#ifndef SRC_AGENT_AGENT_ENDPOINT_H_
+#define SRC_AGENT_AGENT_ENDPOINT_H_
 
-#include "module.h"
-
-#include <cthun-client/src/connection_manager.h>
+#include "agent/module.h"
+#include "websocket/connection_manager.h"
 
 #include <map>
 #include <memory>
@@ -20,7 +19,7 @@ namespace Agent {
 
 class HeartbeatTask {
   public:
-    explicit HeartbeatTask(Cthun::Client::Connection::Ptr connection_ptr);
+    explicit HeartbeatTask(Cthun::WebSocket::Connection::Ptr connection_ptr);
     ~HeartbeatTask();
     void start();
     void stop();
@@ -29,7 +28,7 @@ class HeartbeatTask {
     bool must_stop_;
     std::thread heartbeat_thread_;
     std::string binary_payload_ { "cthun ping payload" };
-    Cthun::Client::Connection::Ptr connection_ptr_ { nullptr };
+    Cthun::WebSocket::Connection::Ptr connection_ptr_ { nullptr };
 
     void heartbeatThread();
 };
@@ -56,15 +55,15 @@ class AgentEndpoint {
     std::unique_ptr<HeartbeatTask> heartbeat_task_;
 
     void list_modules();
-    void send_login(Cthun::Client::Client_Type* client_ptr);
-    void handle_message(Cthun::Client::Client_Type* client_ptr,
+    void send_login(Cthun::WebSocket::Client_Type* client_ptr);
+    void handle_message(Cthun::WebSocket::Client_Type* client_ptr,
                         std::string message);
 
     std::map<std::string, std::shared_ptr<Module>> modules_;
-    Cthun::Client::Connection::Ptr connection_ptr_ { nullptr };
+    Cthun::WebSocket::Connection::Ptr connection_ptr_ { nullptr };
 };
 
 }  // namespace Agent
 }  // namespace Cthun
 
-#endif  // SRC_AGENT_ENDPOINT_H_
+#endif  // SRC_AGENT_AGENT_ENDPOINT_H_

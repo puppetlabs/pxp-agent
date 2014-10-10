@@ -1,9 +1,10 @@
-#ifndef SRC_EXTERNAL_MODULE_H_
-#define SRC_EXTERNAL_MODULE_H_
+#ifndef SRC_AGENT_EXTERNAL_MODULE_H_
+#define SRC_AGENT_EXTERNAL_MODULE_H_
+
+#include "module.h"
 
 #include <map>
 #include <string>
-#include "module.h"
 
 namespace Cthun {
 namespace Agent {
@@ -20,4 +21,4 @@ class ExternalModule : public Module {
 }  // namespace Agent
 }  // namespace Cthun
 
-#endif  // SRC_EXTERNAL_MODULE_H_
+#endif  // SRC_AGENT_EXTERNAL_MODULE_H_

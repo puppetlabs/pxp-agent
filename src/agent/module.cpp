@@ -1,8 +1,7 @@
-#include "module.h"
-#include "schemas.h"
-#include "errors.h"
-
-#include <cthun-client/src/log/log.h>
+#include "agent/module.h"
+#include "agent/schemas.h"
+#include "agent/errors.h"
+#include "common/log.h"
 
 #include <valijson/adapters/jsoncpp_adapter.hpp>
 #include <valijson/schema_parser.hpp>

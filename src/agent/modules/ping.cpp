@@ -1,6 +1,5 @@
-#include "ping.h"
-
-#include <cthun-client/src/log/log.h>
+#include "agent/modules/ping.h"
+#include "common/log.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <valijson/constraints/concrete_constraints.hpp>
@@ -9,7 +8,7 @@
 #include <string>
 #include <sstream>
 
-LOG_DECLARE_NAMESPACE("agent.ping");
+LOG_DECLARE_NAMESPACE("agent.modules.ping");
 
 namespace Cthun {
 namespace Agent {

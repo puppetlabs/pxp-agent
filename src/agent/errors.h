@@ -1,5 +1,5 @@
-#ifndef SRC_ERRORS_H_
-#define SRC_ERRORS_H_
+#ifndef SRC_AGENT_ERRORS_H_
+#define SRC_AGENT_ERRORS_H_
 
 #include <stdexcept>
 #include <string>
@@ -34,4 +34,4 @@ class validation_error : public agent_error {
 }  // namespace Agent
 }  // namespace Cthun
 
-#endif  // SRC_ERRORS_H_
+#endif  // SRC_AGENT_ERRORS_H_

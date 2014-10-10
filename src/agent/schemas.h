@@ -1,5 +1,5 @@
-#ifndef SRC_SCHEMAS_H_
-#define SRC_SCHEMAS_H_
+#ifndef SRC_AGENT_SCHEMAS_H_
+#define SRC_AGENT_SCHEMAS_H_
 
 #include <json/json.h>
 #include <valijson/schema.hpp>
@@ -20,4 +20,4 @@ class Schemas {
 }  // namespace Agent
 }  // namespace Cthun
 
-#endif  // SRC_SCHEMAS_H_
+#endif  // SRC_AGENT_SCHEMAS_H_

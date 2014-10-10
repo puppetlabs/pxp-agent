@@ -1,12 +1,12 @@
-#ifndef SRC_MODULE_H_
-#define SRC_MODULE_H_
+#ifndef SRC_AGENT_MODULE_H_
+#define SRC_AGENT_MODULE_H_
 
-#include <map>
-#include <string>
+#include "agent/action.h"
 
 #include <json/json.h>
 
-#include "action.h"
+#include <map>
+#include <string>
 
 namespace Cthun {
 namespace Agent {
@@ -31,4 +31,4 @@ class Module {
 }  // namespace Agent
 }  // namespace Cthun
 
-#endif  // SRC_MODULE_H_
+#endif  // SRC_AGENT_MODULE_H_

@@ -26,20 +26,18 @@ endif()
 # Find libraries
 
 find_package(Boost 1.54 REQUIRED
-  COMPONENTS program_options filesystem system date_time thread log log_setup regex random)
+  COMPONENTS program_options filesystem system date_time thread log regex random)
 
 find_package(OpenSSL REQUIRED)
 
-# Include vendored libraries
+# Specify the .cmake files for vendored libraries
 
-include(${VENDOR_DIRECTORY}/gmock.cmake)
-
-# TODO(ale): cthun-agent won't comile with boost 1.56 due to valijson;
+# TODO(ale): cthun-agent won't compile with boost 1.56 due to valijson;
 # must investigate valijson compatibility. Error:
 # valijson/schema.hpp:177:16: error:
 #   no viable conversion from 'const boost::optional<std::string>' to 'bool'
 include(${VENDOR_DIRECTORY}/valijson.cmake)
-
+include(${VENDOR_DIRECTORY}/gmock.cmake)
 include(${VENDOR_DIRECTORY}/boost-process.cmake)
 include(${VENDOR_DIRECTORY}/websocketpp.cmake)
 
@@ -48,11 +46,9 @@ include(${VENDOR_DIRECTORY}/websocketpp.cmake)
 include_directories(
     ${Boost_INCLUDE_DIRS}
     ${Boost_Process_INCLUDE_DIRS}
-    "${VENDOR_DIRECTORY}/jsoncpp"
     ${WEBSOCKETPP_INCLUDE_DIRS}
-    "${VENDOR_DIRECTORY}/cthun-client"
     ${VALIJSON_INCLUDE_DIRS}
-    ${facter_INCLUDE_DIRS}
+    "${VENDOR_DIRECTORY}/jsoncpp"
 )
 
 # Add the main binary
