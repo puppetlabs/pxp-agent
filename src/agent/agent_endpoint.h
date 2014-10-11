@@ -8,7 +8,6 @@
 #include <memory>
 #include <string>
 #include <thread>
-#include <memory>
 
 namespace Cthun {
 namespace Agent {
@@ -52,15 +51,15 @@ class AgentEndpoint {
                          std::string client_key_path);
 
   private:
-    std::unique_ptr<HeartbeatTask> heartbeat_task_;
+    std::map<std::string, std::shared_ptr<Module>> modules_;
+    Cthun::WebSocket::Connection::Ptr connection_ptr_ { nullptr };
 
     void list_modules();
     void send_login(Cthun::WebSocket::Client_Type* client_ptr);
     void handle_message(Cthun::WebSocket::Client_Type* client_ptr,
                         std::string message);
-
-    std::map<std::string, std::shared_ptr<Module>> modules_;
-    Cthun::WebSocket::Connection::Ptr connection_ptr_ { nullptr };
+    void setConnectionCallbacks();
+    void monitorConnectionState();
 };
 
 }  // namespace Agent

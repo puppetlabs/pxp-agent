@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.12)
-project(MCOLLECTIVE-ZEROMQ-BROKER)
+project(cthun-agent C CXX)
 
 # Project Output Paths
 

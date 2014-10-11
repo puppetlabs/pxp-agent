@@ -34,5 +34,11 @@ add_library(cthun-agent ${SOURCES})
 target_link_libraries(cthun-agent ${LIBS})
 
 add_executable(cthun-agent-bin ${SOURCES})
+set_target_properties(cthun-agent-bin
+    PROPERTIES
+    OUTPUT_NAME cthun-agent
+    CLEAN_DIRECT_OUTPUT 1
+)
 target_link_libraries(cthun-agent-bin cthun-agent)
+
 install(TARGETS cthun-agent-bin DESTINATION bin)

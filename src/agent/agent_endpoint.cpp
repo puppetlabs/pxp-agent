@@ -133,16 +133,6 @@ AgentEndpoint::~AgentEndpoint() {
     }
 }
 
-void AgentEndpoint::list_modules() {
-    LOG_INFO("loaded modules:");
-    for (auto module : modules_) {
-        LOG_INFO("   %1%", module.first);
-        for (auto action : module.second->actions) {
-            LOG_INFO("       %1%", action.first);
-        }
-    }
-}
-
 void AgentEndpoint::run(std::string module, std::string action) {
     list_modules();
 
@@ -170,6 +160,59 @@ void AgentEndpoint::run(std::string module, std::string action) {
     }
 }
 
+void AgentEndpoint::connect_and_run(std::string url,
+                                    std::string ca_crt_path,
+                                    std::string client_crt_path,
+                                    std::string client_key_path) {
+    // Configure the secure WebSocket endpoint
+
+    try {
+        Cthun::WebSocket::CONNECTION_MANAGER.configureSecureEndpoint(
+            ca_crt_path, client_crt_path, client_key_path);
+    } catch (Cthun::WebSocket::endpoint_error& e) {
+        LOG_WARNING("failed to configure the WebSocket endpoint: %1%", e.what());
+        throw fatal_error("failed to configure the WebSocket endpoint");
+    }
+
+    // Configure the connection
+
+    connection_ptr_ = Cthun::WebSocket::CONNECTION_MANAGER.createConnection(url);
+    setConnectionCallbacks();
+
+    // Connect and wait for open connection event
+
+    try {
+        Cthun::WebSocket::CONNECTION_MANAGER.open(connection_ptr_);
+        connection_ptr_->waitForOpen();
+    } catch (Cthun::WebSocket::connection_error& e) {
+        LOG_WARNING("failed to connect; %1%", e.what());
+        throw fatal_error { "failed to connect" };
+    }
+
+    // Start heartbeat task
+
+    HeartbeatTask heartbeat_task { connection_ptr_ };
+    heartbeat_task.start();
+
+    // Keep monitoring the connection
+
+    monitorConnectionState();
+}
+
+//
+// AgentEndpoint - private
+//
+
+void AgentEndpoint::list_modules() {
+    LOG_INFO("loaded modules:");
+    for (auto module : modules_) {
+        LOG_INFO("   %1%", module.first);
+        for (auto action : module.second->actions) {
+            LOG_INFO("       %1%", action.first);
+        }
+    }
+}
+
 void AgentEndpoint::send_login(Cthun::WebSocket::Client_Type* client_ptr) {
     Json::Value login {};
     login["id"] = 1;
@@ -189,9 +232,9 @@ void AgentEndpoint::send_login(Cthun::WebSocket::Client_Type* client_ptr) {
     std::vector<std::string> errors;
 
     if (!Schemas::validate(login, message_schema, errors)) {
-        LOG_INFO("validation failed");
+        LOG_WARNING("validation failed");
         for (auto error : errors) {
-            LOG_INFO("    %1%", error);
+            LOG_WARNING("    %1%", error);
         }
         // This is unexpected
         throw fatal_error { "invalid login message schema" };
@@ -202,7 +245,7 @@ void AgentEndpoint::send_login(Cthun::WebSocket::Client_Type* client_ptr) {
         client_ptr->send(handle, login.toStyledString(),
                          Cthun::WebSocket::Frame_Opcode_Values::text);
     }  catch(Cthun::WebSocket::message_error& e) {
-        LOG_INFO("failed to send: %1%", e.what());
+        LOG_WARNING("failed to send: %1%", e.what());
         // Fatal; we can't login...
         throw fatal_error { "failed to send login message" };
     }
@@ -301,103 +344,70 @@ void AgentEndpoint::handle_message(Cthun::WebSocket::Client_Type* client_ptr,
     }
 }
 
-void AgentEndpoint::connect_and_run(std::string url,
-                                    std::string ca_crt_path,
-                                    std::string client_crt_path,
-                                    std::string client_key_path) {
-    // Configure secure WebSocket endpoint and get connection pointer
-
-    try {
-        Cthun::WebSocket::CONNECTION_MANAGER.configureSecureEndpoint(
-            ca_crt_path, client_crt_path, client_key_path);
-    } catch (Cthun::WebSocket::endpoint_error& e) {
-        LOG_WARNING("failed to configure the WebSocket endpoint: %1%", e.what());
-        throw fatal_error("failed to configure the WebSocket endpoint");
-    }
-
-    connection_ptr_ = Cthun::WebSocket::CONNECTION_MANAGER.createConnection(url);
-
-    // Define and set callbacks
-
+void AgentEndpoint::setConnectionCallbacks() {
     Cthun::WebSocket::Connection::Event_Callback onOpen_c =
         [this](Cthun::WebSocket::Client_Type* client_ptr,
                Cthun::WebSocket::Connection::Ptr connection_ptr_c) {
-        assert(connection_ptr_ == connection_ptr_c);
-        send_login(client_ptr);
-    };
+            assert(connection_ptr_ == connection_ptr_c);
+            send_login(client_ptr);
+        };
 
     Cthun::WebSocket::Connection::OnMessage_Callback onMessage_c =
         [this](Cthun::WebSocket::Client_Type* client_ptr,
                Cthun::WebSocket::Connection::Ptr connection_ptr_c,
                std::string message) {
-        assert(connection_ptr_ == connection_ptr_c);
-        handle_message(client_ptr, message);
-    };
+            assert(connection_ptr_ == connection_ptr_c);
+            handle_message(client_ptr, message);
+        };
 
-    // TODO(ale): remove pong / pongTimeout callbacks if not useful
-
-    int consecutive_pong_timeouts { 0 };
-    std::mutex pong_mutex;
+    auto consecutive_pong_timeouts = std::make_shared<int>(0);
+    auto pong_mutex = std::make_shared<std::mutex>();
 
     Cthun::WebSocket::Connection::Pong_Callback onPong_c =
-        [&consecutive_pong_timeouts, &pong_mutex](
-            Cthun::WebSocket::Client_Type* client_ptr,
-            Cthun::WebSocket::Connection::Ptr connection_ptr_c,
-            std::string binary_payload) {
-        LOG_DEBUG("received pong - payload: '%1%'", binary_payload);
-        if (consecutive_pong_timeouts > 0){
-            std::lock_guard<std::mutex> lock { pong_mutex };
-            consecutive_pong_timeouts = 0;
-        }
-    };
+        [consecutive_pong_timeouts, pong_mutex](
+                Cthun::WebSocket::Client_Type* client_ptr,
+                Cthun::WebSocket::Connection::Ptr connection_ptr_c,
+                std::string binary_payload) {
+            LOG_DEBUG("received pong - payload: '%1%'", binary_payload);
+            if (*consecutive_pong_timeouts > 0){
+                std::lock_guard<std::mutex> lock { *pong_mutex };
+                *consecutive_pong_timeouts = 0;
+            }
+        };
 
     Cthun::WebSocket::Connection::Pong_Callback onPongTimeout_c =
-        [&consecutive_pong_timeouts, &pong_mutex](
-            Cthun::WebSocket::Client_Type* client_ptr,
-            Cthun::WebSocket::Connection::Ptr connection_ptr_c,
-            std::string binary_payload) {
-        std::lock_guard<std::mutex> lock { pong_mutex };
-        LOG_WARNING("pong timeout (%1% consecutive) - payload: '%2%'",
-                    consecutive_pong_timeouts, binary_payload);
-        consecutive_pong_timeouts++;
-    };
+        [consecutive_pong_timeouts, pong_mutex](
+                Cthun::WebSocket::Client_Type* client_ptr,
+                Cthun::WebSocket::Connection::Ptr connection_ptr_c,
+                std::string binary_payload) {
+            std::lock_guard<std::mutex> lock { *pong_mutex };
+            LOG_WARNING("pong timeout (%1% consecutive) - payload: '%2%'",
+                        *consecutive_pong_timeouts, binary_payload);
+            (*consecutive_pong_timeouts)++;
+        };
 
     connection_ptr_->setOnOpenCallback(onOpen_c);
     connection_ptr_->setOnMessageCallback(onMessage_c);
     connection_ptr_->setOnPongCallback(onPong_c);
     connection_ptr_->setOnPongTimeoutCallback(onPongTimeout_c);
+}
 
-    // Connect and wait for open
-
-    try {
-        Cthun::WebSocket::CONNECTION_MANAGER.open(connection_ptr_);
-        connection_ptr_->waitForOpen();
-    } catch (Cthun::WebSocket::connection_error& e) {
-        LOG_INFO("failed to connect; %1%", e.what());
-        throw fatal_error { "failed to connect" };
-    }
-
-    // Start heartbeat task
-
-    heartbeat_task_.reset(new HeartbeatTask { connection_ptr_ });
-    heartbeat_task_->start();
-
-    // Periodically check the connection state
-
+void AgentEndpoint::monitorConnectionState() {
     while (1) {
         if (connection_ptr_->getState()
                 != Cthun::WebSocket::Connection_State_Values::open) {
-            LOG_WARNING("connection was closed; will try to restart in 2 s");
+            LOG_WARNING("agent is not connected; will try to reconnect in 2 s");
             sleep(2);
 
             try {
                 Cthun::WebSocket::CONNECTION_MANAGER.open(connection_ptr_);
                 connection_ptr_->waitForOpen();
             } catch (Cthun::WebSocket::connection_error& e) {
-                LOG_INFO("failed to reconnect; %1%", e.what());
+                LOG_WARNING("failed to reconnect; %1%", e.what());
                 throw fatal_error { "failed to reconnect" };
             }
         }
+
         sleep(11);
     }
 }
