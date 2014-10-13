@@ -20,8 +20,17 @@ Ping::Ping() {
     valijson::constraints::TypeConstraint json_type_object {
         valijson::constraints::TypeConstraint::kObject };
 
+    valijson::constraints::TypeConstraint json_type_string {
+        valijson::constraints::TypeConstraint::kString };
+
     valijson::Schema input_schema;
-    input_schema.addConstraint(json_type_object);
+    valijson::constraints::PropertiesConstraint::PropertySchemaMap properties;
+    valijson::constraints::PropertiesConstraint::PropertySchemaMap pattern_properties;
+
+    properties["sender_timestamp"].addConstraint(json_type_string);
+    input_schema.addConstraint(new valijson::constraints::PropertiesConstraint(
+                              properties,
+                              pattern_properties));
 
     valijson::Schema output_schema;
     output_schema.addConstraint(json_type_object);

@@ -22,7 +22,7 @@ void run_command(std::string exec, std::vector<std::string> args,
     context.stdin_behavior = boost::process::capture_stream();
     context.stdout_behavior = boost::process::capture_stream();
     context.stderr_behavior = boost::process::capture_stream();
-
+    context.environment = boost::process::self::get_environment();
     boost::process::child child = boost::process::launch(exec, args, context);
 
     boost::process::postream &in = child.get_stdin();

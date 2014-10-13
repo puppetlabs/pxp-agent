@@ -49,7 +49,7 @@ void Inventory::call_action(std::string action_name, const Json::Value& input,
 
     // Parse the facts string (json) and copy into output
     Json::Reader reader;
-    if (!reader.parse(fact_stream.str(), output)) {
+    if (!reader.parse(fact_stream.str(), output["facts"])) {
         // Unexpected
         LOG_ERROR("json decode of facts failed");
         Json::Value err_result;
