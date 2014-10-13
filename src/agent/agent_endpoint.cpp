@@ -134,7 +134,7 @@ AgentEndpoint::~AgentEndpoint() {
 }
 
 void AgentEndpoint::run(std::string module, std::string action) {
-    list_modules();
+    listModules();
 
     std::shared_ptr<Module> the_module = modules_[module];
 
@@ -160,10 +160,12 @@ void AgentEndpoint::run(std::string module, std::string action) {
     }
 }
 
-void AgentEndpoint::connect_and_run(std::string url,
-                                    std::string ca_crt_path,
-                                    std::string client_crt_path,
-                                    std::string client_key_path) {
+void AgentEndpoint::connectAndRun(std::string url,
+                                  std::string ca_crt_path,
+                                  std::string client_crt_path,
+                                  std::string client_key_path) {
+    listModules();
+
     // Configure the secure WebSocket endpoint
 
     try {
@@ -203,7 +205,7 @@ void AgentEndpoint::connect_and_run(std::string url,
 // AgentEndpoint - private
 //
 
-void AgentEndpoint::list_modules() {
+void AgentEndpoint::listModules() {
     LOG_INFO("loaded modules:");
     for (auto module : modules_) {
         LOG_INFO("   %1%", module.first);
@@ -213,7 +215,7 @@ void AgentEndpoint::list_modules() {
     }
 }
 
-void AgentEndpoint::send_login(Cthun::WebSocket::Client_Type* client_ptr) {
+void AgentEndpoint::sendLogin(Cthun::WebSocket::Client_Type* client_ptr) {
     Json::Value login {};
     login["id"] = 1;
     login["version"] = "1";
@@ -251,39 +253,49 @@ void AgentEndpoint::send_login(Cthun::WebSocket::Client_Type* client_ptr) {
     }
 }
 
-void AgentEndpoint::handle_message(Cthun::WebSocket::Client_Type* client_ptr,
-                                   std::string message) {
-    LOG_INFO("received message:\n%1%", message);
-
+Json::Value AgentEndpoint::parseAndValidateMessage(std::string message) {
     Json::Value doc;
     Json::Reader reader;
 
     if (!reader.parse(message, doc)) {
-        LOG_ERROR("json decode of message failed");
-        return;
+        throw validation_error { "json decode of message failed" };
     }
 
     valijson::Schema message_schema = Schemas::network_message();
     std::vector<std::string> errors;
 
     if (!Schemas::validate(doc, message_schema, errors)) {
-        LOG_ERROR("message schema validation failed");
-        return;
+        throw validation_error { "message schema validation failed" };
     }
 
     if (std::string("http://puppetlabs.com/cncschema").compare(
             doc["data_schema"].asString()) != 0) {
-        LOG_ERROR("message is not of cnc schema");
-        return;
+        throw validation_error { "message is not of cnc schema" };
     }
 
     valijson::Schema data_schema { Schemas::cnc_data() };
     if (!Schemas::validate(doc["data"], data_schema, errors)) {
         // TODO(ale): refactor error logging
-        LOG_ERROR("data schema validation failed");
+        LOG_WARNING("data schema validation failed; logging the errors");
         for (auto error : errors) {
-            LOG_ERROR("    %1%", error);
+            LOG_WARNING("    %1%", error);
         }
+        throw validation_error { "data schema validation failed" };
+    }
+
+    return doc;
+}
+
+void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
+                                   std::string message) {
+    LOG_INFO("received message:\n%1%", message);
+
+    Json::Value doc;
+
+    try {
+        doc = parseAndValidateMessage(message);
+    } catch (validation_error& e) {
+        LOG_ERROR("invalid message: %1%", e.what());
         return;
     }
 
@@ -349,7 +361,7 @@ void AgentEndpoint::setConnectionCallbacks() {
         [this](Cthun::WebSocket::Client_Type* client_ptr,
                Cthun::WebSocket::Connection::Ptr connection_ptr_c) {
             assert(connection_ptr_ == connection_ptr_c);
-            send_login(client_ptr);
+            sendLogin(client_ptr);
         };
 
     Cthun::WebSocket::Connection::OnMessage_Callback onMessage_c =
@@ -357,7 +369,7 @@ void AgentEndpoint::setConnectionCallbacks() {
                Cthun::WebSocket::Connection::Ptr connection_ptr_c,
                std::string message) {
             assert(connection_ptr_ == connection_ptr_c);
-            handle_message(client_ptr, message);
+            handleMessage(client_ptr, message);
         };
 
     auto consecutive_pong_timeouts = std::make_shared<int>(0);
