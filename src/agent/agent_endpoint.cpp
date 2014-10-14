@@ -360,51 +360,41 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
 }
 
 void AgentEndpoint::setConnectionCallbacks() {
-    Cthun::WebSocket::Connection::Event_Callback onOpen_c =
+    connection_ptr_->setOnOpenCallback(
         [this](Cthun::WebSocket::Client_Type* client_ptr,
                Cthun::WebSocket::Connection::Ptr connection_ptr_c) {
             assert(connection_ptr_ == connection_ptr_c);
             sendLogin(client_ptr);
-        };
+        });
 
-    Cthun::WebSocket::Connection::OnMessage_Callback onMessage_c =
+    connection_ptr_->setOnMessageCallback(
         [this](Cthun::WebSocket::Client_Type* client_ptr,
                Cthun::WebSocket::Connection::Ptr connection_ptr_c,
                std::string message) {
             assert(connection_ptr_ == connection_ptr_c);
             handleMessage(client_ptr, message);
-        };
+        });
 
-    auto consecutive_pong_timeouts = std::make_shared<int>(0);
-    auto pong_mutex = std::make_shared<std::mutex>();
+    std::atomic<uint> consecutive_pong_timeouts { 0 };
 
-    Cthun::WebSocket::Connection::Pong_Callback onPong_c =
-        [consecutive_pong_timeouts, pong_mutex](
-                Cthun::WebSocket::Client_Type* client_ptr,
-                Cthun::WebSocket::Connection::Ptr connection_ptr_c,
-                std::string binary_payload) {
+    connection_ptr_->setOnPongCallback(
+        [&consecutive_pong_timeouts](Cthun::WebSocket::Client_Type* client_ptr,
+                                     Cthun::WebSocket::Connection::Ptr connection_ptr_c,
+                                     std::string binary_payload) {
             LOG_DEBUG("received pong - payload: '%1%'", binary_payload);
-            if (*consecutive_pong_timeouts > 0){
-                std::lock_guard<std::mutex> lock { *pong_mutex };
-                *consecutive_pong_timeouts = 0;
+            if (consecutive_pong_timeouts > 0){
+                consecutive_pong_timeouts = 0;
             }
-        };
+        });
 
-    Cthun::WebSocket::Connection::Pong_Callback onPongTimeout_c =
-        [consecutive_pong_timeouts, pong_mutex](
-                Cthun::WebSocket::Client_Type* client_ptr,
-                Cthun::WebSocket::Connection::Ptr connection_ptr_c,
-                std::string binary_payload) {
-            std::lock_guard<std::mutex> lock { *pong_mutex };
+    connection_ptr_->setOnPongTimeoutCallback(
+        [&consecutive_pong_timeouts](Cthun::WebSocket::Client_Type* client_ptr,
+                                     Cthun::WebSocket::Connection::Ptr connection_ptr_c,
+                                     std::string binary_payload) {
             LOG_WARNING("pong timeout (%1% consecutive) - payload: '%2%'",
-                        *consecutive_pong_timeouts, binary_payload);
-            (*consecutive_pong_timeouts)++;
-        };
-
-    connection_ptr_->setOnOpenCallback(onOpen_c);
-    connection_ptr_->setOnMessageCallback(onMessage_c);
-    connection_ptr_->setOnPongCallback(onPong_c);
-    connection_ptr_->setOnPongTimeoutCallback(onPongTimeout_c);
+                        std::to_string(consecutive_pong_timeouts), binary_payload);
+            ++consecutive_pong_timeouts;
+        });
 }
 
 void AgentEndpoint::monitorConnectionState() {
