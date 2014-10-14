@@ -169,10 +169,7 @@ int main(int argc, char *argv[]) {
     try {
         Agent::AgentEndpoint agent;
 
-        agent.connectAndRun(app_options.server,
-                            app_options.ca,
-                            app_options.cert,
-                            app_options.key);
+        agent.connectAndRun(app_options.server, app_options.ca, app_options.cert, app_options.key);
     } catch (Agent::fatal_error&  e) {
         LOG_ERROR("fatal error: %1%", e.what());
         return 1;

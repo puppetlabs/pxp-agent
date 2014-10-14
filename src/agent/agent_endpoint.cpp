@@ -26,7 +26,10 @@ namespace Agent {
 // Tokens
 //
 
-static const int DEFAULT_HEARTBEAT_PERIOD { 30 };  // [s]
+static const uint DEFAULT_HEARTBEAT_PERIOD { 30 };  // [s]
+static const uint BACKOFF_MULTIPLIER { 2 };
+static const uint BACKOFF_LIMIT { 30 };
+static const uint CONNECTION_STATE_CHECK_INTERVAL { 10 };
 
 //
 // HeartbeatTask
@@ -58,8 +61,7 @@ void HeartbeatTask::stop() {
 void HeartbeatTask::heartbeatThread() {
     while (!must_stop_) {
         try {
-            if (connection_ptr_->getState()
-                    == Cthun::WebSocket::Connection_State_Values::open) {
+            if (connection_ptr_->getState() == Cthun::WebSocket::Connection_State_Values::open) {
                 Cthun::WebSocket::CONNECTION_MANAGER.ping(connection_ptr_,
                                                           binary_payload_);
             } else {
@@ -169,8 +171,9 @@ void AgentEndpoint::connectAndRun(std::string url,
     // Configure the secure WebSocket endpoint
 
     try {
-        Cthun::WebSocket::CONNECTION_MANAGER.configureSecureEndpoint(
-            ca_crt_path, client_crt_path, client_key_path);
+        Cthun::WebSocket::CONNECTION_MANAGER.configureSecureEndpoint(ca_crt_path,
+                                                                     client_crt_path,
+                                                                     client_key_path);
     } catch (Cthun::WebSocket::endpoint_error& e) {
         LOG_WARNING("failed to configure the WebSocket endpoint: %1%", e.what());
         throw fatal_error("failed to configure the WebSocket endpoint");
@@ -405,22 +408,31 @@ void AgentEndpoint::setConnectionCallbacks() {
 }
 
 void AgentEndpoint::monitorConnectionState() {
-    while (1) {
+    uint backoff_seconds = 2;
+    for (;;) {
+        sleep(CONNECTION_STATE_CHECK_INTERVAL);
+
         if (connection_ptr_->getState()
                 != Cthun::WebSocket::Connection_State_Values::open) {
-            LOG_WARNING("agent is not connected; will try to reconnect in 2 s");
-            sleep(2);
-
-            try {
-                Cthun::WebSocket::CONNECTION_MANAGER.open(connection_ptr_);
-                connection_ptr_->waitForOpen();
-            } catch (Cthun::WebSocket::connection_error& e) {
-                LOG_WARNING("failed to reconnect; %1%", e.what());
-                throw fatal_error { "failed to reconnect" };
+            LOG_WARNING("Connection to Cthun server lost. Retrying.");
+            // Attempt to re-establish connection
+            while (connection_ptr_->getState()
+                != Cthun::WebSocket::Connection_State_Values::open) {
+                try {
+                    Cthun::WebSocket::CONNECTION_MANAGER.open(connection_ptr_);
+                    connection_ptr_->waitForOpen();
+                    LOG_INFO("Successfully re-established connection to Cthun server.");
+                } catch (Cthun::WebSocket::connection_error& e) {
+                    LOG_WARNING("Failed to re-establish connection to Cthun server");
+                    LOG_INFO("Attemping reconnect in %1% seconds.", backoff_seconds);
+                    sleep(backoff_seconds);
+                    if ((backoff_seconds *= BACKOFF_MULTIPLIER) >= BACKOFF_LIMIT) {
+                        // Limit backoff to 30 seconds.
+                        backoff_seconds = 30;
+                    }
+                }
             }
         }
-
-        sleep(11);
     }
 }
 
