@@ -162,10 +162,10 @@ void AgentEndpoint::run(std::string module, std::string action) {
     }
 }
 
-void AgentEndpoint::connectAndRun(std::string url,
-                                  std::string ca_crt_path,
-                                  std::string client_crt_path,
-                                  std::string client_key_path) {
+void AgentEndpoint::startAgent(std::string url,
+                               std::string ca_crt_path,
+                               std::string client_crt_path,
+                               std::string client_key_path) {
     listModules();
 
     // Configure the secure WebSocket endpoint

@@ -47,10 +47,10 @@ class AgentEndpoint {
     void run(std::string module, std::string action);
 
     // daemon entry point
-    void connectAndRun(std::string url,
-                       std::string ca_crt_path,
-                       std::string client_crt_path,
-                       std::string client_key_path);
+    void startAgent(std::string url,
+                    std::string ca_crt_path,
+                    std::string client_crt_path,
+                    std::string client_key_path);
 
   private:
     std::map<std::string, std::shared_ptr<Module>> modules_;
