@@ -10,6 +10,7 @@ class Action {
   public:
     valijson::Schema input_schema;
     valijson::Schema output_schema;
+    std::string behaviour;
 };
 
 }  // namespace Agent

@@ -41,6 +41,8 @@ class Connection : public std::enable_shared_from_this<Connection> {
 
     void waitForOpen(int max_num_checks = 5, int interval_check = 1);
 
+    void resetCallbacks();
+
     //
     // Configuration
     //

@@ -18,7 +18,8 @@ void Module::call_action(std::string action_name, const Json::Value& input,
 
 void Module::validate_and_call_action(std::string action_name,
                                       const Json::Value& input,
-                                      Json::Value& output) {
+                                      Json::Value& output,
+                                      std::string action_id) {
     if (actions.find(action_name) == actions.end()) {
         throw validation_error { "unknown action for module " + module_name
                                  + ": '" + action_name + "'" };
@@ -37,7 +38,11 @@ void Module::validate_and_call_action(std::string action_name,
         throw validation_error { "Input schema mismatch" };
     }
 
-    call_action(action_name, input, output);
+    if (action_id.empty()) {
+        call_action(action_name, input, output);
+    } else {
+        call_delayed_action(action_name, input, output, action_id);
+    }
 
     LOG_INFO("validating output for %1% %2%", module_name, action_name);
     if (!Schemas::validate(output, action.output_schema, errors)) {

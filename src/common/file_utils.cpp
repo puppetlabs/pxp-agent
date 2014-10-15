@@ -69,6 +69,35 @@ void writeToFile(const std::string& text, const std::string& file_path) {
                                 | std::ofstream::trunc);
 }
 
+bool createDirectory(const std::string& dirname) {
+    boost::filesystem::path dir(dirname);
+    if(boost::filesystem::create_directory(dir)) {
+        return true;
+    }
+
+    return false;
+}
+
+Json::Value readFileAsJson(std::string path) {
+    std::ifstream file { path };
+    Json::Value doc {};
+    Json::Reader reader;
+    std::string content;
+    std::string buffer;
+
+    while (std::getline(file, buffer)) {
+        content += buffer;
+        content.push_back('\n');
+    }
+
+    // Something went wrong
+    if (!reader.parse(content, doc)) {
+        return nullptr;
+    }
+
+    return doc;
+}
+
 }  // namespace FileUtils
 }  // namespace Common
 }  // namespace Cthun

@@ -13,7 +13,7 @@ def action_metadata
         },
         :output => {
           :type => "object"
-        },
+        }
       },
       { :name => "run",
         :description => "Start a Puppet run",
@@ -22,7 +22,8 @@ def action_metadata
         },
         :output => {
           :type => "object"
-        }
+        },
+        :behaviour => "delayed"
       }
     ]
   }

@@ -16,8 +16,14 @@ class Module {
     std::string module_name;
     std::map<std::string, Action> actions;
 
-    virtual void call_action(std::string action_name, const Json::Value& input,
+    virtual void call_action(std::string action_name,
+                             const Json::Value& input,
                              Json::Value& output) = 0;
+
+    virtual void call_delayed_action(std::string action_name,
+                             const Json::Value& input,
+                             Json::Value& output,
+                             std::string job_id) = 0;
 
     /// Validate the json schemas of input and output.
     /// Execute the requested action for the particular module.
@@ -25,7 +31,8 @@ class Module {
     /// in case of unknown action or invalid schemas.
     void validate_and_call_action(std::string action_name,
                                   const Json::Value& input,
-                                  Json::Value& output);
+                                  Json::Value& output,
+                                  std::string job_id = "");
 };
 
 }  // namespace Agent

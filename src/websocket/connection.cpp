@@ -33,6 +33,19 @@ void Connection::waitForOpen(int max_num_checks, int interval_check) {
                              + " s)" };
 }
 
+void Connection::resetCallbacks() {
+    Event_Callback empty_event_callback = [](Client_Type* client_ptr,
+                                              Connection::Ptr connection_ptr){};
+    OnMessage_Callback empty_onmessage_callback = [](Client_Type* client_ptr,
+                                                     Connection::Ptr connection_ptr,
+                                                     std::string message){};
+
+    onOpen_callback_ = empty_event_callback;
+    onMessage_callback_ = empty_onmessage_callback;
+    onPong_callback_ = empty_onmessage_callback;
+    onPongTimeout_callback_ = empty_onmessage_callback;
+}
+
 //
 // Configuration
 //

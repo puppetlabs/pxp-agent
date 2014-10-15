@@ -2,15 +2,17 @@
 #include "src/agent/modules/echo.h"
 #include "src/agent/modules/inventory.h"
 #include "src/agent/modules/ping.h"
+#include "src/agent/modules/status.h"
 #include "src/agent/external_module.h"
 #include "src/agent/schemas.h"
 #include "src/agent/errors.h"
 #include "src/common/log.h"
+#include "src/common/uuid.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
-#include <mutex>
+#include <string>
 
 // TODO(ale): disable assert() once we're confident with the code...
 // To disable assert()
@@ -80,9 +82,11 @@ void HeartbeatTask::heartbeatThread() {
 
 AgentEndpoint::AgentEndpoint() {
     // declare internal modules
-    modules_["echo"] = std::unique_ptr<Module>(new Modules::Echo);
-    modules_["inventory"] = std::unique_ptr<Module>(new Modules::Inventory);
-    modules_["ping"] = std::unique_ptr<Module>(new Modules::Ping);
+    modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
+    modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
+    modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
+    modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
+
 
     // load external modules
     boost::filesystem::path module_path { "modules" };
@@ -94,10 +98,8 @@ AgentEndpoint::AgentEndpoint() {
             LOG_INFO(file->path().string());
 
             try {
-                ExternalModule* external =
-                    new ExternalModule(file->path().string());
-                modules_[external->module_name] =
-                    std::shared_ptr<Module>(external);
+                ExternalModule* external = new ExternalModule(file->path().string());
+                modules_[external->module_name] = std::shared_ptr<Module>(external);
             } catch (...) {
                 LOG_ERROR("failed to load: %1%", file->path().string());
             }
@@ -111,54 +113,9 @@ AgentEndpoint::~AgentEndpoint() {
         // with invalid references
 
         LOG_INFO("resetting the WebSocket event callbacks");
-
-        Cthun::WebSocket::Connection::Event_Callback onOpen_c =
-            [](Cthun::WebSocket::Client_Type* client_ptr,
-               Cthun::WebSocket::Connection::Ptr connection_ptr) {};
-
-        Cthun::WebSocket::Connection::OnMessage_Callback onMessage_c =
-            [](Cthun::WebSocket::Client_Type* client_ptr,
-               Cthun::WebSocket::Connection::Ptr connection_ptr,
-               std::string message) {};
-
-        Cthun::WebSocket::Connection::Pong_Callback onPong_c =
-            [](Cthun::WebSocket::Client_Type* client_ptr,
-               Cthun::WebSocket::Connection::Ptr connection_ptr,
-               std::string message) {};
-
-        connection_ptr_->setOnOpenCallback(onOpen_c);
-        connection_ptr_->setOnMessageCallback(onMessage_c);
-        connection_ptr_->setOnPongCallback(onPong_c);
-        connection_ptr_->setOnPongTimeoutCallback(onPong_c);
+        connection_ptr_->resetCallbacks();
 
         // NB: the heartbeat task will be destructed by RIIA
-    }
-}
-
-void AgentEndpoint::run(std::string module, std::string action) {
-    listModules();
-
-    std::shared_ptr<Module> the_module = modules_[module];
-
-    Json::Reader reader;
-    Json::Value input;
-
-    LOG_INFO("loading stdin");
-
-    std::string command_line;
-    std::getline(std::cin, command_line);
-
-    if (!command_line.empty() && !reader.parse(command_line, input)) {
-        LOG_ERROR("parse error: %1%", reader.getFormatedErrorMessages());
-        return;
-    }
-
-    try {
-        Json::Value output;
-        the_module->validate_and_call_action(action, input, output);
-        LOG_INFO(output.toStyledString());
-    } catch (...) {
-        LOG_ERROR("badness occured");
     }
 }
 
@@ -302,46 +259,78 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
         return;
     }
 
-    try {
-        Json::Value output;
-        auto module_name = doc["data"]["module"].asString();
-        auto action_name = doc["data"]["action"].asString();
+    Json::Value output;
+    std::string module_name = doc["data"]["module"].asString();
+    std::string action_name = doc["data"]["action"].asString();
+    std::string sender = doc["sender"].asString();
 
+    try {
         if (modules_.find(module_name) != modules_.end()) {
             std::shared_ptr<Module> module = modules_[module_name];
 
-            try {
+            if (module->actions.find(action_name) == module->actions.end()) {
+                LOG_ERROR("Invalid request: unknown action %1% for module %2%",
+                          module_name, action_name);
+                throw validation_error { "Invalid request: unknown action " +
+                                         action_name +
+                                         " for module " +
+                                         module_name };
+            }
+            Agent::Action action = module->actions[action_name];
+
+
+            if (action.behaviour.compare("delayed") == 0) {
+            // Create uid for task
+                std::string uuid { Common::getUUID() };
+                LOG_DEBUG("Delayed action execution requested. Creating job with ID %1%",
+                          uuid);
+                Json::Value output {};
+                output["status"] = "Requested excution of action: " + action_name;
+                output["id"] = uuid;
+                sendResponseMessage(sender, output, client_ptr);
+                LOG_ERROR("DONE SENDING...");
+                module->validate_and_call_action(action_name,
+                                                 doc["data"]["params"],
+                                                 output,
+                                                 uuid);
+            } else {
                 module->validate_and_call_action(action_name,
                                                  doc["data"]["params"],
                                                  output);
                 LOG_DEBUG("%1% %2% output: %3%",
                           module_name, action_name, output.toStyledString());
-            } catch (validation_error& e) {
-                LOG_ERROR("failed to perform '%1% %2%': %3%",
-                          module_name, action_name, e.what());
-                Json::Value err_result;
-                err_result["error"] = e.what();
-                output = err_result;
+                sendResponseMessage(sender, output, client_ptr);
             }
         } else {
-            LOG_ERROR("invalid request: unknown module %1%", module_name)
-            Json::Value err_result;
-            err_result["error"] = "Unknown module: '" + module_name + "'";
-            output = err_result;
+            LOG_ERROR("Invalid request: unknown module %1%", module_name);
+            throw validation_error { "Invalid request: unknown module " +
+                                     module_name };
         }
+    } catch (validation_error& e) {
+        LOG_ERROR("failed to perform '%1% %2%': %3%",
+                  module_name, action_name, e.what());
+        Json::Value err_result;
+        err_result["error"] = e.what();
+        sendResponseMessage(sender, err_result, client_ptr);
+    }
+}
 
-        Json::Value response {};
-        response["id"] = 2;
-        response["version"] = "1";
-        response["expires"] = "2014-08-28T17:01:05Z";
-        response["sender"] = "cth://localhost/agent";
-        response["endpoints"] = Json::Value { Json::arrayValue };
-        response["endpoints"][0] = doc["sender"];
-        response["hops"] = Json::Value { Json::arrayValue };
-        response["data_schema"] = "http://puppetlabs.com/cncresponseschema";
-        response["data"]["response"] = output;
+void AgentEndpoint::sendResponseMessage(std::string sender,
+                                        Json::Value output,
+                                        Cthun::WebSocket::Client_Type* client_ptr) {
+    Json::Value body {};
+    body["id"] = 2;
+    body["version"] = "1";
+    body["expires"] = "2014-08-28T17:01:05Z";
+    body["sender"] = "cth://localhost/agent";
+    body["endpoints"] = Json::Value { Json::arrayValue };
+    body["endpoints"][0] = sender;
+    body["hops"] = Json::Value { Json::arrayValue };
+    body["data_schema"] = "http://puppetlabs.com/cncresponseschema";
+    body["data"]["response"] = output;
 
-        auto response_txt = response.toStyledString();
+    try{
+        std::string response_txt = body.toStyledString();
         LOG_INFO("sending response of size %1%", response_txt.size());
         LOG_DEBUG("response:\n%1%", response_txt);
 
@@ -391,7 +380,7 @@ void AgentEndpoint::setConnectionCallbacks() {
         [&consecutive_pong_timeouts](Cthun::WebSocket::Client_Type* client_ptr,
                                      Cthun::WebSocket::Connection::Ptr connection_ptr_c,
                                      std::string binary_payload) {
-            LOG_WARNING("pong timeout (%1% consecutive) - payload: '%2%'",
+            LOG_WARNING("pong timeout (%1% consecutive) - payload: '%2 %'",
                         std::to_string(consecutive_pong_timeouts), binary_payload);
             ++consecutive_pong_timeouts;
         });

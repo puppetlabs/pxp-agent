@@ -1,9 +1,12 @@
 #ifndef SRC_COMMON_FILEUTILS_H_
 #define SRC_COMMON_FILEUTILS_H_
 
+#include <json/json.h>
+
 #include <wordexp.h>
 #include <fstream>
 #include <stdexcept>
+#include <boost/filesystem.hpp>
 
 namespace Cthun {
 namespace Common {
@@ -45,6 +48,14 @@ void streamToFile(const std::string& text,
 /// Throw a file_error in case it fails to open file to write.
 void writeToFile(const std::string& text,
                  const std::string& file_path);
+
+/// Create a directory.
+/// Returns true on success, false on failure
+bool createDirectory(const std::string& dirname);
+
+// TODO(ploubser): Document
+// It returns a nullptr if it fails
+Json::Value readFileAsJson(std::string path);
 
 }  // namespace FileUtils
 }  // namespace Common

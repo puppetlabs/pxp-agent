@@ -13,6 +13,7 @@ set(SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/agent/modules/echo.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent/modules/inventory.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent/modules/ping.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/agent/modules/status.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/common/file_utils.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/common/string_utils.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/common/log.cpp"

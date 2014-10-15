@@ -61,6 +61,11 @@ valijson::Schema action_subschema() {
     required_properties.insert("output");
     properties["output"].addConstraint(json_type_object);
 
+    // Behaviour of execution defaults to interactive
+    // TODO(ploubser): Find a better name for this
+    properties["behaviour"].addConstraint(json_type_string);
+
+
     // constrain the properties to just those in the metadata_properies map
     schema.addConstraint(new valijson::constraints::PropertiesConstraint(
                               properties,

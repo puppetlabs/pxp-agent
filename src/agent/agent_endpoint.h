@@ -43,9 +43,6 @@ class AgentEndpoint {
     AgentEndpoint();
     ~AgentEndpoint();
 
-    // for development purposes
-    void run(std::string module, std::string action);
-
     // daemon entry point
     void startAgent(std::string url,
                     std::string ca_crt_path,
@@ -75,6 +72,8 @@ class AgentEndpoint {
     // periodically check the connection state; make a single attempt
     // to reconnect the agent in case the connection is not open
     void monitorConnectionState();
+
+    void sendResponseMessage(std::string sender, Json::Value output, Cthun::WebSocket::Client_Type* client_ptr);
 };
 
 }  // namespace Agent

@@ -12,8 +12,13 @@ namespace Agent {
 class ExternalModule : public Module {
   public:
     explicit ExternalModule(std::string path);
-    void call_action(std::string action_name, const Json::Value& input,
+    void call_action(std::string action_name,
+                     const Json::Value& input,
                      Json::Value& output);
+    void call_delayed_action(std::string action_name,
+                             const Json::Value& input,
+                             Json::Value& output,
+                             std::string action_id);
   private:
     std::string path_;
 };

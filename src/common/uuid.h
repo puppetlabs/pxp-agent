@@ -10,6 +10,7 @@
 namespace Cthun {
 namespace Common {
 
+// TODO(ploubser): This typedef is stupid.
 typedef std::string UUID;
 
 static UUID getUUID() __attribute__((unused));
