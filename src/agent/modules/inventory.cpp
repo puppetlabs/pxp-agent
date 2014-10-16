@@ -26,7 +26,7 @@ Inventory::Inventory() {
     valijson::Schema output_schema;
     output_schema.addConstraint(json_type_object);
 
-    actions["inventory"] = Action { input_schema, output_schema };
+    actions["inventory"] = Action { input_schema, output_schema, "interactive" };
 }
 
 void Inventory::call_action(std::string action_name, const Json::Value& input,

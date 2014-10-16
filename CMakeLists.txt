@@ -10,9 +10,11 @@ SET (LIBRARY_OUTPUT_PATH "${MAINFOLDER}/lib")
 # Set compiler-specific flags
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-reorder -Wno-unused-parameter -Wno-deprecated-register")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-reorder -Wno-unused-parameter -Wno-deprecated-register")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Werror -Wno-unused-parameter -Wno-unused-local-typedefs -Wno-ignored-qualifiers -Wno-reorder")
+
+# TODO(ploubser): Get rid of jsoncpp and turn -Werror back on
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-unused-parameter")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
@@ -50,12 +52,12 @@ include(${VENDOR_DIRECTORY}/websocketpp.cmake)
 # Set include directories
 
 include_directories(
-    ${Boost_INCLUDE_DIRS}
-    ${Boost_Process_INCLUDE_DIRS}
-    ${WEBSOCKETPP_INCLUDE_DIRS}
-    ${VALIJSON_INCLUDE_DIRS}
-    ${GMOCK_INCLUDE_DIRS}
-    "${VENDOR_DIRECTORY}/jsoncpp"
+    SYSTEM ${Boost_INCLUDE_DIRS}
+    SYSTEM ${Boost_Process_INCLUDE_DIRS}
+    SYSTEM ${WEBSOCKETPP_INCLUDE_DIRS}
+    SYSTEM ${VALIJSON_INCLUDE_DIRS}
+    SYSTEM ${GMOCK_INCLUDE_DIRS}
+    SYSTEM "${VENDOR_DIRECTORY}/jsoncpp"
 )
 
 # Add the main binary

@@ -18,7 +18,7 @@ Echo::Echo() {
     valijson::Schema output_schema;
     output_schema.addConstraint(json_type_string);
 
-    actions["echo"] = Action { input_schema, output_schema };
+    actions["echo"] = Action { input_schema, output_schema, "interactive" };
 }
 
 void Echo::call_action(std::string action_name, const Json::Value& input,

@@ -15,7 +15,7 @@ class Inventory : public Cthun::Agent::Module {
     void call_delayed_action(std::string action_name,
                              const Json::Value& input,
                              Json::Value& output,
-                             std::string job_id){};
+                             std::string job_id) {}
 };
 
 }  // namespace Modules

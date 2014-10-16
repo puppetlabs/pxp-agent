@@ -15,7 +15,7 @@ class Ping : public Cthun::Agent::Module {
     void call_delayed_action(std::string action_name,
                              const Json::Value& input,
                              Json::Value& output,
-                             std::string job_id){};
+                             std::string job_id) {}
 
     /// Ping action calculates the time it took for a message to travel from
     /// the controller to the agent. It will then add that duration and the

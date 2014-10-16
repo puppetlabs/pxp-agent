@@ -71,7 +71,7 @@ void writeToFile(const std::string& text, const std::string& file_path) {
 
 bool createDirectory(const std::string& dirname) {
     boost::filesystem::path dir(dirname);
-    if(boost::filesystem::create_directory(dir)) {
+    if (boost::filesystem::create_directory(dir)) {
         return true;
     }
 

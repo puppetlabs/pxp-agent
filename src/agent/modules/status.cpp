@@ -25,7 +25,7 @@ Status::Status() {
     valijson::Schema output_schema;
     output_schema.addConstraint(json_type_object);
 
-    actions["query"] = Action { input_schema, output_schema };
+    actions["query"] = Action { input_schema, output_schema, "interactive" };
 }
 
 void Status::call_action(std::string action_name, const Json::Value& input,
@@ -47,7 +47,11 @@ void Status::call_action(std::string action_name, const Json::Value& input,
     } else if (status["status"].compare("completed") == 0) {
         output["status"] = status;
         output["response"] = Common::FileUtils::readFileAsJson("/tmp/cthun_agent/" + job_id + "/stdout");
-        //output["stderr"] = Common::FileUtils::readFileAsJson("/tmp/cthun_agent/" + job_id + "/stderr");
+
+        Json::Value error_obj = Common::FileUtils::readFileAsJson("/tmp/cthun_agent/" + job_id + "/stderr");
+        if (!error_obj.asString().empty()) {
+            output["stderr"] = error_obj;
+        }
     } else {
         output["status"] = "Job '" + job_id + "' is in unknown state: " + status["status"].asString();
     }

@@ -35,7 +35,7 @@ Ping::Ping() {
     valijson::Schema output_schema;
     output_schema.addConstraint(json_type_object);
 
-    actions["ping"] = Action { input_schema, output_schema };
+    actions["ping"] = Action { input_schema, output_schema, "interactive" };
 }
 
 void Ping::ping_action(const Json::Value& input, Json::Value& output) {
