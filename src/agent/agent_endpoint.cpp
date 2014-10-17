@@ -246,6 +246,18 @@ Json::Value AgentEndpoint::parseAndValidateMessage(std::string message) {
     return doc;
 }
 
+
+void AgentEndpoint::delayedActionThread(std::shared_ptr<Module> module,
+                 std::string action_name,
+                 Json::Value doc,
+                 Json::Value output,
+                 std::string uuid) {
+    module->validate_and_call_action(action_name,
+                                     doc["data"]["params"],
+                                     output,
+                                     uuid);
+}
+
 void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
                                    std::string message) {
     LOG_INFO("received message:\n%1%", message);
@@ -280,7 +292,6 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
 
 
             if (action.behaviour.compare("delayed") == 0) {
-            // Create uid for task
                 std::string uuid { Common::getUUID() };
                 LOG_DEBUG("Delayed action execution requested. Creating job with ID %1%",
                           uuid);
@@ -288,11 +299,13 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
                 output["status"] = "Requested excution of action: " + action_name;
                 output["id"] = uuid;
                 sendResponseMessage(sender, output, client_ptr);
-                LOG_ERROR("DONE SENDING...");
-                module->validate_and_call_action(action_name,
-                                                 doc["data"]["params"],
-                                                 output,
-                                                 uuid);
+                thread_queue_.push_back(std::thread(&AgentEndpoint::delayedActionThread,
+                                                    this,
+                                                    module,
+                                                    action_name,
+                                                    doc,
+                                                    output,
+                                                    uuid));
             } else {
                 module->validate_and_call_action(action_name,
                                                  doc["data"]["params"],
@@ -329,7 +342,7 @@ void AgentEndpoint::sendResponseMessage(std::string sender,
     body["data_schema"] = "http://puppetlabs.com/cncresponseschema";
     body["data"]["response"] = output;
 
-    try {
+    try{
         std::string response_txt = body.toStyledString();
         LOG_INFO("sending response of size %1%", response_txt.size());
         LOG_DEBUG("response:\n%1%", response_txt);

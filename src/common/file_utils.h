@@ -54,8 +54,10 @@ void writeToFile(const std::string& text,
 bool createDirectory(const std::string& dirname);
 
 // TODO(ploubser): Document
-// It returns a nullptr if it fails
 Json::Value readFileAsJson(std::string path);
+
+// TODO(ploubser): Document
+std::string readFileAsString(std::string path);
 
 }  // namespace FileUtils
 }  // namespace Common

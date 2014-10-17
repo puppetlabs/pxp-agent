@@ -30,12 +30,10 @@ Status::Status() {
 
 void Status::call_action(std::string action_name, const Json::Value& input,
                             Json::Value& output) {
-    LOG_INFO(input.toStyledString());
-    LOG_INFO(input["job_id"].asString());
-
     std::string job_id { input["job_id"].asString() };
 
     if (!Common::FileUtils::fileExists("/tmp/cthun_agent/" + job_id)) {
+        LOG_ERROR("No results for job id %1% found", job_id);
         output["error"] = "No job exists for id: " + job_id;
         return;
     }
@@ -46,11 +44,20 @@ void Status::call_action(std::string action_name, const Json::Value& input,
         output["status"] = "Running";
     } else if (status["status"].compare("completed") == 0) {
         output["status"] = status;
-        output["response"] = Common::FileUtils::readFileAsJson("/tmp/cthun_agent/" + job_id + "/stdout");
 
-        Json::Value error_obj = Common::FileUtils::readFileAsJson("/tmp/cthun_agent/" + job_id + "/stderr");
-        if (!error_obj.asString().empty()) {
-            output["stderr"] = error_obj;
+        //output["response"] =
+        Json::Value response_content_as_json;
+        std::string response = Common::FileUtils::readFileAsString("/tmp/cthun_agent/" + job_id + "/stdout");
+        Json::Reader reader;
+        if (reader.parse(response, response_content_as_json)) {
+            output["response"] = response_content_as_json;
+        } else {
+            output["response"] = response;
+        }
+
+        std::string stderr = Common::FileUtils::readFileAsString("/tmp/cthun_agent/" + job_id + "/stderr");
+        if (!stderr.empty()) {
+            output["stderr"] = stderr;
         }
     } else {
         output["status"] = "Job '" + job_id + "' is in unknown state: " + status["status"].asString();

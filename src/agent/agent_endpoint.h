@@ -53,6 +53,9 @@ class AgentEndpoint {
     std::map<std::string, std::shared_ptr<Module>> modules_;
     Cthun::WebSocket::Connection::Ptr connection_ptr_ { nullptr };
 
+    // Thread queue...sigh
+    std::vector<std::thread> thread_queue_;
+
     // log  the loaded modules
     void listModules();
 
@@ -74,6 +77,12 @@ class AgentEndpoint {
     void monitorConnectionState();
 
     void sendResponseMessage(std::string sender, Json::Value output, Cthun::WebSocket::Client_Type* client_ptr);
+
+    void delayedActionThread(std::shared_ptr<Module> module,
+                          std::string action_name,
+                          Json::Value doc,
+                          Json::Value output,
+                          std::string uuid);
 };
 
 }  // namespace Agent

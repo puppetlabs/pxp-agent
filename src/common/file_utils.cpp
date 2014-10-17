@@ -79,10 +79,31 @@ bool createDirectory(const std::string& dirname) {
 }
 
 Json::Value readFileAsJson(std::string path) {
-    std::ifstream file { path };
     Json::Value doc {};
+    std::string content { readFileAsString(path) };
+
+    if (content.empty()) {
+        return doc;
+    }
+
     Json::Reader reader;
-    std::string content;
+    // Something went wrong
+    if (!reader.parse(content, doc)) {
+        LOG_WARNING("Could not parse JSON from file: %1%", path);
+        LOG_WARNING("Returning empty document {}");
+    }
+
+    return doc;
+}
+
+std::string readFileAsString(std::string path) {
+    std::string content = "";
+
+    if (!fileExists(path)) {
+        return content;
+    }
+
+    std::ifstream file { path };
     std::string buffer;
 
     while (std::getline(file, buffer)) {
@@ -90,12 +111,7 @@ Json::Value readFileAsJson(std::string path) {
         content.push_back('\n');
     }
 
-    // Something went wrong
-    if (!reader.parse(content, doc)) {
-        return nullptr;
-    }
-
-    return doc;
+    return content;
 }
 
 }  // namespace FileUtils

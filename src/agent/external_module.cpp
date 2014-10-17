@@ -3,6 +3,7 @@
 #include "src/agent/action.h"
 #include "src/common/log.h"
 #include "src/common/file_utils.h"
+#include "src/common/timer.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -165,9 +166,14 @@ void ExternalModule::call_delayed_action(std::string action_name,
     Json::Value status {};
     status["module"] = module_name;
     status["action"] = action_name;
-    status["input"] = input;
+
+    if (status["input"].asString().empty()) {
+        status["input"] = "none";
+    } else {
+        status["input"] = input;
+    }
     status["status"] = "running";
-    status["duration"] = "TODO(ploubser): Port from pegasus";
+    status["duration"] = "0";
 
     Common::FileUtils::writeToFile(status.toStyledString() + "\n", action_dir + "/status");
     Common::FileUtils::writeToFile("", action_dir + "/stdout");
@@ -178,7 +184,9 @@ void ExternalModule::call_delayed_action(std::string action_name,
     std::string stdout;
     std::string stderr;
 
+    Common::Timer timer;
     run_command(path_, { path_, action_name }, stdin, stdout, stderr);
+    status["duration"] = std::to_string(timer.elapsedSeconds()) + "s";
 
     Json::Reader reader;
     if (!reader.parse(stdout, output)) {
@@ -188,7 +196,9 @@ void ExternalModule::call_delayed_action(std::string action_name,
 
     status["status"] = "completed";
     Common::FileUtils::writeToFile(stdout + "\n", action_dir + "/stdout");
-    Common::FileUtils::writeToFile(stderr + "\n", action_dir + "/stderr");
+    if (!stderr.empty()) {
+        Common::FileUtils::writeToFile(stderr + "\n", action_dir + "/stderr");
+    }
     Common::FileUtils::writeToFile(status.toStyledString() + "\n", action_dir + "/status");
 }
 
