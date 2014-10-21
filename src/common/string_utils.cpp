@@ -3,6 +3,7 @@
 #include <iostream>
 #include <ctime>
 #include <time.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace Cthun {
 namespace Common {
@@ -55,6 +56,12 @@ void displayProgress(double percent, int len, std::string status) {
                   << static_cast<int>(100 * percent) << "%";
         std::flush(std::cout);
     }
+}
+
+std::string getISO8601Time(unsigned int modifier_in_seconds) {
+    boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time() +
+                                 boost::posix_time::seconds(modifier_in_seconds);
+    return boost::posix_time::to_iso_extended_string(t) + "Z";
 }
 
 }  // namespace StringUtils

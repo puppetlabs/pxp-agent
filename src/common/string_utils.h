@@ -25,6 +25,9 @@ std::string getExpiryDatetime(int expiry_minutes = 1);
 void displayProgress(double percent, int len,
                      std::string status = "in progress");
 
+/// Return the current time in ISO8601 format
+std::string getISO8601Time(unsigned int modifier_in_seconds = 0);
+
 }  // namespace StringUtils
 }  // namespace Common
 }  // namespace Cthun

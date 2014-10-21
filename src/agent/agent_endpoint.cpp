@@ -8,6 +8,7 @@
 #include "src/agent/errors.h"
 #include "src/common/log.h"
 #include "src/common/uuid.h"
+#include "src/common/string_utils.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -32,6 +33,7 @@ static const uint DEFAULT_HEARTBEAT_PERIOD { 30 };  // [s]
 static const uint BACKOFF_MULTIPLIER { 2 };
 static const uint BACKOFF_LIMIT { 30 };
 static const uint CONNECTION_STATE_CHECK_INTERVAL { 10 };
+static const int DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS { 10 };
 
 //
 // HeartbeatTask
@@ -179,7 +181,7 @@ void AgentEndpoint::sendLogin(Cthun::WebSocket::Client_Type* client_ptr) {
     Json::Value login {};
     login["id"] = 1;
     login["version"] = "1";
-    login["expires"] = "2014-08-28T17:01:05Z";
+    login["expires"] = Common::StringUtils::getISO8601Time(DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
     login["sender"] = "cth://localhost/agent";
     login["endpoints"] = Json::Value { Json::arrayValue };
     login["endpoints"][0] = "cth://server";
@@ -334,7 +336,7 @@ void AgentEndpoint::sendResponseMessage(std::string sender,
     Json::Value body {};
     body["id"] = 2;
     body["version"] = "1";
-    body["expires"] = "2014-08-28T17:01:05Z";
+    body["expires"] = Common::StringUtils::getISO8601Time(DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
     body["sender"] = "cth://localhost/agent";
     body["endpoints"] = Json::Value { Json::arrayValue };
     body["endpoints"][0] = sender;
