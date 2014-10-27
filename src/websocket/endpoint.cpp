@@ -14,11 +14,9 @@ Endpoint::Endpoint(const std::string& ca_crt_path,
     : ca_crt_path_ { ca_crt_path },
       client_crt_path_ { client_crt_path },
       client_key_path_ { client_key_path } {
-    // Disable websocketpp logging if we're not at trace level logging
-    if (!LOG_IS_TRACE_ENABLED()) {
-        client_.clear_access_channels(websocketpp::log::alevel::all);
-        client_.clear_error_channels(websocketpp::log::elevel::all);
-    }
+    // Turn off websocketpp logging to avoid runtime errors (see CTH-69))
+    client_.clear_access_channels(websocketpp::log::alevel::all);
+    client_.clear_error_channels(websocketpp::log::elevel::all);
 
     // Initialize the transport system. Note that in perpetual mode,
     // the event loop does not terminate when there are no connections
