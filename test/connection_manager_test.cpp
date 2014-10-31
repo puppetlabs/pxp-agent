@@ -86,7 +86,7 @@ TEST_F(ConnectionManagerTest, ConfigureSecureEndpoint_Failure) {
 TEST_F(ConnectionManagerTest, ConfigureSecureEndpoint_FailureBis) {
     ConnectionManagerTest::writeCertificates();
     Connection::Ptr p {
-        CONNECTION_MANAGER.createConnection("ws://127.0.0.1/chtun/") };
+        CONNECTION_MANAGER.createConnection("ws://127.0.0.1/cthun/") };
     CONNECTION_MANAGER.open(p);
     EXPECT_THROW(CONNECTION_MANAGER.configureSecureEndpoint(
                      ConnectionManagerTest::CA_PATH,
@@ -100,7 +100,7 @@ TEST_F(ConnectionManagerTest, Open) {
     try {
         ConnectionManagerTest::writeCertificates();
         Connection::Ptr p {
-            CONNECTION_MANAGER.createConnection("wss://127.0.0.1/chtun/") };
+            CONNECTION_MANAGER.createConnection("wss://127.0.0.1/cthun/") };
         CONNECTION_MANAGER.configureSecureEndpoint(
             ConnectionManagerTest::CA_PATH,
             ConnectionManagerTest::CRT_PATH,
@@ -117,7 +117,7 @@ TEST_F(ConnectionManagerTest, Reset) {
     try {
         ConnectionManagerTest::writeCertificates();
         Connection::Ptr p {
-            CONNECTION_MANAGER.createConnection("wss://127.0.0.1/chtun/") };
+            CONNECTION_MANAGER.createConnection("wss://127.0.0.1/cthun/") };
         CONNECTION_MANAGER.open(p);
         CONNECTION_MANAGER.resetEndpoint();
         CONNECTION_MANAGER.configureSecureEndpoint(
@@ -135,7 +135,7 @@ TEST_F(ConnectionManagerTest, Reset) {
 TEST_F(ConnectionManagerTest, GetConnectionIDs) {
     ConnectionManagerTest::writeCertificates();
     Connection::Ptr p {
-        CONNECTION_MANAGER.createConnection("ws://127.0.0.1/chtun/") };
+        CONNECTION_MANAGER.createConnection("ws://127.0.0.1/cthun/") };
     // the connection must be opened before being tracked by the endpoint
     unsigned long expected_size { 0 };  // NOLINT(runtime/int): googletest type
     EXPECT_EQ(expected_size, CONNECTION_MANAGER.getConnectionIDs().size());
@@ -148,9 +148,9 @@ TEST_F(ConnectionManagerTest, GetConnectionIDs) {
 TEST_F(ConnectionManagerTest, CloseAllConnections) {
     ConnectionManagerTest::writeCertificates();
     Connection::Ptr p1 {
-        CONNECTION_MANAGER.createConnection("ws://127.0.0.1/chtun_1/") };
+        CONNECTION_MANAGER.createConnection("ws://127.0.0.1/cthun_1/") };
     Connection::Ptr p2 {
-        CONNECTION_MANAGER.createConnection("ws://127.0.0.1/chtun_2/") };
+        CONNECTION_MANAGER.createConnection("ws://127.0.0.1/cthun_2/") };
     CONNECTION_MANAGER.open(p1);
     CONNECTION_MANAGER.open(p2);
     unsigned long expected_size { 2 };  // NOLINT(runtime/int)

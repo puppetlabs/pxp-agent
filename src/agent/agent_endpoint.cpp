@@ -91,6 +91,7 @@ AgentEndpoint::AgentEndpoint() {
 
 
     // load external modules
+    // TODO(ale): fix; this breaks if cthun-agent is not invoked from root dir
     boost::filesystem::path module_path { "modules" };
     boost::filesystem::directory_iterator end;
 
@@ -344,7 +345,7 @@ void AgentEndpoint::sendResponseMessage(std::string sender,
     body["data_schema"] = "http://puppetlabs.com/cncresponseschema";
     body["data"]["response"] = output;
 
-    try{
+    try {
         std::string response_txt = body.toStyledString();
         LOG_INFO("sending response of size %1%", response_txt.size());
         LOG_DEBUG("response:\n%1%", response_txt);

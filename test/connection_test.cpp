@@ -19,7 +19,7 @@ class ConnectionTest : public ::testing::Test {
     virtual void TearDown() {}
 };
 
-static const std::string TEST_URL { "wss://127.0.0.1/chtun/" };
+static const std::string TEST_URL { "wss://127.0.0.1/cthun/" };
 
 //
 // Tests

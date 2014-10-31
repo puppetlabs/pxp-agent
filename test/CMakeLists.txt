@@ -9,7 +9,7 @@ set(SOURCES
     file_utils_test.cpp
 )
 
-set(test_BIN chtun-agent-unittests)
+set(test_BIN cthun-agent-unittests)
 
 include_directories(
     ${GMOCK_INCLUDE_DIRS}
