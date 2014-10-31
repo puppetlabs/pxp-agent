@@ -10,33 +10,10 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <mutex>
 
 namespace Cthun {
 namespace Agent {
-
-//
-// HeartbeatTask
-//
-
-class HeartbeatTask {
-  public:
-    explicit HeartbeatTask(Cthun::WebSocket::Connection::Ptr connection_ptr);
-    ~HeartbeatTask();
-    void start();
-    void stop();
-
-  private:
-    bool must_stop_;
-    std::thread heartbeat_thread_;
-    std::string binary_payload_ { "cthun ping payload" };
-    Cthun::WebSocket::Connection::Ptr connection_ptr_ { nullptr };
-
-    void heartbeatThread();
-};
-
-//
-// Agent Endpoint
-//
 
 class AgentEndpoint {
   public:
@@ -50,6 +27,7 @@ class AgentEndpoint {
                     std::string client_key_path);
 
   private:
+    std::string binary_payload_ { "cthun ping payload" };
     std::map<std::string, std::shared_ptr<Module>> modules_;
     Cthun::WebSocket::Connection::Ptr connection_ptr_ { nullptr };
 

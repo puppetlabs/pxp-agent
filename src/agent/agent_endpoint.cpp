@@ -25,62 +25,10 @@ LOG_DECLARE_NAMESPACE("agent.agent_endpoint");
 namespace Cthun {
 namespace Agent {
 
-//
-// Tokens
-//
-
-static const uint DEFAULT_HEARTBEAT_PERIOD { 30 };  // [s]
 static const uint BACKOFF_MULTIPLIER { 2 };
 static const uint BACKOFF_LIMIT { 30 };
-static const uint CONNECTION_STATE_CHECK_INTERVAL { 10 };
+static const uint CONNECTION_STATE_CHECK_INTERVAL { 15 };
 static const int DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS { 10 };
-
-//
-// HeartbeatTask
-//
-
-HeartbeatTask::HeartbeatTask(Cthun::WebSocket::Connection::Ptr connection_ptr)
-        : must_stop_ { false } {
-    assert(connection_ptr != nullptr);
-    connection_ptr_ = connection_ptr;
-}
-
-HeartbeatTask::~HeartbeatTask() {
-    stop();
-}
-
-void HeartbeatTask::start() {
-    LOG_INFO("starting the heartbeat task");
-    heartbeat_thread_ = std::thread(&HeartbeatTask::heartbeatThread, this);
-}
-
-void HeartbeatTask::stop() {
-    LOG_INFO("stopping the heartbeat task");
-    must_stop_ = true;
-    if (heartbeat_thread_.joinable()) {
-        heartbeat_thread_.join();
-    }
-}
-
-void HeartbeatTask::heartbeatThread() {
-    while (!must_stop_) {
-        try {
-            if (connection_ptr_->getState() == Cthun::WebSocket::Connection_State_Values::open) {
-                Cthun::WebSocket::CONNECTION_MANAGER.ping(connection_ptr_,
-                                                          binary_payload_);
-            } else {
-                LOG_DEBUG("skipping ping; connection is not open");
-            }
-        } catch (Cthun::WebSocket::message_error& e) {
-            LOG_ERROR(e.what());
-        }
-        sleep(DEFAULT_HEARTBEAT_PERIOD);
-    }
-}
-
-//
-// AgentEndpoint
-//
 
 AgentEndpoint::AgentEndpoint() {
     // declare internal modules
@@ -156,8 +104,8 @@ void AgentEndpoint::startAgent(std::string url,
 
     // Start heartbeat task
 
-    HeartbeatTask heartbeat_task { connection_ptr_ };
-    heartbeat_task.start();
+    // HeartbeatTask heartbeat_task { connection_ptr_ };
+    // heartbeat_task.start();
 
     // Keep monitoring the connection
 
@@ -404,6 +352,7 @@ void AgentEndpoint::setConnectionCallbacks() {
 
 void AgentEndpoint::monitorConnectionState() {
     uint backoff_seconds = 2;
+
     for (;;) {
         sleep(CONNECTION_STATE_CHECK_INTERVAL);
 
@@ -427,6 +376,10 @@ void AgentEndpoint::monitorConnectionState() {
                     }
                 }
             }
+        } else {
+            LOG_INFO("Sending heartbeat ping");
+            Cthun::WebSocket::CONNECTION_MANAGER.ping(connection_ptr_,
+                                                          binary_payload_);
         }
     }
 }
