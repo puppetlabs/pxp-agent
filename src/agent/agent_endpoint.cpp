@@ -102,13 +102,6 @@ void AgentEndpoint::startAgent(std::string url,
         throw fatal_error { "failed to connect" };
     }
 
-    // Start heartbeat task
-
-    // HeartbeatTask heartbeat_task { connection_ptr_ };
-    // heartbeat_task.start();
-
-    // Keep monitoring the connection
-
     monitorConnectionState();
 }
 
