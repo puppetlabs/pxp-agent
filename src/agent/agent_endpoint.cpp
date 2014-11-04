@@ -377,7 +377,7 @@ void AgentEndpoint::monitorConnectionState() {
                 }
             }
         } else {
-            LOG_INFO("Sending heartbeat ping");
+            LOG_DEBUG("Sending heartbeat ping");
             Cthun::WebSocket::CONNECTION_MANAGER.ping(connection_ptr_,
                                                           binary_payload_);
         }
