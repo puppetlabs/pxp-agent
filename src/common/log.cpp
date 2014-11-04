@@ -35,7 +35,7 @@ bool Log::is_log_enabled(const std::string &logger, Log::log_level level) {
 
 void Log::configure_logging(Log::log_level level, std::ostream &dst) {
     // Set filtering based on log_level (info, warning, debug, etc).
-    auto sink = boost::log::add_console_log(dst);
+    auto sink = boost::log::add_console_log(dst, boost::log::keywords::auto_flush = true);
 
     sink->set_formatter(boost::log::expressions::stream
         << boost::log::expressions::format_date_time<boost::posix_time::ptime>(
