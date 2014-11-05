@@ -337,7 +337,7 @@ void AgentEndpoint::setConnectionCallbacks() {
         [&consecutive_pong_timeouts](Cthun::WebSocket::Client_Type* client_ptr,
                                      Cthun::WebSocket::Connection::Ptr connection_ptr_c,
                                      std::string binary_payload) {
-            LOG_WARNING("pong timeout (%1% consecutive) - payload: '%2 %'",
+            LOG_WARNING("pong timeout (%1% consecutive) - payload: '%2%'",
                         std::to_string(consecutive_pong_timeouts), binary_payload);
             ++consecutive_pong_timeouts;
         });
