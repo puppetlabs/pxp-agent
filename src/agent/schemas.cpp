@@ -144,7 +144,7 @@ valijson::Schema Schemas::network_message() {
     properties["version"].addConstraint(json_type_string);
 
     required_properties.insert("id");
-    properties["id"].addConstraint(json_type_integer);
+    properties["id"].addConstraint(json_type_string);
 
     required_properties.insert("expires");
     // TODO(richardc): ISO 8061 formatted date string

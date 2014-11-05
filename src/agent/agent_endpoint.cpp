@@ -121,7 +121,7 @@ void AgentEndpoint::listModules() {
 
 void AgentEndpoint::sendLogin(Cthun::WebSocket::Client_Type* client_ptr) {
     Json::Value login {};
-    login["id"] = 1;
+    login["id"] = Common::getUUID();
     login["version"] = "1";
     login["expires"] = Common::StringUtils::getISO8601Time(DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
     login["sender"] = "cth://localhost/agent";
@@ -132,7 +132,7 @@ void AgentEndpoint::sendLogin(Cthun::WebSocket::Client_Type* client_ptr) {
     login["data"]["type"] = "agent";
 
 
-    LOG_INFO("login message:\n%1%", login.toStyledString());
+    LOG_INFO("sending login message with id: %1%", login["id"].asString());
 
     valijson::Schema message_schema = Schemas::network_message();
     std::vector<std::string> errors;
@@ -276,7 +276,7 @@ void AgentEndpoint::sendResponseMessage(std::string sender,
                                         Json::Value output,
                                         Cthun::WebSocket::Client_Type* client_ptr) {
     Json::Value body {};
-    body["id"] = 2;
+    body["id"] = Common::getUUID();
     body["version"] = "1";
     body["expires"] = Common::StringUtils::getISO8601Time(DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
     body["sender"] = "cth://localhost/agent";
