@@ -48,6 +48,7 @@ void Ping::ping_action(const Json::Value& input, Json::Value& output) {
     auto time_to_agent = current_date_milliseconds - sender_timestamp;
 
     Json::Value result;
+    result["sender_timestamp"] = input["sender_timestamp"];
     result["time_to_agent"] = std::to_string(time_to_agent);
     result["agent_timestamp"] = std::to_string(current_date_milliseconds);
     output = result;
