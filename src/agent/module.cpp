@@ -27,10 +27,10 @@ void Module::validate_and_call_action(std::string action_name,
 
     const Action& action = actions[action_name];
 
-    LOG_INFO("validating input for '%1% %2%'", module_name, action_name);
+    LOG_DEBUG("validating input for '%1%' '%2%'", module_name, action_name);
     std::vector<std::string> errors;
     if (!Schemas::validate(input, action.input_schema, errors)) {
-        LOG_ERROR("validation failed");
+        LOG_ERROR("action input validation failed '%1%' '%2%'", module_name, action_name);
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }
@@ -44,9 +44,9 @@ void Module::validate_and_call_action(std::string action_name,
         call_delayed_action(action_name, input, output, action_id);
     }
 
-    LOG_INFO("validating output for %1% %2%", module_name, action_name);
+    LOG_DEBUG("validating output for '%1%' '%2%'", module_name, action_name);
     if (!Schemas::validate(output, action.output_schema, errors)) {
-        LOG_ERROR("validation failed");
+        LOG_ERROR("output validation failed '%1%' '%2%'", module_name, action_name);
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }
