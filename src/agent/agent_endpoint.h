@@ -54,7 +54,10 @@ class AgentEndpoint {
     // to reconnect the agent in case the connection is not open
     void monitorConnectionState();
 
-    void sendResponseMessage(std::string sender, Json::Value output, Cthun::WebSocket::Client_Type* client_ptr);
+    void sendResponseMessage(std::string sender,
+                             std::string request_id,
+                             Json::Value output,
+                             Cthun::WebSocket::Client_Type* client_ptr);
 
     void delayedActionThread(std::shared_ptr<Module> module,
                           std::string action_name,

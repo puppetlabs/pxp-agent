@@ -216,6 +216,7 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
     }
 
     Json::Value output;
+    std::string request_id = doc["id"].asString();
     std::string module_name = doc["data"]["module"].asString();
     std::string action_name = doc["data"]["action"].asString();
     std::string sender = doc["sender"].asString();
@@ -225,8 +226,8 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
             std::shared_ptr<Module> module = modules_[module_name];
 
             if (module->actions.find(action_name) == module->actions.end()) {
-                LOG_ERROR("Invalid request: unknown action %1% for module %2%",
-                          module_name, action_name);
+                LOG_ERROR("Invalid request %1%: unknown action %2% for module %3%",
+                          request_id, module_name, action_name);
                 throw validation_error { "Invalid request: unknown action " +
                                          action_name +
                                          " for module " +
@@ -242,7 +243,7 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
                 Json::Value output {};
                 output["status"] = "Requested excution of action: " + action_name;
                 output["id"] = uuid;
-                sendResponseMessage(sender, output, client_ptr);
+                sendResponseMessage(sender, request_id, output, client_ptr);
                 thread_queue_.push_back(std::thread(&AgentEndpoint::delayedActionThread,
                                                     this,
                                                     module,
@@ -254,29 +255,31 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
                 module->validate_and_call_action(action_name,
                                                  doc["data"]["params"],
                                                  output);
-                LOG_DEBUG("%1% %2% output: %3%",
-                          module_name, action_name, output.toStyledString());
-                sendResponseMessage(sender, output, client_ptr);
+                LOG_DEBUG("Request %1%: '%2%' '%3%' output: %4%",
+                          request_id, module_name, action_name, output.toStyledString());
+                sendResponseMessage(sender, request_id, output, client_ptr);
             }
         } else {
-            LOG_ERROR("Invalid request: unknown module %1%", module_name);
+            LOG_ERROR("Invalid request %1%: unknown module '%2%'", request_id, module_name);
             throw validation_error { "Invalid request: unknown module " +
                                      module_name };
         }
     } catch (validation_error& e) {
-        LOG_ERROR("failed to perform '%1% %2%': %3%",
-                  module_name, action_name, e.what());
+        LOG_ERROR("failed to perform %1%: '%2%' '%3%': %4%",
+                  request_id, module_name, action_name, e.what());
         Json::Value err_result;
         err_result["error"] = e.what();
-        sendResponseMessage(sender, err_result, client_ptr);
+        sendResponseMessage(sender, request_id, err_result, client_ptr);
     }
 }
 
 void AgentEndpoint::sendResponseMessage(std::string sender,
+                                        std::string request_id,
                                         Json::Value output,
                                         Cthun::WebSocket::Client_Type* client_ptr) {
     Json::Value body {};
-    body["id"] = Common::getUUID();
+    std::string response_id { Common::getUUID() };
+    body["id"] = response_id;
     body["version"] = "1";
     body["expires"] = Common::StringUtils::getISO8601Time(DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
     body["sender"] = "cth://localhost/agent";
@@ -288,7 +291,8 @@ void AgentEndpoint::sendResponseMessage(std::string sender,
 
     try {
         std::string response_txt = body.toStyledString();
-        LOG_INFO("sending response of size %1%", response_txt.size());
+        LOG_INFO("Responding to %1% with %2%.  Size %3%",
+                 request_id, response_id, response_txt.size());
         LOG_DEBUG("response:\n%1%", response_txt);
 
         auto handle = connection_ptr_->getConnectionHandle();
@@ -296,7 +300,7 @@ void AgentEndpoint::sendResponseMessage(std::string sender,
                          response_txt,
                          Cthun::WebSocket::Frame_Opcode_Values::text);
     }  catch(Cthun::WebSocket::message_error& e) {
-        LOG_ERROR("failed to send: %1%", e.what());
+        LOG_ERROR("failed to send %1%: %2%", response_id, e.what());
         // we don't want to throw anything here
     } catch (std::exception&  e) {
         LOG_ERROR("unexpected exception: %1%", e.what());
