@@ -197,6 +197,7 @@ void AgentEndpoint::delayedActionThread(std::shared_ptr<Module> module,
                  Json::Value output,
                  std::string uuid) {
     module->validate_and_call_action(action_name,
+                                     doc,
                                      doc["data"]["params"],
                                      output,
                                      uuid);
@@ -253,6 +254,7 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
                                                     uuid));
             } else {
                 module->validate_and_call_action(action_name,
+                                                 doc,
                                                  doc["data"]["params"],
                                                  output);
                 LOG_DEBUG("Request %1%: '%2%' '%3%' output: %4%",

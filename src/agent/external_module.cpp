@@ -118,6 +118,7 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
 }
 
 void ExternalModule::call_action(std::string action_name,
+                                 const Json::Value& request,
                                  const Json::Value& input,
                                  Json::Value& output) {
     std::string stdin = input.toStyledString();
@@ -137,6 +138,7 @@ void ExternalModule::call_action(std::string action_name,
 }
 
 void ExternalModule::call_delayed_action(std::string action_name,
+                                         const Json::Value& request,
                                          const Json::Value& input,
                                          Json::Value& output,
                                          std::string job_id) {

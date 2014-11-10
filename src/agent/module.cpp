@@ -11,12 +11,15 @@ LOG_DECLARE_NAMESPACE("agent.module");
 namespace Cthun {
 namespace Agent {
 
-void Module::call_action(std::string action_name, const Json::Value& input,
+void Module::call_action(std::string action_name,
+                         const Json::Value& request,
+                         const Json::Value& input,
                          Json::Value& output) {
     LOG_INFO("invoking native action %1%", action_name);
 }
 
 void Module::validate_and_call_action(std::string action_name,
+                                      const Json::Value& request,
                                       const Json::Value& input,
                                       Json::Value& output,
                                       std::string action_id) {
@@ -39,9 +42,9 @@ void Module::validate_and_call_action(std::string action_name,
     }
 
     if (action_id.empty()) {
-        call_action(action_name, input, output);
+        call_action(action_name, request, input, output);
     } else {
-        call_delayed_action(action_name, input, output, action_id);
+        call_delayed_action(action_name, request, input, output, action_id);
     }
 
     LOG_DEBUG("validating output for '%1%' '%2%'", module_name, action_name);

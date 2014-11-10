@@ -17,10 +17,12 @@ class Module {
     std::map<std::string, Action> actions;
 
     virtual void call_action(std::string action_name,
+                             const Json::Value& request,
                              const Json::Value& input,
                              Json::Value& output) = 0;
 
     virtual void call_delayed_action(std::string action_name,
+                             const Json::Value& request,
                              const Json::Value& input,
                              Json::Value& output,
                              std::string job_id) = 0;
@@ -30,6 +32,7 @@ class Module {
     /// Sets an error response in the referred output json object
     /// in case of unknown action or invalid schemas.
     void validate_and_call_action(std::string action_name,
+                                  const Json::Value& request,
                                   const Json::Value& input,
                                   Json::Value& output,
                                   std::string job_id = "");

@@ -21,7 +21,9 @@ Echo::Echo() {
     actions["echo"] = Action { input_schema, output_schema, "interactive" };
 }
 
-void Echo::call_action(std::string action_name, const Json::Value& input,
+void Echo::call_action(std::string action_name,
+                       const Json::Value& request,
+                       const Json::Value& input,
                        Json::Value& output) {
     output = Json::Value { input.asString() };
 }
