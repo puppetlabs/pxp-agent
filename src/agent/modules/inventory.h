@@ -10,9 +10,12 @@ namespace Modules {
 class Inventory : public Cthun::Agent::Module {
   public:
     Inventory();
-    void call_action(std::string action_name, const Json::Value& input,
+    void call_action(std::string action_name,
+                     const Json::Value& request,
+                     const Json::Value& input,
                      Json::Value& output);
     void call_delayed_action(std::string action_name,
+                             const Json::Value& request,
                              const Json::Value& input,
                              Json::Value& output,
                              std::string job_id) {}

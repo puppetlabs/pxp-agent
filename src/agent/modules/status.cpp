@@ -28,8 +28,10 @@ Status::Status() {
     actions["query"] = Action { input_schema, output_schema, "interactive" };
 }
 
-void Status::call_action(std::string action_name, const Json::Value& input,
-                            Json::Value& output) {
+void Status::call_action(std::string action_name,
+                         const Json::Value& request,
+                         const Json::Value& input,
+                         Json::Value& output) {
     std::string job_id { input["job_id"].asString() };
 
     if (!Common::FileUtils::fileExists("/tmp/cthun_agent/" + job_id)) {

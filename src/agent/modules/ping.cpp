@@ -38,7 +38,7 @@ Ping::Ping() {
     actions["ping"] = Action { input_schema, output_schema, "interactive" };
 }
 
-void Ping::ping_action(const Json::Value& input, Json::Value& output) {
+void Ping::ping_action(const Json::Value &request, const Json::Value& input, Json::Value& output) {
     int sender_timestamp;
     std::istringstream(input["sender_timestamp"].asString()) >> sender_timestamp;
 
@@ -51,13 +51,15 @@ void Ping::ping_action(const Json::Value& input, Json::Value& output) {
     result["sender_timestamp"] = input["sender_timestamp"];
     result["time_to_agent"] = std::to_string(time_to_agent);
     result["agent_timestamp"] = std::to_string(current_date_milliseconds);
+    result["request_hops"] = request["hops"];
     output = result;
 }
 
 void Ping::call_action(std::string action_name,
+                       const Json::Value& request,
                        const Json::Value& input,
                        Json::Value& output) {
-    ping_action(input, output);
+    ping_action(request, input, output);
 }
 
 }  // namespace Modules
