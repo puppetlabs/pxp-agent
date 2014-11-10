@@ -51,6 +51,7 @@ void Ping::ping_action(const Json::Value &request, const Json::Value& input, Jso
     result["sender_timestamp"] = input["sender_timestamp"];
     result["time_to_agent"] = std::to_string(time_to_agent);
     result["agent_timestamp"] = std::to_string(current_date_milliseconds);
+    result["request_hops"] = request["hops"];
     output = result;
 }
 
