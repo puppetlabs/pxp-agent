@@ -20,7 +20,7 @@ class AgentEndpoint {
     AgentEndpoint();
     ~AgentEndpoint();
 
-    // daemon entry point
+    // Daemon entry point.
     void startAgent(std::string url,
                     std::string ca_crt_path,
                     std::string client_crt_path,
@@ -33,32 +33,33 @@ class AgentEndpoint {
     // Thread queue...sigh
     std::vector<std::thread> thread_queue_;
 
-    // log the loaded modules
+    // Log the loaded modules.
     void listModules();
 
-    // set WebSocket event callbacks
+    // Set the event callbacks for the connection.
     void setConnectionCallbacks();
 
-    // WebSocket onOpen event callback
+    // Send a login message.
     void sendLogin();
 
-    // throw a validation_error in case of invalid message
+    // Throw a validation_error in case of invalid message.
     Json::Value parseAndValidateMessage(std::string message);
 
-    // send a response message with specified request ID
+    // Send a response message with specified request ID and output
+    // to the receiver endpoint.
     void sendResponse(std::string receiver_endpoint,
                       std::string request_id,
                       Json::Value output);
 
-    // WebSocket onMessage event callback
+    // Parse and validate the passed message; reply to the sender
+    // with the requested output.
     void processMessageAndSendResponse(std::string message);
 
-    // TODO: keep attempting to reconnect
-    // periodically check the connection state; make a single attempt
-    // to reconnect the agent in case the connection is not open
+    // Periodically check the connection state; reconnect the agent
+    // in case the connection is not open
     void monitorConnectionState();
 
-    // task to validate and execute the specified action
+    // Task to validate and execute the specified action.
     void delayedActionThread(std::shared_ptr<Module> module,
                              std::string action_name,
                              Json::Value doc,

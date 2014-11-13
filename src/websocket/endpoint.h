@@ -45,9 +45,10 @@ class Endpoint {
     //
 
     /// Check the state of the connection; in case it's not open,
-    /// try to re-establish it. This is done for max_connect_attempts
-    /// times, by following an exponential backoff.
-    /// Throw a connection_error in case of failure.
+    /// try to re-open it. This is done for max_connect_attempts
+    /// times (or idefinetely, in case, as by default, it's 0), by
+    /// following an exponential backoff.
+    /// Throw a connection_error if it fails to open.
     void connect(size_t max_connect_attempts = 0);
 
     /// Send the message to the server.
@@ -103,13 +104,21 @@ class Endpoint {
 
     // Event handlers
     Context_Ptr onTlsInit(Connection_Handle hdl);
-    void onOpen(Connection_Handle hdl);
     void onClose(Connection_Handle hdl);
     void onFail(Connection_Handle hdl);
-    void onMessage(Connection_Handle hdl, Client_Type::message_ptr msg);
     bool onPing(Connection_Handle hdl, std::string binary_payload);
     void onPong(Connection_Handle hdl, std::string binary_payload);
     void onPongTimeout(Connection_Handle hdl, std::string binary_payload);
+
+    /// Handler executed by the transport layer in case of a
+    /// WebSocket onOpen event. Calls onOpen_callback_(); in case it
+    /// fails, the exception is filtered and the connection closed.
+    void onOpen(Connection_Handle hdl);
+
+    /// Handler executed by the transport layer in case of a
+    /// WebSocket onMessage event. Calls onMessage_callback_();
+    //  in case it fails, the exception is filtered and logged.
+    void onMessage(Connection_Handle hdl, Client_Type::message_ptr msg);
 };
 
 }  // namespace WebSocket

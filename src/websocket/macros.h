@@ -56,7 +56,7 @@ namespace Connection_State_Values {
         closing = 2,
         closed = 3
     };
-}  // namespace state
+}  // namespace Connection_State_Values
 
 using Connection_State = Connection_State_Values::value_;
 

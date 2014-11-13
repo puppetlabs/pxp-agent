@@ -160,7 +160,6 @@ Json::Value AgentEndpoint::parseAndValidateMessage(std::string message) {
 
     valijson::Schema data_schema { Schemas::cnc_data() };
     if (!Schemas::validate(doc["data"], data_schema, errors)) {
-        // TODO(ale): refactor error logging
         LOG_WARNING("data schema validation failed; logging the errors");
         for (auto error : errors) {
             LOG_WARNING("    %1%", error);
