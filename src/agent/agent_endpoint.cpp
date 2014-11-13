@@ -136,6 +136,15 @@ void AgentEndpoint::sendLogin() {
         LOG_WARNING(e.what());
         throw e;
     }
+
+
+
+
+
+
+
+
+    throw Cthun::WebSocket::message_error { "lalala" };
 }
 
 Json::Value AgentEndpoint::parseAndValidateMessage(std::string message) {
@@ -212,7 +221,7 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
     std::string request_id = doc["id"].asString();
     std::string module_name = doc["data"]["module"].asString();
     std::string action_name = doc["data"]["action"].asString();
-    std::string receiver_endpoint = doc["sender"].asString();
+    std::string sender_endpoint = doc["sender"].asString();
 
     try {
         if (modules_.find(module_name) != modules_.end()) {
@@ -234,7 +243,7 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
                 Json::Value output {};
                 output["status"] = "Requested excution of action: " + action_name;
                 output["id"] = uuid;
-                sendResponse(receiver_endpoint, request_id, output);
+                sendResponse(sender_endpoint, request_id, output);
                 thread_queue_.push_back(std::thread(&AgentEndpoint::delayedActionThread,
                                                     this,
                                                     module,
@@ -250,7 +259,7 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
                 LOG_DEBUG("Request %1%: '%2%' '%3%' output: %4%",
                           request_id, module_name, action_name,
                           output.toStyledString());
-                sendResponse(receiver_endpoint, request_id, output);
+                sendResponse(sender_endpoint, request_id, output);
             }
         } else {
             LOG_ERROR("Invalid request %1%: unknown module '%2%'",
@@ -263,7 +272,7 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
                   request_id, module_name, action_name, e.what());
         Json::Value err_result;
         err_result["error"] = e.what();
-        sendResponse(receiver_endpoint, request_id, err_result);
+        sendResponse(sender_endpoint, request_id, err_result);
     }
 }
 

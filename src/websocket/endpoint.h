@@ -112,7 +112,7 @@ class Endpoint {
 
     /// Handler executed by the transport layer in case of a
     /// WebSocket onOpen event. Calls onOpen_callback_(); in case it
-    /// fails, the exception is filtered and the connection closed.
+    /// fails, the exception is filtered and the connection is closed.
     void onOpen(Connection_Handle hdl);
 
     /// Handler executed by the transport layer in case of a

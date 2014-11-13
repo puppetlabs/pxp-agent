@@ -264,7 +264,7 @@ void Endpoint::onOpen(Connection_Handle hdl) {
                       "state to 'closed'");
         }
     }
-    connection_state_ = Connection_State_Values::closed;
+    close(Close_Code_Values::normal, "failed to execute the onOpen callback");
 }
 
 void Endpoint::onMessage(Connection_Handle hdl, Client_Type::message_ptr msg) {
