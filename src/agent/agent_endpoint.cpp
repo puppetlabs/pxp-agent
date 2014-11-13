@@ -19,8 +19,6 @@ LOG_DECLARE_NAMESPACE("agent.agent_endpoint");
 namespace Cthun {
 namespace Agent {
 
-static const uint BACKOFF_MULTIPLIER { 2 };
-static const uint BACKOFF_LIMIT { 30 };
 static const uint CONNECTION_STATE_CHECK_INTERVAL { 15 };
 static const int DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS { 10 };
 
@@ -129,14 +127,14 @@ void AgentEndpoint::sendLogin() {
             LOG_WARNING("    %1%", error);
         }
         // This is unexpected since we're sending the above message
-        throw fatal_error { "invalid login message schema" };
+        throw Cthun::WebSocket::message_error { "invalid login message schema" };
     }
 
     try {
          ws_endpoint_ptr_->send(login.toStyledString());
     }  catch(Cthun::WebSocket::message_error& e) {
-        LOG_WARNING("failed to send: %1%", e.what());
-        throw fatal_error { "failed to send login message" };
+        LOG_WARNING(e.what());
+        throw e;
     }
 }
 
@@ -270,32 +268,14 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
     }
 }
 
-// TODO: rewrite
 void AgentEndpoint::monitorConnectionState() {
-    uint backoff_seconds = 2;
-
     for (;;) {
         sleep(CONNECTION_STATE_CHECK_INTERVAL);
 
         if (ws_endpoint_ptr_->getConnectionState()
                 != Cthun::WebSocket::Connection_State_Values::open) {
             LOG_WARNING("Connection to Cthun server lost. Retrying.");
-            // Attempt to re-establish connection
-            while (ws_endpoint_ptr_->getConnectionState()
-                    != Cthun::WebSocket::Connection_State_Values::open) {
-                try {
-                    ws_endpoint_ptr_->connect();
-                    LOG_INFO("Successfully re-established connection to Cthun server.");
-                } catch (Cthun::WebSocket::connection_error& e) {
-                    LOG_WARNING("Failed to re-establish connection to Cthun server");
-                    LOG_INFO("Attemping reconnect in %1% seconds.", backoff_seconds);
-                    sleep(backoff_seconds);
-                    if ((backoff_seconds *= BACKOFF_MULTIPLIER) >= BACKOFF_LIMIT) {
-                        // Limit backoff to 30 seconds.
-                        backoff_seconds = 30;
-                    }
-                }
-            }
+            ws_endpoint_ptr_->connect();
         } else {
             LOG_DEBUG("Sending heartbeat ping");
             ws_endpoint_ptr_->ping();

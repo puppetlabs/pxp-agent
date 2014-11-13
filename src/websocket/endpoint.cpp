@@ -8,6 +8,10 @@ LOG_DECLARE_NAMESPACE("websocket.endpoint");
 namespace Cthun {
 namespace WebSocket {
 
+static const uint CONNECTION_MIN_INTERVAL { 200000 };  // [us]
+static const uint CONNECTION_BACKOFF_LIMIT { 33 };  // [s]
+static const uint CONNECTION_BACKOFF_MULTIPLIER { 2 };
+
 Endpoint::Endpoint(const std::string& server_url,
                    const std::string& ca_crt_path,
                    const std::string& client_crt_path,
@@ -16,7 +20,7 @@ Endpoint::Endpoint(const std::string& server_url,
           ca_crt_path_ { ca_crt_path },
           client_crt_path_ { client_crt_path },
           client_key_path_ { client_key_path },
-          connection_state_ { Connection_State_Values::connecting } {
+          connection_state_ { Connection_State_Values::initialized } {
     // Turn off websocketpp logging to avoid runtime errors (see CTH-69))
     endpoint_.clear_access_channels(websocketpp::log::alevel::all);
     endpoint_.clear_error_channels(websocketpp::log::elevel::all);
@@ -68,8 +72,47 @@ void Endpoint::setOnMessageCallback(std::function<void(std::string msg)> c_b) {
 // Synchronous calls
 //
 
-void Endpoint::connect() {
-    // TODO: connection retries
+void Endpoint::connect(size_t max_connect_attempts) {
+    size_t idx { 0 };
+    bool try_again { true };
+    do {
+        idx++;
+
+        if (max_connect_attempts) {
+            try_again = (idx < max_connect_attempts);
+        }
+
+        // TODO(ale): do we want to catch a connection_error and retry?
+        connect_();
+
+        usleep(CONNECTION_MIN_INTERVAL);
+
+        if (connection_state_ == Connection_State_Values::connecting) {
+            continue;
+        } else if (connection_state_ != Connection_State_Values::open) {
+            if (try_again) {
+                // increase backoff if needed
+                auto b_i = connection_backoff_s_ * CONNECTION_BACKOFF_MULTIPLIER;
+                connection_backoff_s_ =
+                    (b_i >= CONNECTION_BACKOFF_LIMIT ? connection_backoff_s_ : b_i);
+                LOG_INFO("Failed to connect; retrying in %1% seconds.",
+                         connection_backoff_s_)
+                sleep(connection_backoff_s_);
+            }
+        } else {
+            LOG_INFO("Successfully established connection to Cthun server.");
+            connection_backoff_s_ = CONNECTION_BACKOFF_S;
+            return;
+        }
+    } while (try_again);
+
+    connection_backoff_s_ = CONNECTION_BACKOFF_S;
+    throw connection_error { "failed to connect after " + std::to_string(idx)
+                             + " attempt" + Common::StringUtils::plural(idx) };
+}
+
+void Endpoint::connect_() {
+    connection_state_ = Connection_State_Values::connecting;
     websocketpp::lib::error_code ec;
     Client_Type::connection_ptr connection_ptr {
         endpoint_.get_connection(server_url_, ec) };
@@ -133,9 +176,21 @@ Context_Ptr Endpoint::onTlsInit(Connection_Handle hdl) {
 }
 
 void Endpoint::onOpen(Connection_Handle hdl) {
-    LOG_TRACE("WebSocket connection established");
-    connection_state_ = Connection_State_Values::open;
-    onOpen_callback_();
+    LOG_TRACE("WebSocket on open event");
+    if (onOpen_callback_) {
+        try {
+            onOpen_callback_();
+            LOG_TRACE("WebSocket connection established");
+            connection_state_ = Connection_State_Values::open;
+            return;
+        } catch (std::exception&  e) {
+            LOG_ERROR("%1%; setting the connection state to 'closed'", e.what());
+        } catch (...) {
+            LOG_ERROR("on open callback failure; setting the connection " \
+                      "state to 'closed'");
+        }
+    }
+    connection_state_ = Connection_State_Values::closed;
 }
 
 void Endpoint::onClose(Connection_Handle hdl) {

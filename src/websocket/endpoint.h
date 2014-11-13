@@ -13,6 +13,7 @@ namespace Cthun {
 namespace WebSocket {
 
 static const std::string PING_PAYLOAD_DEFAULT { "cthun-agent ping payload" };
+static const uint32_t CONNECTION_BACKOFF_S { 2 };  // [us]
 
 //
 // Endpoint
@@ -43,9 +44,11 @@ class Endpoint {
     // Synchronous calls
     //
 
-    /// Connect to the server.
+    /// Check the state of the connection; in case it's not open,
+    /// try to re-establish it. This is done for max_connect_attempts
+    /// times, by following an exponential backoff.
     /// Throw a connection_error in case of failure.
-    void connect();
+    void connect(size_t max_connect_attempts = 0);
 
     /// Send the message to the server.
     /// Throw a message_error in case of failure.
@@ -91,6 +94,12 @@ class Endpoint {
 
     // Callback function called by the onMessage handler.
     std::function<void(std::string message)> onMessage_callback_;
+
+    // Exponential backoff interval for re-connect
+    uint32_t connection_backoff_s_ { CONNECTION_BACKOFF_S };
+
+    // Connect the endpoint
+    void connect_();
 
     // Event handlers
     Context_Ptr onTlsInit(Connection_Handle hdl);

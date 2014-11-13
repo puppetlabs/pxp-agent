@@ -45,11 +45,20 @@ using Connection_Handle = websocketpp::connection_hdl;
 using Close_Code = websocketpp::close::status::value;
 namespace Close_Code_Values = websocketpp::close::status;
 
-using Connection_State = websocketpp::session::state::value;
-namespace Connection_State_Values = websocketpp::session::state;
-
 using Frame_Opcode = websocketpp::frame::opcode::value;
 namespace Frame_Opcode_Values = websocketpp::frame::opcode;
+
+namespace Connection_State_Values {
+    enum value_ {
+        initialized = -1,
+        connecting = 0,
+        open = 1,
+        closing = 2,
+        closed = 3
+    };
+}  // namespace state
+
+using Connection_State = Connection_State_Values::value_;
 
 }  // namespace WebSocket
 }  // namespace Cthun
