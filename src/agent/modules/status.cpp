@@ -47,7 +47,7 @@ void Status::call_action(std::string action_name,
     } else if (status["status"].compare("completed") == 0) {
         output["status"] = status;
 
-        //output["response"] =
+        // output["response"] =
         Json::Value response_content_as_json;
         std::string response = Common::FileUtils::readFileAsString("/tmp/cthun_agent/" + job_id + "/stdout");
         Json::Reader reader;

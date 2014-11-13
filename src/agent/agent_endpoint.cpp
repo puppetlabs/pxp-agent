@@ -9,24 +9,16 @@
 #include "src/common/log.h"
 #include "src/common/uuid.h"
 #include "src/common/string_utils.h"
+#include "src/websocket/errors.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
-
-#include <string>
-
-// TODO(ale): disable assert() once we're confident with the code...
-// To disable assert()
-// #define NDEBUG
-#include <cassert>
 
 LOG_DECLARE_NAMESPACE("agent.agent_endpoint");
 
 namespace Cthun {
 namespace Agent {
 
-static const uint BACKOFF_MULTIPLIER { 2 };
-static const uint BACKOFF_LIMIT { 30 };
 static const uint CONNECTION_STATE_CHECK_INTERVAL { 15 };
 static const int DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS { 10 };
 
@@ -36,7 +28,6 @@ AgentEndpoint::AgentEndpoint() {
     modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
     modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
     modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
-
 
     // load external modules
     // TODO(ale): fix; this breaks if cthun-agent is not invoked from root dir
@@ -59,14 +50,11 @@ AgentEndpoint::AgentEndpoint() {
 }
 
 AgentEndpoint::~AgentEndpoint() {
-    if (connection_ptr_ != nullptr) {
+    if (ws_endpoint_ptr_) {
         // reset callbacks to avoid breaking the WebSocket Endpoint
-        // with invalid references
-
+        // with invalid reference context
         LOG_INFO("resetting the WebSocket event callbacks");
-        connection_ptr_->resetCallbacks();
-
-        // NB: the heartbeat task will be destructed by RIIA
+        ws_endpoint_ptr_->resetCallbacks();
     }
 }
 
@@ -75,33 +63,17 @@ void AgentEndpoint::startAgent(std::string url,
                                std::string client_crt_path,
                                std::string client_key_path) {
     listModules();
-
-    // Configure the secure WebSocket endpoint
-
-    try {
-        Cthun::WebSocket::CONNECTION_MANAGER.configureSecureEndpoint(ca_crt_path,
-                                                                     client_crt_path,
-                                                                     client_key_path);
-    } catch (Cthun::WebSocket::endpoint_error& e) {
-        LOG_WARNING("failed to configure the WebSocket endpoint: %1%", e.what());
-        throw fatal_error("failed to configure the WebSocket endpoint");
-    }
-
-    // Configure the connection
-
-    connection_ptr_ = Cthun::WebSocket::CONNECTION_MANAGER.createConnection(url);
+    ws_endpoint_ptr_.reset(new Cthun::WebSocket::Endpoint(url,
+                                                          ca_crt_path,
+                                                          client_crt_path,
+                                                          client_key_path));
     setConnectionCallbacks();
-
-    // Connect and wait for open connection event
-
     try {
-        Cthun::WebSocket::CONNECTION_MANAGER.open(connection_ptr_);
-        connection_ptr_->waitForOpen();
+        ws_endpoint_ptr_->connect();
     } catch (Cthun::WebSocket::connection_error& e) {
-        LOG_WARNING("failed to connect; %1%", e.what());
+        LOG_WARNING(e.what());
         throw fatal_error { "failed to connect" };
     }
-
     monitorConnectionState();
 }
 
@@ -119,18 +91,30 @@ void AgentEndpoint::listModules() {
     }
 }
 
-void AgentEndpoint::sendLogin(Cthun::WebSocket::Client_Type* client_ptr) {
+void AgentEndpoint::setConnectionCallbacks() {
+    ws_endpoint_ptr_->setOnOpenCallback(
+        [this]() {
+            sendLogin();
+        });
+
+    ws_endpoint_ptr_->setOnMessageCallback(
+        [this](std::string message) {
+            processMessageAndSendResponse(message);
+        });
+}
+
+void AgentEndpoint::sendLogin() {
     Json::Value login {};
     login["id"] = Common::getUUID();
     login["version"] = "1";
-    login["expires"] = Common::StringUtils::getISO8601Time(DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
+    login["expires"] = Common::StringUtils::getISO8601Time(
+        DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
     login["sender"] = "cth://localhost/agent";
     login["endpoints"] = Json::Value { Json::arrayValue };
     login["endpoints"][0] = "cth://server";
     login["hops"] = Json::Value { Json::arrayValue };
     login["data_schema"] = "http://puppetlabs.com/loginschema";
     login["data"]["type"] = "agent";
-
 
     LOG_INFO("sending login message with id: %1%", login["id"].asString());
 
@@ -142,18 +126,15 @@ void AgentEndpoint::sendLogin(Cthun::WebSocket::Client_Type* client_ptr) {
         for (auto error : errors) {
             LOG_WARNING("    %1%", error);
         }
-        // This is unexpected
-        throw fatal_error { "invalid login message schema" };
+        // This is unexpected since we're sending the above message
+        throw Cthun::WebSocket::message_error { "invalid login message schema" };
     }
 
-    auto handle = connection_ptr_->getConnectionHandle();
     try {
-        client_ptr->send(handle, login.toStyledString(),
-                         Cthun::WebSocket::Frame_Opcode_Values::text);
+         ws_endpoint_ptr_->send(login.toStyledString());
     }  catch(Cthun::WebSocket::message_error& e) {
-        LOG_WARNING("failed to send: %1%", e.what());
-        // Fatal; we can't login...
-        throw fatal_error { "failed to send login message" };
+        LOG_WARNING(e.what());
+        throw e;
     }
 }
 
@@ -179,7 +160,6 @@ Json::Value AgentEndpoint::parseAndValidateMessage(std::string message) {
 
     valijson::Schema data_schema { Schemas::cnc_data() };
     if (!Schemas::validate(doc["data"], data_schema, errors)) {
-        // TODO(ale): refactor error logging
         LOG_WARNING("data schema validation failed; logging the errors");
         for (auto error : errors) {
             LOG_WARNING("    %1%", error);
@@ -190,23 +170,35 @@ Json::Value AgentEndpoint::parseAndValidateMessage(std::string message) {
     return doc;
 }
 
+void AgentEndpoint::sendResponse(std::string receiver_endpoint,
+                                 std::string request_id,
+                                 Json::Value output) {
+    Json::Value body {};
+    std::string response_id { Common::getUUID() };
+    body["id"] = response_id;
+    body["version"] = "1";
+    body["expires"] = Common::StringUtils::getISO8601Time(
+        DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
+    body["sender"] = "cth://localhost/agent";
+    body["endpoints"] = Json::Value { Json::arrayValue };
+    body["endpoints"][0] = receiver_endpoint;
+    body["hops"] = Json::Value { Json::arrayValue };
+    body["data_schema"] = "http://puppetlabs.com/cncresponseschema";
+    body["data"]["response"] = output;
 
-void AgentEndpoint::delayedActionThread(std::shared_ptr<Module> module,
-                 std::string action_name,
-                 Json::Value doc,
-                 Json::Value output,
-                 std::string uuid) {
-    module->validate_and_call_action(action_name,
-                                     doc,
-                                     doc["data"]["params"],
-                                     output,
-                                     uuid);
+    try {
+        std::string response_txt = body.toStyledString();
+        LOG_INFO("Responding to %1% with %2%.  Size %3%",
+                 request_id, response_id, response_txt.size());
+        LOG_DEBUG("response:\n%1%", response_txt);
+        ws_endpoint_ptr_->send(response_txt);
+    }  catch(Cthun::WebSocket::message_error& e) {
+        LOG_ERROR("failed to send %1%: %2%", response_id, e.what());
+    }
 }
 
-void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
-                                   std::string message) {
+void AgentEndpoint::processMessageAndSendResponse(std::string message) {
     LOG_INFO("received message:\n%1%", message);
-
     Json::Value doc;
 
     try {
@@ -220,7 +212,7 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
     std::string request_id = doc["id"].asString();
     std::string module_name = doc["data"]["module"].asString();
     std::string action_name = doc["data"]["action"].asString();
-    std::string sender = doc["sender"].asString();
+    std::string receiver_endpoint = doc["sender"].asString();
 
     try {
         if (modules_.find(module_name) != modules_.end()) {
@@ -230,21 +222,19 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
                 LOG_ERROR("Invalid request %1%: unknown action %2% for module %3%",
                           request_id, module_name, action_name);
                 throw validation_error { "Invalid request: unknown action " +
-                                         action_name +
-                                         " for module " +
-                                         module_name };
+                                         action_name + " for module " + module_name };
             }
-            Agent::Action action = module->actions[action_name];
 
+            Agent::Action action = module->actions[action_name];
 
             if (action.behaviour.compare("delayed") == 0) {
                 std::string uuid { Common::getUUID() };
-                LOG_DEBUG("Delayed action execution requested. Creating job with ID %1%",
-                          uuid);
+                LOG_DEBUG("Delayed action execution requested. Creating job " \
+                          "with ID %1%", uuid);
                 Json::Value output {};
                 output["status"] = "Requested excution of action: " + action_name;
                 output["id"] = uuid;
-                sendResponseMessage(sender, request_id, output, client_ptr);
+                sendResponse(receiver_endpoint, request_id, output);
                 thread_queue_.push_back(std::thread(&AgentEndpoint::delayedActionThread,
                                                     this,
                                                     module,
@@ -258,11 +248,13 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
                                                  doc["data"]["params"],
                                                  output);
                 LOG_DEBUG("Request %1%: '%2%' '%3%' output: %4%",
-                          request_id, module_name, action_name, output.toStyledString());
-                sendResponseMessage(sender, request_id, output, client_ptr);
+                          request_id, module_name, action_name,
+                          output.toStyledString());
+                sendResponse(receiver_endpoint, request_id, output);
             }
         } else {
-            LOG_ERROR("Invalid request %1%: unknown module '%2%'", request_id, module_name);
+            LOG_ERROR("Invalid request %1%: unknown module '%2%'",
+                      request_id, module_name);
             throw validation_error { "Invalid request: unknown module " +
                                      module_name };
         }
@@ -271,116 +263,35 @@ void AgentEndpoint::handleMessage(Cthun::WebSocket::Client_Type* client_ptr,
                   request_id, module_name, action_name, e.what());
         Json::Value err_result;
         err_result["error"] = e.what();
-        sendResponseMessage(sender, request_id, err_result, client_ptr);
+        sendResponse(receiver_endpoint, request_id, err_result);
     }
-}
-
-void AgentEndpoint::sendResponseMessage(std::string sender,
-                                        std::string request_id,
-                                        Json::Value output,
-                                        Cthun::WebSocket::Client_Type* client_ptr) {
-    Json::Value body {};
-    std::string response_id { Common::getUUID() };
-    body["id"] = response_id;
-    body["version"] = "1";
-    body["expires"] = Common::StringUtils::getISO8601Time(DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
-    body["sender"] = "cth://localhost/agent";
-    body["endpoints"] = Json::Value { Json::arrayValue };
-    body["endpoints"][0] = sender;
-    body["hops"] = Json::Value { Json::arrayValue };
-    body["data_schema"] = "http://puppetlabs.com/cncresponseschema";
-    body["data"]["response"] = output;
-
-    try {
-        std::string response_txt = body.toStyledString();
-        LOG_INFO("Responding to %1% with %2%.  Size %3%",
-                 request_id, response_id, response_txt.size());
-        LOG_DEBUG("response:\n%1%", response_txt);
-
-        auto handle = connection_ptr_->getConnectionHandle();
-        client_ptr->send(handle,
-                         response_txt,
-                         Cthun::WebSocket::Frame_Opcode_Values::text);
-    }  catch(Cthun::WebSocket::message_error& e) {
-        LOG_ERROR("failed to send %1%: %2%", response_id, e.what());
-        // we don't want to throw anything here
-    } catch (std::exception&  e) {
-        LOG_ERROR("unexpected exception: %1%", e.what());
-    } catch (...) {
-        LOG_ERROR("badness occured");
-    }
-}
-
-void AgentEndpoint::setConnectionCallbacks() {
-    connection_ptr_->setOnOpenCallback(
-        [this](Cthun::WebSocket::Client_Type* client_ptr,
-               Cthun::WebSocket::Connection::Ptr connection_ptr_c) {
-            assert(connection_ptr_ == connection_ptr_c);
-            sendLogin(client_ptr);
-        });
-
-    connection_ptr_->setOnMessageCallback(
-        [this](Cthun::WebSocket::Client_Type* client_ptr,
-               Cthun::WebSocket::Connection::Ptr connection_ptr_c,
-               std::string message) {
-            assert(connection_ptr_ == connection_ptr_c);
-            handleMessage(client_ptr, message);
-        });
-
-    std::atomic<uint> consecutive_pong_timeouts { 0 };
-
-    connection_ptr_->setOnPongCallback(
-        [&consecutive_pong_timeouts](Cthun::WebSocket::Client_Type* client_ptr,
-                                     Cthun::WebSocket::Connection::Ptr connection_ptr_c,
-                                     std::string binary_payload) {
-            LOG_DEBUG("received pong - payload: '%1%'", binary_payload);
-            if (consecutive_pong_timeouts > 0){
-                consecutive_pong_timeouts = 0;
-            }
-        });
-
-    connection_ptr_->setOnPongTimeoutCallback(
-        [&consecutive_pong_timeouts](Cthun::WebSocket::Client_Type* client_ptr,
-                                     Cthun::WebSocket::Connection::Ptr connection_ptr_c,
-                                     std::string binary_payload) {
-            LOG_WARNING("pong timeout (%1% consecutive) - payload: '%2%'",
-                        std::to_string(consecutive_pong_timeouts), binary_payload);
-            ++consecutive_pong_timeouts;
-        });
 }
 
 void AgentEndpoint::monitorConnectionState() {
-    uint backoff_seconds = 2;
-
     for (;;) {
         sleep(CONNECTION_STATE_CHECK_INTERVAL);
 
-        if (connection_ptr_->getState()
+        if (ws_endpoint_ptr_->getConnectionState()
                 != Cthun::WebSocket::Connection_State_Values::open) {
             LOG_WARNING("Connection to Cthun server lost. Retrying.");
-            // Attempt to re-establish connection
-            while (connection_ptr_->getState()
-                != Cthun::WebSocket::Connection_State_Values::open) {
-                try {
-                    Cthun::WebSocket::CONNECTION_MANAGER.open(connection_ptr_);
-                    connection_ptr_->waitForOpen();
-                    LOG_INFO("Successfully re-established connection to Cthun server.");
-                } catch (Cthun::WebSocket::connection_error& e) {
-                    LOG_WARNING("Failed to re-establish connection to Cthun server");
-                    LOG_INFO("Attemping reconnect in %1% seconds.", backoff_seconds);
-                    sleep(backoff_seconds);
-                    if ((backoff_seconds *= BACKOFF_MULTIPLIER) >= BACKOFF_LIMIT) {
-                        // Limit backoff to 30 seconds.
-                        backoff_seconds = 30;
-                    }
-                }
-            }
+            ws_endpoint_ptr_->connect();
         } else {
             LOG_DEBUG("Sending heartbeat ping");
-            Cthun::WebSocket::CONNECTION_MANAGER.ping(connection_ptr_,
-                                                          binary_payload_);
+            ws_endpoint_ptr_->ping();
         }
     }
+}
+
+void AgentEndpoint::delayedActionThread(std::shared_ptr<Module> module,
+                 std::string action_name,
+                 Json::Value doc,
+                 Json::Value output,
+                 std::string uuid) {
+    module->validate_and_call_action(action_name,
+                                     doc,
+                                     doc["data"]["params"],
+                                     output,
+                                     uuid);
 }
 
 }  // namespace Agent
