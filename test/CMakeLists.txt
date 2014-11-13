@@ -4,8 +4,6 @@ include_directories("${BASEPATH}")
 
 set(SOURCES
     main.cpp
-    connection_manager_test.cpp
-    connection_test.cpp
     file_utils_test.cpp
 )
 
