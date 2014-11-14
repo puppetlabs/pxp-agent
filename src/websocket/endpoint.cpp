@@ -66,23 +66,23 @@ Connection_State Endpoint::getConnectionState() {
 }
 
 void Endpoint::setOnOpenCallback(std::function<void()> c_b) {
-    onOpen_callback_ = c_b;
+    on_open_callback_ = c_b;
 }
 
 void Endpoint::setOnMessageCallback(std::function<void(std::string msg)> c_b) {
-    onMessage_callback_ = c_b;
+    on_message_callback_ = c_b;
 }
 
 void Endpoint::resetCallbacks() {
-    onOpen_callback_ = [](){};
-    onMessage_callback_ = [](std::string message){};
+    on_open_callback_ = [](){};
+    on_message_callback_ = [](std::string message){};
 }
 
 //
 // Synchronous calls
 //
 
-void Endpoint::connect(size_t max_connect_attempts) {
+void Endpoint::connect(int max_connect_attempts) {
     // FSM: states are Connection_State_Values; as for the transitions,
     //      we assume that the connection_state_:
     // - can be set to 'initialized' only by the Endpoint constructor;
@@ -92,7 +92,7 @@ void Endpoint::connect(size_t max_connect_attempts) {
 
     Connection_State previous_c_s = connection_state_.load();
     Connection_State current_c_s;
-    size_t idx { 0 };
+    int idx { 0 };
     bool try_again { true };
     bool got_max_backoff { false };
 
@@ -118,14 +118,11 @@ void Endpoint::connect(size_t max_connect_attempts) {
             continue;
 
         case(Connection_State_Values::open):
-            switch (previous_c_s) {
-            case(Connection_State_Values::open):
-                return;
-            default:
+            if (previous_c_s != Connection_State_Values::open) {
                 LOG_INFO("Successfully established connection to Cthun server");
                 connection_backoff_s_ = CONNECTION_BACKOFF_S;
-                return;
             }
+            return;
 
         case(Connection_State_Values::closing):
             previous_c_s = current_c_s;
@@ -134,13 +131,11 @@ void Endpoint::connect(size_t max_connect_attempts) {
 
         case(Connection_State_Values::closed):
             assert(previous_c_s != Connection_State_Values::open);
-            switch (previous_c_s) {
-            case(Connection_State_Values::closed):
+            if (previous_c_s == Connection_State_Values::closed) {
                 connect_();
                 usleep(CONNECTION_MIN_INTERVAL);
                 previous_c_s = Connection_State_Values::connecting;
-                break;
-            default:
+            } else {
                 LOG_INFO("Failed to connect; retrying in %1% seconds",
                          connection_backoff_s_);
                 sleep(connection_backoff_s_);
@@ -149,8 +144,8 @@ void Endpoint::connect(size_t max_connect_attempts) {
                 if (try_again && !got_max_backoff) {
                     connection_backoff_s_ *= CONNECTION_BACKOFF_MULTIPLIER;
                 }
-                break;
             }
+            break;
         }
     } while (try_again);
 
@@ -251,9 +246,9 @@ void Endpoint::onPongTimeout(Connection_Handle hdl, std::string binary_payload) 
 
 void Endpoint::onOpen(Connection_Handle hdl) {
     LOG_TRACE("WebSocket on open event");
-    if (onOpen_callback_) {
+    if (on_open_callback_) {
         try {
-            onOpen_callback_();
+            on_open_callback_();
             LOG_TRACE("WebSocket connection established");
             connection_state_ = Connection_State_Values::open;
             return;
@@ -264,18 +259,18 @@ void Endpoint::onOpen(Connection_Handle hdl) {
                       "state to 'closed'");
         }
     }
-    close(Close_Code_Values::normal, "failed to execute the onOpen callback");
+    close(Close_Code_Values::normal, "failed to execute the on open callback");
 }
 
 void Endpoint::onMessage(Connection_Handle hdl, Client_Type::message_ptr msg) {
     LOG_TRACE("WebSocket onMessage event:\n%1%", msg->get_payload());
-    if (onMessage_callback_) {
+    if (on_message_callback_) {
         try {
-            onMessage_callback_(msg->get_payload());
+            on_message_callback_(msg->get_payload());
         } catch (std::exception&  e) {
             LOG_ERROR("%1%", e.what());
         } catch (...) {
-            LOG_ERROR("Unexpected error while executing the onMessage callback");
+            LOG_ERROR("Unexpected error while executing the on message callback");
         }
     }
 }

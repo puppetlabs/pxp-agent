@@ -93,7 +93,7 @@ class Endpoint {
     /// times (or idefinetely, in case, as by default, it's 0), by
     /// following an exponential backoff.
     /// Throw a connection_error if it fails to open.
-    void connect(size_t max_connect_attempts = 0);
+    void connect(int max_connect_attempts = 0);
 
     /// Send the message to the server.
     /// Throw a message_error in case of failure.
@@ -136,10 +136,10 @@ class Endpoint {
     std::shared_ptr<std::thread> endpoint_thread_;
 
     // Callback function called by the onOpen handler.
-    std::function<void()> onOpen_callback_;
+    std::function<void()> on_open_callback_;
 
     // Callback function called by the onMessage handler.
-    std::function<void(std::string message)> onMessage_callback_;
+    std::function<void(std::string message)> on_message_callback_;
 
     // Exponential backoff interval for re-connect
     uint32_t connection_backoff_s_ { CONNECTION_BACKOFF_S };
