@@ -44,7 +44,7 @@ namespace Close_Code_Values = websocketpp::close::status;
 using Frame_Opcode = websocketpp::frame::opcode::value;
 namespace Frame_Opcode_Values = websocketpp::frame::opcode;
 
-namespace Connection_State_Values {
+namespace ConnectionStateValues {
     enum value_ {
         initialized = -1,
         connecting = 0,
@@ -52,9 +52,9 @@ namespace Connection_State_Values {
         closing = 2,
         closed = 3
     };
-}  // namespace Connection_State_Values
+}  // namespace ConnectionStateValues
 
-using Connection_State = Connection_State_Values::value_;
+using ConnectionState = ConnectionStateValues::value_;
 
 static const std::string PING_PAYLOAD_DEFAULT { "cthun-agent ping payload" };
 static const uint32_t CONNECTION_BACKOFF_S { 2 };  // [s]
@@ -72,7 +72,7 @@ class Endpoint {
 
     ~Endpoint();
 
-    Connection_State getConnectionState();
+    ConnectionState getConnectionState();
 
     /// Set the onOpen callback.
     void setOnOpenCallback(std::function<void()> onOpen_callback);
@@ -124,7 +124,7 @@ class Endpoint {
 
     // State of the connection (initialized, connectig, open, closing,
     // or closed)
-    std::atomic<Connection_State> connection_state_;
+    std::atomic<ConnectionState> connection_state_;
 
     // Consecutive pong timeouts counter
     uint consecutive_pong_timeouts_ { 0 };

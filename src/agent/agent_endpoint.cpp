@@ -272,7 +272,7 @@ void AgentEndpoint::monitorConnectionState() {
         sleep(CONNECTION_STATE_CHECK_INTERVAL);
 
         if (ws_endpoint_ptr_->getConnectionState()
-                != Cthun::WebSocket::Connection_State_Values::open) {
+                != Cthun::WebSocket::ConnectionStateValues::open) {
             LOG_WARNING("Connection to Cthun server lost; retrying");
             ws_endpoint_ptr_->connect();
         } else {

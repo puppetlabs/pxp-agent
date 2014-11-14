@@ -25,7 +25,7 @@ Endpoint::Endpoint(const std::string& server_url,
           ca_crt_path_ { ca_crt_path },
           client_crt_path_ { client_crt_path },
           client_key_path_ { client_key_path },
-          connection_state_ { Connection_State_Values::initialized } {
+          connection_state_ { ConnectionStateValues::initialized } {
     // Turn off websocketpp logging to avoid runtime errors (see CTH-69)
     endpoint_.clear_access_channels(websocketpp::log::alevel::all);
     endpoint_.clear_error_channels(websocketpp::log::elevel::all);
@@ -53,7 +53,7 @@ Endpoint::Endpoint(const std::string& server_url,
 
 Endpoint::~Endpoint() {
     endpoint_.stop_perpetual();
-    if (connection_state_ == Connection_State_Values::open) {
+    if (connection_state_ == ConnectionStateValues::open) {
         close();
     }
     if (endpoint_thread_ != nullptr && endpoint_thread_->joinable()) {
@@ -61,7 +61,7 @@ Endpoint::~Endpoint() {
     }
 }
 
-Connection_State Endpoint::getConnectionState() {
+ConnectionState Endpoint::getConnectionState() {
     return connection_state_.load();
 }
 
@@ -83,15 +83,15 @@ void Endpoint::resetCallbacks() {
 //
 
 void Endpoint::connect(int max_connect_attempts) {
-    // FSM: states are Connection_State_Values; as for the transitions,
+    // FSM: states are ConnectionStateValues; as for the transitions,
     //      we assume that the connection_state_:
     // - can be set to 'initialized' only by the Endpoint constructor;
     // - is set to 'connecting' by connect_();
     // - after a connect_() call, it will become, eventually, open or
     //   closed.
 
-    Connection_State previous_c_s = connection_state_.load();
-    Connection_State current_c_s;
+    ConnectionState previous_c_s = connection_state_.load();
+    ConnectionState current_c_s;
     int idx { 0 };
     bool try_again { true };
     bool got_max_backoff { false };
@@ -106,35 +106,35 @@ void Endpoint::connect(int max_connect_attempts) {
                             >= CONNECTION_BACKOFF_LIMIT);
 
         switch (current_c_s) {
-        case(Connection_State_Values::initialized):
-            assert(previous_c_s == Connection_State_Values::initialized);
+        case(ConnectionStateValues::initialized):
+            assert(previous_c_s == ConnectionStateValues::initialized);
             connect_();
             usleep(CONNECTION_MIN_INTERVAL);
             break;
 
-        case(Connection_State_Values::connecting):
+        case(ConnectionStateValues::connecting):
             previous_c_s = current_c_s;
             usleep(CONNECTION_MIN_INTERVAL);
             continue;
 
-        case(Connection_State_Values::open):
-            if (previous_c_s != Connection_State_Values::open) {
+        case(ConnectionStateValues::open):
+            if (previous_c_s != ConnectionStateValues::open) {
                 LOG_INFO("Successfully established connection to Cthun server");
                 connection_backoff_s_ = CONNECTION_BACKOFF_S;
             }
             return;
 
-        case(Connection_State_Values::closing):
+        case(ConnectionStateValues::closing):
             previous_c_s = current_c_s;
             usleep(CONNECTION_MIN_INTERVAL);
             continue;
 
-        case(Connection_State_Values::closed):
-            assert(previous_c_s != Connection_State_Values::open);
-            if (previous_c_s == Connection_State_Values::closed) {
+        case(ConnectionStateValues::closed):
+            assert(previous_c_s != ConnectionStateValues::open);
+            if (previous_c_s == ConnectionStateValues::closed) {
                 connect_();
                 usleep(CONNECTION_MIN_INTERVAL);
-                previous_c_s = Connection_State_Values::connecting;
+                previous_c_s = ConnectionStateValues::connecting;
             } else {
                 LOG_INFO("Failed to connect; retrying in %1% seconds",
                          connection_backoff_s_);
@@ -155,7 +155,7 @@ void Endpoint::connect(int max_connect_attempts) {
 }
 
 void Endpoint::connect_() {
-    connection_state_ = Connection_State_Values::connecting;
+    connection_state_ = ConnectionStateValues::connecting;
     websocketpp::lib::error_code ec;
     Client_Type::connection_ptr connection_ptr {
         endpoint_.get_connection(server_url_, ec) };
@@ -218,12 +218,12 @@ Context_Ptr Endpoint::onTlsInit(Connection_Handle hdl) {
 
 void Endpoint::onClose(Connection_Handle hdl) {
     LOG_TRACE("WebSocket connection closed");
-    connection_state_ = Connection_State_Values::closed;
+    connection_state_ = ConnectionStateValues::closed;
 }
 
 void Endpoint::onFail(Connection_Handle hdl) {
     LOG_TRACE("WebSocket onFail event");
-    connection_state_ = Connection_State_Values::closed;
+    connection_state_ = ConnectionStateValues::closed;
 }
 
 bool Endpoint::onPing(Connection_Handle hdl, std::string binary_payload) {
@@ -250,13 +250,12 @@ void Endpoint::onOpen(Connection_Handle hdl) {
         try {
             on_open_callback_();
             LOG_TRACE("WebSocket connection established");
-            connection_state_ = Connection_State_Values::open;
+            connection_state_ = ConnectionStateValues::open;
             return;
         } catch (std::exception&  e) {
-            LOG_ERROR("%1%; setting the connection state to 'closed'", e.what());
+            LOG_ERROR("%1%; closing the connection", e.what());
         } catch (...) {
-            LOG_ERROR("On open callback failure; setting the connection " \
-                      "state to 'closed'");
+            LOG_ERROR("On open callback failure; closing the connection");
         }
     }
     close(Close_Code_Values::normal, "failed to execute the on open callback");
