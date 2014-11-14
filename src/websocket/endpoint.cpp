@@ -122,7 +122,7 @@ void Endpoint::connect(size_t max_connect_attempts) {
             case(Connection_State_Values::open):
                 return;
             default:
-                LOG_INFO("Successfully established connection to Cthun server.");
+                LOG_INFO("Successfully established connection to Cthun server");
                 connection_backoff_s_ = CONNECTION_BACKOFF_S;
                 return;
             }
@@ -141,7 +141,7 @@ void Endpoint::connect(size_t max_connect_attempts) {
                 previous_c_s = Connection_State_Values::connecting;
                 break;
             default:
-                LOG_INFO("Failed to connect; retrying in %1% seconds.",
+                LOG_INFO("Failed to connect; retrying in %1% seconds",
                          connection_backoff_s_);
                 sleep(connection_backoff_s_);
                 connect_();
@@ -155,7 +155,7 @@ void Endpoint::connect(size_t max_connect_attempts) {
     } while (try_again);
 
     connection_backoff_s_ = CONNECTION_BACKOFF_S;
-    throw connection_error { "failed to connect after " + std::to_string(idx)
+    throw connection_error { "Failed to connect after " + std::to_string(idx)
                              + " attempt" + Common::StringUtils::plural(idx) };
 }
 
@@ -216,7 +216,7 @@ Context_Ptr Endpoint::onTlsInit(Connection_Handle hdl) {
                                   boost::asio::ssl::context::file_format::pem);
         ctx->load_verify_file(ca_crt_path_);
     } catch (std::exception& e) {
-        LOG_ERROR("failed to configure TLS: %1%", e.what());
+        LOG_ERROR("Failed to configure TLS: %1%", e.what());
     }
     return ctx;
 }
@@ -260,7 +260,7 @@ void Endpoint::onOpen(Connection_Handle hdl) {
         } catch (std::exception&  e) {
             LOG_ERROR("%1%; setting the connection state to 'closed'", e.what());
         } catch (...) {
-            LOG_ERROR("on open callback failure; setting the connection " \
+            LOG_ERROR("On open callback failure; setting the connection " \
                       "state to 'closed'");
         }
     }
@@ -275,7 +275,7 @@ void Endpoint::onMessage(Connection_Handle hdl, Client_Type::message_ptr msg) {
         } catch (std::exception&  e) {
             LOG_ERROR("%1%", e.what());
         } catch (...) {
-            LOG_ERROR("unexpected error while executing the onMessage callback");
+            LOG_ERROR("Unexpected error while executing the onMessage callback");
         }
     }
 }

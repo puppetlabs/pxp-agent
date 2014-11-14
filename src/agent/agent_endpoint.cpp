@@ -53,7 +53,7 @@ AgentEndpoint::~AgentEndpoint() {
     if (ws_endpoint_ptr_) {
         // reset callbacks to avoid breaking the WebSocket Endpoint
         // with invalid reference context
-        LOG_INFO("resetting the WebSocket event callbacks");
+        LOG_INFO("Resetting the WebSocket event callbacks");
         ws_endpoint_ptr_->resetCallbacks();
     }
 }
@@ -82,7 +82,7 @@ void AgentEndpoint::startAgent(std::string url,
 //
 
 void AgentEndpoint::listModules() {
-    LOG_INFO("loaded modules:");
+    LOG_INFO("Loaded modules:");
     for (auto module : modules_) {
         LOG_INFO("   %1%", module.first);
         for (auto action : module.second->actions) {
@@ -116,13 +116,13 @@ void AgentEndpoint::sendLogin() {
     login["data_schema"] = "http://puppetlabs.com/loginschema";
     login["data"]["type"] = "agent";
 
-    LOG_INFO("sending login message with id: %1%", login["id"].asString());
+    LOG_INFO("Sending login message with id: %1%", login["id"].asString());
 
     valijson::Schema message_schema = Schemas::network_message();
     std::vector<std::string> errors;
 
     if (!Schemas::validate(login, message_schema, errors)) {
-        LOG_WARNING("validation failed");
+        LOG_WARNING("Validation failed");
         for (auto error : errors) {
             LOG_WARNING("    %1%", error);
         }
@@ -136,15 +136,6 @@ void AgentEndpoint::sendLogin() {
         LOG_WARNING(e.what());
         throw e;
     }
-
-
-
-
-
-
-
-
-    throw Cthun::WebSocket::message_error { "lalala" };
 }
 
 Json::Value AgentEndpoint::parseAndValidateMessage(std::string message) {
@@ -169,7 +160,7 @@ Json::Value AgentEndpoint::parseAndValidateMessage(std::string message) {
 
     valijson::Schema data_schema { Schemas::cnc_data() };
     if (!Schemas::validate(doc["data"], data_schema, errors)) {
-        LOG_WARNING("data schema validation failed; logging the errors");
+        LOG_WARNING("Data schema validation failed; logging the errors");
         for (auto error : errors) {
             LOG_WARNING("    %1%", error);
         }
@@ -199,21 +190,21 @@ void AgentEndpoint::sendResponse(std::string receiver_endpoint,
         std::string response_txt = body.toStyledString();
         LOG_INFO("Responding to %1% with %2%.  Size %3%",
                  request_id, response_id, response_txt.size());
-        LOG_DEBUG("response:\n%1%", response_txt);
+        LOG_DEBUG("Response:\n%1%", response_txt);
         ws_endpoint_ptr_->send(response_txt);
     }  catch(Cthun::WebSocket::message_error& e) {
-        LOG_ERROR("failed to send %1%: %2%", response_id, e.what());
+        LOG_ERROR("Failed to send %1%: %2%", response_id, e.what());
     }
 }
 
 void AgentEndpoint::processMessageAndSendResponse(std::string message) {
-    LOG_INFO("received message:\n%1%", message);
+    LOG_INFO("Received message:\n%1%", message);
     Json::Value doc;
 
     try {
         doc = parseAndValidateMessage(message);
     } catch (validation_error& e) {
-        LOG_ERROR("invalid message: %1%", e.what());
+        LOG_ERROR("Invalid message: %1%", e.what());
         return;
     }
 
@@ -268,7 +259,7 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
                                      module_name };
         }
     } catch (validation_error& e) {
-        LOG_ERROR("failed to perform %1%: '%2%' '%3%': %4%",
+        LOG_ERROR("Failed to perform %1%: '%2%' '%3%': %4%",
                   request_id, module_name, action_name, e.what());
         Json::Value err_result;
         err_result["error"] = e.what();
@@ -282,7 +273,7 @@ void AgentEndpoint::monitorConnectionState() {
 
         if (ws_endpoint_ptr_->getConnectionState()
                 != Cthun::WebSocket::Connection_State_Values::open) {
-            LOG_WARNING("Connection to Cthun server lost. Retrying.");
+            LOG_WARNING("Connection to Cthun server lost; retrying");
             ws_endpoint_ptr_->connect();
         } else {
             LOG_DEBUG("Sending heartbeat ping");

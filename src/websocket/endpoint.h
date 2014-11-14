@@ -78,7 +78,8 @@ class Endpoint {
     // Transport layer connection handle
     Connection_Handle connection_handle_;
 
-    // State of the connection (connectig, open, closing, or closed)
+    // State of the connection (initialized, connectig, open, closing,
+    // or closed)
     std::atomic<Connection_State> connection_state_;
 
     // Consecutive pong timeouts counter
