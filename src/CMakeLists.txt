@@ -18,6 +18,7 @@ set(SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/common/string_utils.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/common/log.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/websocket/endpoint.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/websocket/connection_timings.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../vendor/jsoncpp/jsoncpp.cpp"
 )
 
