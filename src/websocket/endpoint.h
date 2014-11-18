@@ -3,6 +3,7 @@
 
 // We need this hack to avoid the compilation error described in
 // https://github.com/zaphoyd/websocketpp/issues/365
+// TODO(ale): try without this once upgraded to websocketpp 0.4.0
 #define _WEBSOCKETPP_NULLPTR_TOKEN_ 0
 
 // See http://www.zaphoyd.com/websocketpp/manual/reference/cpp11-support
@@ -13,6 +14,8 @@
 #define _WEBSOCKETPP_CPP11_RANDOM_DEVICE_
 #define _WEBSOCKETPP_CPP11_SYSTEM_ERROR_
 #define _WEBSOCKETPP_CPP11_THREAD_
+
+#include "src/websocket/connection_timings.h"
 
 #include <websocketpp/common/connection_hdl.hpp>
 #include <websocketpp/client.hpp>
@@ -144,6 +147,9 @@ class Endpoint {
     // Exponential backoff interval for re-connect
     uint32_t connection_backoff_s_ { CONNECTION_BACKOFF_S };
 
+    // Keep track of connection timings
+    ConnectionTimings connection_timings_;
+
     // Connect the endpoint
     void connect_();
 
@@ -154,6 +160,8 @@ class Endpoint {
     bool onPing(Connection_Handle hdl, std::string binary_payload);
     void onPong(Connection_Handle hdl, std::string binary_payload);
     void onPongTimeout(Connection_Handle hdl, std::string binary_payload);
+    void onPreTCPInit(Connection_Handle hdl);
+    void onPostTCPInit(Connection_Handle hdl);
 
     /// Handler executed by the transport layer in case of a
     /// WebSocket onOpen event. Calls onOpen_callback_(); in case it

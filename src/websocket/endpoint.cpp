@@ -3,6 +3,8 @@
 #include "src/common/log.h"
 #include "src/common/string_utils.h"
 
+#include <chrono>
+
 // TODO(ale): disable assert() once we're confident with the code...
 // To disable assert()
 // #define NDEBUG
@@ -44,8 +46,9 @@ Endpoint::Endpoint(const std::string& server_url,
     endpoint_.set_message_handler(bind(&Endpoint::onMessage, this, ::_1, ::_2));
     endpoint_.set_ping_handler(bind(&Endpoint::onPing, this, ::_1, ::_2));
     endpoint_.set_pong_handler(bind(&Endpoint::onPong, this, ::_1, ::_2));
-    endpoint_.set_pong_timeout_handler(bind(&Endpoint::onPongTimeout, this,
-                                            ::_1, ::_2));
+    endpoint_.set_pong_timeout_handler(bind(&Endpoint::onPongTimeout, this, ::_1, ::_2));
+    endpoint_.set_tcp_pre_init_handler(bind(&Endpoint::onPreTCPInit, this, ::_1));
+    endpoint_.set_tcp_post_init_handler(bind(&Endpoint::onPostTCPInit, this, ::_1));
 
     // Start the event loop thread
     endpoint_thread_.reset(new std::thread(&Client_Type::run, &endpoint_));
@@ -156,6 +159,7 @@ void Endpoint::connect(int max_connect_attempts) {
 
 void Endpoint::connect_() {
     connection_state_ = ConnectionStateValues::connecting;
+    connection_timings_ = ConnectionTimings();
     websocketpp::lib::error_code ec;
     Client_Type::connection_ptr connection_ptr {
         endpoint_.get_connection(server_url_, ec) };
@@ -217,12 +221,15 @@ Context_Ptr Endpoint::onTlsInit(Connection_Handle hdl) {
 }
 
 void Endpoint::onClose(Connection_Handle hdl) {
+    connection_timings_.close = std::chrono::high_resolution_clock::now();
     LOG_TRACE("WebSocket connection closed");
     connection_state_ = ConnectionStateValues::closed;
 }
 
 void Endpoint::onFail(Connection_Handle hdl) {
-    LOG_TRACE("WebSocket onFail event");
+    connection_timings_.close = std::chrono::high_resolution_clock::now();
+    connection_timings_.connection_failed = true;
+    LOG_DEBUG("WebSocket on fail event - %1%", connection_timings_.toString());
     connection_state_ = ConnectionStateValues::closed;
 }
 
@@ -244,8 +251,20 @@ void Endpoint::onPongTimeout(Connection_Handle hdl, std::string binary_payload) 
                 consecutive_pong_timeouts_++);
 }
 
+void Endpoint::onPreTCPInit(Connection_Handle hdl) {
+    connection_timings_.tcp_pre_init = std::chrono::high_resolution_clock::now();
+    LOG_TRACE("WebSocket pre-TCP initialization event");
+}
+
+void Endpoint::onPostTCPInit(Connection_Handle hdl) {
+    connection_timings_.tcp_post_init = std::chrono::high_resolution_clock::now();
+    LOG_TRACE("WebSocket post-TCP initialization event");
+}
+
 void Endpoint::onOpen(Connection_Handle hdl) {
-    LOG_TRACE("WebSocket on open event");
+    connection_timings_.open = std::chrono::high_resolution_clock::now();
+    connection_timings_.connection_started = true;
+    LOG_DEBUG("WebSocket on open event - %1%", connection_timings_.toString());
     if (on_open_callback_) {
         try {
             on_open_callback_();
