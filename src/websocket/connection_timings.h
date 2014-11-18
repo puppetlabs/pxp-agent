@@ -11,11 +11,11 @@ namespace WebSocket {
 // ConnectionTimings
 //
 
-struct ConnectionTimings {
-    using Duration_Type = std::chrono::duration<int, std::micro>;
+class ConnectionTimings {
+  public:
+    using Duration_us = std::chrono::duration<int, std::micro>;
 
-    std::chrono::high_resolution_clock::time_point start =
-        std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point start;
     std::chrono::high_resolution_clock::time_point tcp_pre_init;
     std::chrono::high_resolution_clock::time_point tcp_post_init;
     std::chrono::high_resolution_clock::time_point open;
@@ -24,17 +24,19 @@ struct ConnectionTimings {
     bool connection_started {false};
     bool connection_failed {false};
 
+    ConnectionTimings();
+
     /// Time interval to establish the TCP connection [us]
-    Duration_Type getTCPInterval() const;
+    Duration_us getTCPInterval() const;
 
     /// Time interval to perform the WebSocket handshake [us]
-    Duration_Type getHandshakeInterval() const;
+    Duration_us getHandshakeInterval() const;
 
     /// Time interval to establish the WebSocket connection [us]
-    Duration_Type getWebSocketInterval() const;
+    Duration_us getWebSocketInterval() const;
 
     /// Time interval until close or fail event [us]
-    Duration_Type getCloseInterval() const;
+    Duration_us getCloseInterval() const;
 
     /// Returns a string with the timings
     std::string toString() const;
