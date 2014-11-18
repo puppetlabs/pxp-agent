@@ -1,11 +1,6 @@
 #ifndef SRC_WEBSOCKET_ENDPOINT_H_
 #define SRC_WEBSOCKET_ENDPOINT_H_
 
-// We need this hack to avoid the compilation error described in
-// https://github.com/zaphoyd/websocketpp/issues/365
-// TODO(ale): try without this once upgraded to websocketpp 0.4.0
-#define _WEBSOCKETPP_NULLPTR_TOKEN_ 0
-
 // See http://www.zaphoyd.com/websocketpp/manual/reference/cpp11-support
 // for prepocessor directives and choosing between boost and cpp11
 // C++11 STL tokens
