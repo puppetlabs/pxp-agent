@@ -173,7 +173,7 @@ void Endpoint::connect_() {
 
 void Endpoint::send(std::string msg) {
     websocketpp::lib::error_code ec;
-    endpoint_.send(connection_handle_, msg, websocketpp::frame::opcode::text, ec);
+    endpoint_.send(connection_handle_, msg, websocketpp::frame::opcode::binary, ec);
     if (ec) {
         throw message_error { "Failed to send message: " + ec.message() };
     }
