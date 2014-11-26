@@ -4,8 +4,11 @@ cmake_minimum_required(VERSION 2.8.12)
 set(BASEPATH "${CMAKE_CURRENT_LIST_DIR}/..")
 include_directories("${BASEPATH}")
 
-set(SOURCES
+set(APPLICATION_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/main.cpp"
+)
+
+set(LIBRARY_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/agent/agent_endpoint.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent/schemas.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent/module.cpp"
@@ -30,10 +33,10 @@ SET(LIBS
     facter
 )
 
-add_library(cthun-agent ${SOURCES})
+add_library(cthun-agent ${LIBRARY_SOURCES})
 target_link_libraries(cthun-agent ${LIBS})
 
-add_executable(cthun-agent-bin ${SOURCES})
+add_executable(cthun-agent-bin ${APPLICATION_SOURCES})
 set_target_properties(cthun-agent-bin
     PROPERTIES
     OUTPUT_NAME cthun-agent
