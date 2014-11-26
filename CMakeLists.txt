@@ -41,11 +41,6 @@ find_package(Boost 1.54 REQUIRED
 find_package(OpenSSL REQUIRED)
 
 # Specify the .cmake files for vendored libraries
-
-# TODO(ale): cthun-agent won't compile with boost 1.56 due to valijson;
-# must investigate valijson compatibility. Error:
-# valijson/schema.hpp:177:16: error:
-#   no viable conversion from 'const boost::optional<std::string>' to 'bool'
 include(${VENDOR_DIRECTORY}/valijson.cmake)
 include(${VENDOR_DIRECTORY}/gmock.cmake)
 include(${VENDOR_DIRECTORY}/boost-process.cmake)

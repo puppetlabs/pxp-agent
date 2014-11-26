@@ -10,6 +10,7 @@ externalproject_add(
     PREFIX "${PROJECT_BINARY_DIR}"
     URL "file://${VENDOR_DIRECTORY}/valijson-467368d.zip"
     URL_MD5 "d30766ca55109366a83e49a98cda6a73"
+    PATCH_COMMAND patch -p1 < ${VENDOR_DIRECTORY}/valijson-boost.1.56.patch
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
     BUILD_IN_SOURCE 1
