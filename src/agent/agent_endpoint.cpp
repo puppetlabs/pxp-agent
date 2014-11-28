@@ -109,7 +109,7 @@ void AgentEndpoint::sendLogin() {
     login["version"] = "1";
     login["expires"] = Common::StringUtils::getISO8601Time(
         DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
-    login["sender"] = "cth://localhost/agent";
+    login["sender"] = ws_endpoint_ptr_->identity();
     login["endpoints"] = Json::Value { Json::arrayValue };
     login["endpoints"][0] = "cth://server";
     login["hops"] = Json::Value { Json::arrayValue };
@@ -179,7 +179,7 @@ void AgentEndpoint::sendResponse(std::string receiver_endpoint,
     body["version"] = "1";
     body["expires"] = Common::StringUtils::getISO8601Time(
         DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
-    body["sender"] = "cth://localhost/agent";
+    body["sender"] = ws_endpoint_ptr_->identity();
     body["endpoints"] = Json::Value { Json::arrayValue };
     body["endpoints"][0] = receiver_endpoint;
     body["hops"] = Json::Value { Json::arrayValue };

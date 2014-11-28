@@ -2,6 +2,7 @@
 #include "src/websocket/errors.h"
 #include "src/common/log.h"
 #include "src/common/string_utils.h"
+#include "src/WebSocket/errors.h"
 
 #include <chrono>
 
@@ -52,6 +53,22 @@ Endpoint::Endpoint(const std::string& server_url,
 
     // Start the event loop thread
     endpoint_thread_.reset(new std::thread(&Client_Type::run, &endpoint_));
+
+    // Determine our name
+    std::unique_ptr<FILE, int(*)(FILE*)> fp { fopen(client_crt_path_.data(), "r"), fclose };
+
+    if (!fp) {
+        throw file_not_found_exception { "Certificate file '" + client_crt_path_ +
+                                         "' does not exist."};
+    }
+
+    std::unique_ptr<X509, void(*)(X509*)> cert { PEM_read_X509(fp.get(), NULL, NULL, NULL), X509_free };
+    X509_NAME* subj = X509_get_subject_name(cert.get());
+    X509_NAME_ENTRY* entry = X509_NAME_get_entry(subj, 0);
+    ASN1_STRING* asn1_string = X509_NAME_ENTRY_get_data(entry);
+    unsigned char* tmp = ASN1_STRING_data(asn1_string);
+    int string_size = ASN1_STRING_length(asn1_string);
+    identity_ = "cth://" + std::string(tmp, tmp + string_size) + "/cthun-agent";
 }
 
 Endpoint::~Endpoint() {
@@ -194,6 +211,10 @@ void Endpoint::close(Close_Code code, const std::string& reason) {
     if (ec) {
         throw message_error { "Failed to close connetion: " + ec.message() };
     }
+}
+
+std::string Endpoint::identity() {
+    return identity_;
 }
 
 //

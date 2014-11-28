@@ -108,6 +108,9 @@ class Endpoint {
     void close(Close_Code code = Close_Code_Values::normal,
                const std::string& reason = DEFAULT_CLOSE_REASON);
 
+    /// Returns the agent identity
+    std::string identity();
+
   private:
     // Cthun server url
     std::string server_url_;
@@ -116,6 +119,8 @@ class Endpoint {
     std::string ca_crt_path_;
     std::string client_crt_path_;
     std::string client_key_path_;
+
+    std::string identity_ { "unknown" };
 
     // Transport layer connection handle
     Connection_Handle connection_handle_;
