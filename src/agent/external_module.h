@@ -2,6 +2,7 @@
 #define SRC_AGENT_EXTERNAL_MODULE_H_
 
 #include "src/agent/module.h"
+#include "src/data_container.h"
 
 #include <map>
 #include <string>
@@ -12,15 +13,14 @@ namespace Agent {
 class ExternalModule : public Module {
   public:
     explicit ExternalModule(std::string path);
-    void call_action(std::string action_name,
-                     const Json::Value& request,
-                     const Json::Value& input,
-                     Json::Value& output);
+    DataContainer call_action(std::string action_name,
+                     const Message& request,
+                     const DataContainer& input);
+
     void call_delayed_action(std::string action_name,
-                             const Json::Value& request,
-                             const Json::Value& input,
-                             Json::Value& output,
-                             std::string action_id);
+                             const Message& request,
+                             const DataContainer& input,
+                             std::string job_id);
   private:
     std::string path_;
 };

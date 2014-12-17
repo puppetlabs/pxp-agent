@@ -104,90 +104,85 @@ void AgentEndpoint::setConnectionCallbacks() {
 }
 
 void AgentEndpoint::sendLogin() {
-    Json::Value login {};
-    login["id"] = Common::getUUID();
-    login["version"] = "1";
-    login["expires"] = Common::StringUtils::getISO8601Time(
-        DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
-    login["sender"] = ws_endpoint_ptr_->identity();
-    login["endpoints"] = Json::Value { Json::arrayValue };
-    login["endpoints"][0] = "cth://server";
-    login["hops"] = Json::Value { Json::arrayValue };
-    login["data_schema"] = "http://puppetlabs.com/loginschema";
-    login["data"]["type"] = "agent";
+    Message msg {};
+    std::string login_id { Common::getUUID() };
+    msg.set<std::string>(login_id, "id");
+    msg.set<std::string>("1", "version");
+    msg.set<std::string>(Common::StringUtils::getISO8601Time(
+                            DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS),
+                         "expires");
+    msg.set<std::string>(ws_endpoint_ptr_->identity(), "sender");
+    std::vector<std::string> endpoints { "cth://server" };
+    msg.set<std::vector<std::string>>(endpoints, "endpoints");
+    std::vector<std::string> hops {};
+    msg.set<std::vector<std::string>>(hops, "hops");
+    msg.set<std::string>("http://puppetlabs.com/loginschema", "data_schema");
+    msg.set<std::string>("agent", "data", "type");
 
-    LOG_INFO("Sending login message with id: %1%", login["id"].asString());
+    LOG_INFO("Sending login message with id: %1%", login_id);
 
-    valijson::Schema message_schema = Schemas::network_message();
-    std::vector<std::string> errors;
-
-    if (!Schemas::validate(login, message_schema, errors)) {
-        LOG_WARNING("Validation failed");
-        for (auto error : errors) {
-            LOG_WARNING("    %1%", error);
-        }
-        // This is unexpected since we're sending the above message
-        throw Cthun::WebSocket::message_error { "invalid login message schema" };
-    }
+    // NOTE(ploubser): I removed login schema message validation. We're making
+    // it, it should never not be valid.
 
     try {
-         ws_endpoint_ptr_->send(login.toStyledString());
+         ws_endpoint_ptr_->send(msg.toString());
     }  catch(Cthun::WebSocket::message_error& e) {
         LOG_WARNING(e.what());
         throw e;
     }
 }
 
-Json::Value AgentEndpoint::parseAndValidateMessage(std::string message) {
-    Json::Value doc;
-    Json::Reader reader;
-
-    if (!reader.parse(message, doc)) {
-        throw validation_error { "json decode of message failed" };
-    }
-
+Message AgentEndpoint::parseAndValidateMessage(std::string message) {
+    Message msg { message };
     valijson::Schema message_schema = Schemas::network_message();
     std::vector<std::string> errors;
 
-    if (!Schemas::validate(doc, message_schema, errors)) {
-        throw validation_error { "message schema validation failed" };
+    if (!msg.validate(message_schema, errors)) {
+        std::string error_message { "message schema validation failed:\n" };
+        for (auto error : errors) {
+            error_message += error + "\n";
+        }
+
+        throw validation_error { error_message };
     }
 
     if (std::string("http://puppetlabs.com/cncschema").compare(
-            doc["data_schema"].asString()) != 0) {
+            msg.get<std::string>("data_schema")) != 0) {
         throw validation_error { "message is not of cnc schema" };
     }
 
     valijson::Schema data_schema { Schemas::cnc_data() };
-    if (!Schemas::validate(doc["data"], data_schema, errors)) {
-        LOG_WARNING("Data schema validation failed; logging the errors");
+    if (!msg.validate(data_schema, errors, "data")) {
+        std::string error_message { "data schema validation failed:\n" };
         for (auto error : errors) {
-            LOG_WARNING("    %1%", error);
+            error_message += error + "\n";
         }
-        throw validation_error { "data schema validation failed" };
+
+        throw validation_error { error_message };
     }
 
-    return doc;
+    return msg;
 }
 
 void AgentEndpoint::sendResponse(std::string receiver_endpoint,
                                  std::string request_id,
-                                 Json::Value output) {
-    Json::Value body {};
+                                 DataContainer output) {
+    Message msg {};
     std::string response_id { Common::getUUID() };
-    body["id"] = response_id;
-    body["version"] = "1";
-    body["expires"] = Common::StringUtils::getISO8601Time(
-        DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS);
-    body["sender"] = ws_endpoint_ptr_->identity();
-    body["endpoints"] = Json::Value { Json::arrayValue };
-    body["endpoints"][0] = receiver_endpoint;
-    body["hops"] = Json::Value { Json::arrayValue };
-    body["data_schema"] = "http://puppetlabs.com/cncresponseschema";
-    body["data"]["response"] = output;
+    msg.set<std::string>(response_id, "id");
+    msg.set<std::string>("1", "version");
+    msg.set<std::string>(Common::StringUtils::getISO8601Time(
+        DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS), "expires");
+    msg.set<std::string>(ws_endpoint_ptr_->identity(), "sender");
+    std::vector<std::string> endpoints { receiver_endpoint };
+    msg.set<std::vector<std::string>>(endpoints, "endpoints");
+    std::vector<std::string> hops {};
+    msg.set<std::vector<std::string>>(hops, "hops");
+    msg.set<std::string>("http://puppetlabs.com/cncresponseschema", "data_schema");
+    msg.set<DataContainer>(output, "data", "response");
 
     try {
-        std::string response_txt = body.toStyledString();
+        std::string response_txt = msg.toString();
         LOG_INFO("Responding to %1% with %2%.  Size %3%",
                  request_id, response_id, response_txt.size());
         LOG_DEBUG("Response:\n%1%", response_txt);
@@ -199,20 +194,20 @@ void AgentEndpoint::sendResponse(std::string receiver_endpoint,
 
 void AgentEndpoint::processMessageAndSendResponse(std::string message) {
     LOG_INFO("Received message:\n%1%", message);
-    Json::Value doc;
+    Message msg;
+    Message response;
 
     try {
-        doc = parseAndValidateMessage(message);
+        msg = parseAndValidateMessage(message);
     } catch (validation_error& e) {
         LOG_ERROR("Invalid message: %1%", e.what());
         return;
     }
 
-    Json::Value output;
-    std::string request_id = doc["id"].asString();
-    std::string module_name = doc["data"]["module"].asString();
-    std::string action_name = doc["data"]["action"].asString();
-    std::string sender_endpoint = doc["sender"].asString();
+    std::string request_id = msg.get<std::string>("request_id");
+    std::string module_name = msg.get<std::string>("data", "module");
+    std::string action_name = msg.get<std::string>("data", "action");
+    std::string sender_endpoint = msg.get<std::string>("sender");
 
     try {
         if (modules_.find(module_name) != modules_.end()) {
@@ -232,24 +227,22 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
                 LOG_DEBUG("Delayed action execution requested. Creating job " \
                           "with ID %1%", uuid);
                 Json::Value output {};
-                output["status"] = "Requested excution of action: " + action_name;
-                output["id"] = uuid;
-                sendResponse(sender_endpoint, request_id, output);
+                DataContainer response {};
+                response.set<std::string>("Requested excution of action: " + action_name,
+                    "status");
+                response.set<std::string>(uuid, "id");
+                sendResponse(sender_endpoint, request_id, response);
                 thread_queue_.push_back(std::thread(&AgentEndpoint::delayedActionThread,
                                                     this,
                                                     module,
                                                     action_name,
-                                                    doc,
-                                                    output,
+                                                    msg,
                                                     uuid));
             } else {
-                module->validate_and_call_action(action_name,
-                                                 doc,
-                                                 doc["data"]["params"],
-                                                 output);
+                DataContainer output { module->validate_and_call_action(action_name, msg) };
                 LOG_DEBUG("Request %1%: '%2%' '%3%' output: %4%",
                           request_id, module_name, action_name,
-                          output.toStyledString());
+                          output.toString());
                 sendResponse(sender_endpoint, request_id, output);
             }
         } else {
@@ -261,8 +254,8 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
     } catch (validation_error& e) {
         LOG_ERROR("Failed to perform %1%: '%2%' '%3%': %4%",
                   request_id, module_name, action_name, e.what());
-        Json::Value err_result;
-        err_result["error"] = e.what();
+        DataContainer err_result;
+        err_result.set<std::string>(e.what(), "error");
         sendResponse(sender_endpoint, request_id, err_result);
     }
 }
@@ -284,14 +277,11 @@ void AgentEndpoint::monitorConnectionState() {
 
 void AgentEndpoint::delayedActionThread(std::shared_ptr<Module> module,
                  std::string action_name,
-                 Json::Value doc,
-                 Json::Value output,
+                 Message msg,
                  std::string uuid) {
-    module->validate_and_call_action(action_name,
-                                     doc,
-                                     doc["data"]["params"],
-                                     output,
-                                     uuid);
+
+    // explicitly ignore return value
+    (void) module->validate_and_call_action(action_name, msg, uuid);
 }
 
 }  // namespace Agent

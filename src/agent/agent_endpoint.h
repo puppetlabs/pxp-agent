@@ -3,8 +3,7 @@
 
 #include "src/agent/module.h"
 #include "src/websocket/endpoint.h"
-
-#include <json/json.h>
+#include "src/data_container.h"
 
 #include <map>
 #include <memory>
@@ -43,13 +42,13 @@ class AgentEndpoint {
     void sendLogin();
 
     // Throw a validation_error in case of invalid message.
-    Json::Value parseAndValidateMessage(std::string message);
+    Message parseAndValidateMessage(std::string message);
 
     // Send a response message with specified request ID and output
     // to the receiver endpoint.
     void sendResponse(std::string receiver_endpoint,
                       std::string request_id,
-                      Json::Value output);
+                      DataContainer output);
 
     // Parse and validate the passed message; reply to the sender
     // with the requested output.
@@ -62,8 +61,7 @@ class AgentEndpoint {
     // Task to validate and execute the specified action.
     void delayedActionThread(std::shared_ptr<Module> module,
                              std::string action_name,
-                             Json::Value doc,
-                             Json::Value output,
+                             Message msg,
                              std::string uuid);
 };
 

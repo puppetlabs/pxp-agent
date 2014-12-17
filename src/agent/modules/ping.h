@@ -10,22 +10,20 @@ namespace Modules {
 class Ping : public Cthun::Agent::Module {
   public:
     Ping();
-    void call_action(std::string action_name,
-                     const Json::Value& request,
-                     const Json::Value& input,
-                     Json::Value& output);
+    DataContainer call_action(std::string action_name,
+                     const Message& request,
+                     const DataContainer& input);
+
     void call_delayed_action(std::string action_name,
-                             const Json::Value& request,
-                             const Json::Value& input,
-                             Json::Value& output,
+                             const Message& request,
+                             const DataContainer& input,
                              std::string job_id) {}
 
     /// Ping action calculates the time it took for a message to travel from
     /// the controller to the agent. It will then add that duration and the
     /// current server time in milliseconds to the response.
-    void ping_action(const Json::Value& request,
-                     const Json::Value& input,
-                     Json::Value& output);
+    DataContainer ping_action(const Message& request,
+                     const DataContainer& input);
 };
 
 }  // namespace Modules

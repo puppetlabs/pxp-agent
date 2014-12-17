@@ -28,42 +28,40 @@ Status::Status() {
     actions["query"] = Action { input_schema, output_schema, "interactive" };
 }
 
-void Status::call_action(std::string action_name,
-                         const Json::Value& request,
-                         const Json::Value& input,
-                         Json::Value& output) {
-    std::string job_id { input["job_id"].asString() };
+DataContainer Status::call_action(std::string action_name,
+                         const Message& request,
+                         const DataContainer& input) {
+
+    DataContainer output {};
+    std::string job_id { input.get<std::string>("job_id") };
 
     if (!Common::FileUtils::fileExists("/tmp/cthun_agent/" + job_id)) {
         LOG_ERROR("No results for job id %1% found", job_id);
-        output["error"] = "No job exists for id: " + job_id;
-        return;
+        output.set<std::string>("No job exists for id: " + job_id, "error");
+        return output;
     }
 
-    Json::Value status { Common::FileUtils::readFileAsJson("/tmp/cthun_agent/" + job_id + "/status") };
-
-    if (status["status"].compare("running") == 0) {
-        output["status"] = "Running";
-    } else if (status["status"].compare("completed") == 0) {
-        output["status"] = status;
-
-        // output["response"] =
-        Json::Value response_content_as_json;
-        std::string response = Common::FileUtils::readFileAsString("/tmp/cthun_agent/" + job_id + "/stdout");
-        Json::Reader reader;
-        if (reader.parse(response, response_content_as_json)) {
-            output["response"] = response_content_as_json;
-        } else {
-            output["response"] = response;
-        }
-
-        std::string stderr = Common::FileUtils::readFileAsString("/tmp/cthun_agent/" + job_id + "/stderr");
-        if (!stderr.empty()) {
-            output["stderr"] = stderr;
-        }
+    DataContainer status { Common::FileUtils::readFileAsString("/tmp/cthun_agent/" +
+                                                      job_id +
+                                                      "/status") };
+    if (status.get<std::string>("status").compare("running") == 0) {
+        output.set<std::string>("Running", "status");
+    } else if (status.get<std::string>("status").compare("completed") == 0) {
+        output.set<std::string>("Running", "status");
+        output.set<std::string>(Common::FileUtils::readFileAsString("/tmp/cthun_agent/" +
+                                                                    job_id +
+                                                                    "/stdout"),
+                                "stdout");
+        output.set<std::string>(Common::FileUtils::readFileAsString("/tmp/cthun_agent/" +
+                                                                    job_id +
+                                                                    "/stderr"),
+                                "stderr");
     } else {
-        output["status"] = "Job '" + job_id + "' is in unknown state: " + status["status"].asString();
+        output.set<std::string>("Job '" + job_id + "' is in unknown state:" +
+                                status.get<std::string>("status"), "status");
     }
+
+    return output;
 }
 
 }  // namespace Modules

@@ -9,6 +9,7 @@ set(APPLICATION_SOURCES
 )
 
 set(LIBRARY_SOURCES
+    "${CMAKE_CURRENT_LIST_DIR}/data_container.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent/agent_endpoint.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent/schemas.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent/module.cpp"

@@ -38,28 +38,32 @@ Ping::Ping() {
     actions["ping"] = Action { input_schema, output_schema, "interactive" };
 }
 
-void Ping::ping_action(const Json::Value &request, const Json::Value& input, Json::Value& output) {
+DataContainer Ping::ping_action(const Message& request, const DataContainer& input) {
     int sender_timestamp;
-    std::istringstream(input["sender_timestamp"].asString()) >> sender_timestamp;
+    std::istringstream(input.get<std::string>("sender_timestamp")) >>
+        sender_timestamp;
 
-    boost::posix_time::ptime current_date_microseconds = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::ptime current_date_microseconds =
+        boost::posix_time::microsec_clock::local_time();
     auto current_date_milliseconds =
         current_date_microseconds.time_of_day().total_milliseconds();
     auto time_to_agent = current_date_milliseconds - sender_timestamp;
 
-    Json::Value result;
-    result["sender_timestamp"] = input["sender_timestamp"];
-    result["time_to_agent"] = std::to_string(time_to_agent);
-    result["agent_timestamp"] = std::to_string(current_date_milliseconds);
-    result["request_hops"] = request["hops"];
-    output = result;
+    DataContainer data {};
+    data.set<std::string>(input.get<std::string>("sender_timestamp"),
+        "sender_timestamp");
+    data.set<std::string>(std::to_string(time_to_agent), "time_to_agent");
+    data.set<std::string>(std::to_string(current_date_milliseconds), "agent_timestamp");
+    std::vector<DataContainer> hops { request.get<std::vector<DataContainer>>("hops") };
+    data.set<std::vector<DataContainer>>(hops, "request_hops");
+
+    return data;
 }
 
-void Ping::call_action(std::string action_name,
-                       const Json::Value& request,
-                       const Json::Value& input,
-                       Json::Value& output) {
-    ping_action(request, input, output);
+DataContainer Ping::call_action(std::string action_name,
+                       const Message& request,
+                       const DataContainer& input) {
+   return ping_action(request, input);
 }
 
 }  // namespace Modules

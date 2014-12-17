@@ -57,15 +57,17 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
     std::string error;
     run_command(path, { path, "metadata" }, "", metadata, error);
 
-    Json::Value document;
-    Json::Reader reader;
-    if (!reader.parse(metadata, document)) {
-        LOG_ERROR("parse error: %1%", reader.getFormatedErrorMessages());
-        throw "failed to parse metadata document";
+    if (!error.empty()) {
+        LOG_ERROR("Error while trying to load plugin : %1%", path);
+        LOG_ERROR(error);
+        // TODO(ploubser): We need to get named exceptions everywhere
+        throw "error while trying to load plugin";
     }
 
+    DataContainer document { metadata };
+
     std::vector<std::string> errors;
-    if (!Schemas::validate(document, metadata_schema, errors)) {
+    if (!document.validate(metadata_schema, errors)) {
         LOG_ERROR("validation failed");
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
@@ -75,14 +77,20 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
 
     LOG_INFO("validation OK");
 
-    for (auto action : document["actions"]) {
-        LOG_INFO("declaring action %1%", action["name"].asString());
+    for (auto action : document.get<std::vector<DataContainer>>("actions")) {
+        LOG_INFO("declaring action %1%", action.get<std::string>("name"));
         valijson::Schema input_schema;
         valijson::Schema output_schema;
 
+        // TODO(ploubser): This doesn't fit well with the Data abstraction.
+        // Should this go in the object?
+
         valijson::SchemaParser parser;
-        valijson::adapters::JsonCppAdapter input_doc_schema(action["input"]);
-        valijson::adapters::JsonCppAdapter output_doc_schema(action["output"]);
+        Json::Value input { action.get<Json::Value>("input") };
+        Json::Value output { action.get<Json::Value>("output") } ;
+
+        valijson::adapters::JsonCppAdapter input_doc_schema(input);
+        valijson::adapters::JsonCppAdapter output_doc_schema(output);
 
         try {
             parser.populateSchema(input_doc_schema, input_schema);
@@ -93,8 +101,8 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
 
         std::string behaviour = "interactive";
 
-        if (!action["behaviour"].asString().empty()) {
-            std::string behaviour_str = action["behaviour"].asString();
+        if (!action.get<std::string>("behaviour").empty()) {
+            std::string behaviour_str = action.get<std::string>("behaviour");
             if (behaviour_str.compare("interactive") == 0) {
                 LOG_DEBUG("Found interactive action");
             } else if (behaviour_str.compare("delayed") == 0) {
@@ -113,38 +121,33 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
             throw;
         }
 
-        actions[action["name"].asString()] = Action { input_schema, output_schema, behaviour };
+        actions[action.get<std::string>("name")] = Action { input_schema, output_schema, behaviour };
     }
 }
 
-void ExternalModule::call_action(std::string action_name,
-                                 const Json::Value& request,
-                                 const Json::Value& input,
-                                 Json::Value& output) {
-    std::string stdin = input.toStyledString();
+DataContainer ExternalModule::call_action(std::string action_name,
+                                 const Message& request,
+                                 const DataContainer& input) {
+    std::string stdin = input.toString();
     std::string stdout;
     std::string stderr;
     LOG_INFO(stdin);
+
+    std::cout << input.toString() << std::endl;
 
     run_command(path_, { path_, action_name }, stdin, stdout, stderr);
     LOG_INFO("stdout: %1%", stdout);
     LOG_INFO("stderr: %1%", stderr);
 
-    Json::Reader reader;
-    if (!reader.parse(stdout, output)) {
-        LOG_INFO("parse error: %1%", reader.getFormatedErrorMessages());
-        throw "error parsing json";
-    }
+    return DataContainer { stdout };
 }
 
 void ExternalModule::call_delayed_action(std::string action_name,
-                                         const Json::Value& request,
-                                         const Json::Value& input,
-                                         Json::Value& output,
+                                         const Message& request,
+                                         const DataContainer& input,
                                          std::string job_id) {
-    LOG_INFO("Starting delayed action with id: %1%", job_id);
 
-    // TODO(ploubser): Refactor
+    LOG_INFO("Starting delayed action with id: %1%", job_id);
 
     // check if the output directory exists. If it doesn't create it
     if (!Common::FileUtils::fileExists("/tmp/cthun_agent")) {
@@ -165,43 +168,40 @@ void ExternalModule::call_delayed_action(std::string action_name,
     }
 
     // create the exitcode file
-    Json::Value status {};
-    status["module"] = module_name;
-    status["action"] = action_name;
+    DataContainer status {};
+    status.set<std::string>(module_name, "module");
+    status.set<std::string>(action_name, "action");
 
-    if (status["input"].asString().empty()) {
-        status["input"] = "none";
+    if (!input.toString().empty()) {
+        status.set<std::string>(input.toString(), "input");
     } else {
-        status["input"] = input;
+        status.set<std::string>("none", "input");
     }
-    status["status"] = "running";
-    status["duration"] = "0";
 
-    Common::FileUtils::writeToFile(status.toStyledString() + "\n", action_dir + "/status");
+    status.set<std::string>("running", "status");
+    status.set<std::string>("0", "duration");
+
+    Common::FileUtils::writeToFile(status.toString() + "\n", action_dir + "/status");
     Common::FileUtils::writeToFile("", action_dir + "/stdout");
     Common::FileUtils::writeToFile("", action_dir + "/stderr");
 
     // prepare and run the command
-    std::string stdin = input.toStyledString();
+    std::string stdin = input.toString();
     std::string stdout;
     std::string stderr;
 
     Common::Timer timer;
     run_command(path_, { path_, action_name }, stdin, stdout, stderr);
-    status["duration"] = std::to_string(timer.elapsedSeconds()) + "s";
+    status.set<std::string>(std::to_string(timer.elapsedSeconds()) + "s", "duration");
 
-    Json::Reader reader;
-    if (!reader.parse(stdout, output)) {
-        LOG_INFO("parse error: %1%", reader.getFormatedErrorMessages());
-        throw "error parsing json";
-    }
+    DataContainer result { stdout };
+    status.set<std::string>("completed", "result");
 
-    status["status"] = "completed";
     Common::FileUtils::writeToFile(stdout + "\n", action_dir + "/stdout");
     if (!stderr.empty()) {
         Common::FileUtils::writeToFile(stderr + "\n", action_dir + "/stderr");
     }
-    Common::FileUtils::writeToFile(status.toStyledString() + "\n", action_dir + "/status");
+    Common::FileUtils::writeToFile(status.toString() + "\n", action_dir + "/status");
 }
 
 }  // namespace Agent

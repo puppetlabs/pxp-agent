@@ -3,25 +3,15 @@
 #include "src/agent/errors.h"
 #include "src/common/log.h"
 
-#include <valijson/adapters/jsoncpp_adapter.hpp>
-#include <valijson/schema_parser.hpp>
+#include <iostream>
 
 LOG_DECLARE_NAMESPACE("agent.module");
 
 namespace Cthun {
 namespace Agent {
 
-void Module::call_action(std::string action_name,
-                         const Json::Value& request,
-                         const Json::Value& input,
-                         Json::Value& output) {
-    LOG_INFO("invoking native action %1%", action_name);
-}
-
-void Module::validate_and_call_action(std::string action_name,
-                                      const Json::Value& request,
-                                      const Json::Value& input,
-                                      Json::Value& output,
+DataContainer Module::validate_and_call_action(std::string action_name,
+                                      const Message& request,
                                       std::string action_id) {
     if (actions.find(action_name) == actions.end()) {
         throw validation_error { "unknown action for module " + module_name
@@ -29,10 +19,11 @@ void Module::validate_and_call_action(std::string action_name,
     }
 
     const Action& action = actions[action_name];
+    DataContainer input { request.get<DataContainer>("data", "params") };
 
     LOG_DEBUG("validating input for '%1%' '%2%'", module_name, action_name);
     std::vector<std::string> errors;
-    if (!Schemas::validate(input, action.input_schema, errors)) {
+    if (!input.validate(action.input_schema, errors)) {
         LOG_ERROR("action input validation failed '%1%' '%2%'", module_name, action_name);
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
@@ -41,14 +32,18 @@ void Module::validate_and_call_action(std::string action_name,
         throw validation_error { "Input schema mismatch" };
     }
 
+    DataContainer result;
+
+    // TODO(ploubser): This still isn't great. I would like the logic in
+    // call_delayed_action to be moved to the AgentEndpoint::delayedActionThread.
     if (action_id.empty()) {
-        call_action(action_name, request, input, output);
+        result = call_action(action_name, request, input);
     } else {
-        call_delayed_action(action_name, request, input, output, action_id);
+        call_delayed_action(action_name, request, input, action_id);
     }
 
     LOG_DEBUG("validating output for '%1%' '%2%'", module_name, action_name);
-    if (!Schemas::validate(output, action.output_schema, errors)) {
+    if (!result.validate(action.output_schema, errors)) {
         LOG_ERROR("output validation failed '%1%' '%2%'", module_name, action_name);
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
@@ -56,6 +51,8 @@ void Module::validate_and_call_action(std::string action_name,
 
         throw validation_error { "Output schema mismatch" };
     }
+
+    return result;
 }
 
 }  // namespace Agent

@@ -29,11 +29,11 @@ Inventory::Inventory() {
     actions["inventory"] = Action { input_schema, output_schema, "interactive" };
 }
 
-void Inventory::call_action(std::string action_name,
-                            const Json::Value& request,
-                            const Json::Value& input,
-                            Json::Value& output) {
+DataContainer Inventory::call_action(std::string action_name,
+                            const Message& request,
+                            const DataContainer& input) {
     std::ostringstream fact_stream;
+    DataContainer data {};
 
     try {
         facter::facts::collection facts;
@@ -41,23 +41,14 @@ void Inventory::call_action(std::string action_name,
         facts.write(fact_stream, facter::facts::format::json);
     } catch (...) {
         LOG_ERROR("failed to retrieve facts");
-        Json::Value err_result;
-        err_result["error"] = "Failed to retrieve facts";
-        output = err_result;
-        return;
+        data.set<std::string>("Failed to retrieve facts", "error");
+        return data;
     }
 
     LOG_TRACE("facts: %1%", fact_stream.str());
+    data.set<std::string>(fact_stream.str(), "facts");
 
-    // Parse the facts string (json) and copy into output
-    Json::Reader reader;
-    if (!reader.parse(fact_stream.str(), output["facts"])) {
-        // Unexpected
-        LOG_ERROR("json decode of facts failed");
-        Json::Value err_result;
-        err_result["error"] = "Failed to parse facts";
-        output = err_result;
-    }
+    return data;
 }
 
 }  // namespace Modules
