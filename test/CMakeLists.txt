@@ -3,8 +3,10 @@ set(BASEPATH "${CMAKE_CURRENT_LIST_DIR}/..")
 include_directories("${BASEPATH}")
 
 set(SOURCES
-    main.cpp
-    file_utils_test.cpp
+  #    main.cpp
+  #  file_utils_test.cpp
+  # message_test.cpp
+  cthun_agent_tests.cpp
 )
 
 set(test_BIN cthun-agent-unittests)
