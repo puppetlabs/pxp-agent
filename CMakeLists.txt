@@ -42,7 +42,6 @@ find_package(OpenSSL REQUIRED)
 
 # Specify the .cmake files for vendored libraries
 include(${VENDOR_DIRECTORY}/valijson.cmake)
-include(${VENDOR_DIRECTORY}/gmock.cmake)
 include(${VENDOR_DIRECTORY}/boost-process.cmake)
 include(${VENDOR_DIRECTORY}/websocketpp.cmake)
 
@@ -53,7 +52,6 @@ include_directories(
     SYSTEM ${Boost_Process_INCLUDE_DIRS}
     SYSTEM ${WEBSOCKETPP_INCLUDE_DIRS}
     SYSTEM ${VALIJSON_INCLUDE_DIRS}
-    SYSTEM ${GMOCK_INCLUDE_DIRS}
     SYSTEM "${VENDOR_DIRECTORY}/jsoncpp"
 )
 
