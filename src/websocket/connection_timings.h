@@ -21,8 +21,8 @@ class ConnectionTimings {
     std::chrono::high_resolution_clock::time_point open;
     std::chrono::high_resolution_clock::time_point close;
 
-    bool connection_started {false};
-    bool connection_failed {false};
+    bool connection_started { false };
+    bool connection_failed { false };
 
     ConnectionTimings();
 

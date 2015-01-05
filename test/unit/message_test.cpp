@@ -1,3 +1,5 @@
+#include "test/test.h"
+
 #include "src/message.h"
 
 static const std::string JSON = "{\"foo\" : {\"bar\" : 2},"
