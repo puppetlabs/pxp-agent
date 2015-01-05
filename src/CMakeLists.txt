@@ -31,7 +31,7 @@ SET(LIBS
     ${OPENSSL_SSL_LIBRARY}
     ${OPENSSL_CRYPTO_LIBRARY}
     ${PTHREADS}
-    facter
+    ${facter_LIBRARY}
 )
 
 add_library(cthun-agent ${LIBRARY_SOURCES})
