@@ -17,7 +17,7 @@ namespace Agent {
 
 class AgentEndpoint {
   public:
-    AgentEndpoint();
+    explicit AgentEndpoint(std::string bin_path);
     ~AgentEndpoint();
 
     // Daemon entry point.
