@@ -22,7 +22,7 @@ namespace Agent {
 static const uint CONNECTION_STATE_CHECK_INTERVAL { 15 };
 static const int DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS { 10 };
 
-AgentEndpoint::AgentEndpoint() {
+AgentEndpoint::AgentEndpoint(std::string bin_path) {
     // declare internal modules
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
     modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
@@ -30,22 +30,38 @@ AgentEndpoint::AgentEndpoint() {
     modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
 
     // load external modules
-    // TODO(ale): fix; this breaks if cthun-agent is not invoked from root dir
-    boost::filesystem::path module_path { "modules" };
-    boost::filesystem::directory_iterator end;
 
-    for (auto file = boost::filesystem::directory_iterator(module_path);
-            file != end; ++file) {
-        if (!boost::filesystem::is_directory(file->status())) {
-            LOG_INFO(file->path().string());
+    // TODO(ale): CTH-76 this doesn't work if bin_path (= argv[0]) has
+    // only the name of the executable, neither when cthun_agent is
+    // called by a symlink. The only safe way to refer to external
+    // modules is to store them in a knwon location (ex. ~/cthun/).
 
-            try {
-                ExternalModule* external = new ExternalModule(file->path().string());
-                modules_[external->module_name] = std::shared_ptr<Module>(external);
-            } catch (...) {
-                LOG_ERROR("failed to load: %1%", file->path().string());
+    boost::filesystem::path module_path {
+        boost::filesystem::canonical(
+            boost::filesystem::system_complete(
+                boost::filesystem::path(bin_path)).parent_path().parent_path())
+    };
+    module_path += "/modules";
+
+    if (boost::filesystem::is_directory(module_path)) {
+        boost::filesystem::directory_iterator end;
+
+        for (auto file = boost::filesystem::directory_iterator(module_path);
+                file != end; ++file) {
+            if (!boost::filesystem::is_directory(file->status())) {
+                LOG_INFO(file->path().string());
+
+                try {
+                    ExternalModule* external = new ExternalModule(file->path().string());
+                    modules_[external->module_name] = std::shared_ptr<Module>(external);
+                } catch (...) {
+                    LOG_ERROR("failed to load: %1%", file->path().string());
+                }
             }
         }
+    } else {
+        LOG_WARNING("failed to locate the modules directory; external modules "
+                    "will not be loaded");
     }
 }
 
