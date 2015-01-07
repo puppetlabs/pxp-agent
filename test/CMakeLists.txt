@@ -5,7 +5,7 @@ include_directories("${BASEPATH}")
 set(SOURCES
     main.cpp
     unit/file_utils_test.cpp
-    unit/message_test.cpp
+    unit/data_container_test.cpp
 )
 
 set(test_BIN cthun-agent-unittests)
