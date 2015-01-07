@@ -13,7 +13,6 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-reorder -Wno-unused-parameter -Wno-deprecated-register")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
-# TODO(ploubser): Get rid of jsoncpp and turn -Werror back on
     # NB: -pthread is needed for fedora20 (cmake does not add the library, even
     # afer finding it)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-unused-parameter -pthread")
@@ -43,9 +42,10 @@ find_package(OpenSSL REQUIRED)
 find_package(facter REQUIRED)
 
 # Specify the .cmake files for vendored libraries
-include(${VENDOR_DIRECTORY}/valijson.cmake)
+include(${VENDOR_DIRECTORY}/rapidjson.cmake)
 include(${VENDOR_DIRECTORY}/boost-process.cmake)
 include(${VENDOR_DIRECTORY}/websocketpp.cmake)
+include(${VENDOR_DIRECTORY}/valijson.cmake)
 
 # Set include directories
 
@@ -54,7 +54,7 @@ include_directories(
     SYSTEM ${Boost_Process_INCLUDE_DIRS}
     SYSTEM ${WEBSOCKETPP_INCLUDE_DIRS}
     SYSTEM ${VALIJSON_INCLUDE_DIRS}
-    SYSTEM "${VENDOR_DIRECTORY}/jsoncpp"
+    SYSTEM ${RAPIDJSON_INCLUDE_DIRS}
 )
 
 # Add the main binary

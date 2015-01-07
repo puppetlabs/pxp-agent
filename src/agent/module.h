@@ -4,8 +4,6 @@
 #include "src/agent/action.h"
 #include "src/data_container.h"
 
-#include <json/json.h>
-
 #include <map>
 #include <string>
 

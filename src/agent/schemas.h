@@ -1,7 +1,7 @@
 #ifndef SRC_AGENT_SCHEMAS_H_
 #define SRC_AGENT_SCHEMAS_H_
 
-#include <json/json.h>
+#include <rapidjson/document.h>
 #include <valijson/schema.hpp>
 
 namespace Cthun {
@@ -9,7 +9,7 @@ namespace Agent {
 
 class Schemas {
   public:
-    static bool validate(const Json::Value& document,
+    static bool validate(const rapidjson::Value& document,
                          const valijson::Schema& schema,
                          std::vector<std::string> &errors);
     static valijson::Schema external_action_metadata();

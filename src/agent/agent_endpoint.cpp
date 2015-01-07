@@ -25,7 +25,7 @@ static const int DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS { 10 };
 AgentEndpoint::AgentEndpoint() {
     // declare internal modules
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
-    modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
+    //modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
     modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
     modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
 
@@ -123,6 +123,7 @@ void AgentEndpoint::sendLogin() {
 
     // NOTE(ploubser): I removed login schema message validation. We're making
     // it, it should never not be valid.
+    LOG_DEBUG("Sending message - %1%", msg.toString());
 
     try {
          ws_endpoint_ptr_->send(msg.toString());
@@ -198,7 +199,7 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
     Message response;
 
     try {
-        msg = parseAndValidateMessage(message);
+        msg = std::move(parseAndValidateMessage(message));
     } catch (validation_error& e) {
         LOG_ERROR("Invalid message: %1%", e.what());
         return;
@@ -226,7 +227,6 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
                 std::string uuid { Common::getUUID() };
                 LOG_DEBUG("Delayed action execution requested. Creating job " \
                           "with ID %1%", uuid);
-                Json::Value output {};
                 DataContainer response {};
                 response.set<std::string>("Requested excution of action: " + action_name,
                     "status");

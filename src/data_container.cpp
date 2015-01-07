@@ -1,142 +1,203 @@
 #include "data_container.h"
 
-#include <valijson/adapters/jsoncpp_adapter.hpp>
-#include <valijson/schema_parser.hpp>
-
 namespace Cthun {
 namespace Agent {
 
-DataContainer::DataContainer(std::string msg) {
-    Json::Reader reader;
+DataContainer::DataContainer() {
+    document_root_.SetObject();
+}
 
-    if (!reader.parse(msg, message_root_)) {
-        throw message_parse_error { reader.getFormattedErrorMessages() };
+DataContainer::DataContainer(std::string msg) {
+    document_root_.Parse(msg.data());
+
+    if (document_root_.HasParseError()) {
+        throw message_parse_error { "invalid json" };
     }
 }
 
-DataContainer::DataContainer(Json::Value value) {
-    message_root_ = value;
+DataContainer::DataContainer(const rapidjson::Value& value) {
+    // Because rapidjson disallows the use of copy constructors we pass
+    // the json by const reference and recreate it by explicitly copying
+    document_root_.CopyFrom(value, document_root_.GetAllocator());
+}
+
+DataContainer::DataContainer(const DataContainer& data) {
+    document_root_.CopyFrom(data.document_root_, document_root_.GetAllocator());
+}
+
+DataContainer::DataContainer(const DataContainer&& data) {
+    document_root_.CopyFrom(data.document_root_, document_root_.GetAllocator());
+}
+
+DataContainer& DataContainer::operator=(DataContainer other) {
+    std::swap(document_root_, other.document_root_);
+    return *this;
 }
 
 std::string DataContainer::toString() const {
-    return message_root_.toStyledString();
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document_root_.Accept(writer);
+    return buffer.GetString();
 }
 
 bool DataContainer::validate(valijson::Schema schema, std::vector<std::string>& errors,
-                       std::string index_at) {
-    Json::Value root = message_root_;
+                             std::string index_at) {
     if (!index_at.empty()) {
-        root = root[index_at];
+        return Schemas::validate(document_root_[index_at.data()],
+                                 schema, errors);
     }
 
-    return Schemas::validate(root, schema, errors);
+    return Schemas::validate(document_root_, schema, errors);
 }
 
 // Private functions
 
 // getValue specialisations
 template<>
-int DataContainer::getValue<>(Json::Value value) const {
-    return value.asInt();
+int DataContainer::getValue<>(const rapidjson::Value& value) const {
+    if (value.IsNull()) {
+        return 0;
+    }
+    return value.GetInt();
 }
 
 template<>
-bool DataContainer::getValue<>(Json::Value value) const {
-    return value.asBool();
+bool DataContainer::getValue<>(const rapidjson::Value& value) const {
+    if (value.IsNull()) {
+        return false;
+    }
+    return value.GetBool();
 }
 
 template<>
-std::string DataContainer::getValue<>(Json::Value value) const {
-    return value.asString();
+std::string DataContainer::getValue<>(const rapidjson::Value& value) const {
+    if (value.IsNull()) {
+        return "";
+    }
+    return std::string(value.GetString());
 }
 
 template<>
-float DataContainer::getValue<>(Json::Value value) const {
-    return value.asFloat();
+double DataContainer::getValue<>(const rapidjson::Value& value) const {
+    if (value.IsNull()) {
+        return 0.0;
+    }
+    return value.GetDouble();
 }
 
 template<>
-double DataContainer::getValue<>(Json::Value value) const {
-    return value.asDouble();
+DataContainer DataContainer::getValue<>(const rapidjson::Value& value) const {
+    if (value.IsNull()) {
+        DataContainer container {};
+        return container;
+    }
+    // rvalue return
+    DataContainer containter { value };
+    return containter;
 }
 
 template<>
-DataContainer DataContainer::getValue<>(Json::Value value) const {
-    return DataContainer { value };
+Message DataContainer::getValue<>(const rapidjson::Value& value) const {
+    if (value.IsNull()) {
+        Message container {};
+        return container;
+    }
+    // rvalue return
+    Message container { value };
+    return container;
 }
 
 template<>
-Message DataContainer::getValue<>(Json::Value value) const {
-    return Message { value };
+rapidjson::Value DataContainer::getValue<>(const rapidjson::Value& value) const {
+    DataContainer* tmp_this = const_cast<DataContainer*>(this);
+    rapidjson::Value v { value, tmp_this->document_root_.GetAllocator()} ;
+    return v;
 }
 
 template<>
-Json::Value DataContainer::getValue<>(Json::Value value) const {
-    return value;
-}
-
-template<>
-std::vector<std::string> DataContainer::getValue<>(Json::Value value) const {
+std::vector<std::string> DataContainer::getValue<>(const rapidjson::Value& value) const {
     std::vector<std::string> tmp {};
 
-    for (Json::ArrayIndex i = 0u; i < value.size(); i++) {
-        tmp.push_back(value.get(i, "").asString());
+    if (value.IsNull()) {
+        return tmp;
+    }
+
+    for (rapidjson::Value::ConstValueIterator itr = value.Begin();
+         itr != value.End();
+         itr++) {
+        tmp.push_back(itr->GetString());
     }
 
     return tmp;
 }
 
 template<>
-std::vector<bool> DataContainer::getValue<>(Json::Value value) const {
+std::vector<bool> DataContainer::getValue<>(const rapidjson::Value& value) const {
     std::vector<bool> tmp {};
 
-    for (Json::ArrayIndex i = 0u; i < value.size(); i++) {
-        tmp.push_back(value.get(i, "").asBool());
+    if (value.IsNull()) {
+        return tmp;
+    }
+
+    for (rapidjson::Value::ConstValueIterator itr = value.Begin();
+         itr != value.End();
+         itr++) {
+        tmp.push_back(itr->GetBool());
     }
 
     return tmp;
 }
 
 template<>
-std::vector<int> DataContainer::getValue<>(Json::Value value) const {
+std::vector<int> DataContainer::getValue<>(const rapidjson::Value& value) const {
     std::vector<int> tmp {};
 
-    for (Json::ArrayIndex i = 0u; i < value.size(); i++) {
-        tmp.push_back(value.get(i, "").asInt());
+    if (value.IsNull()) {
+        return tmp;
+    }
+
+    for (rapidjson::Value::ConstValueIterator itr = value.Begin();
+         itr != value.End();
+         itr++) {
+        tmp.push_back(itr->GetInt());
     }
 
     return tmp;
 }
 
 template<>
-std::vector<float> DataContainer::getValue<>(Json::Value value) const {
-    std::vector<float> tmp {};
-
-    for (Json::ArrayIndex i = 0u; i < value.size(); i++) {
-        tmp.push_back(value.get(i, "").asFloat());
-    }
-
-    return tmp;
-}
-
-template<>
-std::vector<DataContainer> DataContainer::getValue<>(Json::Value value) const {
-    std::vector<DataContainer> tmp {};
-
-    for (Json::ArrayIndex i = 0u; i < value.size(); i++) {
-        tmp.push_back(DataContainer { value.get(i, "") });
-    }
-
-    return tmp;
-}
-
-
-template<>
-std::vector<double> DataContainer::getValue<>(Json::Value value) const {
+std::vector<double> DataContainer::getValue<>(const rapidjson::Value& value) const {
     std::vector<double> tmp {};
 
-    for (Json::ArrayIndex i = 0u; i < value.size(); i++) {
-        tmp.push_back(value.get(i, "").asDouble());
+    if (value.IsNull()) {
+        return tmp;
+    }
+
+    for (rapidjson::Value::ConstValueIterator itr = value.Begin();
+         itr != value.End();
+         itr++) {
+        tmp.push_back(itr->GetDouble());
+    }
+
+    return tmp;
+}
+
+template<>
+std::vector<DataContainer> DataContainer::getValue<>(const rapidjson::Value& value) const {
+    std::vector<DataContainer> tmp {};
+
+    if (value.IsNull()) {
+        return tmp;
+    }
+
+    for (rapidjson::Value::ConstValueIterator itr = value.Begin();
+         itr != value.End();
+         itr++) {
+        DataContainer* tmp_this = const_cast<DataContainer*>(this);
+        const rapidjson::Value tmpvalue(*itr, tmp_this->document_root_.GetAllocator());
+        DataContainer tmp_data { tmpvalue };
+        tmp.push_back(tmp_data);
     }
 
     return tmp;
@@ -145,64 +206,89 @@ std::vector<double> DataContainer::getValue<>(Json::Value value) const {
 // setValue specialisations
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, std::vector<std::string> new_value ) {
-    Json::Value tmp(Json::arrayValue);
-    for (auto value : new_value) {
-        tmp.append(Json::Value(value));
-    }
-    jval = tmp;
+void DataContainer::setValue<>(rapidjson::Value& jval, bool new_value) {
+    jval.SetBool(new_value);
+
 }
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, std::vector<bool> new_value ) {
-    Json::Value tmp(Json::arrayValue);
-    for (auto value : new_value) {
-        // the casting is required
-        tmp.append(bool(value));
-    }
-    jval = tmp;
+void DataContainer::setValue<>(rapidjson::Value& jval, int new_value) {
+    jval.SetInt(new_value);
+
 }
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, std::vector<int> new_value ) {
-    Json::Value tmp(Json::arrayValue);
-    for (auto value : new_value) {
-        tmp.append(value);
-    }
-    jval = tmp;
+void DataContainer::setValue<>(rapidjson::Value& jval, std::string new_value) {
+    jval.SetString(new_value.data(), new_value.size(), document_root_.GetAllocator());
 }
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, std::vector<float> new_value ) {
-    Json::Value tmp(Json::arrayValue);
-    for (auto value : new_value) {
-        tmp.append(value);
-    }
-    jval = tmp;
+void DataContainer::setValue<>(rapidjson::Value& jval, double new_value) {
+    jval.SetDouble(new_value);
+
 }
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, std::vector<double> new_value ) {
-    Json::Value tmp(Json::arrayValue);
-    for (auto value : new_value) {
-        tmp.append(value);
+void DataContainer::setValue<>(rapidjson::Value& jval, std::vector<std::string> new_value ) {
+    jval.SetArray();
+
+    for (const auto& value : new_value) {
+        // rapidjson doesn't like std::string...
+        rapidjson::Value s;
+        s.SetString(value.data(), value.size(), document_root_.GetAllocator());
+        jval.PushBack(s, document_root_.GetAllocator());
     }
-    jval = tmp;
 }
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, std::vector<DataContainer> new_value ) {
-    Json::Value tmp(Json::arrayValue);
-    for (auto value : new_value) {
-        tmp.append(value.getRaw());
+void DataContainer::setValue<>(rapidjson::Value& jval, std::vector<bool> new_value ) {
+    jval.SetArray();
+
+    for (const auto& value : new_value) {
+        rapidjson::Value tmp_val;
+        tmp_val.SetBool(value);
+        jval.PushBack(tmp_val, document_root_.GetAllocator());
     }
-    jval = tmp;
 }
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, DataContainer new_value ) {
-    jval = new_value.getRaw();
+void DataContainer::setValue<>(rapidjson::Value& jval, std::vector<int> new_value ) {
+    jval.SetArray();
+
+    for (const auto& value : new_value) {
+        rapidjson::Value tmp_val;
+        tmp_val.SetInt(value);
+        jval.PushBack(tmp_val, document_root_.GetAllocator());
+    }
 }
+
+template<>
+void DataContainer::setValue<>(rapidjson::Value& jval, std::vector<double> new_value ) {
+    jval.SetArray();
+
+    for (const auto& value : new_value) {
+        rapidjson::Value tmp_val;
+        tmp_val.SetDouble(value);
+        jval.PushBack(tmp_val, document_root_.GetAllocator());
+    }
+}
+
+template<>
+void DataContainer::setValue<>(rapidjson::Value& jval, std::vector<DataContainer> new_value ) {
+    jval.SetArray();
+
+    for (auto value : new_value) {
+        rapidjson::Document tmp_value;
+        tmp_value.CopyFrom(value.document_root_, document_root_.GetAllocator());
+        jval.PushBack(tmp_value, document_root_.GetAllocator());
+    }
+}
+
+template<>
+void DataContainer::setValue<>(rapidjson::Value& jval, DataContainer new_value ) {
+    jval.CopyFrom(new_value.getRaw(), document_root_.GetAllocator());
+}
+
 
 }  // namespace Agent
 }  // namespace Cthun

@@ -1,7 +1,7 @@
 #ifndef SRC_COMMON_FILEUTILS_H_
 #define SRC_COMMON_FILEUTILS_H_
 
-#include <json/json.h>
+#include "src/data_container.h"
 
 #include <wordexp.h>
 #include <fstream>
@@ -52,9 +52,6 @@ void writeToFile(const std::string& text,
 /// Create a directory.
 /// Returns true on success, false on failure
 bool createDirectory(const std::string& dirname);
-
-// TODO(ploubser): Document
-Json::Value readFileAsJson(std::string path);
 
 // TODO(ploubser): Document
 std::string readFileAsString(std::string path);

@@ -3,7 +3,12 @@
 
 #include "src/agent/schemas.h"
 
-#include <json/json.h>
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/allocators.h>
+
+#include <iostream>
 
 namespace Cthun {
 namespace Agent {
@@ -19,6 +24,13 @@ class message_parse_error : public std::runtime_error {
 class message_index_error : public std::runtime_error {
   public:
     explicit message_index_error(std::string const& msg) :
+        std::runtime_error(msg) {}
+};
+
+/// Error thrown when trying to set or get invalid type
+class data_type_error : public std::runtime_error {
+  public:
+    explicit data_type_error(std::string const& msg) :
         std::runtime_error(msg) {}
 };
 
@@ -85,9 +97,12 @@ class message_index_error : public std::runtime_error {
 
 class DataContainer {
   public:
-    explicit DataContainer(){}
-    explicit DataContainer(std::string msg);
-    explicit DataContainer(Json::Value value);
+    DataContainer();
+    DataContainer(std::string msg);
+    DataContainer(const rapidjson::Value& value);
+    DataContainer(const DataContainer& data);
+    DataContainer(const DataContainer&& data);
+    DataContainer& operator=(DataContainer other);
 
     std::string toString() const;
 
@@ -95,44 +110,49 @@ class DataContainer {
                   std::string index_at = "");
 
     bool includes(std::string first) {
-        return includes_(message_root_, first);
-    }
-
-    Json::Value getRaw() {
-        return message_root_;
+        return includes_(document_root_, first.data());
     }
 
     template <typename ... Args>
     bool includes(std::string first, Args... rest) {
-        return includes_(message_root_, first, rest...);
+        return includes_(document_root_, first.data(), rest...);
+    }
+
+    rapidjson::Document getRaw() {
+        rapidjson::Document tmp;
+        rapidjson::Document::AllocatorType& a = document_root_.GetAllocator();
+        tmp.CopyFrom(document_root_, a);
+        return std::move(document_root_);
     }
 
     template <typename T>
     T get(std::string first) const {
-        return get_<T>(message_root_, first);
+        const rapidjson::Value& v = document_root_;
+        return get_<T>(v, first.data());
     }
 
     template <typename T, typename ... Args>
     T get(std::string first, Args ... rest) const {
-        return get_<T>(message_root_, first, rest...);
+        const rapidjson::Value& v = document_root_;
+        return get_<T>(v, first.data(), rest...);
     }
 
     template <typename T>
     void set(T new_value, std::string first) {
-        set_<T>(message_root_, new_value, first);
+        set_<T>(document_root_, new_value, first.data());
     }
 
     template <typename T, typename ... Args>
     void set(T new_value, std::string first, Args ... rest) {
-        set_<T>(message_root_, new_value, first, rest...);
+        set_<T>(document_root_, new_value, first.data(), rest...);
     }
 
   private:
-    Json::Value message_root_ {};
+    rapidjson::Document document_root_;
 
     template <typename ... Args>
-    bool includes_(Json::Value jval, std::string first) {
-        if (jval.isMember(first)) {
+    bool includes_(const rapidjson::Value& jval, const char * first) {
+        if (jval.HasMember(first)) {
             return true;
         } else {
             return false;
@@ -140,92 +160,120 @@ class DataContainer {
     }
 
     template <typename ... Args>
-    bool includes_(Json::Value jval, std::string first, Args ... rest) {
-        if (jval.isMember(first)) {
+    bool includes_(const rapidjson::Value& jval, const char * first, Args ... rest) {
+        if (jval[first].IsObject()) {
             return includes_(jval[first], rest...);
         } else {
             return false;
         }
     }
 
-    template <typename T, typename ... Args>
-    T get_(Json::Value jval, std::string first, Args ... rest) const {
-        if (!(jval.isObject() && jval.isMember(first))) {
-            return getValue<T>(Json::nullValue);
-        }
-
-        return get_<T>(jval[first], rest...);
-    }
-
     template <typename T>
-    T get_(Json::Value jval, std::string first) const {
-        if (!(jval.isObject() && jval.isMember(first))) {
-            return getValue<T>(Json::nullValue);
+    T get_(const rapidjson::Value& jval, const char * first) const {
+        if (!jval.HasMember(first)) {
+            return getValue<T>(rapidjson::Value(rapidjson::kNullType));
         }
 
         return getValue<T>(jval[first]);
     }
 
     template <typename T, typename ... Args>
-    void set_(Json::Value& jval, T new_val, std::string first) {
+    T get_(const rapidjson::Value& jval, const char * first, Args ... rest) const {
+        if (!(jval.HasMember(first) && jval[first].IsObject())) {
+            return getValue<T>(rapidjson::Value(rapidjson::kNullType));
+        }
+
+        return get_<T>(jval[first], rest...);
+    }
+
+    template <typename T, typename ... Args>
+    void set_(rapidjson::Value& jval, T new_val, const char * first) {
+        if (!jval.HasMember(first)) {
+            jval.AddMember(rapidjson::Value(first, document_root_.GetAllocator()).Move(),
+                           rapidjson::Value().Move(),
+                           document_root_.GetAllocator());
+        }
+
         setValue<T>(jval[first], new_val);
     }
 
     template <typename T, typename ... Args>
-    void set_(Json::Value& jval, T new_val, std::string first, Args ... rest) {
-        if (!jval.isObject() && !jval.isNull()) {
+    void set_(rapidjson::Value& jval, T new_val, const char * first, Args ... rest) {
+        if (jval.HasMember(first) && !jval[first].IsObject()) {
             throw message_index_error { "invalid message index supplied " };
         }
 
-        if (!jval.isMember(first)) {
-            jval[first] = Json::Value {};
+        if (!jval.HasMember(first)) {
+            jval.AddMember(rapidjson::Value(first, document_root_.GetAllocator()).Move(),
+                           rapidjson::Value(rapidjson::kObjectType).Move(),
+                           document_root_.GetAllocator());
         }
 
         set_<T>(jval[first], new_val, rest...);
     }
 
     template<typename T>
-    T getValue(Json::Value value) const;
+    T getValue(const rapidjson::Value& value) const;
 
 
     template<typename T>
-    void setValue(Json::Value& jval, T new_value);
-
+    void setValue(rapidjson::Value& jval, T new_value);
 };
 
+
 template<typename T>
-void DataContainer::setValue(Json::Value& jval, T new_value) {
-    jval = new_value;
+T DataContainer::getValue(const rapidjson::Value& Value) const {
+    throw data_type_error { "invalid type for DataContainer"};
+}
+
+template<typename T>
+void DataContainer::setValue(rapidjson::Value& jval, T new_value) {
+    throw data_type_error { "invalid type for DataContainer"};
 }
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, std::vector<std::string> new_value);
+void DataContainer::setValue<>(rapidjson::Value& jval, std::string new_value);
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, std::vector<bool> new_value);
+void DataContainer::setValue<>(rapidjson::Value& jval, bool new_value);
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, std::vector<int> new_value);
+void DataContainer::setValue<>(rapidjson::Value& jval, int new_value);
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, std::vector<float> new_value);
+void DataContainer::setValue<>(rapidjson::Value& jval, double new_value);
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, std::vector<double> new_value);
+void DataContainer::setValue<>(rapidjson::Value& jval, std::vector<std::string> new_value);
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, std::vector<DataContainer> new_value);
+void DataContainer::setValue<>(rapidjson::Value& jval, std::vector<bool> new_value);
 
 template<>
-void DataContainer::setValue<>(Json::Value& jval, DataContainer new_value);
+void DataContainer::setValue<>(rapidjson::Value& jval, std::vector<int> new_value);
+
+template<>
+void DataContainer::setValue<>(rapidjson::Value& jval, std::vector<double> new_value);
+
+template<>
+void DataContainer::setValue<>(rapidjson::Value& jval, std::vector<DataContainer> new_value);
+
+template<>
+void DataContainer::setValue<>(rapidjson::Value& jval, DataContainer new_value);
 
 // TODO(ploubser): This becomes the current message imp
 // when the message structure changes
 class Message : public DataContainer {
   public:
-    explicit Message(){}
-    explicit Message(std::string msg) : DataContainer(msg) {}
-    explicit Message(Json::Value value) : DataContainer(value) {}
+    Message(){}
+    Message(std::string msg) : DataContainer(msg) {}
+    Message(Message& msg) : DataContainer(msg) {}
+    Message(Message&& msg) : DataContainer(msg) {}
+    Message(const rapidjson::Value& value) : DataContainer(value) {}
+    Message& operator=(Message other) {
+        DataContainer::operator=(other);
+        return *this;
+    }
 };
 
 }  // namespace Agent

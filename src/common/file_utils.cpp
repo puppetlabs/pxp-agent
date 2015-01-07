@@ -78,24 +78,6 @@ bool createDirectory(const std::string& dirname) {
     return false;
 }
 
-Json::Value readFileAsJson(std::string path) {
-    Json::Value doc {};
-    std::string content { readFileAsString(path) };
-
-    if (content.empty()) {
-        return doc;
-    }
-
-    Json::Reader reader;
-    // Something went wrong
-    if (!reader.parse(content, doc)) {
-        LOG_WARNING("Could not parse JSON from file: %1%", path);
-        LOG_WARNING("Returning empty document {}");
-    }
-
-    return doc;
-}
-
 std::string readFileAsString(std::string path) {
     std::string content = "";
 

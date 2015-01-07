@@ -24,7 +24,7 @@ Echo::Echo() {
 DataContainer Echo::call_action(std::string action_name,
                        const Message& request,
                        const DataContainer& input) {
-    return input;
+    return const_cast<DataContainer&>(input);
 }
 
 }  // namespace Modules

@@ -4,6 +4,8 @@
 #include "src/agent/module.h"
 #include "src/data_container.h"
 
+#include <rapidjson/document.h>
+
 #include <map>
 #include <string>
 

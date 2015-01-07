@@ -15,7 +15,8 @@ set(LIBRARY_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/agent/module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent/external_module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent/modules/echo.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/agent/modules/inventory.cpp"
+    # TODO(ploubser): Enable inventory module when CFacter is fixed
+    #"${CMAKE_CURRENT_LIST_DIR}/agent/modules/inventory.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent/modules/ping.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent/modules/status.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/common/file_utils.cpp"
@@ -23,7 +24,6 @@ set(LIBRARY_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/common/log.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/websocket/endpoint.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/websocket/connection_timings.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/../vendor/jsoncpp/jsoncpp.cpp"
 )
 
 SET(LIBS

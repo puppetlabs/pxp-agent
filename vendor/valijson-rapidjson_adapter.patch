@@ -1,0 +1,40 @@
+From 1d3294f3169f278c937c2a6cd395646d126bda6d Mon Sep 17 00:00:00 2001
+From: Richard Clamp <richardc@unixbeard.net>
+Date: Thu, 27 Nov 2014 17:10:07 +0000
+Subject: [PATCH] Fix for head
+
+---
+ CMakeLists.txt                                  | 2 +-
+ include/valijson/adapters/rapidjson_adapter.hpp | 3 +--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ead1a08..ef7ecf5 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -18,7 +18,7 @@ add_library(jsoncpp
+ add_subdirectory(thirdparty/gtest-1.7.0)
+ 
+ # Include path
+-include_directories(include thirdparty/gtest-1.7.0/include thirdparty/jsoncpp-0.5.0/include thirdparty/rapidjson-0.1/include)
++include_directories(include thirdparty/gtest-1.7.0/include thirdparty/jsoncpp-0.5.0/include thirdparty/rapidjson-0.11/include)
+ 
+ # External schema validation example
+ add_executable(external_schema
+diff --git a/include/valijson/adapters/rapidjson_adapter.hpp b/include/valijson/adapters/rapidjson_adapter.hpp
+index 9a0be0c..7e727d2 100644
+--- a/include/valijson/adapters/rapidjson_adapter.hpp
++++ b/include/valijson/adapters/rapidjson_adapter.hpp
+@@ -760,11 +760,10 @@ inline RapidJsonObjectMemberIterator RapidJsonObject::find(
+     const rapidjson::Value::ConstMemberIterator
+         itr = value.FindMember(propertyName.c_str());
+ 
+-    return itr ? itr : value.MemberEnd();
++    return itr;
+ }
+ 
+ }  // namespace adapters
+ }  // namespace valijson
+ 
+ #endif
+-

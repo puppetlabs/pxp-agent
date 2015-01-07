@@ -10,7 +10,7 @@
 
 #include <boost/process.hpp>
 
-#include <valijson/adapters/jsoncpp_adapter.hpp>
+#include <valijson/adapters/rapidjson_adapter.hpp>
 #include <valijson/schema_parser.hpp>
 
 LOG_DECLARE_NAMESPACE("agent.external_module");
@@ -85,12 +85,13 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
         // TODO(ploubser): This doesn't fit well with the Data abstraction.
         // Should this go in the object?
 
-        valijson::SchemaParser parser;
-        Json::Value input { action.get<Json::Value>("input") };
-        Json::Value output { action.get<Json::Value>("output") } ;
 
-        valijson::adapters::JsonCppAdapter input_doc_schema(input);
-        valijson::adapters::JsonCppAdapter output_doc_schema(output);
+        valijson::SchemaParser parser;
+        rapidjson::Value input { action.get<rapidjson::Value>("input") };
+        rapidjson::Value output { action.get<rapidjson::Value>("output") } ;
+
+        valijson::adapters::RapidJsonAdapter input_doc_schema(input);
+        valijson::adapters::RapidJsonAdapter output_doc_schema(output);
 
         try {
             parser.populateSchema(input_doc_schema, input_schema);
@@ -122,6 +123,7 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
         }
 
         actions[action.get<std::string>("name")] = Action { input_schema, output_schema, behaviour };
+
     }
 }
 

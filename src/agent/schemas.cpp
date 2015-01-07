@@ -1,6 +1,6 @@
 #include "src/agent/schemas.h"
 
-#include <valijson/adapters/jsoncpp_adapter.hpp>
+#include <valijson/adapters/rapidjson_adapter.hpp>
 #include <valijson/schema_parser.hpp>
 #include <valijson/validation_results.hpp>
 #include <valijson/validator.hpp>
@@ -10,11 +10,11 @@
 namespace Cthun {
 namespace Agent {
 
-bool Schemas::validate(const Json::Value& document,
+bool Schemas::validate(const rapidjson::Value& document,
                        const valijson::Schema& schema,
                        std::vector<std::string>& errors) {
     valijson::Validator validator(schema);
-    valijson::adapters::JsonCppAdapter adapted_document(document);
+    valijson::adapters::RapidJsonAdapter adapted_document(document);
 
     valijson::ValidationResults validation_results;
     if (!validator.validate(adapted_document, &validation_results)) {
