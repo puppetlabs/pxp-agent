@@ -1,6 +1,7 @@
 # allow include directives with absolute paths for cthun-agent sources
 set(BASEPATH "${CMAKE_CURRENT_LIST_DIR}/..")
 include_directories("${BASEPATH}")
+set(CATCH_DIRECTORY "${VENDOR_DIRECTORY}/catch")
 
 set(SOURCES
     main.cpp
@@ -12,6 +13,7 @@ set(test_BIN cthun-agent-unittests)
 
 include_directories(
     ${GMOCK_INCLUDE_DIRS}
+    ${CATCH_DIRECTORY}
 )
 
 ADD_EXECUTABLE(${test_BIN} ${SOURCES})
