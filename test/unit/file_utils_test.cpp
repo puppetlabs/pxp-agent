@@ -30,21 +30,39 @@ TEST_CASE("Common::FileUtils::expandAsDoneByShell", "[common]") {
     }
 }
 
-std::string file_path { FileUtils::expandAsDoneByShell("~/test_" + getUUID()) };
+static const auto home_path = FileUtils::expandAsDoneByShell("~");
+static const auto file_path =
+    FileUtils::expandAsDoneByShell("~/test_file_" + getUUID());
+static const auto dir_path =
+    FileUtils::expandAsDoneByShell("~/test_dir_" + getUUID());
 
 TEST_CASE("Common::FileUtils::fileExists", "[common]") {
     SECTION("it can check that a file does not exist") {
         REQUIRE(FileUtils::fileExists(file_path) == false);
     }
+
+    SECTION("it can check that a directory exists") {
+        REQUIRE(FileUtils::fileExists(home_path) == true);
+    }
 }
 
 TEST_CASE("Common::FileUtils::writeToFile", "[common]") {
-    SECTION("it can write to a file, check that it exists, and delete it") {
+    SECTION("it can write to a regular file, ensure it exists, and delete it") {
         REQUIRE(FileUtils::fileExists(file_path) == false);
         FileUtils::writeToFile("test\n", file_path);
         REQUIRE(FileUtils::fileExists(file_path) == true);
         FileUtils::removeFile(file_path);
         REQUIRE(FileUtils::fileExists(file_path) == false);
+    }
+}
+
+TEST_CASE("Common::FileUtils::createDirectory", "[common]") {
+    SECTION("it can create and remove an empty directory") {
+        REQUIRE(FileUtils::fileExists(dir_path) == false);
+        FileUtils::createDirectory(dir_path);
+        REQUIRE(FileUtils::fileExists(dir_path) == true);
+        FileUtils::removeFile(dir_path);
+        REQUIRE(FileUtils::fileExists(dir_path) == false);
     }
 }
 

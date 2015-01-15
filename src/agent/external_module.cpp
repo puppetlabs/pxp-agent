@@ -131,8 +131,8 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
 }
 
 DataContainer ExternalModule::call_action(std::string action_name,
-                                 const Message& request,
-                                 const DataContainer& input) {
+                                          const Message& request,
+                                          const DataContainer& input) {
     std::string stdin = input.toString();
     std::string stdout;
     std::string stderr;
@@ -161,7 +161,7 @@ void ExternalModule::call_delayed_action(std::string action_name,
 
     std::string action_dir { "/tmp/cthun_agent/" + job_id };
 
-    // create action specific result directory
+    // create job specific result directory
     if (!Common::FileUtils::fileExists(action_dir)) {
         LOG_INFO("Creating result directory for action.");
         if (!Common::FileUtils::createDirectory(action_dir)) {
@@ -196,7 +196,9 @@ void ExternalModule::call_delayed_action(std::string action_name,
     run_command(path_, { path_, action_name }, stdin, stdout, stderr);
     status.set<std::string>(std::to_string(timer.elapsedSeconds()) + "s", "duration");
 
-    DataContainer result { stdout };
+    // TODO(ale): check the following line
+    // DataContainer result { stdout };
+
     status.set<std::string>("completed", "result");
 
     Common::FileUtils::writeToFile(stdout + "\n", action_dir + "/stdout");
