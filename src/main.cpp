@@ -4,7 +4,6 @@
 #include "src/common/file_utils.h"
 
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
 
 LOG_DECLARE_NAMESPACE("agent_main");
 
@@ -167,13 +166,13 @@ int main(int argc, char *argv[]) {
     // start the agent
 
     try {
-        Agent::AgentEndpoint agent;
+        Agent::AgentEndpoint agent { std::string(argv[0]) };
 
         agent.startAgent(app_options.server, app_options.ca, app_options.cert, app_options.key);
-    } catch (Agent::fatal_error&  e) {
+    } catch (Agent::fatal_error& e) {
         LOG_ERROR("fatal error: %1%", e.what());
         return 1;
-    } catch (std::exception&  e) {
+    } catch (std::exception& e) {
         LOG_ERROR("unexpected error: %1%", e.what());
         return 1;
     } catch (...) {

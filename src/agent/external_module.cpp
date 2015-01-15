@@ -1,6 +1,7 @@
 #include "src/agent/external_module.h"
 #include "src/agent/schemas.h"
 #include "src/agent/action.h"
+#include "src/agent/errors.h"
 #include "src/common/log.h"
 #include "src/common/file_utils.h"
 #include "src/common/timer.h"
@@ -58,10 +59,9 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
     run_command(path, { path, "metadata" }, "", metadata, error);
 
     if (!error.empty()) {
-        LOG_ERROR("Error while trying to load plugin : %1%", path);
+        LOG_ERROR("Error while trying to load external module: %1%", path);
         LOG_ERROR(error);
-        // TODO(ploubser): We need to get named exceptions everywhere
-        throw "error while trying to load plugin";
+        throw module_error { "failed to load external module" };
     }
 
     DataContainer document { metadata };
@@ -72,23 +72,25 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }
-        throw "metadata did not match schema";
+        throw module_error { "metadata did not match schema" };
     }
 
     LOG_INFO("validation OK");
 
     for (auto action : document.get<std::vector<DataContainer>>("actions")) {
-        LOG_INFO("declaring action %1%", action.get<std::string>("name"));
+        std::string action_name { action.get<std::string>("name") };
+        LOG_INFO("declaring action %1%", action_name);
         valijson::Schema input_schema;
         valijson::Schema output_schema;
 
         // TODO(ploubser): This doesn't fit well with the Data abstraction.
         // Should this go in the object?
 
+        // TODO(ale): unit tests for the validation once we move its logic
 
         valijson::SchemaParser parser;
         rapidjson::Value input { action.get<rapidjson::Value>("input") };
-        rapidjson::Value output { action.get<rapidjson::Value>("output") } ;
+        rapidjson::Value output { action.get<rapidjson::Value>("output") };
 
         valijson::adapters::RapidJsonAdapter input_doc_schema(input);
         valijson::adapters::RapidJsonAdapter output_doc_schema(output);
@@ -96,8 +98,8 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
         try {
             parser.populateSchema(input_doc_schema, input_schema);
         } catch (...) {
-            LOG_ERROR("failed to parse input schema");
-            throw;
+            LOG_ERROR("Failed to parse input schema of %1%", action_name);
+            throw module_error { "invalid input schema of " + action_name };
         }
 
         std::string behaviour = "interactive";
@@ -105,25 +107,26 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
         if (!action.get<std::string>("behaviour").empty()) {
             std::string behaviour_str = action.get<std::string>("behaviour");
             if (behaviour_str.compare("interactive") == 0) {
-                LOG_DEBUG("Found interactive action");
+                LOG_DEBUG("Found interactive action: %1%", action_name);
             } else if (behaviour_str.compare("delayed") == 0) {
-                LOG_DEBUG("Found delayed action");
+                LOG_DEBUG("Found delayed action: %1%", action_name);
                 behaviour = behaviour_str;
             } else {
-                LOG_ERROR("Invalid behaviour defined for action: %1%", behaviour_str);
-                throw;
+                LOG_ERROR("Invalid behaviour defined for action %1%: %2%",
+                          action_name, behaviour_str);
+                throw module_error { "invalid behavior of " + action_name };
             }
         }
 
         try {
             parser.populateSchema(output_doc_schema, output_schema);
         } catch (...) {
-            LOG_ERROR("failed to parse error schema");
-            throw;
+            LOG_ERROR("Failed to parse output schema of %1%", action_name);
+            throw module_error { "invalid output schema of " + action_name };
         }
 
-        actions[action.get<std::string>("name")] = Action { input_schema, output_schema, behaviour };
-
+        actions[action.get<std::string>("name")] = Action {
+            input_schema, output_schema, behaviour };
     }
 }
 
@@ -134,8 +137,6 @@ DataContainer ExternalModule::call_action(std::string action_name,
     std::string stdout;
     std::string stderr;
     LOG_INFO(stdin);
-
-    std::cout << input.toString() << std::endl;
 
     run_command(path_, { path_, action_name }, stdin, stdout, stderr);
     LOG_INFO("stdout: %1%", stdout);
@@ -148,7 +149,6 @@ void ExternalModule::call_delayed_action(std::string action_name,
                                          const Message& request,
                                          const DataContainer& input,
                                          std::string job_id) {
-
     LOG_INFO("Starting delayed action with id: %1%", job_id);
 
     // check if the output directory exists. If it doesn't create it

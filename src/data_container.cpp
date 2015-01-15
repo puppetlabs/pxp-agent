@@ -111,7 +111,7 @@ Message DataContainer::getValue<>(const rapidjson::Value& value) const {
 template<>
 rapidjson::Value DataContainer::getValue<>(const rapidjson::Value& value) const {
     DataContainer* tmp_this = const_cast<DataContainer*>(this);
-    rapidjson::Value v { value, tmp_this->document_root_.GetAllocator()} ;
+    rapidjson::Value v { value, tmp_this->document_root_.GetAllocator() };
     return v;
 }
 
@@ -208,13 +208,11 @@ std::vector<DataContainer> DataContainer::getValue<>(const rapidjson::Value& val
 template<>
 void DataContainer::setValue<>(rapidjson::Value& jval, bool new_value) {
     jval.SetBool(new_value);
-
 }
 
 template<>
 void DataContainer::setValue<>(rapidjson::Value& jval, int new_value) {
     jval.SetInt(new_value);
-
 }
 
 template<>
@@ -225,7 +223,6 @@ void DataContainer::setValue<>(rapidjson::Value& jval, std::string new_value) {
 template<>
 void DataContainer::setValue<>(rapidjson::Value& jval, double new_value) {
     jval.SetDouble(new_value);
-
 }
 
 template<>

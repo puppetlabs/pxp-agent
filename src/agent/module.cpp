@@ -10,9 +10,11 @@ LOG_DECLARE_NAMESPACE("agent.module");
 namespace Cthun {
 namespace Agent {
 
+// TODO(ale): change 'params' to 'input' for consistency
+
 DataContainer Module::validate_and_call_action(std::string action_name,
-                                      const Message& request,
-                                      std::string action_id) {
+                                               const Message& request,
+                                               std::string action_id) {
     if (actions.find(action_name) == actions.end()) {
         throw validation_error { "unknown action for module " + module_name
                                  + ": '" + action_name + "'" };

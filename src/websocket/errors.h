@@ -32,9 +32,9 @@ class message_error : public websocket_error {
 };
 
 /// File not found error class.
-class file_not_found_exception : public std::runtime_error {
+class file_not_found_exception : public websocket_error {
   public:
-    explicit file_not_found_exception(std::string const& msg) : std::runtime_error(msg) {}
+    explicit file_not_found_exception(std::string const& msg) : websocket_error(msg) {}
 };
 
 }  // namespace WebSocket

@@ -22,30 +22,47 @@ namespace Agent {
 static const uint CONNECTION_STATE_CHECK_INTERVAL { 15 };
 static const int DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS { 10 };
 
-AgentEndpoint::AgentEndpoint() {
+AgentEndpoint::AgentEndpoint(std::string bin_path) {
     // declare internal modules
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
+
+    // TODO(ale): enable inventory when cfacter is fixed
     //modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
+
     modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
     modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
 
-    // load external modules
-    // TODO(ale): fix; this breaks if cthun-agent is not invoked from root dir
-    boost::filesystem::path module_path { "modules" };
-    boost::filesystem::directory_iterator end;
+    // TODO(ale): CTH-76 - this doesn't work if bin_path (argv[0]) has
+    // only the name of the executable, neither when cthun_agent is
+    // called by a symlink. The only safe way to refer to external
+    // modules is to store them in a knwon location (ex. ~/cthun/).
 
-    for (auto file = boost::filesystem::directory_iterator(module_path);
-            file != end; ++file) {
-        if (!boost::filesystem::is_directory(file->status())) {
-            LOG_INFO(file->path().string());
+    boost::filesystem::path module_path {
+        boost::filesystem::canonical(
+            boost::filesystem::system_complete(
+                boost::filesystem::path(bin_path)).parent_path().parent_path())
+    };
+    module_path += "/modules";
 
-            try {
-                ExternalModule* external = new ExternalModule(file->path().string());
-                modules_[external->module_name] = std::shared_ptr<Module>(external);
-            } catch (...) {
-                LOG_ERROR("failed to load: %1%", file->path().string());
+    if (boost::filesystem::is_directory(module_path)) {
+        boost::filesystem::directory_iterator end;
+
+        for (auto file = boost::filesystem::directory_iterator(module_path);
+                file != end; ++file) {
+            if (!boost::filesystem::is_directory(file->status())) {
+                LOG_INFO(file->path().string());
+
+                try {
+                    ExternalModule* external = new ExternalModule(file->path().string());
+                    modules_[external->module_name] = std::shared_ptr<Module>(external);
+                } catch (...) {
+                    LOG_ERROR("failed to load: %1%", file->path().string());
+                }
             }
         }
+    } else {
+        LOG_WARNING("failed to locate the modules directory; external modules "
+                    "will not be loaded");
     }
 }
 
@@ -63,11 +80,19 @@ void AgentEndpoint::startAgent(std::string url,
                                std::string client_crt_path,
                                std::string client_key_path) {
     listModules();
-    ws_endpoint_ptr_.reset(new Cthun::WebSocket::Endpoint(url,
-                                                          ca_crt_path,
-                                                          client_crt_path,
-                                                          client_key_path));
+
+    try {
+        ws_endpoint_ptr_.reset(new Cthun::WebSocket::Endpoint(url,
+                                                              ca_crt_path,
+                                                              client_crt_path,
+                                                              client_key_path));
+    } catch (Cthun::WebSocket::websocket_error& e) {
+        LOG_WARNING(e.what());
+        throw fatal_error { "failed to initialize" };
+    }
+
     setConnectionCallbacks();
+
     try {
         ws_endpoint_ptr_->connect();
     } catch (Cthun::WebSocket::connection_error& e) {
@@ -119,10 +144,10 @@ void AgentEndpoint::sendLogin() {
     msg.set<std::string>("http://puppetlabs.com/loginschema", "data_schema");
     msg.set<std::string>("agent", "data", "type");
 
-    LOG_INFO("Sending login message with id: %1%", login_id);
-
     // NOTE(ploubser): I removed login schema message validation. We're making
-    // it, it should never not be valid.
+    // it, it should be valid.
+
+    LOG_INFO("Sending login message with id: %1%", login_id);
     LOG_DEBUG("Sending message - %1%", msg.toString());
 
     try {
@@ -279,7 +304,6 @@ void AgentEndpoint::delayedActionThread(std::shared_ptr<Module> module,
                  std::string action_name,
                  Message msg,
                  std::string uuid) {
-
     // explicitly ignore return value
     (void) module->validate_and_call_action(action_name, msg, uuid);
 }

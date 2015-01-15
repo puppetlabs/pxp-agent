@@ -31,6 +31,12 @@ class validation_error : public agent_error {
     explicit validation_error(std::string const& msg) : agent_error(msg) {}
 };
 
+/// Module error class.
+class module_error : public agent_error {
+  public:
+    explicit module_error(std::string const& msg) : agent_error(msg) {}
+};
+
 }  // namespace Agent
 }  // namespace Cthun
 
