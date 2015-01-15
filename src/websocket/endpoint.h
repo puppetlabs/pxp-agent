@@ -63,6 +63,9 @@ static const uint32_t CONNECTION_BACKOFF_S { 2 };  // [s]
 
 class Endpoint {
   public:
+    // Throw a file_not_found_exception if the client certificate
+    // file does not exist; throw an endpoint_error if it fails to
+    // configure the endpoint and the event handlers.
     Endpoint(const std::string& server_url,
              const std::string& ca_crt_path,
              const std::string& client_crt_path,
@@ -149,6 +152,13 @@ class Endpoint {
 
     // Keep track of connection timings
     ConnectionTimings connection_timings_;
+
+    // Retrieve the client name from the certificate file;
+    // throw a file_not_found_exception if it fails to open the file
+    std::string getClientIdentityFromCert_();
+
+    // Stop the event loop thread and perform the necessary clean up
+    void cleanUp_();
 
     // Connect the endpoint
     void connect_();

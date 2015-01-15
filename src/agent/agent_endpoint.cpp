@@ -77,11 +77,19 @@ void AgentEndpoint::startAgent(std::string url,
                                std::string client_crt_path,
                                std::string client_key_path) {
     listModules();
-    ws_endpoint_ptr_.reset(new Cthun::WebSocket::Endpoint(url,
-                                                          ca_crt_path,
-                                                          client_crt_path,
-                                                          client_key_path));
+
+    try {
+        ws_endpoint_ptr_.reset(new Cthun::WebSocket::Endpoint(url,
+                                                              ca_crt_path,
+                                                              client_crt_path,
+                                                              client_key_path));
+    } catch (Cthun::WebSocket::websocket_error& e) {
+        LOG_WARNING(e.what());
+        throw fatal_error { "failed to initialize" };
+    }
+
     setConnectionCallbacks();
+
     try {
         ws_endpoint_ptr_->connect();
     } catch (Cthun::WebSocket::connection_error& e) {
@@ -133,10 +141,10 @@ void AgentEndpoint::sendLogin() {
     msg.set<std::string>("http://puppetlabs.com/loginschema", "data_schema");
     msg.set<std::string>("agent", "data", "type");
 
-    LOG_INFO("Sending login message with id: %1%", login_id);
-
     // NOTE(ploubser): I removed login schema message validation. We're making
-    // it, it should never not be valid.
+    // it, it should be valid.
+
+    LOG_INFO("Sending login message with id: %1%", login_id);
     LOG_DEBUG("Sending message - %1%", msg.toString());
 
     try {

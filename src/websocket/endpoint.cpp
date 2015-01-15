@@ -2,9 +2,9 @@
 #include "src/websocket/errors.h"
 #include "src/common/log.h"
 #include "src/common/string_utils.h"
-#include "src/WebSocket/errors.h"
 
 #include <chrono>
+#include <cstdio>
 
 // TODO(ale): disable assert() once we're confident with the code...
 // To disable assert()
@@ -29,6 +29,10 @@ Endpoint::Endpoint(const std::string& server_url,
           client_crt_path_ { client_crt_path },
           client_key_path_ { client_key_path },
           connection_state_ { ConnectionStateValues::initialized } {
+    // Determine our name (this may throw a file_not_found_exception
+    // and the dtor won't be called, but it's ok at this point)
+    identity_ = getClientIdentityFromCert_();
+
     // Turn off websocketpp logging to avoid runtime errors (see CTH-69)
     endpoint_.clear_access_channels(websocketpp::log::alevel::all);
     endpoint_.clear_error_channels(websocketpp::log::elevel::all);
@@ -38,47 +42,32 @@ Endpoint::Endpoint(const std::string& server_url,
     endpoint_.init_asio();
     endpoint_.start_perpetual();
 
-    // Bind the event handlers
-    using websocketpp::lib::bind;
-    endpoint_.set_tls_init_handler(bind(&Endpoint::onTlsInit, this, ::_1));
-    endpoint_.set_open_handler(bind(&Endpoint::onOpen, this, ::_1));
-    endpoint_.set_close_handler(bind(&Endpoint::onClose, this, ::_1));
-    endpoint_.set_fail_handler(bind(&Endpoint::onFail, this, ::_1));
-    endpoint_.set_message_handler(bind(&Endpoint::onMessage, this, ::_1, ::_2));
-    endpoint_.set_ping_handler(bind(&Endpoint::onPing, this, ::_1, ::_2));
-    endpoint_.set_pong_handler(bind(&Endpoint::onPong, this, ::_1, ::_2));
-    endpoint_.set_pong_timeout_handler(bind(&Endpoint::onPongTimeout, this, ::_1, ::_2));
-    endpoint_.set_tcp_pre_init_handler(bind(&Endpoint::onPreTCPInit, this, ::_1));
-    endpoint_.set_tcp_post_init_handler(bind(&Endpoint::onPostTCPInit, this, ::_1));
+    try {
+        // Bind the event handlers
+        using websocketpp::lib::bind;
+        endpoint_.set_tls_init_handler(bind(&Endpoint::onTlsInit, this, ::_1));
+        endpoint_.set_open_handler(bind(&Endpoint::onOpen, this, ::_1));
+        endpoint_.set_close_handler(bind(&Endpoint::onClose, this, ::_1));
+        endpoint_.set_fail_handler(bind(&Endpoint::onFail, this, ::_1));
+        endpoint_.set_message_handler(bind(&Endpoint::onMessage, this, ::_1, ::_2));
+        endpoint_.set_ping_handler(bind(&Endpoint::onPing, this, ::_1, ::_2));
+        endpoint_.set_pong_handler(bind(&Endpoint::onPong, this, ::_1, ::_2));
+        endpoint_.set_pong_timeout_handler(bind(&Endpoint::onPongTimeout, this, ::_1, ::_2));
+        endpoint_.set_tcp_pre_init_handler(bind(&Endpoint::onPreTCPInit, this, ::_1));
+        endpoint_.set_tcp_post_init_handler(bind(&Endpoint::onPostTCPInit, this, ::_1));
 
-    // Start the event loop thread
-    endpoint_thread_.reset(new std::thread(&Client_Type::run, &endpoint_));
-
-    // Determine our name
-    std::unique_ptr<FILE, int(*)(FILE*)> fp { fopen(client_crt_path_.data(), "r"), fclose };
-
-    if (!fp) {
-        throw file_not_found_exception { "Certificate file '" + client_crt_path_ +
-                                         "' does not exist."};
+        // Start the event loop thread
+        endpoint_thread_.reset(new std::thread(&Client_Type::run, &endpoint_));
+    } catch (...) {
+        LOG_DEBUG("Failed to configure the websocket endpoint; about to stop "
+                  "the event loop");
+        cleanUp_();
+        throw endpoint_error { "Failed to initialize"};
     }
-
-    std::unique_ptr<X509, void(*)(X509*)> cert { PEM_read_X509(fp.get(), NULL, NULL, NULL), X509_free };
-    X509_NAME* subj = X509_get_subject_name(cert.get());
-    X509_NAME_ENTRY* entry = X509_NAME_get_entry(subj, 0);
-    ASN1_STRING* asn1_string = X509_NAME_ENTRY_get_data(entry);
-    unsigned char* tmp = ASN1_STRING_data(asn1_string);
-    int string_size = ASN1_STRING_length(asn1_string);
-    identity_ = "cth://" + std::string(tmp, tmp + string_size) + "/cthun-agent";
 }
 
 Endpoint::~Endpoint() {
-    endpoint_.stop_perpetual();
-    if (connection_state_ == ConnectionStateValues::open) {
-        close();
-    }
-    if (endpoint_thread_ != nullptr && endpoint_thread_->joinable()) {
-        endpoint_thread_->join();
-    }
+    cleanUp_();
 }
 
 ConnectionState Endpoint::getConnectionState() {
@@ -174,20 +163,6 @@ void Endpoint::connect(int max_connect_attempts) {
                              + " attempt" + Common::StringUtils::plural(idx) };
 }
 
-void Endpoint::connect_() {
-    connection_state_ = ConnectionStateValues::connecting;
-    connection_timings_ = ConnectionTimings();
-    websocketpp::lib::error_code ec;
-    Client_Type::connection_ptr connection_ptr {
-        endpoint_.get_connection(server_url_, ec) };
-    if (ec) {
-        throw connection_error { "Failed to connect to " + server_url_ + ": "
-                                 + ec.message() };
-    }
-    connection_handle_ = connection_ptr->get_handle();
-    endpoint_.connect(connection_ptr);
-}
-
 void Endpoint::send(std::string msg) {
     websocketpp::lib::error_code ec;
     endpoint_.send(connection_handle_, msg, websocketpp::frame::opcode::binary, ec);
@@ -218,7 +193,52 @@ std::string Endpoint::identity() {
 }
 
 //
-// Event handlers
+// Private methods
+//
+
+std::string Endpoint::getClientIdentityFromCert_() {
+    std::unique_ptr<std::FILE, int(*)(std::FILE*)> fp {
+        std::fopen(client_crt_path_.data(), "r"), std::fclose };
+    if (fp == nullptr) {
+        throw file_not_found_exception { "Certificate file '" + client_crt_path_ +
+                                         "' does not exist."};
+    }
+    std::unique_ptr<X509, void(*)(X509*)> cert {
+        PEM_read_X509(fp.get(), NULL, NULL, NULL), X509_free };
+    X509_NAME* subj = X509_get_subject_name(cert.get());
+    X509_NAME_ENTRY* entry = X509_NAME_get_entry(subj, 0);
+    ASN1_STRING* asn1_string = X509_NAME_ENTRY_get_data(entry);
+    unsigned char* tmp = ASN1_STRING_data(asn1_string);
+    int string_size = ASN1_STRING_length(asn1_string);
+    return "cth://" + std::string(tmp, tmp + string_size) + "/cthun-agent";
+}
+
+void Endpoint::cleanUp_() {
+    endpoint_.stop_perpetual();
+    if (connection_state_ == ConnectionStateValues::open) {
+        close();
+    }
+    if (endpoint_thread_ != nullptr && endpoint_thread_->joinable()) {
+        endpoint_thread_->join();
+    }
+}
+
+void Endpoint::connect_() {
+    connection_state_ = ConnectionStateValues::connecting;
+    connection_timings_ = ConnectionTimings();
+    websocketpp::lib::error_code ec;
+    Client_Type::connection_ptr connection_ptr {
+        endpoint_.get_connection(server_url_, ec) };
+    if (ec) {
+        throw connection_error { "Failed to connect to " + server_url_ + ": "
+                                 + ec.message() };
+    }
+    connection_handle_ = connection_ptr->get_handle();
+    endpoint_.connect(connection_ptr);
+}
+
+//
+// Event handlers (private)
 //
 
 Context_Ptr Endpoint::onTlsInit(Connection_Handle hdl) {

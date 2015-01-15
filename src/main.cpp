@@ -169,10 +169,10 @@ int main(int argc, char *argv[]) {
         Agent::AgentEndpoint agent { std::string(argv[0]) };
 
         agent.startAgent(app_options.server, app_options.ca, app_options.cert, app_options.key);
-    } catch (Agent::fatal_error&  e) {
+    } catch (Agent::fatal_error& e) {
         LOG_ERROR("fatal error: %1%", e.what());
         return 1;
-    } catch (std::exception&  e) {
+    } catch (std::exception& e) {
         LOG_ERROR("unexpected error: %1%", e.what());
         return 1;
     } catch (...) {
