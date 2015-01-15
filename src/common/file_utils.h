@@ -33,7 +33,7 @@ std::string expandAsDoneByShell(std::string txt);
 /// Return true if the specified file exists.
 bool fileExists(const std::string& file_path);
 
-/// Remove a file if exists.
+/// Remove a file (regular file or empty directory) if exists.
 /// Throw a file_error if the removal fails.
 void removeFile(const std::string& file_path);
 
@@ -50,10 +50,10 @@ void writeToFile(const std::string& text,
                  const std::string& file_path);
 
 /// Create a directory.
-/// Returns true on success, false on failure
+/// Returns true on success, false on failure.
 bool createDirectory(const std::string& dirname);
 
-// TODO(ploubser): Document
+/// Read the content of a file and returns it as a string.
 std::string readFileAsString(std::string path);
 
 }  // namespace FileUtils

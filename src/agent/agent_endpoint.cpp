@@ -27,7 +27,7 @@ AgentEndpoint::AgentEndpoint(std::string bin_path) {
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
 
     // TODO(ale): enable inventory when cfacter is fixed
-    //modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
+    // modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
 
     modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
     modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
