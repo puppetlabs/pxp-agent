@@ -3,4 +3,8 @@
 
 #include <catch.hpp>
 
+#include <string>
+
+extern std::string ROOT_PATH;
+
 #endif  // TEST_TEST_H_

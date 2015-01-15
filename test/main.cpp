@@ -6,7 +6,23 @@
 
 #include "src/common/log.h"
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+std::string ROOT_PATH;
+
 int main(int argc, char* const argv[]) {
+    // set the global bin
+    boost::filesystem::path root_path {
+        boost::filesystem::canonical(
+            boost::filesystem::system_complete(
+                boost::filesystem::path(argv[0])).parent_path().parent_path())
+    };
+
+    ROOT_PATH = std::string(root_path.string());
+
+    std::cout << "### main argv: " << argv[0] << std::endl;
+
     // configure logging
     Cthun::Common::Log::configure_logging(Cthun::Common::Log::log_level::fatal,
                                           std::cout);
@@ -14,6 +30,7 @@ int main(int argc, char* const argv[]) {
     // configure Session
 
     // TODO(ale): improve output by properly using reporters
+    // (dump the xml and use an external parser)
 
     Catch::Session test_session;
     test_session.applyCommandLine(argc, argv);

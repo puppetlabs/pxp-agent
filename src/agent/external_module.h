@@ -14,6 +14,8 @@ namespace Agent {
 
 class ExternalModule : public Module {
   public:
+    // Throws a module_error in case if fails to load the external
+    // module or if its metadata is invalid.
     explicit ExternalModule(std::string path);
     DataContainer call_action(std::string action_name,
                      const Message& request,
