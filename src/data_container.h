@@ -98,8 +98,8 @@ class data_type_error : public std::runtime_error {
 class DataContainer {
   public:
     DataContainer();
-    DataContainer(std::string msg);
-    DataContainer(const rapidjson::Value& value);
+    explicit DataContainer(std::string msg);
+    explicit DataContainer(const rapidjson::Value& value);
     DataContainer(const DataContainer& data);
     DataContainer(const DataContainer&& data);
     DataContainer& operator=(DataContainer other);
@@ -265,11 +265,11 @@ void DataContainer::setValue<>(rapidjson::Value& jval, DataContainer new_value);
 // when the message structure changes
 class Message : public DataContainer {
   public:
-    Message(){}
-    Message(std::string msg) : DataContainer(msg) {}
+    Message() {}
+    explicit Message(std::string msg) : DataContainer(msg) {}
+    explicit Message(const rapidjson::Value& value) : DataContainer(value) {}
     Message(Message& msg) : DataContainer(msg) {}
     Message(Message&& msg) : DataContainer(msg) {}
-    Message(const rapidjson::Value& value) : DataContainer(value) {}
     Message& operator=(Message other) {
         DataContainer::operator=(other);
         return *this;

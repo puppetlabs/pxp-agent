@@ -88,7 +88,7 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
 
         valijson::SchemaParser parser;
         rapidjson::Value input { action.get<rapidjson::Value>("input") };
-        rapidjson::Value output { action.get<rapidjson::Value>("output") } ;
+        rapidjson::Value output { action.get<rapidjson::Value>("output") };
 
         valijson::adapters::RapidJsonAdapter input_doc_schema(input);
         valijson::adapters::RapidJsonAdapter output_doc_schema(output);
@@ -123,7 +123,6 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
         }
 
         actions[action.get<std::string>("name")] = Action { input_schema, output_schema, behaviour };
-
     }
 }
 
@@ -148,7 +147,6 @@ void ExternalModule::call_delayed_action(std::string action_name,
                                          const Message& request,
                                          const DataContainer& input,
                                          std::string job_id) {
-
     LOG_INFO("Starting delayed action with id: %1%", job_id);
 
     // check if the output directory exists. If it doesn't create it

@@ -31,7 +31,6 @@ Status::Status() {
 DataContainer Status::call_action(std::string action_name,
                          const Message& request,
                          const DataContainer& input) {
-
     DataContainer output {};
     std::string job_id { input.get<std::string>("job_id") };
 

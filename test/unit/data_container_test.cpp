@@ -20,8 +20,9 @@ static const std::string JSON = "{\"foo\" : {\"bar\" : 2},"
                                 "                  \"foo\" : \"bar\""
                                 "               }"
                                 "}";
-using namespace Cthun;
-using namespace Agent;
+
+namespace Cthun {
+namespace Agent {
 
 TEST_CASE("DataContainer::get", "[data]") {
     DataContainer msg { JSON };
@@ -197,3 +198,6 @@ TEST_CASE("DataContainer::validate", "[data]") {
         REQUIRE(errors.size() > 0);
     }
 }
+
+}  // namespace Agent
+}  // namespace Cthun

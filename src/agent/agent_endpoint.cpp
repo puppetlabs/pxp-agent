@@ -25,7 +25,7 @@ static const int DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS { 10 };
 AgentEndpoint::AgentEndpoint() {
     // declare internal modules
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
-    //modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
+    // modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
     modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
     modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
 
@@ -279,7 +279,6 @@ void AgentEndpoint::delayedActionThread(std::shared_ptr<Module> module,
                  std::string action_name,
                  Message msg,
                  std::string uuid) {
-
     // explicitly ignore return value
     (void) module->validate_and_call_action(action_name, msg, uuid);
 }
