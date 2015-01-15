@@ -26,7 +26,7 @@ TEST_CASE("Agent::Modules::Inventory::call_action", "[modules]") {
     Modules::Inventory inventory_module {};
 
     SECTION("the inventory module is correctly named") {
-        REQUIRE(inventory_module.module_name == inventory_action);
+        REQUIRE(inventory_module.module_name == "inventory");
     }
 
     SECTION("the inventory module has the inventory action") {
@@ -38,7 +38,7 @@ TEST_CASE("Agent::Modules::Inventory::call_action", "[modules]") {
         REQUIRE_NOTHROW(inventory_module.call_action(inventory_action, msg, input));
     }
 
-    SECTION("it 'should' execute the inventory action correctly") {
+    SECTION("it should execute the inventory action correctly") {
         auto result = inventory_module.call_action(inventory_action, msg, input);
         CHECK(result.toString().find("facts"));
     }

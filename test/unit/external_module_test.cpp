@@ -14,7 +14,7 @@ TEST_CASE("Agent::ExternalModule::ExternalModule", "[modules]") {
         REQUIRE_NOTHROW(ExternalModule(ROOT_PATH + "/test/unit/test_modules/reverse_valid"));
     }
 
-    SECTION("all actions are successfully loaded from a valide external module") {
+    SECTION("all actions are successfully loaded from a valid external module") {
         ExternalModule mod { ROOT_PATH + "/test/unit/test_modules/reverse_valid" };
         REQUIRE(mod.actions.size() == 2);
     }
@@ -22,8 +22,7 @@ TEST_CASE("Agent::ExternalModule::ExternalModule", "[modules]") {
     SECTION("throws an error in case of invalid overall metadata schema") {
         REQUIRE_THROWS_AS(
             ExternalModule(ROOT_PATH + "/test/unit/test_modules/reverse_broken_01"),
-            module_error
-        );
+            module_error);
     }
 }
 
@@ -65,6 +64,8 @@ TEST_CASE("Agent::ExternalModule::validate_and_call_action", "[modules]") {
                           validation_error);
     }
 }
+
+// TODO(ale): delayed action test
 
 }  // namespace Agent
 }  // namespace Cthun

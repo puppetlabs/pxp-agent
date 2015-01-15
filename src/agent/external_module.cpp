@@ -138,9 +138,6 @@ DataContainer ExternalModule::call_action(std::string action_name,
     std::string stderr;
     LOG_INFO(stdin);
 
-    // TODO(ale): do we need to display on stdout?
-    std::cout << input.toString() << std::endl;
-
     run_command(path_, { path_, action_name }, stdin, stdout, stderr);
     LOG_INFO("stdout: %1%", stdout);
     LOG_INFO("stderr: %1%", stderr);

@@ -203,7 +203,7 @@ std::string Endpoint::getClientIdentityFromCert_() {
         std::fopen(client_crt_path_.data(), "r"), std::fclose };
     if (fp == nullptr) {
         throw file_not_found_exception { "Certificate file '" + client_crt_path_ +
-                                         "' does not exist."};
+                                         "' does not exist." };
     }
     std::unique_ptr<X509, void(*)(X509*)> cert {
         PEM_read_X509(fp.get(), NULL, NULL, NULL), X509_free };

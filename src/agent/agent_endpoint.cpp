@@ -25,11 +25,14 @@ static const int DEFAULT_MESSAGE_TIMEOUT_IN_SECONDS { 10 };
 AgentEndpoint::AgentEndpoint(std::string bin_path) {
     // declare internal modules
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
-    // modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
+
+    // TODO(ale): enable inventory when cfacter is fixed
+    //modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
+
     modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
     modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
 
-    // TODO(ale): CTH-76 this doesn't work if bin_path (= argv[0]) has
+    // TODO(ale): CTH-76 - this doesn't work if bin_path (argv[0]) has
     // only the name of the executable, neither when cthun_agent is
     // called by a symlink. The only safe way to refer to external
     // modules is to store them in a knwon location (ex. ~/cthun/).

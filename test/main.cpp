@@ -12,30 +12,27 @@
 std::string ROOT_PATH;
 
 int main(int argc, char* const argv[]) {
-    // set the global bin
+    // set the path of the cthun-agent root dir into a global
     boost::filesystem::path root_path {
         boost::filesystem::canonical(
             boost::filesystem::system_complete(
                 boost::filesystem::path(argv[0])).parent_path().parent_path())
     };
-
     ROOT_PATH = std::string(root_path.string());
 
-    std::cout << "### main argv: " << argv[0] << std::endl;
-
-    // configure logging
+    // set logging level to fatal
     Cthun::Common::Log::configure_logging(Cthun::Common::Log::log_level::fatal,
                                           std::cout);
 
-    // configure Session
+    // configure the Catch session and start it
 
     // TODO(ale): improve output by properly using reporters
-    // (dump the xml and use an external parser)
+    // (dump the xml to a file and use an external parser)
 
     Catch::Session test_session;
     test_session.applyCommandLine(argc, argv);
 
-    // To list the reporters
+    // To list the reporters use:
     // test_session.configData().listReporters = true;
 
     // Reporters: "xml", "junit", "console", "compact"

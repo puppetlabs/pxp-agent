@@ -111,7 +111,7 @@ Message DataContainer::getValue<>(const rapidjson::Value& value) const {
 template<>
 rapidjson::Value DataContainer::getValue<>(const rapidjson::Value& value) const {
     DataContainer* tmp_this = const_cast<DataContainer*>(this);
-    rapidjson::Value v { value, tmp_this->document_root_.GetAllocator()};
+    rapidjson::Value v { value, tmp_this->document_root_.GetAllocator() };
     return v;
 }
 

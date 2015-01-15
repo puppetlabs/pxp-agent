@@ -3,14 +3,14 @@ require 'json'
 
 def action_metadata
    metadata = {
-    :description => "schema test",
+    :description => "valid schema for unit tests",
     :actions => [
       { :name => "string",
         :description => "reverses a string",
         :input => {
           :type => "string",
         },
-        # adding a valid behaviour
+        # adding a valid meaningless behaviour just for testing
         :behaviour => "delayed",
         :output => {
           :type => "string",
