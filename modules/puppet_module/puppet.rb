@@ -74,7 +74,7 @@ class PuppetManager
     false
   end
 
-  def has_process_for_pi?(pid)
+  def has_process_for_pid?(pid)
     !!::Process.kill(0, Integer(pid)) rescue false
   end
 
