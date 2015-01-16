@@ -209,9 +209,9 @@ void AgentEndpoint::sendResponse(std::string receiver_endpoint,
 
     try {
         std::string response_txt = msg.toString();
-        LOG_INFO("Responding to %1% with %2%.  Size %3%",
+        LOG_INFO("Responding to request %1%; response %2%, size %3%",
                  request_id, response_id, response_txt.size());
-        LOG_DEBUG("Response:\n%1%", response_txt);
+        LOG_DEBUG("Response %1%:\n%2%", response_id, response_txt);
         ws_endpoint_ptr_->send(response_txt);
     }  catch(Cthun::WebSocket::message_error& e) {
         LOG_ERROR("Failed to send %1%: %2%", response_id, e.what());
@@ -230,7 +230,7 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
         return;
     }
 
-    std::string request_id = msg.get<std::string>("request_id");
+    std::string request_id = msg.get<std::string>("id");
     std::string module_name = msg.get<std::string>("data", "module");
     std::string action_name = msg.get<std::string>("data", "action");
     std::string sender_endpoint = msg.get<std::string>("sender");
@@ -249,20 +249,20 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
             Agent::Action action = module->actions[action_name];
 
             if (action.behaviour.compare("delayed") == 0) {
-                std::string uuid { Common::getUUID() };
+                const std::string job_id { Common::getUUID() };
                 LOG_DEBUG("Delayed action execution requested. Creating job " \
-                          "with ID %1%", uuid);
+                          "with ID %1%", job_id);
                 DataContainer response {};
                 response.set<std::string>("Requested excution of action: " + action_name,
-                    "status");
-                response.set<std::string>(uuid, "id");
+                                          "status");
+                response.set<std::string>(job_id, "id");
                 sendResponse(sender_endpoint, request_id, response);
                 thread_queue_.push_back(std::thread(&AgentEndpoint::delayedActionThread,
                                                     this,
                                                     module,
                                                     action_name,
                                                     msg,
-                                                    uuid));
+                                                    job_id));
             } else {
                 DataContainer output { module->validate_and_call_action(action_name, msg) };
                 LOG_DEBUG("Request %1%: '%2%' '%3%' output: %4%",
@@ -301,9 +301,9 @@ void AgentEndpoint::monitorConnectionState() {
 }
 
 void AgentEndpoint::delayedActionThread(std::shared_ptr<Module> module,
-                 std::string action_name,
-                 Message msg,
-                 std::string uuid) {
+                                        std::string action_name,
+                                        Message msg,
+                                        std::string uuid) {
     // explicitly ignore return value
     (void) module->validate_and_call_action(action_name, msg, uuid);
 }

@@ -194,7 +194,11 @@ void ExternalModule::call_delayed_action(std::string action_name,
 
     Common::Timer timer;
     run_command(path_, { path_, action_name }, stdin, stdout, stderr);
-    status.set<std::string>(std::to_string(timer.elapsedSeconds()) + "s", "duration");
+    auto duration = std::to_string(timer.elapsedSeconds());
+    status.set<std::string>(duration + "s", "duration");
+
+    LOG_INFO("Action '%1% %2%' (id %3%) finished in %4% s.",
+             module_name, action_name, job_id, duration);
 
     // TODO(ale): check the following line
     // DataContainer result { stdout };
