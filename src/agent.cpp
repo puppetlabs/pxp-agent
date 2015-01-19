@@ -1,4 +1,4 @@
-#include "src/agent_endpoint.h"
+#include "src/agent.h"
 #include "src/modules/echo.h"
 #include "src/modules/inventory.h"
 #include "src/modules/ping.h"
@@ -14,14 +14,14 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
-LOG_DECLARE_NAMESPACE("agent_endpoint");
+LOG_DECLARE_NAMESPACE("agent");
 
 namespace CthunAgent {
 
 static const uint CONNECTION_STATE_CHECK_INTERVAL { 15 };
 static const int DEFAULT_MSG_TIMEOUT_SEC { 10 };
 
-AgentEndpoint::AgentEndpoint(std::string bin_path) {
+Agent::Agent(std::string bin_path) {
     // declare internal modules
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
 
@@ -65,7 +65,7 @@ AgentEndpoint::AgentEndpoint(std::string bin_path) {
     }
 }
 
-AgentEndpoint::~AgentEndpoint() {
+Agent::~Agent() {
     if (ws_endpoint_ptr_) {
         // reset callbacks to avoid breaking the WebSocket Endpoint
         // with invalid reference context
@@ -74,10 +74,10 @@ AgentEndpoint::~AgentEndpoint() {
     }
 }
 
-void AgentEndpoint::startAgent(std::string url,
-                               std::string ca_crt_path,
-                               std::string client_crt_path,
-                               std::string client_key_path) {
+void Agent::startAgent(std::string url,
+                       std::string ca_crt_path,
+                       std::string client_crt_path,
+                       std::string client_key_path) {
     listModules();
 
     try {
@@ -102,10 +102,10 @@ void AgentEndpoint::startAgent(std::string url,
 }
 
 //
-// AgentEndpoint - private
+// Agent - private
 //
 
-void AgentEndpoint::listModules() {
+void Agent::listModules() {
     LOG_INFO("Loaded modules:");
     for (auto module : modules_) {
         LOG_INFO("   %1%", module.first);
@@ -115,7 +115,7 @@ void AgentEndpoint::listModules() {
     }
 }
 
-void AgentEndpoint::setConnectionCallbacks() {
+void Agent::setConnectionCallbacks() {
     ws_endpoint_ptr_->setOnOpenCallback(
         [this]() {
             sendLogin();
@@ -127,7 +127,7 @@ void AgentEndpoint::setConnectionCallbacks() {
         });
 }
 
-void AgentEndpoint::sendLogin() {
+void Agent::sendLogin() {
     Message msg {};
     std::string login_id { UUID::getUUID() };
     msg.set<std::string>(login_id, "id");
@@ -156,7 +156,7 @@ void AgentEndpoint::sendLogin() {
     }
 }
 
-Message AgentEndpoint::parseAndValidateMessage(std::string message) {
+Message Agent::parseAndValidateMessage(std::string message) {
     Message msg { message };
     valijson::Schema message_schema = Schemas::network_message();
     std::vector<std::string> errors;
@@ -188,9 +188,9 @@ Message AgentEndpoint::parseAndValidateMessage(std::string message) {
     return msg;
 }
 
-void AgentEndpoint::sendResponse(std::string receiver_endpoint,
-                                 std::string request_id,
-                                 DataContainer output) {
+void Agent::sendResponse(std::string receiver_endpoint,
+                         std::string request_id,
+                         DataContainer output) {
     Message msg {};
     std::string response_id { UUID::getUUID() };
     msg.set<std::string>(response_id, "id");
@@ -216,7 +216,7 @@ void AgentEndpoint::sendResponse(std::string receiver_endpoint,
     }
 }
 
-void AgentEndpoint::processMessageAndSendResponse(std::string message) {
+void Agent::processMessageAndSendResponse(std::string message) {
     LOG_INFO("Received message:\n%1%", message);
     Message msg;
     Message response;
@@ -255,7 +255,7 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
                                           "status");
                 response.set<std::string>(uuid, "id");
                 sendResponse(sender_endpoint, request_id, response);
-                thread_queue_.push_back(std::thread(&AgentEndpoint::delayedActionThread,
+                thread_queue_.push_back(std::thread(&Agent::delayedActionThread,
                                                     this,
                                                     module,
                                                     action_name,
@@ -283,7 +283,7 @@ void AgentEndpoint::processMessageAndSendResponse(std::string message) {
     }
 }
 
-void AgentEndpoint::monitorConnectionState() {
+void Agent::monitorConnectionState() {
     for (;;) {
         sleep(CONNECTION_STATE_CHECK_INTERVAL);
 
@@ -298,10 +298,10 @@ void AgentEndpoint::monitorConnectionState() {
     }
 }
 
-void AgentEndpoint::delayedActionThread(std::shared_ptr<Module> module,
-                                        std::string action_name,
-                                        Message msg,
-                                        std::string uuid) {
+void Agent::delayedActionThread(std::shared_ptr<Module> module,
+                                std::string action_name,
+                                Message msg,
+                                std::string uuid) {
     // explicitly ignore return value
     (void) module->validate_and_call_action(action_name, msg, uuid);
 }

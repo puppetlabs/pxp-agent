@@ -1,4 +1,4 @@
-#include "src/agent_endpoint.h"
+#include "src/agent.h"
 #include "src/errors.h"
 #include "src/log.h"
 #include "src/file_utils.h"
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
     // start the agent
 
     try {
-        AgentEndpoint agent { std::string(argv[0]) };
+        Agent agent { std::string(argv[0]) };
 
         agent.startAgent(app_options.server,
                          app_options.ca,

@@ -37,7 +37,7 @@ DataContainer Module::validate_and_call_action(std::string action_name,
     DataContainer result;
 
     // TODO(ploubser): This still isn't great. I would like the logic in
-    // call_delayed_action to be moved to the AgentEndpoint::delayedActionThread.
+    // call_delayed_action to be moved to the Agent::delayedActionThread.
     if (action_id.empty()) {
         result = call_action(action_name, request, input);
     } else {

@@ -13,12 +13,10 @@
 
 namespace CthunAgent {
 
-// TODO(ale): rename 'AgentEndpoint' to 'Agent'
-
-class AgentEndpoint {
+class Agent {
   public:
-    explicit AgentEndpoint(std::string bin_path);
-    ~AgentEndpoint();
+    explicit Agent(std::string bin_path);
+    ~Agent();
 
     // Daemon entry point.
     void startAgent(std::string url,
