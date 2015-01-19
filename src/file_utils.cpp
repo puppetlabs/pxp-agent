@@ -1,5 +1,6 @@
 #include "src/file_utils.h"
 #include "src/log.h"
+#include "src/errors.h"
 
 #include <wordexp.h>
 #include <fstream>
@@ -14,7 +15,7 @@ namespace FileUtils {
 
 // HERE(ale): copied from Pegasus
 
-std::string expandAsDoneByShell(std::string txt) {
+std::string shellExpand(std::string txt) {
     // This will store the expansion outcome
     wordexp_t result;
 

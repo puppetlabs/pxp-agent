@@ -1,4 +1,5 @@
 #include "src/data_container.h"
+#include "src/errors.h"
 
 namespace CthunAgent {
 

@@ -7,33 +7,33 @@
 
 namespace CthunAgent {
 
-TEST_CASE("FileUtils::expandAsDoneByShell", "[utils]") {
+TEST_CASE("FileUtils::shellExpand", "[utils]") {
     SECTION("it should expand the home directory path") {
-        REQUIRE(FileUtils::expandAsDoneByShell("~/foo") != "~/foo");
+        REQUIRE(FileUtils::shellExpand("~/foo") != "~/foo");
     }
 
     SECTION("it should not expand the working directory path") {
-        REQUIRE(FileUtils::expandAsDoneByShell("./foo") == "./foo");
+        REQUIRE(FileUtils::shellExpand("./foo") == "./foo");
     }
 
     std::string home_path { getenv("HOME") };
 
     SECTION("it should expand ~ to the HOME env var") {
-        REQUIRE(FileUtils::expandAsDoneByShell("~") == home_path);
+        REQUIRE(FileUtils::shellExpand("~") == home_path);
     }
 
     SECTION("it should expand ~ as the base directory") {
         std::string expected_path { home_path + "/spam" };
-        std::string expanded_path { FileUtils::expandAsDoneByShell("~/spam") };
+        std::string expanded_path { FileUtils::shellExpand("~/spam") };
         REQUIRE(expanded_path == expected_path);
     }
 }
 
-static const auto home_path = FileUtils::expandAsDoneByShell("~");
+static const auto home_path = FileUtils::shellExpand("~");
 static const auto file_path =
-    FileUtils::expandAsDoneByShell("~/test_file_" + UUID::getUUID());
+    FileUtils::shellExpand("~/test_file_" + UUID::getUUID());
 static const auto dir_path =
-    FileUtils::expandAsDoneByShell("~/test_dir_" + UUID::getUUID());
+    FileUtils::shellExpand("~/test_dir_" + UUID::getUUID());
 
 TEST_CASE("FileUtils::fileExists", "[utils]") {
     SECTION("it can check that a file does not exist") {

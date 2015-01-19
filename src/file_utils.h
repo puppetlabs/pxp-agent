@@ -10,17 +10,6 @@
 
 namespace CthunAgent {
 namespace FileUtils {
-//
-// Error
-//
-
-// TODO(ale): move file_error to error.h
-
-/// Generic file error class.
-class file_error : public std::runtime_error {
-  public:
-    explicit file_error(std::string const& msg) : std::runtime_error(msg) {}
-};
 
 //
 // Free functions
@@ -28,7 +17,7 @@ class file_error : public std::runtime_error {
 
 /// Perform a shell expansion of txt.
 /// Return an empty string in case of failure.
-std::string expandAsDoneByShell(std::string txt);
+std::string shellExpand(std::string txt);
 
 /// Return true if the specified file exists.
 bool fileExists(const std::string& file_path);

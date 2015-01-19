@@ -89,7 +89,7 @@ AppOptions getAppOptions(int argc, char* argv[]) {
     app_options.server = vm["server"].as<std::string>();
 
     auto getFilePath = [&vm](std::string key) {
-        return FileUtils::expandAsDoneByShell(vm[key].as<std::string>());
+        return FileUtils::shellExpand(vm[key].as<std::string>());
     };
 
     app_options.ca   = getFilePath("ca");

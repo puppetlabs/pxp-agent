@@ -2,6 +2,7 @@
 #define CTHUN_SRC_DATA_CONTAINER_H_
 
 #include "src/schemas.h"
+#include "src/errors.h"
 
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
@@ -11,29 +12,6 @@
 #include <iostream>
 
 namespace CthunAgent {
-
-// TODO(ale): move errors to errors.h
-
-/// Error thrown when a message string is invalid
-class message_parse_error : public std::runtime_error {
-  public:
-    explicit message_parse_error(std::string const& msg) :
-        std::runtime_error(msg) {}
-};
-
-/// Error thrown when a nested message index is invalid
-class message_index_error : public std::runtime_error {
-  public:
-    explicit message_index_error(std::string const& msg) :
-        std::runtime_error(msg) {}
-};
-
-/// Error thrown when trying to set or get invalid type
-class data_type_error : public std::runtime_error {
-  public:
-    explicit data_type_error(std::string const& msg) :
-        std::runtime_error(msg) {}
-};
 
 // Data abstraction overlaying the raw JSON objects
 // TODO(ploubser): We inherit this class to implement the current Message

@@ -12,7 +12,7 @@ class agent_error : public std::runtime_error {
     explicit agent_error(std::string const& msg) : std::runtime_error(msg) {}
 };
 
-/// Request error class.
+/// Error due to an invalid command line arguments.
 class request_error : public agent_error {
   public:
     explicit request_error(std::string const& msg) : agent_error(msg) {}
@@ -34,6 +34,34 @@ class validation_error : public agent_error {
 class module_error : public agent_error {
   public:
     explicit module_error(std::string const& msg) : agent_error(msg) {}
+};
+
+/// Generic file error class.
+class file_error : public agent_error {
+  public:
+    explicit file_error(std::string const& msg) : agent_error(msg) {}
+};
+
+//
+// Data container errors
+//
+
+/// Error thrown when a message string is invalid.
+class message_parse_error : public agent_error {
+  public:
+    explicit message_parse_error(std::string const& msg) : agent_error(msg) {}
+};
+
+/// Error thrown when a nested message index is invalid.
+class message_index_error : public agent_error {
+  public:
+    explicit message_index_error(std::string const& msg) : agent_error(msg) {}
+};
+
+/// Error thrown when trying to set or get invalid type.
+class data_type_error : public agent_error {
+  public:
+    explicit data_type_error(std::string const& msg) : agent_error(msg) {}
 };
 
 }  // namespace CthunAgent
