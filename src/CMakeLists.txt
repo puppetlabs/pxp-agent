@@ -15,10 +15,7 @@ set(LIBRARY_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/external_module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/echo.cpp"
-
-    # TODO(ploubser): Enable inventory module when CFacter is fixed
-    #"${CMAKE_CURRENT_LIST_DIR}/agent/modules/inventory.cpp"
-
+    "${CMAKE_CURRENT_LIST_DIR}/modules/inventory.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/ping.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/status.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/file_utils.cpp"
