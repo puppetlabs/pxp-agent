@@ -44,7 +44,7 @@ DataContainer Status::call_action(std::string action_name,
     if (status.get<std::string>("status").compare("running") == 0) {
         output.set<std::string>("Running", "status");
     } else if (status.get<std::string>("status").compare("completed") == 0) {
-        output.set<std::string>("Running", "status");
+        output.set<std::string>("Completed", "status");
         output.set<std::string>(FileUtils::readFileAsString("/tmp/cthun_agent/" +
                                                             job_id + "/stdout"),
                                 "stdout");

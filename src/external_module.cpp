@@ -195,10 +195,10 @@ void ExternalModule::call_delayed_action(std::string action_name,
     run_command(path_, { path_, action_name }, stdin, stdout, stderr);
     status.set<std::string>(std::to_string(timer.elapsedSeconds()) + "s", "duration");
 
-    // TODO(ale): check the following line
-    // DataContainer result { stdout };
+    // Creating a DataContainer validates that the output is json
+    DataContainer result { stdout };
 
-    status.set<std::string>("completed", "result");
+    status.set<std::string>("completed", "status");
 
     FileUtils::writeToFile(stdout + "\n", action_dir + "/stdout");
     if (!stderr.empty()) {
