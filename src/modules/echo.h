@@ -10,12 +10,10 @@ class Echo : public CthunAgent::Module {
   public:
     Echo();
     DataContainer call_action(std::string action_name,
-                              const Message& request,
-                              const DataContainer& input);
+                              const Message& request);
 
     void call_delayed_action(std::string action_name,
                              const Message& request,
-                             const DataContainer& input,
                              std::string job_idd) {}
 };
 

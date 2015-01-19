@@ -39,9 +39,9 @@ DataContainer Module::validate_and_call_action(std::string action_name,
     // TODO(ploubser): This still isn't great. I would like the logic in
     // call_delayed_action to be moved to the Agent::delayedActionThread.
     if (action_id.empty()) {
-        result = call_action(action_name, request, input);
+        result = call_action(action_name, request);
     } else {
-        call_delayed_action(action_name, request, input, action_id);
+        call_delayed_action(action_name, request, action_id);
     }
 
     LOG_DEBUG("validating output for '%1%' '%2%'", module_name, action_name);

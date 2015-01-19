@@ -17,12 +17,10 @@ class ExternalModule : public Module {
     // module or if its metadata is invalid.
     explicit ExternalModule(std::string path);
     DataContainer call_action(std::string action_name,
-                              const Message& request,
-                              const DataContainer& input);
+                              const Message& request);
 
     void call_delayed_action(std::string action_name,
                              const Message& request,
-                             const DataContainer& input,
                              std::string job_id);
   private:
     std::string path_;

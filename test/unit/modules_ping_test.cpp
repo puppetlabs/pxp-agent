@@ -25,8 +25,6 @@ static const std::string ping_txt =
     "}";
 static const Message msg { ping_txt };
 
-static const DataContainer input {};
-
 TEST_CASE("Modules::Ping::call_action", "[modules]") {
     Modules::Ping ping_module {};
 
@@ -39,11 +37,11 @@ TEST_CASE("Modules::Ping::call_action", "[modules]") {
     }
 
     SECTION("it can call the ping action") {
-        REQUIRE_NOTHROW(ping_module.call_action(ping_action, msg, input));
+        REQUIRE_NOTHROW(ping_module.call_action(ping_action, msg));
     }
 
     SECTION("it should execute the ping action correctly") {
-        auto result = ping_module.call_action(ping_action, msg, input);
+        auto result = ping_module.call_action(ping_action, msg);
         REQUIRE(result.toString().find("agent_timestamp"));
         REQUIRE(result.toString().find("time_to_agent"));
     }
@@ -63,7 +61,6 @@ TEST_CASE("Modules::Ping::ping_action", "[modules]") {
         "   \"hops\" : %2%"  // vector<DataContainer>
         "}"
     };
-    boost::format input_format { "{ \"sender_timestamp\" : \"%1%\"}" };
 
     SECTION("it should take into account the sender_timestamp entry") {
         boost::posix_time::ptime current_date_microseconds =
@@ -73,9 +70,8 @@ TEST_CASE("Modules::Ping::ping_action", "[modules]") {
                 current_date_microseconds.time_of_day().total_milliseconds() - 42);
 
         Message ping_msg { (ping_format % current_date_milliseconds % "[]").str() };
-        DataContainer ping_input { (input_format % current_date_milliseconds).str() };
 
-        auto result = ping_module.ping_action(ping_msg, ping_input);
+        auto result = ping_module.ping_action(ping_msg);
 
         REQUIRE(current_date_milliseconds
                 == result.get<std::string>("sender_timestamp"));
@@ -84,8 +80,7 @@ TEST_CASE("Modules::Ping::ping_action", "[modules]") {
 
     SECTION("it should copy an empty hops entry") {
         Message ping_msg { (ping_format % "" % "[]").str() };
-        DataContainer ping_input { (input_format % "").str() };
-        auto result = ping_module.ping_action(ping_msg, ping_input);
+        auto result = ping_module.ping_action(ping_msg);
         REQUIRE(result.get<std::vector<DataContainer>>("request_hops").empty());
     }
 
@@ -106,9 +101,8 @@ TEST_CASE("Modules::Ping::ping_action", "[modules]") {
         hops_str += " ]";
 
         Message ping_msg { (ping_format % "" % hops_str).str() };
-        DataContainer ping_input { (input_format % "").str() };
 
-        auto result = ping_module.ping_action(ping_msg, ping_input);
+        auto result = ping_module.ping_action(ping_msg);
         auto hops = result.get<std::vector<DataContainer>>("request_hops");
 
         REQUIRE(hops.size() == 4);
@@ -124,9 +118,8 @@ TEST_CASE("Modules::Ping::ping_action", "[modules]") {
         hops_str += " ]";
 
         Message ping_msg { (ping_format % "" % hops_str).str() };
-        DataContainer ping_input { (input_format % "").str() };
 
-        auto result = ping_module.ping_action(ping_msg, ping_input);
+        auto result = ping_module.ping_action(ping_msg);
         auto hops = result.get<std::vector<DataContainer>>("request_hops");
 
         REQUIRE(hops.size() == 8);

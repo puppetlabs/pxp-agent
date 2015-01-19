@@ -15,12 +15,10 @@ class Module {
     std::map<std::string, Action> actions;
 
     virtual DataContainer call_action(std::string action_name,
-                                      const Message& request,
-                                      const DataContainer& input) = 0;
+                                      const Message& request) = 0;
 
     virtual void call_delayed_action(std::string action_name,
                                      const Message& request,
-                                     const DataContainer& input,
                                      std::string job_id) = 0;
 
     /// Validate the json schemas of input and output.

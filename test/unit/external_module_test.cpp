@@ -73,8 +73,6 @@ TEST_CASE("ExternalModule::validate_and_call_action", "[modules]") {
     }
 }
 
-static const DataContainer input { std::string("\"maradona\"") };
-
 TEST_CASE("ExternalModule::call_delayed_action", "[modules]") {
     ExternalModule reverse_module {
         ROOT_PATH + "/test/unit/test_modules/reverse_valid" };
@@ -88,13 +86,13 @@ TEST_CASE("ExternalModule::call_delayed_action", "[modules]") {
     }
 
     SECTION("it should create the result directory for a given job") {
-        reverse_module.call_delayed_action(string_action, msg, input, job_id);
+        reverse_module.call_delayed_action(string_action, msg, job_id);
         CHECK(FileUtils::fileExists(action_dir));
         boost::filesystem::remove_all(action_dir);
     }
 
     SECTION("it should create the status, stdout, and stderr files") {
-        reverse_module.call_delayed_action(string_action, msg, input, job_id);
+        reverse_module.call_delayed_action(string_action, msg, job_id);
         CHECK(FileUtils::fileExists(action_dir + "/status"));
         CHECK(FileUtils::fileExists(action_dir + "/stdout"));
         CHECK(FileUtils::fileExists(action_dir + "/stderr"));
@@ -102,7 +100,7 @@ TEST_CASE("ExternalModule::call_delayed_action", "[modules]") {
     }
 
     SECTION("it should correctly write the completed status") {
-        reverse_module.call_delayed_action(string_action, msg, input, job_id);
+        reverse_module.call_delayed_action(string_action, msg, job_id);
         CHECK(FileUtils::fileExists(action_dir + "/status"));
 
         if (FileUtils::fileExists(action_dir + "/status")) {
@@ -114,7 +112,7 @@ TEST_CASE("ExternalModule::call_delayed_action", "[modules]") {
     }
 
     SECTION("it should correctly write the result") {
-        reverse_module.call_delayed_action(string_action, msg, input, job_id);
+        reverse_module.call_delayed_action(string_action, msg, job_id);
         CHECK(FileUtils::fileExists(action_dir + "/stdout"));
 
         if (FileUtils::fileExists(action_dir + "/stdout")) {

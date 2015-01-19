@@ -29,8 +29,7 @@ Inventory::Inventory() {
 }
 
 DataContainer Inventory::call_action(std::string action_name,
-                                     const Message& request,
-                                     const DataContainer& input) {
+                                     const Message& request) {
     std::ostringstream fact_stream;
     DataContainer data {};
 

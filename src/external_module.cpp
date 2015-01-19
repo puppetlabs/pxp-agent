@@ -130,9 +130,8 @@ ExternalModule::ExternalModule(std::string path) : path_(path) {
 }
 
 DataContainer ExternalModule::call_action(std::string action_name,
-                                          const Message& request,
-                                          const DataContainer& input) {
-    std::string stdin = input.toString();
+                                          const Message& request) {
+    std::string stdin = request.get<DataContainer>("data", "params").toString();
     std::string stdout;
     std::string stderr;
     LOG_INFO(stdin);
@@ -146,9 +145,10 @@ DataContainer ExternalModule::call_action(std::string action_name,
 
 void ExternalModule::call_delayed_action(std::string action_name,
                                          const Message& request,
-                                         const DataContainer& input,
                                          std::string job_id) {
     LOG_INFO("Starting delayed action with id: %1%", job_id);
+
+    DataContainer input { request.get<DataContainer>("data", "params") };
 
     // check if the output directory exists. If it doesn't create it
     if (!FileUtils::fileExists("/tmp/cthun_agent")) {
