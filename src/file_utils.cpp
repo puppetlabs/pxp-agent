@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
+#include <stdio.h>
+
 
 LOG_DECLARE_NAMESPACE("file_utils");
 
@@ -55,11 +57,14 @@ void streamToFile(const std::string& text,
                   const std::string& file_path,
                   std::ios_base::openmode mode) {
     std::ofstream ofs;
-    ofs.open(file_path, mode);
+    std::string tmp_name = file_path + "~";
+    ofs.open(tmp_name, mode);
     if (!ofs.is_open()) {
         throw file_error { "failed to open " + file_path };
     }
     ofs << text;
+    ofs.close();
+    rename(tmp_name.data(), file_path.data());
 }
 
 void writeToFile(const std::string& text, const std::string& file_path) {
