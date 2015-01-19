@@ -10,10 +10,7 @@ set(SOURCES
     unit/agent_endpoint_test.cpp
     unit/module_test.cpp
     unit/external_module_test.cpp
-
-    # TODO(ale): enable inventory unit tests when cfacter is fixed
-    # unit/modules_inventory_test.cpp
-
+    unit/modules_inventory_test.cpp
     unit/modules_ping_test.cpp
 )
 

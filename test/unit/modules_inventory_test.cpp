@@ -19,7 +19,6 @@ static const std::string inventory_txt =
     "    }"
     "}";
 static const Message msg { inventory_txt };
-static const DataContainer input {};
 
 TEST_CASE("Modules::Inventory::call_action", "[modules]") {
     Modules::Inventory inventory_module {};
@@ -34,11 +33,11 @@ TEST_CASE("Modules::Inventory::call_action", "[modules]") {
     }
 
     SECTION("it can call the inventory action") {
-        REQUIRE_NOTHROW(inventory_module.call_action(inventory_action, msg, input));
+        REQUIRE_NOTHROW(inventory_module.call_action(inventory_action, msg));
     }
 
     SECTION("it should execute the inventory action correctly") {
-        auto result = inventory_module.call_action(inventory_action, msg, input);
+        auto result = inventory_module.call_action(inventory_action, msg);
         CHECK(result.toString().find("facts"));
     }
 }
