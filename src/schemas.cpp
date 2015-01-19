@@ -1,14 +1,11 @@
-#include "src/agent/schemas.h"
+#include "src/schemas.h"
 
 #include <valijson/adapters/rapidjson_adapter.hpp>
 #include <valijson/schema_parser.hpp>
 #include <valijson/validation_results.hpp>
 #include <valijson/validator.hpp>
 
-// TODO(ale): log messages
-
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
 bool Schemas::validate(const rapidjson::Value& document,
                        const valijson::Schema& schema,
@@ -68,8 +65,7 @@ valijson::Schema action_subschema() {
 
     // constrain the properties to just those in the metadata_properies map
     schema.addConstraint(new valijson::constraints::PropertiesConstraint(
-                              properties,
-                              pattern_properties));
+                                properties, pattern_properties));
 
     // specify the required properties
     schema.addConstraint(
@@ -174,8 +170,7 @@ valijson::Schema Schemas::network_message() {
     // constrain the properties to just those in the properies and
     // pattern_properties maps
     schema.addConstraint(new valijson::constraints::PropertiesConstraint(
-                             properties,
-                             pattern_properties));
+                                properties, pattern_properties));
 
     // specify the required properties
     schema.addConstraint(
@@ -215,8 +210,7 @@ valijson::Schema Schemas::cnc_data() {
     // constrain the properties to just those in the properies and
     // pattern_properties maps
     schema.addConstraint(new valijson::constraints::PropertiesConstraint(
-                             properties,
-                             pattern_properties));
+                                properties, pattern_properties));
 
     // specify the required properties
     schema.addConstraint(
@@ -225,5 +219,4 @@ valijson::Schema Schemas::cnc_data() {
     return schema;
 }
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

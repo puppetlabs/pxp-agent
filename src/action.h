@@ -3,8 +3,7 @@
 
 #include <valijson/schema.hpp>
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
 class Action {
   public:
@@ -13,7 +12,6 @@ class Action {
     std::string behaviour;
 };
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent
 
 #endif  // SRC_AGENT_ACTION_H_

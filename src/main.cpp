@@ -1,32 +1,30 @@
-#include "src/agent/agent_endpoint.h"
-#include "src/agent/errors.h"
-#include "src/common/log.h"
-#include "src/common/file_utils.h"
+#include "src/agent_endpoint.h"
+#include "src/errors.h"
+#include "src/log.h"
+#include "src/file_utils.h"
 
 #include <boost/program_options.hpp>
 
-LOG_DECLARE_NAMESPACE("agent_main");
+LOG_DECLARE_NAMESPACE("cthun_agent_main");
 
 namespace po = boost::program_options;
 
-namespace Cthun {
+namespace CthunAgent {
 
 //
 // tokens
 //
 
-static const Common::Log::log_level DEFAULT_LOG_LEVEL { Common::Log::log_level::info };
+static const Log::log_level DEFAULT_LOG_LEVEL { Log::log_level::info };
 
-// TODO(ale): allow configuring log and out files
+// TODO(ale): allow configuring log and out files from command line
 static std::ostream& DEFAULT_LOG_STREAM = std::cout;
 
 // TODO(ale): remove this; it's just for development
 static const std::string DEFAULT_SERVER_URL { "wss://127.0.0.1:8090/cthun/" };
 static std::string DEFAULT_CA { "./test-resources/ssl/ca/ca_crt.pem" };
-static std::string DEFAULT_CERT {
-    "./test-resources/ssl/certs/cthun-client.pem" };
-static std::string DEFAULT_KEY {
-    "./test-resources/ssl/private_keys/cthun-client.pem" };
+static std::string DEFAULT_CERT { "./test-resources/ssl/certs/cthun-client.pem" };
+static std::string DEFAULT_KEY { "./test-resources/ssl/private_keys/cthun-client.pem" };
 
 //
 // application options
@@ -70,13 +68,12 @@ AppOptions getAppOptions(int argc, char* argv[]) {
             DEFAULT_KEY), "cthun-agent private key");
 
     try {
-        po::store(po::command_line_parser(argc, argv)
-                  .options(desc).run(), vm);
+        po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
         po::notify(vm);
     } catch (...) {
         std::cout << "Failed to parse the command line\n\n"
                   << desc << std::endl;
-        throw Agent::request_error { "" };
+        throw request_error { "" };
     }
 
     AppOptions app_options;
@@ -92,8 +89,7 @@ AppOptions getAppOptions(int argc, char* argv[]) {
     app_options.server = vm["server"].as<std::string>();
 
     auto getFilePath = [&vm](std::string key) {
-        return Cthun::Common::FileUtils::expandAsDoneByShell(
-            vm[key].as<std::string>());
+        return FileUtils::expandAsDoneByShell(vm[key].as<std::string>());
     };
 
     app_options.ca   = getFilePath("ca");
@@ -105,14 +101,12 @@ AppOptions getAppOptions(int argc, char* argv[]) {
 
 void processAndValidateAppOptions(AppOptions& app_options) {
     // Ensure all files exist
-
     std::vector<std::string> paths { app_options.ca,
                                      app_options.cert,
                                      app_options.key };
-
     for (auto p : paths) {
-        if (!Cthun::Common::FileUtils::fileExists(p)) {
-            throw Agent::request_error { "invalid certificate " + p };
+        if (!FileUtils::fileExists(p)) {
+            throw request_error { "invalid certificate " + p };
         }
     }
 }
@@ -128,7 +122,7 @@ int main(int argc, char *argv[]) {
 
     try {
         app_options = getAppOptions(argc, argv);
-    } catch (Agent::request_error) {
+    } catch (request_error) {
         return 1;
     }
 
@@ -142,23 +136,23 @@ int main(int argc, char *argv[]) {
 
     // TODO(ale): do we need to configure facter logs?
 
-    Common::Log::log_level log_level;
+    Log::log_level log_level;
 
     if (app_options.trace) {
-        log_level = Common::Log::log_level::trace;
+        log_level = Log::log_level::trace;
     } else if (app_options.debug) {
-        log_level = Common::Log::log_level::debug;
+        log_level = Log::log_level::debug;
     } else {
         log_level = DEFAULT_LOG_LEVEL;
     }
 
-    Cthun::Common::Log::configure_logging(log_level, DEFAULT_LOG_STREAM);
+    Log::configure_logging(log_level, DEFAULT_LOG_STREAM);
 
     // process and validate options
 
     try {
         processAndValidateAppOptions(app_options);
-    } catch (Agent::request_error& e) {
+    } catch (request_error& e) {
         std::cout << e.what() << std::endl;
         return 1;
     }
@@ -166,10 +160,13 @@ int main(int argc, char *argv[]) {
     // start the agent
 
     try {
-        Agent::AgentEndpoint agent { std::string(argv[0]) };
+        AgentEndpoint agent { std::string(argv[0]) };
 
-        agent.startAgent(app_options.server, app_options.ca, app_options.cert, app_options.key);
-    } catch (Agent::fatal_error& e) {
+        agent.startAgent(app_options.server,
+                         app_options.ca,
+                         app_options.cert,
+                         app_options.key);
+    } catch (fatal_error& e) {
         LOG_ERROR("fatal error: %1%", e.what());
         return 1;
     } catch (std::exception& e) {
@@ -183,8 +180,8 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-}  // namespace Cthun
+}  // namespace CthunAgent
 
 int main(int argc, char** argv) {
-    return Cthun::main(argc, argv);
+    return CthunAgent::main(argc, argv);
 }

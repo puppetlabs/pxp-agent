@@ -1,5 +1,5 @@
-#include "src/agent/modules/inventory.h"
-#include "src/common/log.h"
+#include "src/modules/inventory.h"
+#include "src/log.h"
 
 #include <facter/facts/collection.hpp>
 
@@ -7,10 +7,9 @@
 
 #include <sstream>
 
-LOG_DECLARE_NAMESPACE("agent.modules.inventory");
+LOG_DECLARE_NAMESPACE("modules.inventory");
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 namespace Modules {
 
 Inventory::Inventory() {
@@ -52,5 +51,4 @@ DataContainer Inventory::call_action(std::string action_name,
 }
 
 }  // namespace Modules
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

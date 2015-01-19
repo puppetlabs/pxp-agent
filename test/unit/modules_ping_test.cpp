@@ -1,8 +1,8 @@
 #include "test/test.h"
 
 #include "src/data_container.h"
-#include "src/agent/errors.h"
-#include "src/agent/modules/ping.h"
+#include "src/errors.h"
+#include "src/modules/ping.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/format.hpp>
@@ -11,8 +11,7 @@
 
 extern std::string ROOT_PATH;
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
 static const std::string ping_action { "ping" };
 
@@ -28,7 +27,7 @@ static const Message msg { ping_txt };
 
 static const DataContainer input {};
 
-TEST_CASE("Agent::Modules::Ping::call_action", "[modules]") {
+TEST_CASE("Modules::Ping::call_action", "[modules]") {
     Modules::Ping ping_module {};
 
     SECTION("the ping module is correctly named") {
@@ -50,7 +49,7 @@ TEST_CASE("Agent::Modules::Ping::call_action", "[modules]") {
     }
 }
 
-TEST_CASE("Agent::Modules::Ping::ping_action", "[modules]") {
+TEST_CASE("Modules::Ping::ping_action", "[modules]") {
     Modules::Ping ping_module {};
 
     boost::format ping_format {
@@ -136,5 +135,4 @@ TEST_CASE("Agent::Modules::Ping::ping_action", "[modules]") {
     }
 }
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

@@ -1,10 +1,9 @@
-#ifndef CTHUN_SRC_COMMOND_TIMER_H_
-#define CTHUN_SRC_COMMOND_TIMER_H_
+#ifndef SRC_TIMER_H_
+#define SRC_TIMER_H_
 
 #include <chrono>
 
-namespace Cthun {
-namespace Common {
+namespace CthunAgent {
 
 /// A simple stopwatch/timer we can use for user feedback.  We use the
 /// std::chrono::steady_clock as we don't want to be affected if the system
@@ -31,7 +30,6 @@ class Timer {
     std::chrono::time_point<std::chrono::steady_clock> start_;
 };
 
-}  // namespace Common
-}  // namespace Cthun
+}  // namespace CthunAgent
 
-#endif  // CTHUN_SRC_COMMOND_TIMER_H_
+#endif  // SRC_TIMER_H_

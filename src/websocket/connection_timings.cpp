@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-namespace Cthun {
+namespace CthunAgent {
 namespace WebSocket {
 
 ConnectionTimings::ConnectionTimings()
@@ -30,4 +30,4 @@ ConnectionTimings::Duration_us ConnectionTimings::getCloseInterval() const {
 }
 
 }  // namespace WebSocket
-}  // namespace Cthun
+}  // namespace CthunAgent

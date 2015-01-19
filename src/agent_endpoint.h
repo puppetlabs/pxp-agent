@@ -1,9 +1,9 @@
-#ifndef SRC_AGENT_AGENT_ENDPOINT_H_
-#define SRC_AGENT_AGENT_ENDPOINT_H_
+#ifndef SRC_AGENT_ENDPOINT_H_
+#define SRC_AGENT_ENDPOINT_H_
 
-#include "src/agent/module.h"
-#include "src/websocket/endpoint.h"
+#include "src/module.h"
 #include "src/data_container.h"
+#include "src/websocket/endpoint.h"
 
 #include <map>
 #include <memory>
@@ -11,8 +11,9 @@
 #include <thread>
 #include <vector>
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
+
+// TODO(ale): rename 'AgentEndpoint' to 'Agent'
 
 class AgentEndpoint {
   public:
@@ -27,7 +28,7 @@ class AgentEndpoint {
 
   private:
     std::map<std::string, std::shared_ptr<Module>> modules_;
-    std::unique_ptr<Cthun::WebSocket::Endpoint> ws_endpoint_ptr_;
+    std::unique_ptr<WebSocket::Endpoint> ws_endpoint_ptr_;
 
     // Thread queue...sigh
     std::vector<std::thread> thread_queue_;
@@ -65,7 +66,6 @@ class AgentEndpoint {
                              std::string uuid);
 };
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent
 
-#endif  // SRC_AGENT_AGENT_ENDPOINT_H_
+#endif  // SRC_AGENT_ENDPOINT_H_

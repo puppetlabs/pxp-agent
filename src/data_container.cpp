@@ -1,7 +1,6 @@
-#include "data_container.h"
+#include "src/data_container.h"
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
 DataContainer::DataContainer() {
     document_root_.SetObject();
@@ -286,6 +285,4 @@ void DataContainer::setValue<>(rapidjson::Value& jval, DataContainer new_value )
     jval.CopyFrom(new_value.getRaw(), document_root_.GetAllocator());
 }
 
-
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

@@ -10,18 +10,18 @@ set(APPLICATION_SOURCES
 
 set(LIBRARY_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/data_container.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/agent/agent_endpoint.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/agent/schemas.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/agent/module.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/agent/external_module.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/agent/modules/echo.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/agent_endpoint.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/schemas.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/module.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/external_module.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/modules/echo.cpp"
     # TODO(ploubser): Enable inventory module when CFacter is fixed
     #"${CMAKE_CURRENT_LIST_DIR}/agent/modules/inventory.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/agent/modules/ping.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/agent/modules/status.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/common/file_utils.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/common/string_utils.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/common/log.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/modules/ping.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/modules/status.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/file_utils.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/string_utils.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/log.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/websocket/endpoint.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/websocket/connection_timings.cpp"
 )

@@ -1,5 +1,5 @@
-#ifndef SRC_COMMON_FILEUTILS_H_
-#define SRC_COMMON_FILEUTILS_H_
+#ifndef SRC_FILEUTILS_H_
+#define SRC_FILEUTILS_H_
 
 #include "src/data_container.h"
 
@@ -8,13 +8,13 @@
 #include <stdexcept>
 #include <boost/filesystem.hpp>
 
-namespace Cthun {
-namespace Common {
+namespace CthunAgent {
 namespace FileUtils {
-
 //
 // Error
 //
+
+// TODO(ale): move file_error to error.h
 
 /// Generic file error class.
 class file_error : public std::runtime_error {
@@ -57,7 +57,6 @@ bool createDirectory(const std::string& dirname);
 std::string readFileAsString(std::string path);
 
 }  // namespace FileUtils
-}  // namespace Common
-}  // namespace Cthun
+}  // namespace CthunAgent
 
-#endif  // SRC_COMMON_FILEUTILS_H_
+#endif  // SRC_FILEUTILS_H_

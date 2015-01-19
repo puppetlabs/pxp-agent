@@ -25,7 +25,7 @@
 #include <thread>
 #include <atomic>
 
-namespace Cthun {
+namespace CthunAgent {
 namespace WebSocket {
 
 static const std::string DEFAULT_CLOSE_REASON { "Closed by client" };
@@ -63,7 +63,7 @@ static const uint32_t CONNECTION_BACKOFF_S { 2 };  // [s]
 
 class Endpoint {
   public:
-    // Throw a file_not_found_exception if the client certificate
+    // Throw a file_not_found_error if the client certificate
     // file does not exist; throw an endpoint_error if it fails to
     // configure the endpoint and the event handlers.
     Endpoint(const std::string& server_url,
@@ -154,7 +154,7 @@ class Endpoint {
     ConnectionTimings connection_timings_;
 
     // Retrieve the client name from the certificate file;
-    // throw a file_not_found_exception if it fails to open the file
+    // throw a file_not_found_error if it fails to open the file
     std::string getClientIdentityFromCert_();
 
     // Stop the event loop thread and perform the necessary clean up
@@ -185,6 +185,6 @@ class Endpoint {
 };
 
 }  // namespace WebSocket
-}  // namespace Cthun
+}  // namespace CthunAgent
 
 #endif  // SRC_WEBSOCKET_ENDPOINT_H_

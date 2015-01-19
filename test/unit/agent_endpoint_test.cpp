@@ -1,21 +1,20 @@
 #include "test/test.h"
 
-#include "src/agent/agent_endpoint.h"
-#include "src/agent/errors.h"
+#include "src/agent_endpoint.h"
+#include "src/errors.h"
 #include "src/websocket/errors.h"
 
 extern std::string ROOT_PATH;
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
-TEST_CASE("Agent::AgentEndpoint::AgentEndpoint", "[agent]") {
+TEST_CASE("AgentEndpoint::AgentEndpoint", "[agent]") {
     SECTION("it should not throw if it fails to find the modules directory") {
-        REQUIRE_NOTHROW(Agent::AgentEndpoint agent { ROOT_PATH + "/bin/fake_dir" });
+        REQUIRE_NOTHROW(AgentEndpoint agent { ROOT_PATH + "/bin/fake_dir" });
     }
 
     SECTION("it should correctly instantiate") {
-        REQUIRE_NOTHROW(Agent::AgentEndpoint agent { ROOT_PATH + "/bin" });
+        REQUIRE_NOTHROW(AgentEndpoint agent { ROOT_PATH + "/bin" });
     }
 }
 
@@ -26,8 +25,8 @@ static std::string DEFAULT_CERT {
 static std::string DEFAULT_KEY {
     ROOT_PATH + "/test-resources/ssl/private_keys/cthun-client.pem" };
 
-TEST_CASE("Agent::AgentEndpoint::startAgent", "[agent]") {
-    Agent::AgentEndpoint agent { ROOT_PATH + "/bin" };
+TEST_CASE("AgentEndpoint::startAgent", "[agent]") {
+    AgentEndpoint agent { ROOT_PATH + "/bin" };
 
     SECTION("should throw a fatal_error if client cert is invalid") {
         REQUIRE_THROWS_AS(agent.startAgent(DEFAULT_SERVER_URL, DEFAULT_CA,
@@ -42,5 +41,4 @@ TEST_CASE("Agent::AgentEndpoint::startAgent", "[agent]") {
     }
 }
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

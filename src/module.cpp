@@ -1,14 +1,13 @@
-#include "src/agent/module.h"
-#include "src/agent/schemas.h"
-#include "src/agent/errors.h"
-#include "src/common/log.h"
+#include "src/module.h"
+#include "src/schemas.h"
+#include "src/errors.h"
+#include "src/log.h"
 
 #include <iostream>
 
-LOG_DECLARE_NAMESPACE("agent.module");
+LOG_DECLARE_NAMESPACE("module");
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
 // TODO(ale): change 'params' to 'input' for consistency
 
@@ -26,7 +25,8 @@ DataContainer Module::validate_and_call_action(std::string action_name,
     LOG_DEBUG("validating input for '%1%' '%2%'", module_name, action_name);
     std::vector<std::string> errors;
     if (!input.validate(action.input_schema, errors)) {
-        LOG_ERROR("action input validation failed '%1%' '%2%'", module_name, action_name);
+        LOG_ERROR("action input validation failed '%1%' '%2%'",
+                  module_name, action_name);
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }
@@ -57,5 +57,4 @@ DataContainer Module::validate_and_call_action(std::string action_name,
     return result;
 }
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

@@ -1,18 +1,17 @@
-#ifndef SRC_AGENT_MODULES_PING_H_
-#define SRC_AGENT_MODULES_PING_H_
+#ifndef SRC_MODULES_PING_H_
+#define SRC_MODULES_PING_H_
 
-#include "src/agent/module.h"
+#include "src/module.h"
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 namespace Modules {
 
-class Ping : public Cthun::Agent::Module {
+class Ping : public CthunAgent::Module {
   public:
     Ping();
     DataContainer call_action(std::string action_name,
-                     const Message& request,
-                     const DataContainer& input);
+                              const Message& request,
+                              const DataContainer& input);
 
     void call_delayed_action(std::string action_name,
                              const Message& request,
@@ -23,11 +22,10 @@ class Ping : public Cthun::Agent::Module {
     /// the controller to the agent. It will then add that duration and the
     /// current server time in milliseconds to the response.
     DataContainer ping_action(const Message& request,
-                     const DataContainer& input);
+                              const DataContainer& input);
 };
 
 }  // namespace Modules
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent
 
-#endif  // SRC_AGENT_MODULES_PING_H_
+#endif  // SRC_MODULES_PING_H_

@@ -1,10 +1,10 @@
-#include "src/agent/external_module.h"
-#include "src/agent/schemas.h"
-#include "src/agent/action.h"
-#include "src/agent/errors.h"
-#include "src/common/log.h"
-#include "src/common/file_utils.h"
-#include "src/common/timer.h"
+#include "src/external_module.h"
+#include "src/schemas.h"
+#include "src/action.h"
+#include "src/errors.h"
+#include "src/log.h"
+#include "src/file_utils.h"
+#include "src/timer.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -14,10 +14,9 @@
 #include <valijson/adapters/rapidjson_adapter.hpp>
 #include <valijson/schema_parser.hpp>
 
-LOG_DECLARE_NAMESPACE("agent.external_module");
+LOG_DECLARE_NAMESPACE("external_module");
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
 void run_command(std::string exec, std::vector<std::string> args,
                  std::string stdin, std::string &stdout, std::string &stderr) {
@@ -152,9 +151,9 @@ void ExternalModule::call_delayed_action(std::string action_name,
     LOG_INFO("Starting delayed action with id: %1%", job_id);
 
     // check if the output directory exists. If it doesn't create it
-    if (!Common::FileUtils::fileExists("/tmp/cthun_agent")) {
-        LOG_INFO("/tmp/cthun_agent directory does not exist. Creating");
-        if (!Common::FileUtils::createDirectory("/tmp/cthun_agent")) {
+    if (!FileUtils::fileExists("/tmp/cthun_agent")) {
+        LOG_INFO("/tmp/cthun_agent directory does not exist. Creating.");
+        if (!FileUtils::createDirectory("/tmp/cthun_agent")) {
             LOG_ERROR("Failed to create /tmp/cthun_agent. Cannot start action.");
         }
     }
@@ -162,9 +161,9 @@ void ExternalModule::call_delayed_action(std::string action_name,
     std::string action_dir { "/tmp/cthun_agent/" + job_id };
 
     // create job specific result directory
-    if (!Common::FileUtils::fileExists(action_dir)) {
+    if (!FileUtils::fileExists(action_dir)) {
         LOG_INFO("Creating result directory for action.");
-        if (!Common::FileUtils::createDirectory(action_dir)) {
+        if (!FileUtils::createDirectory(action_dir)) {
             LOG_ERROR("Failed to create " + action_dir + ". Cannot start action.");
         }
     }
@@ -183,16 +182,16 @@ void ExternalModule::call_delayed_action(std::string action_name,
     status.set<std::string>("running", "status");
     status.set<std::string>("0", "duration");
 
-    Common::FileUtils::writeToFile(status.toString() + "\n", action_dir + "/status");
-    Common::FileUtils::writeToFile("", action_dir + "/stdout");
-    Common::FileUtils::writeToFile("", action_dir + "/stderr");
+    FileUtils::writeToFile(status.toString() + "\n", action_dir + "/status");
+    FileUtils::writeToFile("", action_dir + "/stdout");
+    FileUtils::writeToFile("", action_dir + "/stderr");
 
     // prepare and run the command
     std::string stdin = input.toString();
     std::string stdout;
     std::string stderr;
 
-    Common::Timer timer;
+    CthunAgent::Timer timer;
     run_command(path_, { path_, action_name }, stdin, stdout, stderr);
     status.set<std::string>(std::to_string(timer.elapsedSeconds()) + "s", "duration");
 
@@ -201,12 +200,11 @@ void ExternalModule::call_delayed_action(std::string action_name,
 
     status.set<std::string>("completed", "result");
 
-    Common::FileUtils::writeToFile(stdout + "\n", action_dir + "/stdout");
+    FileUtils::writeToFile(stdout + "\n", action_dir + "/stdout");
     if (!stderr.empty()) {
-        Common::FileUtils::writeToFile(stderr + "\n", action_dir + "/stderr");
+        FileUtils::writeToFile(stderr + "\n", action_dir + "/stderr");
     }
-    Common::FileUtils::writeToFile(status.toString() + "\n", action_dir + "/status");
+    FileUtils::writeToFile(status.toString() + "\n", action_dir + "/status");
 }
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

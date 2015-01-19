@@ -1,7 +1,7 @@
-#ifndef CTHUN_AGENT_SRC_DATA_CONTAINER_H_
-#define CTHUN_AGENT_SRC_DATA_CONTAINER_H_
+#ifndef CTHUN_SRC_DATA_CONTAINER_H_
+#define CTHUN_SRC_DATA_CONTAINER_H_
 
-#include "src/agent/schemas.h"
+#include "src/schemas.h"
 
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
@@ -10,8 +10,9 @@
 
 #include <iostream>
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
+
+// TODO(ale): move errors to errors.h
 
 /// Error thrown when a message string is invalid
 class message_parse_error : public std::runtime_error {
@@ -200,7 +201,7 @@ class DataContainer {
     template <typename T, typename ... Args>
     void set_(rapidjson::Value& jval, T new_val, const char * first, Args ... rest) {
         if (jval.HasMember(first) && !jval[first].IsObject()) {
-            throw message_index_error { "invalid message index supplied " };
+            throw message_index_error { "invalid message index supplied" };
         }
 
         if (!jval.HasMember(first)) {
@@ -223,12 +224,12 @@ class DataContainer {
 
 template<typename T>
 T DataContainer::getValue(const rapidjson::Value& Value) const {
-    throw data_type_error { "invalid type for DataContainer"};
+    throw data_type_error { "invalid type for DataContainer" };
 }
 
 template<typename T>
 void DataContainer::setValue(rapidjson::Value& jval, T new_value) {
-    throw data_type_error { "invalid type for DataContainer"};
+    throw data_type_error { "invalid type for DataContainer" };
 }
 
 template<>
@@ -276,7 +277,6 @@ class Message : public DataContainer {
     }
 };
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent
 
-#endif  // CTHUN_AGENT_SRC_DATA_CONTAINER_H_
+#endif  // CTHUN_SRC_DATA_CONTAINER_H_

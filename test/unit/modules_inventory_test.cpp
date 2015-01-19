@@ -3,13 +3,12 @@
 #include "test/test.h"
 
 #include "src/data_container.h"
-#include "src/agent/errors.h"
-#include "src/agent/modules/inventory.h"
+#include "src/errors.h"
+#include "src/modules/inventory.h"
 
 extern std::string ROOT_PATH;
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
 static const std::string inventory_action { "inventory" };
 static const std::string inventory_txt =
@@ -22,7 +21,7 @@ static const std::string inventory_txt =
 static const Message msg { inventory_txt };
 static const DataContainer input {};
 
-TEST_CASE("Agent::Modules::Inventory::call_action", "[modules]") {
+TEST_CASE("Modules::Inventory::call_action", "[modules]") {
     Modules::Inventory inventory_module {};
 
     SECTION("the inventory module is correctly named") {
@@ -44,5 +43,4 @@ TEST_CASE("Agent::Modules::Inventory::call_action", "[modules]") {
     }
 }
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

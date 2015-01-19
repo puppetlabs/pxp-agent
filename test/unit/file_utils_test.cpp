@@ -1,14 +1,13 @@
 #include "test/test.h"
 
-#include "src/common/file_utils.h"
-#include "src/common/uuid.h"
+#include "src/file_utils.h"
+#include "src/uuid.h"
 
 #include <iostream>
 
-namespace Cthun {
-namespace Common {
+namespace CthunAgent {
 
-TEST_CASE("Common::FileUtils::expandAsDoneByShell", "[common]") {
+TEST_CASE("FileUtils::expandAsDoneByShell", "[utils]") {
     SECTION("it should expand the home directory path") {
         REQUIRE(FileUtils::expandAsDoneByShell("~/foo") != "~/foo");
     }
@@ -32,11 +31,11 @@ TEST_CASE("Common::FileUtils::expandAsDoneByShell", "[common]") {
 
 static const auto home_path = FileUtils::expandAsDoneByShell("~");
 static const auto file_path =
-    FileUtils::expandAsDoneByShell("~/test_file_" + getUUID());
+    FileUtils::expandAsDoneByShell("~/test_file_" + UUID::getUUID());
 static const auto dir_path =
-    FileUtils::expandAsDoneByShell("~/test_dir_" + getUUID());
+    FileUtils::expandAsDoneByShell("~/test_dir_" + UUID::getUUID());
 
-TEST_CASE("Common::FileUtils::fileExists", "[common]") {
+TEST_CASE("FileUtils::fileExists", "[utils]") {
     SECTION("it can check that a file does not exist") {
         REQUIRE(FileUtils::fileExists(file_path) == false);
     }
@@ -46,7 +45,7 @@ TEST_CASE("Common::FileUtils::fileExists", "[common]") {
     }
 }
 
-TEST_CASE("Common::FileUtils::writeToFile", "[common]") {
+TEST_CASE("FileUtils::writeToFile", "[utils]") {
     SECTION("it can write to a regular file, ensure it exists, and delete it") {
         REQUIRE(FileUtils::fileExists(file_path) == false);
         FileUtils::writeToFile("test\n", file_path);
@@ -56,7 +55,7 @@ TEST_CASE("Common::FileUtils::writeToFile", "[common]") {
     }
 }
 
-TEST_CASE("Common::FileUtils::createDirectory", "[common]") {
+TEST_CASE("FileUtils::createDirectory", "[utils]") {
     SECTION("it can create and remove an empty directory") {
         REQUIRE(FileUtils::fileExists(dir_path) == false);
         FileUtils::createDirectory(dir_path);
@@ -66,5 +65,4 @@ TEST_CASE("Common::FileUtils::createDirectory", "[common]") {
     }
 }
 
-}  // namespace Common
-}  // namespace Cthun
+}  // namespace CthunAgent

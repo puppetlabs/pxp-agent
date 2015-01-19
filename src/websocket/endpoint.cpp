@@ -1,7 +1,7 @@
 #include "src/websocket/endpoint.h"
 #include "src/websocket/errors.h"
-#include "src/common/log.h"
-#include "src/common/string_utils.h"
+#include "src/log.h"
+#include "src/string_utils.h"
 
 // HERE(ale): we are inheriting openssl include from elsewhere
 
@@ -15,7 +15,7 @@
 
 LOG_DECLARE_NAMESPACE("websocket.endpoint");
 
-namespace Cthun {
+namespace CthunAgent {
 namespace WebSocket {
 
 static const uint CONNECTION_MIN_INTERVAL { 200000 };  // [us]
@@ -64,7 +64,7 @@ Endpoint::Endpoint(const std::string& server_url,
         LOG_DEBUG("Failed to configure the websocket endpoint; about to stop "
                   "the event loop");
         cleanUp_();
-        throw endpoint_error { "Failed to initialize"};
+        throw endpoint_error { "Failed to initialize" };
     }
 }
 
@@ -162,7 +162,7 @@ void Endpoint::connect(int max_connect_attempts) {
 
     connection_backoff_s_ = CONNECTION_BACKOFF_S;
     throw connection_error { "Failed to connect after " + std::to_string(idx)
-                             + " attempt" + Common::StringUtils::plural(idx) };
+                             + " attempt" + StringUtils::plural(idx) };
 }
 
 void Endpoint::send(std::string msg) {
@@ -199,11 +199,13 @@ std::string Endpoint::identity() {
 //
 
 std::string Endpoint::getClientIdentityFromCert_() {
+    // TODO(ale): fix compiler warnings about deprecated openssl types
+
     std::unique_ptr<std::FILE, int(*)(std::FILE*)> fp {
         std::fopen(client_crt_path_.data(), "r"), std::fclose };
     if (fp == nullptr) {
-        throw file_not_found_exception { "Certificate file '" + client_crt_path_ +
-                                         "' does not exist." };
+        throw file_not_found_error { "Certificate file '" + client_crt_path_ +
+                                     "' does not exist." };
     }
     std::unique_ptr<X509, void(*)(X509*)> cert {
         PEM_read_X509(fp.get(), NULL, NULL, NULL), X509_free };
@@ -337,4 +339,4 @@ void Endpoint::onMessage(Connection_Handle hdl, Client_Type::message_ptr msg) {
 }
 
 }  // namespace WebSocket
-}  // namespace Cthun
+}  // namespace CthunAgent

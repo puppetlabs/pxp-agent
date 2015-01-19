@@ -1,11 +1,10 @@
 #include "test/test.h"
 
 #include "src/data_container.h"
-#include "src/agent/errors.h"
-#include "src/agent/modules/echo.h"
+#include "src/errors.h"
+#include "src/modules/echo.h"
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
 static const std::string echo_action { "echo" };
 static const std::string fake_action { "fake_action" };
@@ -25,7 +24,7 @@ static const std::string bad_echo =
     "    }"
     "}";
 
-TEST_CASE("Agent::Module::validate_and_call_action", "[modules]") {
+TEST_CASE("Module::validate_and_call_action", "[modules]") {
     Modules::Echo echo_module {};
 
     SECTION("it should correctly call echo") {
@@ -45,5 +44,4 @@ TEST_CASE("Agent::Module::validate_and_call_action", "[modules]") {
     }
 }
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

@@ -1,5 +1,5 @@
-#include "src/agent/modules/ping.h"
-#include "src/common/log.h"
+#include "src/modules/ping.h"
+#include "src/log.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <valijson/constraints/concrete_constraints.hpp>
@@ -8,10 +8,9 @@
 #include <string>
 #include <sstream>
 
-LOG_DECLARE_NAMESPACE("agent.modules.ping");
+LOG_DECLARE_NAMESPACE("modules.ping");
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 namespace Modules {
 
 Ping::Ping() {
@@ -61,11 +60,10 @@ DataContainer Ping::ping_action(const Message& request, const DataContainer& inp
 }
 
 DataContainer Ping::call_action(std::string action_name,
-                       const Message& request,
-                       const DataContainer& input) {
+                                const Message& request,
+                                const DataContainer& input) {
    return ping_action(request, input);
 }
 
 }  // namespace Modules
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

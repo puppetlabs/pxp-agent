@@ -1,12 +1,11 @@
-#include "src/common/string_utils.h"
+#include "src/string_utils.h"
 
 #include <iostream>
 #include <ctime>
 #include <time.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-namespace Cthun {
-namespace Common {
+namespace CthunAgent {
 namespace StringUtils {
 
 std::string plural(int num_of_things) {
@@ -59,11 +58,10 @@ void displayProgress(double percent, int len, std::string status) {
 }
 
 std::string getISO8601Time(unsigned int modifier_in_seconds) {
-    boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time() +
-                                 boost::posix_time::seconds(modifier_in_seconds);
+    boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time()
+                                 + boost::posix_time::seconds(modifier_in_seconds);
     return boost::posix_time::to_iso_extended_string(t) + "Z";
 }
 
 }  // namespace StringUtils
-}  // namespace Common
-}  // namespace Cthun
+}  // namespace CthunAgent

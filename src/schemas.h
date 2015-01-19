@@ -1,11 +1,10 @@
-#ifndef SRC_AGENT_SCHEMAS_H_
-#define SRC_AGENT_SCHEMAS_H_
+#ifndef SRC_SCHEMAS_H_
+#define SRC_SCHEMAS_H_
 
 #include <rapidjson/document.h>
 #include <valijson/schema.hpp>
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
 class Schemas {
   public:
@@ -17,7 +16,6 @@ class Schemas {
     static valijson::Schema cnc_data();
 };
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent
 
-#endif  // SRC_AGENT_SCHEMAS_H_
+#endif  // SRC_SCHEMAS_H_

@@ -1,11 +1,10 @@
-#ifndef SRC_AGENT_ERRORS_H_
-#define SRC_AGENT_ERRORS_H_
+#ifndef SRC_ERRORS_H_
+#define SRC_ERRORS_H_
 
 #include <stdexcept>
 #include <string>
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
 /// Base error class.
 class agent_error : public std::runtime_error {
@@ -37,7 +36,6 @@ class module_error : public agent_error {
     explicit module_error(std::string const& msg) : agent_error(msg) {}
 };
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent
 
-#endif  // SRC_AGENT_ERRORS_H_
+#endif  // SRC_ERRORS_H_

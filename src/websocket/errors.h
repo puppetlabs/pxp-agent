@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace Cthun {
+namespace CthunAgent {
 namespace WebSocket {
 
 /// Base error class.
@@ -32,12 +32,12 @@ class message_error : public websocket_error {
 };
 
 /// File not found error class.
-class file_not_found_exception : public websocket_error {
+class file_not_found_error : public websocket_error {
   public:
-    explicit file_not_found_exception(std::string const& msg) : websocket_error(msg) {}
+    explicit file_not_found_error(std::string const& msg) : websocket_error(msg) {}
 };
 
 }  // namespace WebSocket
-}  // namespace Cthun
+}  // namespace CthunAgent
 
 #endif  // SRC_WEBSOCKET_ERRORS_H_

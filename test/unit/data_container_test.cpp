@@ -1,6 +1,8 @@
 #include "test/test.h"
+
 #include "src/data_container.h"
-#include "src/agent/schemas.h"
+#include "src/schemas.h"
+
 #include <iostream>
 
 // TODO(ploubser): Consider moving the validator into the DataContainer wrapper
@@ -21,8 +23,7 @@ static const std::string JSON = "{\"foo\" : {\"bar\" : 2},"
                                 "               }"
                                 "}";
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
 TEST_CASE("DataContainer::get", "[data]") {
     DataContainer msg { JSON };
@@ -72,7 +73,6 @@ TEST_CASE("DataContainer::get", "[data]") {
         REQUIRE(msg.get<bool>("foo", "baz") == false);
     }
 }
-
 
 TEST_CASE("DataContainer::set", "[data]") {
     DataContainer msg {};
@@ -199,6 +199,4 @@ TEST_CASE("DataContainer::validate", "[data]") {
     }
 }
 
-}  // namespace Agent
-}  // namespace Cthun
-
+}  // namespace CthunAgent

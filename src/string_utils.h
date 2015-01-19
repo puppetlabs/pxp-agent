@@ -1,11 +1,10 @@
-#ifndef SRC_COMMON_STRINGUTILS_H_
-#define SRC_COMMON_STRINGUTILS_H_
+#ifndef SRC_STRINGUTILS_H_
+#define SRC_STRINGUTILS_H_
 
 #include <string>
 #include <vector>
 
-namespace Cthun {
-namespace Common {
+namespace CthunAgent {
 namespace StringUtils {
 
 /// Return the "s" string in case of more than one things,
@@ -29,7 +28,6 @@ void displayProgress(double percent, int len,
 std::string getISO8601Time(unsigned int modifier_in_seconds = 0);
 
 }  // namespace StringUtils
-}  // namespace Common
-}  // namespace Cthun
+}  // namespace CthunAgent
 
-#endif  // SRC_COMMON_STRINGUTILS_H_
+#endif  // SRC_STRINGUTILS_H_

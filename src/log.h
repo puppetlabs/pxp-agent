@@ -1,5 +1,5 @@
-#ifndef SRC_COMMON_LOG_H_
-#define SRC_COMMON_LOG_H_
+#ifndef SRC_LOG_H_
+#define SRC_LOG_H_
 
 // HERE(ale): this code was originally copied from cfacter
 
@@ -25,7 +25,7 @@
 /**
  * Defines the root logging namespace.
  */
-#define LOG_ROOT_NAMESPACE "puppetlabs.cthun."
+#define LOG_ROOT_NAMESPACE "puppetlabs.cthun_agent."
 
 /**
  * Used to declare a logging namespace for a source file.
@@ -43,8 +43,8 @@
  * @param ... The format message parameters.
  */
 #define LOG_MESSAGE(level, line_num, format, ...) \
-    if (Cthun::Common::Log::is_log_enabled(g_logger, level)) { \
-        Cthun::Common::Log::log(g_logger, level, line_num, format, ##__VA_ARGS__); \
+    if (CthunAgent::Log::is_log_enabled(g_logger, level)) { \
+        CthunAgent::Log::log(g_logger, level, line_num, format, ##__VA_ARGS__); \
     }
 
 /**
@@ -52,7 +52,7 @@
  * @param format The format message.
  * @param ... The format message parameters.
  */
-#define LOG_TRACE(format, ...) LOG_MESSAGE(Cthun::Common::Log::log_level::trace, \
+#define LOG_TRACE(format, ...) LOG_MESSAGE(CthunAgent::Log::log_level::trace, \
                                            __LINE__, format, ##__VA_ARGS__)
 
 /**
@@ -60,7 +60,7 @@
  * @param format The format message.
  * @param ... The format message parameters.
  */
-#define LOG_DEBUG(format, ...) LOG_MESSAGE(Cthun::Common::Log::log_level::debug, \
+#define LOG_DEBUG(format, ...) LOG_MESSAGE(CthunAgent::Log::log_level::debug, \
                                            __LINE__, format, ##__VA_ARGS__)
 
 /**
@@ -68,7 +68,7 @@
  * @param format The format message.
  * @param ... The format message parameters.
  */
-#define LOG_INFO(format, ...) LOG_MESSAGE(Cthun::Common::Log::log_level::info, \
+#define LOG_INFO(format, ...) LOG_MESSAGE(CthunAgent::Log::log_level::info, \
                                           __LINE__, format, ##__VA_ARGS__)
 
 /**
@@ -76,7 +76,7 @@
  * @param format The format message.
  * @param ... The format message parameters.
  */
-#define LOG_WARNING(format, ...) LOG_MESSAGE(Cthun::Common::Log::log_level::warning, \
+#define LOG_WARNING(format, ...) LOG_MESSAGE(CthunAgent::Log::log_level::warning, \
                                              __LINE__, format, ##__VA_ARGS__)
 
 /**
@@ -84,7 +84,7 @@
  * @param format The format message.
  * @param ... The format message parameters.
  */
-#define LOG_ERROR(format, ...) LOG_MESSAGE(Cthun::Common::Log::log_level::error, \
+#define LOG_ERROR(format, ...) LOG_MESSAGE(CthunAgent::Log::log_level::error, \
                                            __LINE__, format, ##__VA_ARGS__)
 
 /**
@@ -92,63 +92,62 @@
  * @param format The format message.
  * @param ... The format message parameters.
  */
-#define LOG_FATAL(format, ...) LOG_MESSAGE(Cthun::Common::Log::log_level::fatal, \
+#define LOG_FATAL(format, ...) LOG_MESSAGE(CthunAgent::Log::log_level::fatal, \
                                            __LINE__, format, ##__VA_ARGS__)
 
 /**
  * Determines if the given logging level is enabled.
  * @param level The logging level to check.
  */
-#define LOG_IS_ENABLED(level) Cthun::Common::Log::is_log_enabled(g_logger, level)
+#define LOG_IS_ENABLED(level) CthunAgent::Log::is_log_enabled(g_logger, level)
 
 /**
  * Determines if the trace logging level is enabled.
  * @returns Returns true if trace logging is enabled or false if it is
  * not enabled.
  */
-#define LOG_IS_TRACE_ENABLED() LOG_IS_ENABLED(Cthun::Common::Log::log_level::trace)
+#define LOG_IS_TRACE_ENABLED() LOG_IS_ENABLED(CthunAgent::Log::log_level::trace)
 
 /**
  * Determines if the debug logging level is enabled.
  * @returns Returns true if debug logging is enabled or false if it is
  * not enabled.
  */
-#define LOG_IS_DEBUG_ENABLED() LOG_IS_ENABLED(Cthun::Common::Log::log_level::debug)
+#define LOG_IS_DEBUG_ENABLED() LOG_IS_ENABLED(CthunAgent::Log::log_level::debug)
 
 /**
  * Determines if the info logging level is enabled.
  * @returns Returns true if info logging is enabled or false if it is
  * not enabled.
  */
-#define LOG_IS_INFO_ENABLED() LOG_IS_ENABLED(Cthun::Common::Log::log_level::info)
+#define LOG_IS_INFO_ENABLED() LOG_IS_ENABLED(CthunAgent::Log::log_level::info)
 
 /**
  * Determines if the warning logging level is enabled.
  * @returns Returns true if warning logging is enabled or false if it
  * is not enabled.
  */
-#define LOG_IS_WARNING_ENABLED() LOG_IS_ENABLED(Cthun::Common::Log::log_level::warning)
+#define LOG_IS_WARNING_ENABLED() LOG_IS_ENABLED(CthunAgent::Log::log_level::warning)
 
 /**
  * Determines if the error logging level is enabled.
  * @returns Returns true if error logging is enabled or false if it is
  *not enabled.
  */
-#define LOG_IS_ERROR_ENABLED() LOG_IS_ENABLED(Cthun::Common::Log::log_level::error)
+#define LOG_IS_ERROR_ENABLED() LOG_IS_ENABLED(CthunAgent::Log::log_level::error)
 
 /**
  * Determines if the fatal logging level is enabled.
  * @returns Returns true if fatal logging is enabled or false if it is
  * not enabled.
  */
-#define LOG_IS_FATAL_ENABLED() LOG_IS_ENABLED(Cthun::Common::Log::log_level::fatal)
+#define LOG_IS_FATAL_ENABLED() LOG_IS_ENABLED(CthunAgent::Log::log_level::fatal)
 
 //
-// namespace Cthun::Common::Log
+// namespace CthunAgent::Log
 //
 
-namespace Cthun {
-namespace Common {
+namespace CthunAgent {
 namespace Log {
 
 /**
@@ -254,7 +253,6 @@ void log(const std::string &logger, log_level level, int line_num,
 }
 
 }  // namespace Log
-}  // namespace Common
-}  // namespace Cthun
+}  // namespace CthunAgent
 
-#endif  // SRC_COMMON_LOG_H_
+#endif  // SRC_LOG_H_

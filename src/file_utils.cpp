@@ -1,5 +1,5 @@
-#include "src/common/file_utils.h"
-#include "src/common/log.h"
+#include "src/file_utils.h"
+#include "src/log.h"
 
 #include <wordexp.h>
 #include <fstream>
@@ -7,15 +7,12 @@
 #include <sys/types.h>
 #include <pwd.h>
 
-LOG_DECLARE_NAMESPACE("common.file_utils");
+LOG_DECLARE_NAMESPACE("file_utils");
 
-namespace Cthun {
-namespace Common {
+namespace CthunAgent {
 namespace FileUtils {
 
 // HERE(ale): copied from Pegasus
-
-// TODO(ale): look for boost alternatives
 
 std::string expandAsDoneByShell(std::string txt) {
     // This will store the expansion outcome
@@ -65,8 +62,7 @@ void streamToFile(const std::string& text,
 }
 
 void writeToFile(const std::string& text, const std::string& file_path) {
-    streamToFile(text, file_path, std::ofstream::out
-                                | std::ofstream::trunc);
+    streamToFile(text, file_path, std::ofstream::out | std::ofstream::trunc);
 }
 
 bool createDirectory(const std::string& dirname) {
@@ -97,5 +93,4 @@ std::string readFileAsString(std::string path) {
 }
 
 }  // namespace FileUtils
-}  // namespace Common
-}  // namespace Cthun
+}  // namespace CthunAgent

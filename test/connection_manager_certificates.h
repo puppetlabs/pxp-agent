@@ -1,6 +1,8 @@
 #include <string>
 
-namespace Cthun {
+// TODO(ale): remove if unused
+
+namespace CthunAgent {
 namespace WebSocket {
 
 static const std::string CA {
@@ -128,4 +130,4 @@ TByW2XqaDQj1VvwaM00WoA/XuT4PaAMBgv7O5IWwWe9PoEPox5LgyDhOMMg=
 )"};
 
 }  // namespace WebSocket
-}  // namespace Cthun
+}  // namespace CthunAgent

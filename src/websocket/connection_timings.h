@@ -4,7 +4,7 @@
 #include <chrono>
 #include <string>
 
-namespace Cthun {
+namespace CthunAgent {
 namespace WebSocket {
 
 //
@@ -58,6 +58,6 @@ inline std::string ConnectionTimings::toString() const {
 }
 
 }  // namespace WebSocket
-}  // namespace Cthun
+}  // namespace CthunAgent
 
 #endif  // SRC_WEBSOCKET_CONNECTION_TIMINGS_H_

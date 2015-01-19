@@ -1,9 +1,8 @@
-#include "src/agent/modules/echo.h"
+#include "src/modules/echo.h"
 
 #include <valijson/constraints/concrete_constraints.hpp>
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 namespace Modules {
 
 Echo::Echo() {
@@ -22,11 +21,10 @@ Echo::Echo() {
 }
 
 DataContainer Echo::call_action(std::string action_name,
-                       const Message& request,
-                       const DataContainer& input) {
+                                const Message& request,
+                                const DataContainer& input) {
     return const_cast<DataContainer&>(input);
 }
 
 }  // namespace Modules
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

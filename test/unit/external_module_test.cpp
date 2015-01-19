@@ -1,10 +1,10 @@
 #include "test/test.h"
 
 #include "src/data_container.h"
-#include "src/agent/errors.h"
-#include "src/agent/external_module.h"
-#include "src/common/uuid.h"
-#include "src/common/file_utils.h"
+#include "src/errors.h"
+#include "src/external_module.h"
+#include "src/uuid.h"
+#include "src/file_utils.h"
 
 #include <boost/filesystem/operations.hpp>
 
@@ -12,10 +12,9 @@
 
 extern std::string ROOT_PATH;
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 
-TEST_CASE("Agent::ExternalModule::ExternalModule", "[modules]") {
+TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
     SECTION("can successfully instantiate from a valid external module") {
         REQUIRE_NOTHROW(ExternalModule(
             ROOT_PATH + "/test/unit/test_modules/reverse_valid"));
@@ -53,7 +52,7 @@ static const std::string bad_reverse {
     "}"
 };
 
-TEST_CASE("Agent::ExternalModule::validate_and_call_action", "[modules]") {
+TEST_CASE("ExternalModule::validate_and_call_action", "[modules]") {
     ExternalModule reverse_module { ROOT_PATH + "/modules/reverse" };
 
     SECTION("it should correctly call the shipped reverse module") {
@@ -76,39 +75,38 @@ TEST_CASE("Agent::ExternalModule::validate_and_call_action", "[modules]") {
 
 static const DataContainer input { std::string("\"maradona\"") };
 
-TEST_CASE("Agent::ExternalModule::call_delayed_action", "[modules]") {
+TEST_CASE("ExternalModule::call_delayed_action", "[modules]") {
     ExternalModule reverse_module {
         ROOT_PATH + "/test/unit/test_modules/reverse_valid" };
     std::string action_parent_dir { "/tmp/cthun_agent/" };
-    auto job_id = Common::getUUID();
+    auto job_id = UUID::getUUID();
     auto action_dir = action_parent_dir + job_id;
 
-    while (Common::FileUtils::fileExists(action_dir)) {
-        job_id =  Common::getUUID();
+    while (FileUtils::fileExists(action_dir)) {
+        job_id =  UUID::getUUID();
         action_dir = action_parent_dir + job_id;
     }
 
     SECTION("it should create the result directory for a given job") {
         reverse_module.call_delayed_action(string_action, msg, input, job_id);
-        CHECK(Common::FileUtils::fileExists(action_dir));
+        CHECK(FileUtils::fileExists(action_dir));
         boost::filesystem::remove_all(action_dir);
     }
 
     SECTION("it should create the status, stdout, and stderr files") {
         reverse_module.call_delayed_action(string_action, msg, input, job_id);
-        CHECK(Common::FileUtils::fileExists(action_dir + "/status"));
-        CHECK(Common::FileUtils::fileExists(action_dir + "/stdout"));
-        CHECK(Common::FileUtils::fileExists(action_dir + "/stderr"));
+        CHECK(FileUtils::fileExists(action_dir + "/status"));
+        CHECK(FileUtils::fileExists(action_dir + "/stdout"));
+        CHECK(FileUtils::fileExists(action_dir + "/stderr"));
         boost::filesystem::remove_all(action_dir);
     }
 
     SECTION("it should correctly write the completed status") {
         reverse_module.call_delayed_action(string_action, msg, input, job_id);
-        CHECK(Common::FileUtils::fileExists(action_dir + "/status"));
+        CHECK(FileUtils::fileExists(action_dir + "/status"));
 
-        if (Common::FileUtils::fileExists(action_dir + "/status")) {
-            auto result =
-                Common::FileUtils::readFileAsString(action_dir + "/status");
+        if (FileUtils::fileExists(action_dir + "/status")) {
+            auto result = FileUtils::readFileAsString(action_dir + "/status");
             CHECK(result.find("completed") != std::string::npos);
         }
 
@@ -117,11 +115,10 @@ TEST_CASE("Agent::ExternalModule::call_delayed_action", "[modules]") {
 
     SECTION("it should correctly write the result") {
         reverse_module.call_delayed_action(string_action, msg, input, job_id);
-        CHECK(Common::FileUtils::fileExists(action_dir + "/stdout"));
+        CHECK(FileUtils::fileExists(action_dir + "/stdout"));
 
-        if (Common::FileUtils::fileExists(action_dir + "/stdout")) {
-            auto result =
-                Common::FileUtils::readFileAsString(action_dir + "/stdout");
+        if (FileUtils::fileExists(action_dir + "/stdout")) {
+            auto result = FileUtils::readFileAsString(action_dir + "/stdout");
             CHECK(result.find("anodaram") != std::string::npos);
         }
 
@@ -129,5 +126,4 @@ TEST_CASE("Agent::ExternalModule::call_delayed_action", "[modules]") {
     }
 }
 
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

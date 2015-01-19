@@ -4,7 +4,7 @@
 
 #include "test/test.h"
 
-#include "src/common/log.h"
+#include "src/log.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -21,8 +21,8 @@ int main(int argc, char* const argv[]) {
     ROOT_PATH = std::string(root_path.string());
 
     // set logging level to fatal
-    Cthun::Common::Log::configure_logging(Cthun::Common::Log::log_level::fatal,
-                                          std::cout);
+    CthunAgent::Log::configure_logging(CthunAgent::Log::log_level::fatal,
+                                       std::cout);
 
     // configure the Catch session and start it
 

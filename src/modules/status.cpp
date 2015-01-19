@@ -1,15 +1,14 @@
-#include "src/agent/modules/status.h"
-#include "src/common/log.h"
-#include "src/common/file_utils.h"
+#include "src/modules/status.h"
+#include "src/log.h"
+#include "src/file_utils.h"
 
 #include <valijson/constraints/concrete_constraints.hpp>
 
 #include <fstream>
 
-LOG_DECLARE_NAMESPACE("agent.modules.status");
+LOG_DECLARE_NAMESPACE("modules.status");
 
-namespace Cthun {
-namespace Agent {
+namespace CthunAgent {
 namespace Modules {
 
 Status::Status() {
@@ -29,31 +28,28 @@ Status::Status() {
 }
 
 DataContainer Status::call_action(std::string action_name,
-                         const Message& request,
-                         const DataContainer& input) {
+                                  const Message& request,
+                                  const DataContainer& input) {
     DataContainer output {};
     std::string job_id { input.get<std::string>("job_id") };
 
-    if (!Common::FileUtils::fileExists("/tmp/cthun_agent/" + job_id)) {
+    if (!FileUtils::fileExists("/tmp/cthun_agent/" + job_id)) {
         LOG_ERROR("No results for job id %1% found", job_id);
         output.set<std::string>("No job exists for id: " + job_id, "error");
         return output;
     }
 
-    DataContainer status { Common::FileUtils::readFileAsString("/tmp/cthun_agent/" +
-                                                      job_id +
-                                                      "/status") };
+    DataContainer status { FileUtils::readFileAsString("/tmp/cthun_agent/" +
+                                                       job_id + "/status") };
     if (status.get<std::string>("status").compare("running") == 0) {
         output.set<std::string>("Running", "status");
     } else if (status.get<std::string>("status").compare("completed") == 0) {
         output.set<std::string>("Running", "status");
-        output.set<std::string>(Common::FileUtils::readFileAsString("/tmp/cthun_agent/" +
-                                                                    job_id +
-                                                                    "/stdout"),
+        output.set<std::string>(FileUtils::readFileAsString("/tmp/cthun_agent/" +
+                                                            job_id + "/stdout"),
                                 "stdout");
-        output.set<std::string>(Common::FileUtils::readFileAsString("/tmp/cthun_agent/" +
-                                                                    job_id +
-                                                                    "/stderr"),
+        output.set<std::string>(FileUtils::readFileAsString("/tmp/cthun_agent/" +
+                                                            job_id + "/stderr"),
                                 "stderr");
     } else {
         output.set<std::string>("Job '" + job_id + "' is in unknown state:" +
@@ -64,5 +60,4 @@ DataContainer Status::call_action(std::string action_name,
 }
 
 }  // namespace Modules
-}  // namespace Agent
-}  // namespace Cthun
+}  // namespace CthunAgent

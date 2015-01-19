@@ -1,4 +1,6 @@
-#include "src/common/log.h"
+#include "src/log.h"
+
+// TODO(ale): enable compiler warnings
 
 // boost includes are not always warning-clean. Disable warnings that
 // cause problems before including the headers, then re-enable the warnings.
@@ -21,8 +23,7 @@
 
 #pragma GCC diagnostic pop
 
-namespace Cthun {
-namespace Common {
+namespace CthunAgent {
 
 bool Log::is_log_enabled(const std::string &logger, Log::log_level level) {
     // If the severity_logger returns a record for the specified
@@ -127,5 +128,4 @@ void Log::log(const std::string &logger, Log::log_level level, int line_num,
     }
 }
 
-}  // namespace Common
-}  // namespace Cthun
+}  // namespace CthunAgent
