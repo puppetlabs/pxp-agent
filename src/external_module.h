@@ -11,6 +11,8 @@
 
 namespace CthunAgent {
 
+static const std::string RESULTS_ROOT_DIR { "/tmp/cthun_agent" };
+
 class ExternalModule : public Module {
   public:
     // Throws a module_error in case if fails to load the external

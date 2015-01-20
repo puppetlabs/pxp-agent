@@ -17,17 +17,17 @@ namespace CthunAgent {
 TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
     SECTION("can successfully instantiate from a valid external module") {
         REQUIRE_NOTHROW(ExternalModule(
-            ROOT_PATH + "/test/unit/test_modules/reverse_valid"));
+            ROOT_PATH + "/test/resources/reverse_valid"));
     }
 
     SECTION("all actions are successfully loaded from a valid external module") {
-        ExternalModule mod { ROOT_PATH + "/test/unit/test_modules/reverse_valid" };
+        ExternalModule mod { ROOT_PATH + "/test/resources/reverse_valid" };
         REQUIRE(mod.actions.size() == 2);
     }
 
     SECTION("throws an error in case of invalid overall metadata schema") {
         REQUIRE_THROWS_AS(
-            ExternalModule(ROOT_PATH + "/test/unit/test_modules/reverse_broken_01"),
+            ExternalModule(ROOT_PATH + "/test/resources/reverse_broken_01"),
             module_error);
     }
 }
@@ -74,9 +74,8 @@ TEST_CASE("ExternalModule::validate_and_call_action", "[modules]") {
 }
 
 TEST_CASE("ExternalModule::call_delayed_action", "[modules]") {
-    ExternalModule reverse_module {
-        ROOT_PATH + "/test/unit/test_modules/reverse_valid" };
-    std::string action_parent_dir { "/tmp/cthun_agent/" };
+    ExternalModule reverse_module { ROOT_PATH + "/test/resources/reverse_valid" };
+    std::string action_parent_dir { RESULTS_ROOT_DIR + "/" };
     auto job_id = UUID::getUUID();
     auto action_dir = action_parent_dir + job_id;
 

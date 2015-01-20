@@ -28,7 +28,6 @@ void run_command(std::string exec, std::vector<std::string> args,
     boost::process::child child = boost::process::launch(exec, args, context);
 
     boost::process::postream &in = child.get_stdin();
-
     in << stdin;
     in.close();
 
@@ -151,14 +150,15 @@ void ExternalModule::call_delayed_action(std::string action_name,
     DataContainer input { request.get<DataContainer>("data", "params") };
 
     // check if the output directory exists. If it doesn't create it
-    if (!FileUtils::fileExists("/tmp/cthun_agent")) {
-        LOG_INFO("/tmp/cthun_agent directory does not exist. Creating.");
-        if (!FileUtils::createDirectory("/tmp/cthun_agent")) {
-            LOG_ERROR("Failed to create /tmp/cthun_agent. Cannot start action.");
+    if (!FileUtils::fileExists(RESULTS_ROOT_DIR)) {
+        LOG_INFO("%1% directory does not exist. Creating.", RESULTS_ROOT_DIR);
+        if (!FileUtils::createDirectory(RESULTS_ROOT_DIR)) {
+            LOG_ERROR("Failed to create %1%. Cannot start action.",
+                      RESULTS_ROOT_DIR);
         }
     }
 
-    std::string action_dir { "/tmp/cthun_agent/" + job_id };
+    std::string action_dir { RESULTS_ROOT_DIR + "/" + job_id };
 
     // create job specific result directory
     if (!FileUtils::fileExists(action_dir)) {

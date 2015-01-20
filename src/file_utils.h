@@ -22,7 +22,7 @@ std::string shellExpand(std::string txt);
 /// Return true if the specified file exists.
 bool fileExists(const std::string& file_path);
 
-/// Remove a file (regular file or empty directory) if exists.
+/// Remove a file (regular file, symlink, or empty dir) if exists.
 /// Throw a file_error if the removal fails.
 void removeFile(const std::string& file_path);
 

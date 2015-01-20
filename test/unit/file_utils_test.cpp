@@ -3,6 +3,9 @@
 #include "src/file_utils.h"
 #include "src/uuid.h"
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
 #include <iostream>
 
 namespace CthunAgent {
@@ -37,32 +40,51 @@ static const auto dir_path =
 
 TEST_CASE("FileUtils::fileExists", "[utils]") {
     SECTION("it can check that a file does not exist") {
-        REQUIRE(FileUtils::fileExists(file_path) == false);
+        REQUIRE_FALSE(FileUtils::fileExists(file_path));
     }
 
     SECTION("it can check that a directory exists") {
-        REQUIRE(FileUtils::fileExists(home_path) == true);
+        REQUIRE(FileUtils::fileExists(home_path));
     }
 }
 
 TEST_CASE("FileUtils::writeToFile", "[utils]") {
     SECTION("it can write to a regular file, ensure it exists, and delete it") {
-        REQUIRE(FileUtils::fileExists(file_path) == false);
+        REQUIRE_FALSE(FileUtils::fileExists(file_path));
         FileUtils::writeToFile("test\n", file_path);
-        REQUIRE(FileUtils::fileExists(file_path) == true);
+        REQUIRE(FileUtils::fileExists(file_path));
         FileUtils::removeFile(file_path);
-        REQUIRE(FileUtils::fileExists(file_path) == false);
+        REQUIRE_FALSE(FileUtils::fileExists(file_path));
+    }
+}
+
+TEST_CASE("FileUtils::removeFile", "[utils]") {
+    SECTION("it can check that symlink exists and delete it") {
+        auto symlink_name = UUID::getUUID();
+        std::string symlink_path { "/tmp/" + symlink_name };
+        boost::filesystem::path to { FileUtils::shellExpand("~") };
+        boost::filesystem::path symlink { symlink_path };
+        try {
+            boost::filesystem::create_symlink(to, symlink);
+            REQUIRE(FileUtils::fileExists(symlink_path));
+            FileUtils::removeFile(symlink_path);
+            REQUIRE_FALSE(FileUtils::fileExists(symlink_path));
+        } catch (boost::filesystem::filesystem_error) {
+            FAIL("Failed to create the symlink");
+        }
     }
 }
 
 TEST_CASE("FileUtils::createDirectory", "[utils]") {
     SECTION("it can create and remove an empty directory") {
-        REQUIRE(FileUtils::fileExists(dir_path) == false);
+        REQUIRE_FALSE(FileUtils::fileExists(dir_path));
         FileUtils::createDirectory(dir_path);
-        REQUIRE(FileUtils::fileExists(dir_path) == true);
+        REQUIRE(FileUtils::fileExists(dir_path));
         FileUtils::removeFile(dir_path);
-        REQUIRE(FileUtils::fileExists(dir_path) == false);
+        REQUIRE_FALSE(FileUtils::fileExists(dir_path));
     }
 }
+
+// TODO(ale): test writeToFile/readFileAsString for race conditions
 
 }  // namespace CthunAgent
