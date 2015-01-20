@@ -35,7 +35,7 @@ endif()
 # Find libraries
 
 find_package(Boost 1.54 REQUIRED
-  COMPONENTS program_options filesystem system date_time thread log regex random)
+  COMPONENTS filesystem system date_time thread log regex random)
 
 find_package(OpenSSL REQUIRED)
 
@@ -46,6 +46,8 @@ include(${VENDOR_DIRECTORY}/rapidjson.cmake)
 include(${VENDOR_DIRECTORY}/boost-process.cmake)
 include(${VENDOR_DIRECTORY}/websocketpp.cmake)
 include(${VENDOR_DIRECTORY}/valijson.cmake)
+include(${VENDOR_DIRECTORY}/horsewhisperer.cmake)
+include(${VENDOR_DIRECTORY}/inih.cmake)
 
 # Set include directories
 
@@ -55,6 +57,8 @@ include_directories(
     SYSTEM ${WEBSOCKETPP_INCLUDE_DIRS}
     SYSTEM ${VALIJSON_INCLUDE_DIRS}
     SYSTEM ${RAPIDJSON_INCLUDE_DIRS}
+    SYSTEM ${HORSEWHISPERER_INCLUDE_DIRS}
+    SYSTEM ${INIH_INCLUDE_DIRS}
 )
 
 # Add the main binary

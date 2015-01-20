@@ -8,6 +8,7 @@ set(SOURCES
     unit/file_utils_test.cpp
     unit/data_container_test.cpp
     unit/agent_endpoint_test.cpp
+    unit/configuration_test.cpp
     unit/module_test.cpp
     unit/external_module_test.cpp
     unit/modules/inventory_test.cpp

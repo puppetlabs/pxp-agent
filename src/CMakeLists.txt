@@ -10,6 +10,7 @@ set(APPLICATION_SOURCES
 
 set(LIBRARY_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/data_container.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/configuration.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/agent.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/schemas.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/module.cpp"
@@ -23,7 +24,16 @@ set(LIBRARY_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/log.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/websocket/endpoint.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/websocket/connection_timings.cpp"
+    ${INIH_SOURCE_DIR}/ini.c
+    ${INIH_SOURCE_DIR}/cpp/INIReader.cpp
 )
+
+add_custom_command(OUTPUT ${INIH_SOURCE_DIR}/ini.c
+                   COMMAND ""
+                   DEPENDS inih)
+add_custom_command(OUTPUT ${INIH_SOURCE_DIR}/cpp/INIReader.cpp
+                   COMMAND ""
+                   DEPENDS inih)
 
 SET(LIBS
     ${Boost_LIBRARIES}

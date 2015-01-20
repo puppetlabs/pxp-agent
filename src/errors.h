@@ -64,6 +64,40 @@ class data_type_error : public agent_error {
     explicit data_type_error(std::string const& msg) : agent_error(msg) {}
 };
 
+//
+// Configuration container errors
+//
+
+class configuration_error : public agent_error {
+  public:
+    explicit configuration_error(std::string const& msg) : agent_error(msg) {}
+};
+
+/// Error thrown when trying to use the configuration object unconfigured
+class unconfigured_error : public configuration_error {
+  public:
+    explicit unconfigured_error(std::string const& msg) : configuration_error(msg) {}
+};
+
+/// Error thrown when config file doesn't exist
+class no_configfile_error : public configuration_error {
+  public:
+    explicit no_configfile_error(std::string const& msg) : configuration_error(msg) {}
+};
+
+/// Error thrown when required config variable isn't set
+class required_not_set_error : public configuration_error {
+  public:
+    explicit required_not_set_error (std::string const& msg) : configuration_error(msg) {}
+};
+
+/// Error thrown when cli parse error occurs
+class cli_parse_error : public configuration_error {
+  public:
+    explicit cli_parse_error (std::string const& msg) : configuration_error(msg) {}
+};
+
+
 }  // namespace CthunAgent
 
 #endif  // SRC_ERRORS_H_
