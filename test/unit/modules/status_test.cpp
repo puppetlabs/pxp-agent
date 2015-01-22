@@ -32,7 +32,7 @@ boost::format status_format {
 
 static const Message msg { (status_format % "the-uuid-string").str() };
 
-TEST_CASE("Modules::Status::call_action", "[modules]") {
+TEST_CASE("Modules::Status::callAction", "[modules]") {
     Modules::Status status_module {};
 
     SECTION("the status module is correctly named") {
@@ -45,7 +45,7 @@ TEST_CASE("Modules::Status::call_action", "[modules]") {
     }
 
     SECTION("it can call the 'query' action") {
-        REQUIRE_NOTHROW(status_module.call_action(query_action, msg));
+        REQUIRE_NOTHROW(status_module.callAction(query_action, msg));
     }
 
     SECTION("it works properly when an unknown job id is provided") {
@@ -53,11 +53,11 @@ TEST_CASE("Modules::Status::call_action", "[modules]") {
         Message unknown_msg { (status_format % job_id).str() };
 
         SECTION("it doesn't throw") {
-            REQUIRE_NOTHROW(status_module.call_action(query_action, unknown_msg));
+            REQUIRE_NOTHROW(status_module.callAction(query_action, unknown_msg));
         }
 
         SECTION("it returns an error") {
-            auto result = status_module.call_action(query_action, unknown_msg);
+            auto result = status_module.callAction(query_action, unknown_msg);
             REQUIRE(result.includes("error"));
         }
     }
@@ -79,21 +79,21 @@ TEST_CASE("Modules::Status::call_action", "[modules]") {
         }
 
         SECTION("it doesn't throw") {
-            REQUIRE_NOTHROW(status_module.call_action(query_action, known_msg));
+            REQUIRE_NOTHROW(status_module.callAction(query_action, known_msg));
         }
 
         SECTION("it returns the action status") {
-            auto result = status_module.call_action(query_action, known_msg);
+            auto result = status_module.callAction(query_action, known_msg);
             REQUIRE(result.get<std::string>("status") == "Completed");
         }
 
         SECTION("it returns the action output") {
-            auto result = status_module.call_action(query_action, known_msg);
+            auto result = status_module.callAction(query_action, known_msg);
             REQUIRE(result.get<std::string>("stdout") == "***OUTPUT\n");
         }
 
         SECTION("it returns the action error string") {
-            auto result = status_module.call_action(query_action, known_msg);
+            auto result = status_module.callAction(query_action, known_msg);
             REQUIRE(result.get<std::string>("stderr") == "***ERROR\n");
         }
 

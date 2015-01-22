@@ -20,7 +20,7 @@ static const std::string inventory_txt =
     "}";
 static const Message msg { inventory_txt };
 
-TEST_CASE("Modules::Inventory::call_action", "[modules]") {
+TEST_CASE("Modules::Inventory::callAction", "[modules]") {
     Modules::Inventory inventory_module {};
 
     SECTION("the inventory module is correctly named") {
@@ -33,11 +33,11 @@ TEST_CASE("Modules::Inventory::call_action", "[modules]") {
     }
 
     SECTION("it can call the inventory action") {
-        REQUIRE_NOTHROW(inventory_module.call_action(inventory_action, msg));
+        REQUIRE_NOTHROW(inventory_module.callAction(inventory_action, msg));
     }
 
     SECTION("it should execute the inventory action correctly") {
-        auto result = inventory_module.call_action(inventory_action, msg);
+        auto result = inventory_module.callAction(inventory_action, msg);
         CHECK(result.toString().find("facts"));
     }
 }

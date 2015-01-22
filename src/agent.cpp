@@ -14,6 +14,8 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
+#include <vector>
+
 LOG_DECLARE_NAMESPACE("agent");
 
 namespace CthunAgent {
@@ -24,9 +26,7 @@ static const int DEFAULT_MSG_TIMEOUT_SEC { 10 };
 Agent::Agent(std::string bin_path) {
     // declare internal modules
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
-
     modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
-
     modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
     modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
 
@@ -145,7 +145,7 @@ void Agent::sendLogin() {
     // it, it should be valid.
 
     LOG_INFO("Sending login message with id: %1%", login_id);
-    LOG_DEBUG("Sending message - %1%", msg.toString());
+    LOG_DEBUG("Login message: %1%", msg.toString());
 
     try {
          ws_endpoint_ptr_->send(msg.toString());
@@ -189,7 +189,7 @@ Message Agent::parseAndValidateMessage(std::string message) {
 
 void Agent::sendResponse(std::string receiver_endpoint,
                          std::string request_id,
-                         DataContainer output) {
+                         DataContainer response_output) {
     Message msg {};
     std::string response_id { UUID::getUUID() };
     msg.set<std::string>(response_id, "id");
@@ -202,7 +202,7 @@ void Agent::sendResponse(std::string receiver_endpoint,
     std::vector<std::string> hops {};
     msg.set<std::vector<std::string>>(hops, "hops");
     msg.set<std::string>("http://puppetlabs.com/cncresponseschema", "data_schema");
-    msg.set<DataContainer>(output, "data", "response");
+    msg.set<DataContainer>(response_output, "data", "response");
 
     try {
         std::string response_txt = msg.toString();
@@ -236,46 +236,15 @@ void Agent::processMessageAndSendResponse(std::string message) {
         if (modules_.find(module_name) != modules_.end()) {
             std::shared_ptr<Module> module = modules_[module_name];
 
-            if (module->actions.find(action_name) == module->actions.end()) {
-                LOG_ERROR("Invalid request %1%: unknown action %2% for module %3%",
-                          request_id, module_name, action_name);
-                throw validation_error { "Invalid request: unknown action " +
-                                         action_name + " for module " + module_name };
-            }
+            auto response_output = module->validateAndCallAction(action_name, msg);
 
-            Action action = module->actions[action_name];
-
-            if (action.behaviour.compare("delayed") == 0) {
-                auto uuid = UUID::getUUID();
-                LOG_DEBUG("Delayed action execution requested. Creating job " \
-                          "with ID %1%", uuid);
-                DataContainer response {};
-                response.set<std::string>("Requested excution of action: " + action_name,
-                                          "status");
-                response.set<std::string>(uuid, "id");
-                sendResponse(sender_endpoint, request_id, response);
-                thread_queue_.push_back(std::thread(&Agent::delayedActionThread,
-                                                    this,
-                                                    module,
-                                                    action_name,
-                                                    msg,
-                                                    uuid));
-            } else {
-                DataContainer output { module->validate_and_call_action(action_name, msg) };
-                LOG_DEBUG("Request %1%: '%2%' '%3%' output: %4%",
-                          request_id, module_name, action_name,
-                          output.toString());
-                sendResponse(sender_endpoint, request_id, output);
-            }
+            sendResponse(sender_endpoint, request_id, response_output);
         } else {
-            LOG_ERROR("Invalid request %1%: unknown module '%2%'",
-                      request_id, module_name);
-            throw validation_error { "Invalid request: unknown module " +
-                                     module_name };
+            throw validation_error { "unknown module" };
         }
     } catch (validation_error& e) {
-        LOG_ERROR("Failed to perform %1%: '%2%' '%3%': %4%",
-                  request_id, module_name, action_name, e.what());
+        LOG_ERROR("Failed to perform '%1% %2%' for request %3%: %4%",
+                  module_name, action_name, request_id, e.what());
         DataContainer err_result;
         err_result.set<std::string>(e.what(), "error");
         sendResponse(sender_endpoint, request_id, err_result);
@@ -295,14 +264,6 @@ void Agent::monitorConnectionState() {
             ws_endpoint_ptr_->ping();
         }
     }
-}
-
-void Agent::delayedActionThread(std::shared_ptr<Module> module,
-                                std::string action_name,
-                                Message msg,
-                                std::string uuid) {
-    // explicitly ignore return value
-    (void) module->validate_and_call_action(action_name, msg, uuid);
 }
 
 }  // namespace CthunAgent

@@ -14,20 +14,18 @@ class Module {
     std::string module_name;
     std::map<std::string, Action> actions;
 
-    virtual DataContainer call_action(std::string action_name,
-                                      const Message& request) = 0;
-
-    virtual void call_delayed_action(std::string action_name,
-                                     const Message& request,
-                                     std::string job_id) = 0;
+    /// Performs the requested action.
+    virtual DataContainer callAction(const std::string& action_name,
+                                     const Message& request) = 0;
 
     /// Validate the json schemas of input and output.
-    /// Execute the requested action for the particular module.
-    /// Sets an error response in the referred output json object
-    /// in case of unknown action or invalid schemas.
-    DataContainer validate_and_call_action(std::string action_name,
-                                           const Message& request,
-                                           std::string job_id = "");
+    /// Start the requested action for the particular module.
+    /// Return the output of the action as a DataContainer object.
+    /// Throw a validation error in case of unknown action,
+    /// invalid request input, or if the requested action provides an
+    /// invalid output.
+    DataContainer validateAndCallAction(const std::string& action_name,
+                                        const Message& request);
 };
 
 }  // namespace CthunAgent

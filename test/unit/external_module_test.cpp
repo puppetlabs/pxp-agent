@@ -5,10 +5,12 @@
 #include "src/external_module.h"
 #include "src/uuid.h"
 #include "src/file_utils.h"
+#include "src/timer.h"
 
 #include <boost/filesystem/operations.hpp>
 
 #include <vector>
+#include <unistd.h>
 
 extern std::string ROOT_PATH;
 
@@ -52,28 +54,45 @@ static const std::string bad_reverse {
     "}"
 };
 
-TEST_CASE("ExternalModule::validate_and_call_action", "[modules]") {
+TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
     ExternalModule reverse_module { ROOT_PATH + "/modules/reverse" };
 
     SECTION("it should correctly call the shipped reverse module") {
-        auto result = reverse_module.validate_and_call_action(string_action, msg);
+        auto result = reverse_module.validateAndCallAction(string_action, msg);
         REQUIRE(result.toString().find("anodaram") != std::string::npos);
     }
 
     SECTION("it should throw a validation_error if the action is unknown") {
-        REQUIRE_THROWS_AS(reverse_module.validate_and_call_action(fake_action, msg),
+        REQUIRE_THROWS_AS(reverse_module.validateAndCallAction(fake_action, msg),
                           validation_error);
     }
 
     SECTION("it should throw a validation_error if the message is invalid") {
         Message bad_msg { bad_reverse };
-        REQUIRE_THROWS_AS(reverse_module.validate_and_call_action(string_action,
-                                                                  bad_msg),
+        REQUIRE_THROWS_AS(reverse_module.validateAndCallAction(string_action,
+                                                               bad_msg),
                           validation_error);
     }
 }
 
-TEST_CASE("ExternalModule::call_delayed_action", "[modules]") {
+void waitForAction(const std::string& action_dir) {
+    Timer timer {};
+    while (timer.elapsedSeconds() < 2) {  // [s]
+        usleep(10000);  // [us]
+        if (FileUtils::fileExists(action_dir + "/status")) {
+            auto status = FileUtils::readFileAsString(action_dir + "/status");
+            if (status.find("completed") != std::string::npos) {
+                return;
+            }
+        }
+    }
+}
+
+TEST_CASE("ExternalModule::executeDelayedAction", "[async]") {
+    // NB: we cannot test a delayed action by calling callAction() as
+    // done for the blocking ones; we must know the job_id to access
+    // the result files so we test executeDelayedAction directly
+
     ExternalModule reverse_module { ROOT_PATH + "/test/resources/reverse_valid" };
     std::string action_parent_dir { RESULTS_ROOT_DIR + "/" };
     auto job_id = UUID::getUUID();
@@ -85,13 +104,15 @@ TEST_CASE("ExternalModule::call_delayed_action", "[modules]") {
     }
 
     SECTION("it should create the result directory for a given job") {
-        reverse_module.call_delayed_action(string_action, msg, job_id);
+        reverse_module.executeDelayedAction(string_action, msg, job_id);
+        waitForAction(action_dir);
         CHECK(FileUtils::fileExists(action_dir));
         boost::filesystem::remove_all(action_dir);
     }
 
     SECTION("it should create the status, stdout, and stderr files") {
-        reverse_module.call_delayed_action(string_action, msg, job_id);
+        reverse_module.executeDelayedAction(string_action, msg, job_id);
+        waitForAction(action_dir);
         CHECK(FileUtils::fileExists(action_dir + "/status"));
         CHECK(FileUtils::fileExists(action_dir + "/stdout"));
         CHECK(FileUtils::fileExists(action_dir + "/stderr"));
@@ -99,7 +120,8 @@ TEST_CASE("ExternalModule::call_delayed_action", "[modules]") {
     }
 
     SECTION("it should correctly write the completed status") {
-        reverse_module.call_delayed_action(string_action, msg, job_id);
+        reverse_module.executeDelayedAction(string_action, msg, job_id);
+        waitForAction(action_dir);
         CHECK(FileUtils::fileExists(action_dir + "/status"));
 
         if (FileUtils::fileExists(action_dir + "/status")) {
@@ -111,7 +133,8 @@ TEST_CASE("ExternalModule::call_delayed_action", "[modules]") {
     }
 
     SECTION("it should correctly write the result") {
-        reverse_module.call_delayed_action(string_action, msg, job_id);
+        reverse_module.executeDelayedAction(string_action, msg, job_id);
+        waitForAction(action_dir);
         CHECK(FileUtils::fileExists(action_dir + "/stdout"));
 
         if (FileUtils::fileExists(action_dir + "/stdout")) {
