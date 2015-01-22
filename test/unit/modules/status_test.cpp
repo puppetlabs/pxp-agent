@@ -31,6 +31,7 @@ boost::format status_format {
 };
 
 static const Message msg { (status_format % "the-uuid-string").str() };
+const std::string RESULTS_ROOT_DIR = "/tmp/cthun-agent";
 
 TEST_CASE("Modules::Status::callAction", "[modules]") {
     Modules::Status status_module {};
@@ -97,7 +98,8 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
             REQUIRE(result.get<std::string>("stderr") == "***ERROR\n");
         }
 
-        FileUtils::removeFile(symlink_path);
+        std::cout << symlink_path << std::endl;
+        //FileUtils::removeFile(symlink_path);
     }
 }
 

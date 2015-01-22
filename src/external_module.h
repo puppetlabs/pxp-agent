@@ -3,6 +3,7 @@
 
 #include "src/module.h"
 #include "src/data_container.h"
+#include "src/configuration.h"
 
 #include <rapidjson/document.h>
 
@@ -12,8 +13,6 @@
 #include <thread>
 
 namespace CthunAgent {
-
-static const std::string RESULTS_ROOT_DIR { "/tmp/cthun_agent" };
 
 class ExternalModule : public Module {
   public:
@@ -35,6 +34,7 @@ class ExternalModule : public Module {
                                        const std::string& job_id);
 
   private:
+    std::string spool_dir_ = Configuration::Instance().get<std::string>("spool-dir");
     /// The path of the module file
     std::string path_;
 

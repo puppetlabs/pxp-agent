@@ -16,39 +16,53 @@ Configuration::Configuration() {
     }
 
     // configure the default values
+    defaults_.push_back(Base_ptr(
+        new Entry<std::string>("server",
+                               "s",
+                               "cthun servers url",
+                               Types::String,
+                               "")));
 
-    using Base_ptr = std::unique_ptr<EntryBase>;
+    defaults_.push_back(Base_ptr(
+        new Entry<std::string>("ca",
+                               "",
+                               "CA certificate",
+                               Types::String,
+                               "")));
 
-    defaults_.push_back(Base_ptr(new Entry<std::string>("server",
-                                                        "s",
-                                                        "cthun servers url",
-                                                        Types::String,
-                                                        "")));
-    defaults_.push_back(Base_ptr(new Entry<std::string>("ca",
-                                                        "",
-                                                        "CA certificate",
-                                                        Types::String,
-                                                        "")));
-    defaults_.push_back(Base_ptr(new Entry<std::string>("cert",
-                                                        "",
-                                                        "cthun-agent certificate",
-                                                        Types::String,
-                                                        "")));
-    defaults_.push_back(Base_ptr(new Entry<std::string>("key",
-                                                        "",
-                                                        "cthun-agent private key",
-                                                        Types::String,
-                                                        "")));
-    defaults_.push_back(Base_ptr(new Entry<std::string>("logfile",
-                                                        "",
-                                                        "log file (defaults to console logging",
-                                                        Types::String,
-                                                        "")));
-    defaults_.push_back(Base_ptr(new Entry<std::string>("config-file",
-                                                        "",
-                                                        "specify a non default config file to use",
-                                                        Types::String,
-                                                        "")));
+    defaults_.push_back(Base_ptr(
+        new Entry<std::string>("cert",
+                               "",
+                               "cthun-agent certificate",
+                               Types::String,
+                               "")));
+
+    defaults_.push_back(Base_ptr(
+        new Entry<std::string>("key",
+                               "",
+                               "cthun-agent private key",
+                               Types::String,
+                               "")));
+
+    defaults_.push_back(Base_ptr(
+        new Entry<std::string>("logfile",
+                               "",
+                               "log file (defaults to console logging",
+                               Types::String,
+                               "")));
+
+    defaults_.push_back(Base_ptr(
+        new Entry<std::string>("config-file",
+                               "",
+                               "specify a non default config file to use",
+                               Types::String,
+                               "")));
+    defaults_.push_back(Base_ptr(
+        new Entry<std::string>("spool-dir",
+                               "",
+                               "specify directory to spool delayed results to",
+                               Types::String,
+                               "/tmp/cthun-agent/")));
 }
 
 int Configuration::initialize(int argc, char *argv[]) {
@@ -166,6 +180,13 @@ void Configuration::validateConfiguration(int parse_result) {
         throw required_not_set_error { "key value must be defined" };
     } else if (!FileUtils::fileExists(HW::GetFlag<std::string>("key"))) {
         throw required_not_set_error { "key file not found" };
+    }
+
+    if (!HW::GetFlag<std::string>("spool-dir").empty()) {
+        std::string spool_dir = HW::GetFlag<std::string>("spool-dir");
+        if (spool_dir[-1] != '/') {
+            HW::SetFlag<std::string>("spool-dir", spool_dir + "/");
+        }
     }
 }
 

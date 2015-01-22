@@ -40,6 +40,8 @@ struct Entry : EntryBase {
     T value;
 };
 
+using Base_ptr = std::unique_ptr<EntryBase>;
+
 class Configuration {
   public:
     static Configuration& Instance() {

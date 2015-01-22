@@ -16,6 +16,8 @@ extern std::string ROOT_PATH;
 
 namespace CthunAgent {
 
+const std::string RESULTS_ROOT_DIR = "/tmp/cthun-agent";
+
 TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
     SECTION("can successfully instantiate from a valid external module") {
         REQUIRE_NOTHROW(ExternalModule(

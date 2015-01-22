@@ -163,17 +163,16 @@ DataContainer ExternalModule::executeDelayedAction(const std::string& action_nam
                                                    const std::string& job_id) {
     DataContainer input { request.get<DataContainer>("data", "params") };
 
-    // check if the output directory exists; if it doesn't, create it
-    if (!FileUtils::fileExists(RESULTS_ROOT_DIR)) {
-        LOG_INFO("%1% directory does not exist. Creating.", RESULTS_ROOT_DIR);
-        if (!FileUtils::createDirectory(RESULTS_ROOT_DIR)) {
-            throw validation_error { "failed to create directory "
-                                     + RESULTS_ROOT_DIR };
+    // check if the output directory exists. If it doesn't create it
+    if (!FileUtils::fileExists(spool_dir_)) {
+        LOG_INFO("%1% directory does not exist. Creating.", spool_dir_);
+        if (!FileUtils::createDirectory(spool_dir_)) {
+            LOG_ERROR("Failed to create %1%. Cannot start action.",
+                      spool_dir_);
         }
     }
 
-    // create a job specific result directory
-    std::string results_dir { RESULTS_ROOT_DIR + "/" + job_id };
+    std::string results_dir { spool_dir_ + job_id };
 
     if (!FileUtils::fileExists(results_dir)) {
         LOG_INFO("Creating result directory for delayed action '%1% %2%' %3%",
