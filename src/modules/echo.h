@@ -9,12 +9,8 @@ namespace Modules {
 class Echo : public CthunAgent::Module {
   public:
     Echo();
-    DataContainer call_action(std::string action_name,
-                              const Message& request);
-
-    void call_delayed_action(std::string action_name,
-                             const Message& request,
-                             std::string job_idd) {}
+    DataContainer callAction(const std::string& action_name,
+                             const Message& request);
 };
 
 }  // namespace Modules

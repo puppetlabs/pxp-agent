@@ -8,6 +8,8 @@
 
 #include <map>
 #include <string>
+#include <vector>
+#include <thread>
 
 namespace CthunAgent {
 
@@ -15,17 +17,29 @@ static const std::string RESULTS_ROOT_DIR { "/tmp/cthun_agent" };
 
 class ExternalModule : public Module {
   public:
-    // Throws a module_error in case if fails to load the external
-    // module or if its metadata is invalid.
+    /// Throw a module_error in case if fails to load the external
+    /// module or if its metadata is invalid.
     explicit ExternalModule(std::string path);
-    DataContainer call_action(std::string action_name,
-                              const Message& request);
 
-    void call_delayed_action(std::string action_name,
-                             const Message& request,
-                             std::string job_id);
+    DataContainer callAction(const std::string& action_name,
+                             const Message& request);
+
+    // This is public for test purposes
+    DataContainer callBlockingAction(const std::string& action_name,
+                                     const Message& request);
+
+    // Public (as above); also passing the job_id for the same reason;
+    //
+    DataContainer executeDelayedAction(const std::string& action_name,
+                                       const Message& request,
+                                       const std::string& job_id);
+
   private:
+    /// The path of the module file
     std::string path_;
+
+    const DataContainer validateModuleAndGetMetadata_();
+    void validateAndDeclareAction_(const DataContainer& action);
 };
 
 }  // namespace CthunAgent

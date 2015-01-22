@@ -8,8 +8,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <thread>
-#include <vector>
 
 namespace CthunAgent {
 
@@ -27,9 +25,6 @@ class Agent {
   private:
     std::map<std::string, std::shared_ptr<Module>> modules_;
     std::unique_ptr<WebSocket::Endpoint> ws_endpoint_ptr_;
-
-    // Thread queue...sigh
-    std::vector<std::thread> thread_queue_;
 
     // Log the loaded modules.
     void listModules();
@@ -56,12 +51,6 @@ class Agent {
     // Periodically check the connection state; reconnect the agent
     // in case the connection is not open
     void monitorConnectionState();
-
-    // Task to validate and execute the specified action.
-    void delayedActionThread(std::shared_ptr<Module> module,
-                             std::string action_name,
-                             Message msg,
-                             std::string uuid);
 };
 
 }  // namespace CthunAgent

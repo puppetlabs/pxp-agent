@@ -24,22 +24,22 @@ static const std::string bad_echo =
     "    }"
     "}";
 
-TEST_CASE("Module::validate_and_call_action", "[modules]") {
+TEST_CASE("Module::validateAndCallAction", "[modules]") {
     Modules::Echo echo_module {};
 
     SECTION("it should correctly call echo") {
-        auto result = echo_module.validate_and_call_action(echo_action, msg);
+        auto result = echo_module.validateAndCallAction(echo_action, msg);
         REQUIRE(result.toString().find("maradona"));
     }
 
     SECTION("it should throw a validation_error if the action is unknown") {
-        REQUIRE_THROWS_AS(echo_module.validate_and_call_action(fake_action, msg),
+        REQUIRE_THROWS_AS(echo_module.validateAndCallAction(fake_action, msg),
                           validation_error);
     }
 
     SECTION("it should throw a validation_error if the message is invalid") {
         Message bad_msg { bad_echo };
-        REQUIRE_THROWS_AS(echo_module.validate_and_call_action(echo_action, bad_msg),
+        REQUIRE_THROWS_AS(echo_module.validateAndCallAction(echo_action, bad_msg),
                           validation_error);
     }
 }

@@ -20,8 +20,8 @@ Echo::Echo() {
     actions["echo"] = Action { input_schema, output_schema, "interactive" };
 }
 
-DataContainer Echo::call_action(std::string action_name,
-                                const Message& request) {
+DataContainer Echo::callAction(const std::string& action_name,
+                               const Message& request) {
     return request.get<DataContainer>("data", "params");
 }
 

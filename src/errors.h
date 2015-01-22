@@ -88,13 +88,13 @@ class no_configfile_error : public configuration_error {
 /// Error thrown when required config variable isn't set
 class required_not_set_error : public configuration_error {
   public:
-    explicit required_not_set_error (std::string const& msg) : configuration_error(msg) {}
+    explicit required_not_set_error(std::string const& msg) : configuration_error(msg) {}
 };
 
 /// Error thrown when cli parse error occurs
 class cli_parse_error : public configuration_error {
   public:
-    explicit cli_parse_error (std::string const& msg) : configuration_error(msg) {}
+    explicit cli_parse_error(std::string const& msg) : configuration_error(msg) {}
 };
 
 

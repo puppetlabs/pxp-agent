@@ -19,7 +19,7 @@ void configure_test() {
     CthunAgent::Configuration::Instance().initialize(argc, const_cast<char**>(argv));
 }
 
-TEST_CASE("Configuration::setStartFunction", "[configuration") {
+TEST_CASE("Configuration::setStartFunction", "[configuration]") {
     std::string server = "wss://test_server/";
     std::string ca = ROOT_PATH + "/test/resources/config/ca_crt.pem";
     std::string cert = ROOT_PATH +  "/test/resources/config/test_crt.pem";
@@ -39,19 +39,19 @@ TEST_CASE("Configuration::setStartFunction", "[configuration") {
     REQUIRE(HorseWhisperer::Start() == 1);
 }
 
-TEST_CASE("Configuration::set", "[configuration") {
+TEST_CASE("Configuration::set", "[configuration]") {
     configure_test();
     CthunAgent::Configuration::Instance().set<std::string>("ca", "value");
     REQUIRE(HorseWhisperer::GetFlag<std::string>("ca") == "value");
 }
 
-TEST_CASE("Configuration::get", "[configuration") {
+TEST_CASE("Configuration::get", "[configuration]") {
     configure_test();
     HorseWhisperer::SetFlag<std::string>("ca", "value");
     REQUIRE(CthunAgent::Configuration::Instance().get<std::string>("ca") == "value");
 }
 
-TEST_CASE("Configuration::validateConfiguration", "[configuration") {
+TEST_CASE("Configuration::validateConfiguration", "[configuration]") {
     configure_test();
 
     SECTION("it fails when server is undefined") {
@@ -101,5 +101,4 @@ TEST_CASE("Configuration::validateConfiguration", "[configuration") {
         REQUIRE_THROWS_AS(CthunAgent::Configuration::Instance().validateConfiguration(0),
                           CthunAgent::required_not_set_error);
     }
-
 }

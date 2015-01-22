@@ -27,14 +27,14 @@ Status::Status() {
     actions["query"] = Action { input_schema, output_schema, "interactive" };
 }
 
-DataContainer Status::call_action(std::string action_name,
-                                  const Message& request) {
+DataContainer Status::callAction(const std::string& action_name,
+                                 const Message& request) {
     DataContainer output {};
     DataContainer input { request.get<DataContainer>("data", "params") };
     std::string job_id { input.get<std::string>("job_id") };
 
     if (!FileUtils::fileExists("/tmp/cthun_agent/" + job_id)) {
-        LOG_ERROR("No results for job id %1% found", job_id);
+        LOG_ERROR("Found no results for job %1%", job_id);
         output.set<std::string>("No job exists for id: " + job_id, "error");
         return output;
     }

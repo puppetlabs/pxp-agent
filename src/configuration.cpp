@@ -16,36 +16,39 @@ Configuration::Configuration() {
     }
 
     // configure the default values
-    defaults_.push_back(std::unique_ptr<EntryBase>(new Entry<std::string>("server",
-                                                                          "s",
-                                                                          "cthun servers url",
-                                                                          Types::String,
-                                                                          "")));
-    defaults_.push_back(std::unique_ptr<EntryBase>(new Entry<std::string>("ca",
-                                                                          "",
-                                                                          "CA certificate",
-                                                                          Types::String,
-                                                                          "")));
-    defaults_.push_back(std::unique_ptr<EntryBase>(new Entry<std::string>("cert",
-                                                                          "",
-                                                                          "cthun-agent certificate",
-                                                                          Types::String,
-                                                                          "")));
-    defaults_.push_back(std::unique_ptr<EntryBase>(new Entry<std::string>("key",
-                                                                          "",
-                                                                          "cthun-agent private key",
-                                                                          Types::String,
-                                                                          "")));
-    defaults_.push_back(std::unique_ptr<EntryBase>(new Entry<std::string>("logfile",
-                                                                          "",
-                                                                          "log file (defaults to console logging",
-                                                                          Types::String,
-                                                                          "")));
-    defaults_.push_back(std::unique_ptr<EntryBase>(new Entry<std::string>("config-file",
-                                                                          "",
-                                                                          "specify a non default config file to use",
-                                                                          Types::String,
-                                                                          "")));
+
+    using Base_ptr = std::unique_ptr<EntryBase>;
+
+    defaults_.push_back(Base_ptr(new Entry<std::string>("server",
+                                                        "s",
+                                                        "cthun servers url",
+                                                        Types::String,
+                                                        "")));
+    defaults_.push_back(Base_ptr(new Entry<std::string>("ca",
+                                                        "",
+                                                        "CA certificate",
+                                                        Types::String,
+                                                        "")));
+    defaults_.push_back(Base_ptr(new Entry<std::string>("cert",
+                                                        "",
+                                                        "cthun-agent certificate",
+                                                        Types::String,
+                                                        "")));
+    defaults_.push_back(Base_ptr(new Entry<std::string>("key",
+                                                        "",
+                                                        "cthun-agent private key",
+                                                        Types::String,
+                                                        "")));
+    defaults_.push_back(Base_ptr(new Entry<std::string>("logfile",
+                                                        "",
+                                                        "log file (defaults to console logging",
+                                                        Types::String,
+                                                        "")));
+    defaults_.push_back(Base_ptr(new Entry<std::string>("config-file",
+                                                        "",
+                                                        "specify a non default config file to use",
+                                                        Types::String,
+                                                        "")));
 }
 
 int Configuration::initialize(int argc, char *argv[]) {
@@ -56,7 +59,7 @@ int Configuration::initialize(int argc, char *argv[]) {
             flag_names += " " + entry->aliases;
         }
 
-        switch(entry->type) {
+        switch (entry->type) {
             case Integer:
                 {
                     Entry<int>* entry_ptr = (Entry<int>*) entry.get();
@@ -174,7 +177,7 @@ void Configuration::parseConfigFile() {
         if (entry->configured) {
             continue;
         }
-        switch(entry->type) {
+        switch (entry->type) {
             case Integer:
                 {
                     Entry<int>* entry_ptr = (Entry<int>*) entry.get();

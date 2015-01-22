@@ -28,8 +28,8 @@ Inventory::Inventory() {
     actions["inventory"] = Action { input_schema, output_schema, "interactive" };
 }
 
-DataContainer Inventory::call_action(std::string action_name,
-                                     const Message& request) {
+DataContainer Inventory::callAction(const std::string& action_name,
+                                    const Message& request) {
     std::ostringstream fact_stream;
     DataContainer data {};
 
