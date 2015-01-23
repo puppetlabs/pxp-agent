@@ -18,7 +18,7 @@ class ExternalModule : public Module {
   public:
     /// Throw a module_error in case if fails to load the external
     /// module or if its metadata is invalid.
-    explicit ExternalModule(std::string path);
+    explicit ExternalModule(const std::string& path);
 
     DataContainer callAction(const std::string& action_name,
                              const Message& request);
@@ -27,8 +27,7 @@ class ExternalModule : public Module {
     DataContainer callBlockingAction(const std::string& action_name,
                                      const Message& request);
 
-    // Public (as above); also passing the job_id for the same reason;
-    //
+    // Public (as above); also passing the job_id for the same reason
     DataContainer executeDelayedAction(const std::string& action_name,
                                        const Message& request,
                                        const std::string& job_id);
@@ -36,7 +35,7 @@ class ExternalModule : public Module {
   private:
     std::string spool_dir_ = Configuration::Instance().get<std::string>("spool-dir");
     /// The path of the module file
-    std::string path_;
+    const std::string path_;
 
     const DataContainer validateModuleAndGetMetadata_();
     void validateAndDeclareAction_(const DataContainer& action);

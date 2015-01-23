@@ -31,7 +31,7 @@ TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
 
     SECTION("throws an error in case of invalid overall metadata schema") {
         REQUIRE_THROWS_AS(
-            ExternalModule(ROOT_PATH + "/test/resources/reverse_broken_01"),
+            ExternalModule(ROOT_PATH + "/test/resources/reverse_broken"),
             module_error);
     }
 }

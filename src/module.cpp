@@ -21,7 +21,7 @@ DataContainer Module::validateAndCallAction(const std::string& action_name,
     auto action = actions[action_name];
     DataContainer request_input { request.get<DataContainer>("data", "params") };
 
-    LOG_DEBUG("Validating input for '%1%' '%2%'", module_name, action_name);
+    LOG_DEBUG("Validating input for '%1% %2%'", module_name, action_name);
     std::vector<std::string> errors;
     if (!request_input.validate(action.input_schema, errors)) {
         LOG_ERROR("action input validation failed '%1%' '%2%'",
@@ -36,9 +36,9 @@ DataContainer Module::validateAndCallAction(const std::string& action_name,
     // Execute action and validate the result output
     auto result = callAction(action_name, request);
 
-    LOG_DEBUG("Validating output for '%1%' '%2%'", module_name, action_name);
+    LOG_DEBUG("Validating output for '%1% %2%'", module_name, action_name);
     if (!result.validate(action.output_schema, errors)) {
-        LOG_ERROR("Output validation failed '%1%' '%2%'", module_name, action_name);
+        LOG_ERROR("Output validation failed '%1% %2%'", module_name, action_name);
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }

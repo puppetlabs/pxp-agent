@@ -25,7 +25,7 @@ namespace CthunAgent {
 
 // Execute binaries and get output and errors
 
-void runCommand(std::string exec, std::vector<std::string> args,
+void runCommand(const std::string& exec, std::vector<std::string> args,
                 std::string stdin, std::string &stdout, std::string &stderr) {
     boost::process::context context;
     context.stdin_behavior = boost::process::capture_stream();
@@ -117,7 +117,7 @@ void delayedAction(Message request,
 // ExternalModule
 //
 
-ExternalModule::ExternalModule(std::string path) : path_(path) {
+ExternalModule::ExternalModule(const std::string& path) : path_(path) {
     boost::filesystem::path module_path { path };
     module_name = module_path.filename().string();
 
@@ -148,7 +148,8 @@ DataContainer ExternalModule::callBlockingAction(const std::string& action_name,
     std::string stdin = request.get<DataContainer>("data", "params").toString();
     std::string stdout;
     std::string stderr;
-    LOG_INFO(stdin);
+    LOG_INFO("About to execute '%1% %2%' - stdin: %3%",
+             module_name, action_name, stdin);
 
     runCommand(path_, { path_, action_name }, stdin, stdout, stderr);
 
