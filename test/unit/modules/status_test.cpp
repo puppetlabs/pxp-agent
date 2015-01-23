@@ -7,9 +7,7 @@
 #include "src/uuid.h"
 #include "src/file_utils.h"
 #include "src/modules/status.h"
-
-// TODO(ale): required for RESULTS_ROOT_DIR; change to configuration.h
-#include "src/external_module.h"
+#include "src/configuration.h"
 
 #include <boost/format.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -31,7 +29,6 @@ boost::format status_format {
 };
 
 static const Message msg { (status_format % "the-uuid-string").str() };
-const std::string RESULTS_ROOT_DIR = "/tmp/cthun-agent";
 
 TEST_CASE("Modules::Status::callAction", "[modules]") {
     Modules::Status status_module {};
@@ -68,7 +65,7 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
         boost::filesystem::path to { result_path };
 
         auto symlink_name = UUID::getUUID();
-        std::string symlink_path { RESULTS_ROOT_DIR + "/" + symlink_name };
+        std::string symlink_path { DEFAULT_ACTION_RESULTS_DIR + symlink_name };
         boost::filesystem::path symlink { symlink_path };
 
         Message known_msg { (status_format % symlink_name).str() };
@@ -98,8 +95,7 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
             REQUIRE(result.get<std::string>("stderr") == "***ERROR\n");
         }
 
-        std::cout << symlink_path << std::endl;
-        //FileUtils::removeFile(symlink_path);
+        FileUtils::removeFile(symlink_path);
     }
 }
 

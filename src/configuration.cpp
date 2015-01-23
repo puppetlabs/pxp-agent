@@ -62,7 +62,7 @@ Configuration::Configuration() {
                                "",
                                "specify directory to spool delayed results to",
                                Types::String,
-                               "/tmp/cthun-agent/")));
+                               DEFAULT_ACTION_RESULTS_DIR)));
 }
 
 int Configuration::initialize(int argc, char *argv[]) {
@@ -183,7 +183,7 @@ void Configuration::validateConfiguration(int parse_result) {
     }
 
     if (!HW::GetFlag<std::string>("spool-dir").empty()) {
-        std::string spool_dir = HW::GetFlag<std::string>("spool-dir");
+        std::string spool_dir = FileUtils::shellExpand(HW::GetFlag<std::string>("spool-dir"));
         if (spool_dir[-1] != '/') {
             HW::SetFlag<std::string>("spool-dir", spool_dir + "/");
         }

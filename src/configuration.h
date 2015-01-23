@@ -11,6 +11,7 @@ namespace CthunAgent {
 namespace HW = HorseWhisperer;
 
 static const std::string VERSION_STRING = "cthun-agent version - 0.0.1\n";
+static const std::string DEFAULT_ACTION_RESULTS_DIR = "/tmp/cthun-agent/";
 
 enum Types { Integer, String, Bool, Double};
 
