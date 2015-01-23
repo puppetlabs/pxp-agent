@@ -45,7 +45,7 @@ def action_metadata
 end
 
 def action_string
-  string = JSON.load($stdin)
+  string = $stdin.read.chomp
   puts string.reverse.to_json
 end
 
