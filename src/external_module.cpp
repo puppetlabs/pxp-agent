@@ -156,7 +156,7 @@ DataContainer ExternalModule::callBlockingAction(const std::string& action_name,
     LOG_INFO("stdout: %1%", stdout);
     LOG_INFO("stderr: %1%", stderr);
 
-    return DataContainer { stdout };
+    return DataContainer { (stdout.empty() ? "{}" : stdout) };
 }
 
 DataContainer ExternalModule::executeDelayedAction(const std::string& action_name,
@@ -168,8 +168,8 @@ DataContainer ExternalModule::executeDelayedAction(const std::string& action_nam
     if (!FileUtils::fileExists(spool_dir_)) {
         LOG_INFO("%1% directory does not exist. Creating.", spool_dir_);
         if (!FileUtils::createDirectory(spool_dir_)) {
-            LOG_ERROR("Failed to create %1%. Cannot start action.",
-                      spool_dir_);
+            throw message_processing_error { "failed to create directory "
+                                             + spool_dir_ };
         }
     }
 
@@ -179,7 +179,8 @@ DataContainer ExternalModule::executeDelayedAction(const std::string& action_nam
         LOG_INFO("Creating result directory for delayed action '%1% %2%' %3%",
                  module_name, action_name, job_id);
         if (!FileUtils::createDirectory(results_dir)) {
-            throw validation_error { "failed to create directory " + results_dir };
+            throw message_processing_error { "failed to create directory "
+                                             + results_dir };
         }
     }
 
@@ -201,7 +202,7 @@ DataContainer ExternalModule::executeDelayedAction(const std::string& action_nam
     } catch (std::exception& e) {
         LOG_ERROR("Failed to spawn '%1% %2%' thread: %3%",
                   module_name, action_name, e.what());
-        throw validation_error { "failed to create the delayed action thread" };
+        throw message_processing_error { "failed to create the delayed action thread" };
     }
 
     // return response with the job id
@@ -224,8 +225,7 @@ const DataContainer ExternalModule::validateModuleAndGetMetadata_() {
     runCommand(path_, { path_, "metadata" }, "", metadata_txt, error);
 
     if (!error.empty()) {
-        LOG_ERROR("Error while trying to load external module: %1%", path_);
-        LOG_ERROR(error);
+        LOG_ERROR("Failed to load external module %1%: %2%", path_, error);
         throw module_error { "failed to load external module" };
     }
 
@@ -233,7 +233,7 @@ const DataContainer ExternalModule::validateModuleAndGetMetadata_() {
 
     std::vector<std::string> errors;
     if (!metadata.validate(metadata_schema, errors)) {
-        LOG_ERROR("validation failed");
+        LOG_ERROR("Invalid module metadata");
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }

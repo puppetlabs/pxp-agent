@@ -37,7 +37,7 @@ DataContainer Status::callAction(const std::string& action_name,
     std::string spool_dir = Configuration::Instance().get<std::string>("spool-dir");
 
     if (!FileUtils::fileExists(spool_dir + job_id)) {
-        LOG_ERROR("No results for job id %1% found", job_id);
+        LOG_ERROR("Found no results for job id %1%", job_id);
         output.set<std::string>("No job exists for id: " + job_id, "error");
         return output;
     }

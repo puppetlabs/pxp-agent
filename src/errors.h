@@ -24,13 +24,7 @@ class fatal_error : public agent_error {
     explicit fatal_error(std::string const& msg) : agent_error(msg) {}
 };
 
-/// Message validation error class.
-class validation_error : public agent_error {
-  public:
-    explicit validation_error(std::string const& msg) : agent_error(msg) {}
-};
-
-/// Module error class.
+/// Error thrown when loading modules.
 class module_error : public agent_error {
   public:
     explicit module_error(std::string const& msg) : agent_error(msg) {}
@@ -40,6 +34,27 @@ class module_error : public agent_error {
 class file_error : public agent_error {
   public:
     explicit file_error(std::string const& msg) : agent_error(msg) {}
+};
+
+//
+// Message errors
+//
+
+class message_error : public agent_error {
+  public:
+    explicit message_error(std::string const& msg) : agent_error(msg) {}
+};
+
+/// Message validation error.
+class message_validation_error : public message_error {
+  public:
+    explicit message_validation_error(std::string const& msg) : message_error(msg) {}
+};
+
+/// Message processing error.
+class message_processing_error : public message_error {
+  public:
+    explicit message_processing_error(std::string const& msg) : message_error(msg) {}
 };
 
 //

@@ -13,8 +13,8 @@ DataContainer Module::validateAndCallAction(const std::string& action_name,
                                             const Message& request) {
     // Validate action name
     if (actions.find(action_name) == actions.end()) {
-        throw validation_error { "unknown action '" + action_name
-                                 + "' for module " + module_name };
+        throw message_validation_error { "unknown action '" + action_name
+                                         + "' for module " + module_name };
     }
 
     // Validate request input
@@ -24,26 +24,43 @@ DataContainer Module::validateAndCallAction(const std::string& action_name,
     LOG_DEBUG("Validating input for '%1% %2%'", module_name, action_name);
     std::vector<std::string> errors;
     if (!request_input.validate(action.input_schema, errors)) {
-        LOG_ERROR("action input validation failed '%1%' '%2%'",
-                  module_name, action_name);
+        LOG_ERROR("Invalid input for '%1% %2%'", module_name, action_name);
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }
-
-        throw validation_error { "input schema mismatch" };
+        throw message_validation_error { "invalid input for '" + action_name
+                                         + " " + module_name + "'" };
     }
 
-    // Execute action and validate the result output
-    auto result = callAction(action_name, request);
+    DataContainer result;
 
+    // Execute action
+    try {
+        result = callAction(action_name, request);
+    } catch (message_error) {
+        throw;
+    } catch (std::exception& e) {
+        LOG_ERROR("Faled to execute '%1% %2%': %3%",
+                  module_name, action_name, e.what());
+        throw message_processing_error { "failed to execute '" + action_name
+                                         + " " + module_name + "'" };
+    } catch (...) {
+        LOG_ERROR("Failed to execute '%1% %2%' - unexpected exception",
+                  module_name, action_name);
+        throw message_processing_error { "failed to execute '" + action_name
+                                         + " " + module_name + "'" };
+    }
+
+    // Validate the result output
     LOG_DEBUG("Validating output for '%1% %2%'", module_name, action_name);
     if (!result.validate(action.output_schema, errors)) {
-        LOG_ERROR("Output validation failed '%1% %2%'", module_name, action_name);
+        LOG_ERROR("Invalid output from '%1% %2%'", module_name, action_name);
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }
-
-        throw validation_error { "output schema mismatch" };
+        throw message_processing_error { "the action '" + action_name + " "
+                                         + module_name + "' returned an "
+                                         "invalid result" };
     }
 
     return result;

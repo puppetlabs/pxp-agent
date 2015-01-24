@@ -32,15 +32,15 @@ TEST_CASE("Module::validateAndCallAction", "[modules]") {
         REQUIRE(result.toString().find("maradona"));
     }
 
-    SECTION("it should throw a validation_error if the action is unknown") {
+    SECTION("it should throw a message_validation_error if the action is unknown") {
         REQUIRE_THROWS_AS(echo_module.validateAndCallAction(fake_action, msg),
-                          validation_error);
+                          message_validation_error);
     }
 
-    SECTION("it should throw a validation_error if the message is invalid") {
+    SECTION("it should throw a message_validation_error if the message is invalid") {
         Message bad_msg { bad_echo };
         REQUIRE_THROWS_AS(echo_module.validateAndCallAction(echo_action, bad_msg),
-                          validation_error);
+                          message_validation_error);
     }
 }
 

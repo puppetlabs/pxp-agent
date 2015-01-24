@@ -329,11 +329,13 @@ void Endpoint::onMessage(Connection_Handle hdl, Client_Type::message_ptr msg) {
     LOG_TRACE("WebSocket onMessage event:\n%1%", msg->get_payload());
     if (on_message_callback_) {
         try {
+            // NB: on_message_callback_ should not raise; in case of failure, it
+            //     must be able to reply to notify the error...
             on_message_callback_(msg->get_payload());
         } catch (std::exception&  e) {
-            LOG_ERROR("%1%", e.what());
+            LOG_ERROR("Unexpected error during onMessage: %1%", e.what());
         } catch (...) {
-            LOG_ERROR("Unexpected error while executing the on message callback");
+            LOG_ERROR("Unexpected error during onMessage");
         }
     }
 }

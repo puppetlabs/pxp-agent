@@ -1,5 +1,6 @@
 #include "src/modules/inventory.h"
 #include "src/log.h"
+#include "src/errors.h"
 
 #include <facter/facts/collection.hpp>
 
@@ -33,15 +34,9 @@ DataContainer Inventory::callAction(const std::string& action_name,
     std::ostringstream fact_stream;
     DataContainer data {};
 
-    try {
-        facter::facts::collection facts;
-        facts.add_default_facts();
-        facts.write(fact_stream, facter::facts::format::json);
-    } catch (...) {
-        LOG_ERROR("failed to retrieve facts");
-        data.set<std::string>("Failed to retrieve facts", "error");
-        return data;
-    }
+    facter::facts::collection facts;
+    facts.add_default_facts();
+    facts.write(fact_stream, facter::facts::format::json);
 
     LOG_TRACE("facts: %1%", fact_stream.str());
     data.set<std::string>(fact_stream.str(), "facts");

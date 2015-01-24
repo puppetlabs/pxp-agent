@@ -20,6 +20,9 @@ class ExternalModule : public Module {
     /// module or if its metadata is invalid.
     explicit ExternalModule(const std::string& path);
 
+    /// Call the specified action to execute the request.
+    /// Throw a message_processing_error in case the action fails or
+    /// if it returns an invalid output.
     DataContainer callAction(const std::string& action_name,
                              const Message& request);
 
@@ -27,7 +30,7 @@ class ExternalModule : public Module {
     DataContainer callBlockingAction(const std::string& action_name,
                                      const Message& request);
 
-    // Public (as above); also passing the job_id for the same reason
+    // Public (as above); also passing the job_id for the same reason.
     DataContainer executeDelayedAction(const std::string& action_name,
                                        const Message& request,
                                        const std::string& job_id);

@@ -166,12 +166,12 @@ Message Agent::parseAndValidateMessage(std::string message) {
             error_message += error + "\n";
         }
 
-        throw validation_error { error_message };
+        throw message_validation_error { error_message };
     }
 
     if (std::string("http://puppetlabs.com/cncschema").compare(
             msg.get<std::string>("data_schema")) != 0) {
-        throw validation_error { "message is not of cnc schema" };
+        throw message_validation_error { "message is not of cnc schema" };
     }
 
     valijson::Schema data_schema { Schemas::cnc_data() };
@@ -181,7 +181,7 @@ Message Agent::parseAndValidateMessage(std::string message) {
             error_message += error + "\n";
         }
 
-        throw validation_error { error_message };
+        throw message_validation_error { error_message };
     }
 
     return msg;
@@ -222,7 +222,7 @@ void Agent::processMessageAndSendResponse(std::string message) {
 
     try {
         msg = std::move(parseAndValidateMessage(message));
-    } catch (validation_error& e) {
+    } catch (message_validation_error& e) {
         LOG_ERROR("Invalid message: %1%", e.what());
         return;
     }
@@ -240,9 +240,9 @@ void Agent::processMessageAndSendResponse(std::string message) {
 
             sendResponse(sender_endpoint, request_id, response_output);
         } else {
-            throw validation_error { "unknown module" };
+            throw message_validation_error { "unknown module " + module_name };
         }
-    } catch (validation_error& e) {
+    } catch (message_error& e) {
         LOG_ERROR("Failed to perform '%1% %2%' for request %3%: %4%",
                   module_name, action_name, request_id, e.what());
         DataContainer err_result;

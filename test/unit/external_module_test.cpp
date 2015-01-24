@@ -66,14 +66,14 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
 
     SECTION("it should throw a validation_error if the action is unknown") {
         REQUIRE_THROWS_AS(reverse_module.validateAndCallAction(fake_action, msg),
-                          validation_error);
+                          message_validation_error);
     }
 
     SECTION("it should throw a validation_error if the message is invalid") {
         Message bad_msg { bad_reverse };
         REQUIRE_THROWS_AS(reverse_module.validateAndCallAction(string_action,
                                                                bad_msg),
-                          validation_error);
+                          message_validation_error);
     }
 }
 
