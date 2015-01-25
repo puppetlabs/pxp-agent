@@ -29,7 +29,7 @@ TEST_CASE("Module::validateAndCallAction", "[modules]") {
 
     SECTION("it should correctly call echo") {
         auto result = echo_module.validateAndCallAction(echo_action, msg);
-        REQUIRE(result.toString().find("maradona"));
+        REQUIRE(result.toString().find("maradona") != std::string::npos);
     }
 
     SECTION("it should throw a message_validation_error if the action is unknown") {

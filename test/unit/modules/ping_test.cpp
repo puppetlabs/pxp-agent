@@ -42,8 +42,8 @@ TEST_CASE("Modules::Ping::callAction", "[modules]") {
 
     SECTION("it should execute the ping action correctly") {
         auto result = ping_module.callAction(ping_action, msg);
-        REQUIRE(result.toString().find("agent_timestamp"));
-        REQUIRE(result.toString().find("time_to_agent"));
+        REQUIRE(result.toString().find("agent_timestamp") != std::string::npos);
+        REQUIRE(result.toString().find("time_to_agent") != std::string::npos);
     }
 }
 

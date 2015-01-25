@@ -133,7 +133,7 @@ DataContainer ExternalModule::callAction(const std::string& action_name,
     // TODO(ale): consider moving this up to the Module class (enable
     // blocking/non-blocking requests for a given module action pair)
 
-    if (actions[action_name].behaviour.compare("delayed") == 0) {
+    if (actions[action_name].isDelayed()) {
         auto job_id = UUID::getUUID();
         LOG_DEBUG("Delayed action execution requested. Creating job " \
                   "with ID %1%", job_id);

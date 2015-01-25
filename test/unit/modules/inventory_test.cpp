@@ -38,7 +38,7 @@ TEST_CASE("Modules::Inventory::callAction", "[modules]") {
 
     SECTION("it should execute the inventory action correctly") {
         auto result = inventory_module.callAction(inventory_action, msg);
-        CHECK(result.toString().find("facts"));
+        CHECK(result.toString().find("facts") != std::string::npos);
     }
 }
 

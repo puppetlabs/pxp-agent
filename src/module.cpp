@@ -28,42 +28,44 @@ DataContainer Module::validateAndCallAction(const std::string& action_name,
         for (auto error : errors) {
             LOG_ERROR("    %1%", error);
         }
-        throw message_validation_error { "invalid input for '" + action_name
-                                         + " " + module_name + "'" };
+        throw message_validation_error { "invalid input for '" + module_name
+                                         + " " + action_name + "'" };
     }
 
-    DataContainer result;
+    DataContainer response_output;
 
     // Execute action
     try {
-        result = callAction(action_name, request);
+        response_output = callAction(action_name, request);
     } catch (message_error) {
         throw;
     } catch (std::exception& e) {
         LOG_ERROR("Faled to execute '%1% %2%': %3%",
                   module_name, action_name, e.what());
-        throw message_processing_error { "failed to execute '" + action_name
-                                         + " " + module_name + "'" };
+        throw message_processing_error { "failed to execute '" + module_name
+                                         + " " + action_name + "'" };
     } catch (...) {
         LOG_ERROR("Failed to execute '%1% %2%' - unexpected exception",
                   module_name, action_name);
-        throw message_processing_error { "failed to execute '" + action_name
-                                         + " " + module_name + "'" };
+        throw message_processing_error { "failed to execute '" + module_name
+                                         + " " + action_name + "'" };
     }
 
-    // Validate the result output
-    LOG_DEBUG("Validating output for '%1% %2%'", module_name, action_name);
-    if (!result.validate(action.output_schema, errors)) {
-        LOG_ERROR("Invalid output from '%1% %2%'", module_name, action_name);
-        for (auto error : errors) {
-            LOG_ERROR("    %1%", error);
+    if (!action.isDelayed()) {
+        // Validate the result output
+        LOG_DEBUG("Validating output for '%1% %2%'", module_name, action_name);
+        if (!response_output.validate(action.output_schema, errors)) {
+            LOG_ERROR("Invalid output from '%1% %2%'", module_name, action_name);
+            for (auto error : errors) {
+                LOG_ERROR("    %1%", error);
+            }
+            throw message_processing_error { "the action '" + module_name + " "
+                                             + action_name + "' returned an "
+                                             "invalid result" };
         }
-        throw message_processing_error { "the action '" + action_name + " "
-                                         + module_name + "' returned an "
-                                         "invalid result" };
     }
 
-    return result;
+    return response_output;
 }
 
 }  // namespace CthunAgent

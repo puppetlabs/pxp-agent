@@ -10,6 +10,10 @@ class Action {
     valijson::Schema input_schema;
     valijson::Schema output_schema;
     std::string behaviour;
+
+    bool isDelayed() const {
+        return behaviour.compare("delayed") == 0;
+    }
 };
 
 }  // namespace CthunAgent

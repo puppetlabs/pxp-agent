@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby
+require 'json'
+
+def action_metadata
+   metadata = {
+    :description => "schema for a test module for testing failures",
+    :actions => [
+      { :name => "get_an_invalid_result",
+        :description => "sure this fails",
+        :input => {
+          :type => "string",
+        },
+        :output => {
+          :type => "string",
+        },
+      },
+      { :name => "broken_action",
+        :description => "sure this fails",
+        :input => {
+          :type => "string",
+        },
+        :output => {
+          :type => "string",
+        },
+      },
+    ],
+  }
+
+  puts metadata.to_json
+end
+
+def get_an_invalid_result
+  puts "this is not valid JSON stuff - it will not be parsed successfully!"
+end
+
+def broken_action
+  raise "ops, we failed!"
+end
+
+action = ARGV.shift || 'metadata'
+
+Object.send("action_#{action}".to_sym)
