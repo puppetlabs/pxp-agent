@@ -40,7 +40,7 @@ class ThreadContainer {
     uint32_t check_interval;  // [ms]
     uint32_t threads_threshold;  // number of stored thread objects
 
-    ThreadContainer(const std::string& name,
+    ThreadContainer(const std::string& name = "",
                     uint32_t _check_interval = THREADS_MONITORING_INTERVAL_MS,
                     uint32_t _threads_threshold = THREADS_THRESHOLD);
     ~ThreadContainer();
@@ -56,6 +56,8 @@ class ThreadContainer {
 
     uint32_t getNumAddedThreads();
     uint32_t getNumErasedThreads();
+
+    void setName(const std::string& name);
 
   private:
     std::string name_;

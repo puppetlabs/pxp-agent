@@ -116,6 +116,11 @@ uint32_t ThreadContainer::getNumErasedThreads() {
     return num_erased_threads_;
 }
 
+void ThreadContainer::setName(const std::string& name) {
+    std::lock_guard<std::mutex> the_lock { mutex_ };
+    name_ = name;
+}
+
 //
 // Private methods
 //

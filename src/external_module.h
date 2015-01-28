@@ -4,6 +4,7 @@
 #include "src/module.h"
 #include "src/data_container.h"
 #include "src/configuration.h"
+#include "src/thread_container.h"
 
 #include <rapidjson/document.h>
 
@@ -36,9 +37,14 @@ class ExternalModule : public Module {
                                        const std::string& job_id);
 
   private:
-    std::string spool_dir_ = Configuration::Instance().get<std::string>("spool-dir");
+    /// Directory where the results of delayed actions will be stored
+    std::string spool_dir_;
+
     /// The path of the module file
     const std::string path_;
+
+    /// Manages the lifecycle of delayed action threads
+    ThreadContainer thread_container_;
 
     const DataContainer validateModuleAndGetMetadata_();
     void validateAndDeclareAction_(const DataContainer& action);
