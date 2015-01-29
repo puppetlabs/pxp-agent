@@ -22,7 +22,6 @@ set(SOURCES
 set(test_BIN cthun-agent-unittests)
 
 include_directories(
-    ${GMOCK_INCLUDE_DIRS}
     ${CATCH_DIRECTORY}
 )
 
