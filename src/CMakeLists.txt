@@ -22,6 +22,7 @@ set(LIBRARY_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/file_utils.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/string_utils.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/log.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/thread_container.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/websocket/endpoint.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/websocket/connection_timings.cpp"
     ${INIH_SOURCE_DIR}/ini.c

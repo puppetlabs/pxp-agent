@@ -11,6 +11,8 @@
 
 std::string ROOT_PATH;
 
+// TODO(ale): manage Catch test case tags; list and describe tags
+
 int main(int argc, char* const argv[]) {
     // set the path of the cthun-agent root dir into a global
     boost::filesystem::path root_path {

@@ -15,6 +15,9 @@
 #include <valijson/adapters/rapidjson_adapter.hpp>
 #include <valijson/schema_parser.hpp>
 
+#include <atomic>
+#include <memory>  // shared_ptr
+
 LOG_DECLARE_NAMESPACE("external_module");
 
 namespace CthunAgent {
@@ -57,7 +60,8 @@ void runCommand(const std::string& exec, std::vector<std::string> args,
 void delayedAction(Message request,
                    std::string job_id,
                    std::string module_path,
-                   std::string results_dir) {
+                   std::string results_dir,
+                   std::shared_ptr<std::atomic<bool>> done) {
     // Get request parameters
     auto request_id = request.get<std::string>("id");
     auto module_name = request.get<std::string>("data", "module");
@@ -111,15 +115,22 @@ void delayedAction(Message request,
 
     status.set<std::string>("completed", "status");
     FileUtils::writeToFile(status.toString() + "\n", results_dir + "/status");
+
+    // Set the completion atomic flag
+    *done = true;
 }
 
 //
 // ExternalModule
 //
 
-ExternalModule::ExternalModule(const std::string& path) : path_(path) {
+ExternalModule::ExternalModule(const std::string& path)
+        : spool_dir_ { Configuration::Instance().get<std::string>("spool-dir") },
+          path_ { path },
+          thread_container_ {} {
     boost::filesystem::path module_path { path };
     module_name = module_path.filename().string();
+    thread_container_.setName(module_name);
 
     auto metadata = validateModuleAndGetMetadata_();
 
@@ -187,18 +198,17 @@ DataContainer ExternalModule::executeDelayedAction(const std::string& action_nam
     LOG_INFO("Starting delayed action '%1% %2%' %3%",
              module_name, action_name, job_id);
 
-    // TODO(ale): we must manage the thread lifecycle (no background)
-    // to avoid possible delays when the user quits the program;
-    // possible alternatives: capture signals and call std::terminate
-    // (i.e. mimic the old vector RIIA); future & timeout; thread pool
-
     // start thread
     try {
-        std::thread(&delayedAction,
-                    Message(request),
-                    job_id,
-                    std::string(path_),
-                    results_dir).detach();
+        std::shared_ptr<std::atomic<bool>> done { new  std::atomic<bool> { false } };
+
+        thread_container_.add(std::thread(&delayedAction,
+                                          Message(request),
+                                          job_id,
+                                          std::string(path_),
+                                          results_dir,
+                                          done),
+                              done);
     } catch (std::exception& e) {
         LOG_ERROR("Failed to spawn '%1% %2%' thread: %3%",
                   module_name, action_name, e.what());
