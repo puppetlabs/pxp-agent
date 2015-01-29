@@ -19,7 +19,7 @@ Configuration::Configuration() {
     defaults_.push_back(Base_ptr(
         new Entry<std::string>("server",
                                "s",
-                               "cthun servers url",
+                               "Cthun servers url",
                                Types::String,
                                "")));
 
@@ -47,20 +47,20 @@ Configuration::Configuration() {
     defaults_.push_back(Base_ptr(
         new Entry<std::string>("logfile",
                                "",
-                               "log file (defaults to console logging",
+                               "Log file (defaults to console logging",
                                Types::String,
                                "")));
 
     defaults_.push_back(Base_ptr(
         new Entry<std::string>("config-file",
                                "",
-                               "specify a non default config file to use",
+                               "Specify a non default config file to use",
                                Types::String,
                                "")));
     defaults_.push_back(Base_ptr(
         new Entry<std::string>("spool-dir",
                                "",
-                               "specify directory to spool delayed results to",
+                               "Specify directory to spool delayed results to",
                                Types::String,
                                DEFAULT_ACTION_RESULTS_DIR)));
 }

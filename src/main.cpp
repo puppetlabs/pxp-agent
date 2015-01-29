@@ -7,7 +7,6 @@
 #include <fstream>
 
 #include <horsewhisperer/horsewhisperer.h>
-#include <boost/program_options.hpp>
 
 LOG_DECLARE_NAMESPACE("cthun_agent_main");
 
@@ -24,6 +23,10 @@ int startAgent(std::vector<std::string> arguments   ) {
             break;
         case 1:
             log_level = Log::log_level::debug;
+            break;
+        case 2:
+            log_level = Log::log_level::trace;
+            break;
         default:
             log_level = Log::log_level::trace;
     }
