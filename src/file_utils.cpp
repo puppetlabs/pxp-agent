@@ -2,6 +2,8 @@
 #include "src/log.h"
 #include "src/errors.h"
 
+#include <boost/filesystem.hpp>
+
 #include <wordexp.h>
 #include <fstream>
 #include <unistd.h>

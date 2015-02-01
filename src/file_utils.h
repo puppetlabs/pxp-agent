@@ -6,7 +6,6 @@
 #include <wordexp.h>
 #include <fstream>
 #include <stdexcept>
-#include <boost/filesystem.hpp>
 
 namespace CthunAgent {
 namespace FileUtils {

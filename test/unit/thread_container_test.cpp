@@ -23,7 +23,7 @@ void testTask(std::shared_ptr<std::atomic<bool>> a,
 
 void addTasksTo(ThreadContainer& container,
                 const uint32_t num_tasks,
-                const uint32_t caller_duration_s,
+                const uint32_t caller_duration_us,
                 const uint32_t task_duration_us) {
     uint32_t idx;
     for (idx = 0; idx < num_tasks; idx++) {
@@ -38,7 +38,7 @@ void addTasksTo(ThreadContainer& container,
         usleep(50);  // 0.05 ms
     }
 
-    usleep(caller_duration_s);
+    usleep(caller_duration_us);
 }
 
 TEST_CASE("ThreadContainer::add, ~ThreadContainer", "[async]") {
