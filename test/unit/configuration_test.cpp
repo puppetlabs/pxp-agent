@@ -1,6 +1,8 @@
 #include "test/test.h"
 
 #include "src/configuration.h"
+#include "src/errors.h"
+
 #include "horsewhisperer/horsewhisperer.h"
 
 extern std::string ROOT_PATH;
@@ -14,7 +16,6 @@ void configure_test() {
     const char* argv[] = { "test-command", "--server", server.data(), "--ca", ca.data(),
                            "--cert", cert.data(), "--key", key.data() };
     int argc= 9;
-    int test_val = 0;
 
     CthunAgent::Configuration::Instance().initialize(argc, const_cast<char**>(argv));
 }
@@ -41,12 +42,41 @@ TEST_CASE("Configuration::setStartFunction", "[configuration]") {
 
 TEST_CASE("Configuration::set", "[configuration]") {
     configure_test();
-    CthunAgent::Configuration::Instance().set<std::string>("ca", "value");
-    REQUIRE(HorseWhisperer::GetFlag<std::string>("ca") == "value");
+
+    SECTION("can set a known flag to a valid value") {
+        REQUIRE_NOTHROW(CthunAgent::Configuration::Instance()
+                            .set<std::string>("ca", "value"));
+    }
+
+    SECTION("set a flag correctly") {
+        CthunAgent::Configuration::Instance().set<std::string>("ca", "value");
+        REQUIRE(HorseWhisperer::GetFlag<std::string>("ca") == "value");
+    }
+
+    SECTION("throw when setting an unknown flag") {
+        REQUIRE_THROWS_AS(CthunAgent::Configuration::Instance()
+                            .set<int>("tentacle_spawning_interval_s", 45),
+                          CthunAgent::configuration_entry_error);
+    }
+
+    SECTION("throw when setting a known flag to an invalid value") {
+        HorseWhisperer::DefineGlobalFlag<int>("num_tentacles",
+                                              "number of spawn tentacles",
+                                              8,
+                                              [](int v) -> bool{return v == 8;});
+
+        REQUIRE_THROWS_AS(CthunAgent::Configuration::Instance()
+                            .set<int>("num_tentacles", 42),
+                          CthunAgent::configuration_entry_error);
+        REQUIRE_NOTHROW(CthunAgent::Configuration::Instance()
+                            .set<int>("num_tentacles", 8));
+    }
 }
 
 TEST_CASE("Configuration::get", "[configuration]") {
-    configure_test();
+    // TODO(ale): test Configuration before its initialization (we
+    // would need to add a reset hook to the Configuration singleton)
+
     HorseWhisperer::SetFlag<std::string>("ca", "value");
     REQUIRE(CthunAgent::Configuration::Instance().get<std::string>("ca") == "value");
 }

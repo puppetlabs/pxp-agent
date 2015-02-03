@@ -16,67 +16,67 @@ Configuration::Configuration() {
     }
 
     // configure the default values
-    defaults_.push_back(Base_ptr(
+    defaults_.insert(std::pair<std::string, Base_ptr>("server", Base_ptr(
         new Entry<std::string>("server",
                                "s",
                                "Cthun servers url",
                                Types::String,
-                               "")));
+                               ""))));
 
-    defaults_.push_back(Base_ptr(
+    defaults_.insert(std::pair<std::string, Base_ptr>("ca", Base_ptr(
         new Entry<std::string>("ca",
                                "",
                                "CA certificate",
                                Types::String,
-                               "")));
+                               ""))));
 
-    defaults_.push_back(Base_ptr(
+    defaults_.insert(std::pair<std::string, Base_ptr>("cert", Base_ptr(
         new Entry<std::string>("cert",
                                "",
                                "cthun-agent certificate",
                                Types::String,
-                               "")));
+                               ""))));
 
-    defaults_.push_back(Base_ptr(
+    defaults_.insert(std::pair<std::string, Base_ptr>("key", Base_ptr(
         new Entry<std::string>("key",
                                "",
                                "cthun-agent private key",
                                Types::String,
-                               "")));
+                               ""))));
 
-    defaults_.push_back(Base_ptr(
+    defaults_.insert(std::pair<std::string, Base_ptr>("logfile", Base_ptr(
         new Entry<std::string>("logfile",
                                "",
                                "Log file (defaults to console logging",
                                Types::String,
-                               "")));
+                               ""))));
 
-    defaults_.push_back(Base_ptr(
+    defaults_.insert(std::pair<std::string, Base_ptr>("config-file", Base_ptr(
         new Entry<std::string>("config-file",
                                "",
                                "Specify a non default config file to use",
                                Types::String,
-                               "")));
-    defaults_.push_back(Base_ptr(
+                               ""))));
+    defaults_.insert(std::pair<std::string, Base_ptr>("spool-dir", Base_ptr(
         new Entry<std::string>("spool-dir",
                                "",
                                "Specify directory to spool delayed results to",
                                Types::String,
-                               DEFAULT_ACTION_RESULTS_DIR)));
+                               DEFAULT_ACTION_RESULTS_DIR))));
 }
 
 int Configuration::initialize(int argc, char *argv[]) {
     for (const auto& entry : defaults_) {
-        std::string flag_names = entry->name;
+        std::string flag_names = entry.second->name;
 
-        if (!entry->aliases.empty()) {
-            flag_names += " " + entry->aliases;
+        if (!entry.second->aliases.empty()) {
+            flag_names += " " + entry.second->aliases;
         }
 
-        switch (entry->type) {
+        switch (entry.second->type) {
             case Integer:
                 {
-                    Entry<int>* entry_ptr = (Entry<int>*) entry.get();
+                    Entry<int>* entry_ptr = (Entry<int>*) entry.second.get();
                     HW::DefineGlobalFlag<int>(flag_names, entry_ptr->help,
                                               entry_ptr->value, [entry_ptr] (int v) -> bool{
                         entry_ptr->configured = true;
@@ -86,7 +86,7 @@ int Configuration::initialize(int argc, char *argv[]) {
                 break;
             case Bool:
                 {
-                    Entry<bool>* entry_ptr = (Entry<bool>*) entry.get();
+                    Entry<bool>* entry_ptr = (Entry<bool>*) entry.second.get();
                     HW::DefineGlobalFlag<bool>(flag_names, entry_ptr->help,
                                                entry_ptr->value, [entry_ptr] (bool v) -> bool{
                         entry_ptr->configured = true;
@@ -96,7 +96,7 @@ int Configuration::initialize(int argc, char *argv[]) {
                 break;
             case Double:
                 {
-                    Entry<double>* entry_ptr = (Entry<double>*) entry.get();
+                    Entry<double>* entry_ptr = (Entry<double>*) entry.second.get();
                     HW::DefineGlobalFlag<double>(flag_names, entry_ptr->help,
                                                  entry_ptr->value, [entry_ptr] (double v) -> bool{
                         entry_ptr->configured = true;
@@ -106,7 +106,7 @@ int Configuration::initialize(int argc, char *argv[]) {
                 break;
             default:
                 {
-                    Entry<std::string>* entry_ptr = (Entry<std::string>*) entry.get();
+                    Entry<std::string>* entry_ptr = (Entry<std::string>*) entry.second.get();
                     HW::DefineGlobalFlag<std::string>(flag_names, entry_ptr->help,
                                                       entry_ptr->value, [entry_ptr] (std::string v) -> bool {
                         entry_ptr->configured = true;
@@ -142,7 +142,7 @@ int Configuration::initialize(int argc, char *argv[]) {
     }
 
     validateConfiguration(parse_result);
-    configured_ = true;
+    initialized_ = true;
 
     return parse_result;
 }
@@ -195,13 +195,13 @@ void Configuration::parseConfigFile() {
 
     for (const auto& entry : defaults_) {
         // skip config entry if flag was set
-        if (entry->configured) {
+        if (entry.second->configured) {
             continue;
         }
-        switch (entry->type) {
+        switch (entry.second->type) {
             case Integer:
                 {
-                    Entry<int>* entry_ptr = (Entry<int>*) entry.get();
+                    Entry<int>* entry_ptr = (Entry<int>*) entry.second.get();
                     HW::SetFlag<int>(entry_ptr->name,
                                      reader.GetInteger("",
                                                        entry_ptr->name,
@@ -210,7 +210,7 @@ void Configuration::parseConfigFile() {
                 break;
             case Bool:
                 {
-                    Entry<bool>* entry_ptr = (Entry<bool>*) entry.get();
+                    Entry<bool>* entry_ptr = (Entry<bool>*) entry.second.get();
                     HW::SetFlag<bool>(entry_ptr->name,
                                       reader.GetBoolean("",
                                                         entry_ptr->name,
@@ -219,7 +219,7 @@ void Configuration::parseConfigFile() {
                 break;
             case Double:
                 {
-                    Entry<double>* entry_ptr = (Entry<double>*) entry.get();
+                    Entry<double>* entry_ptr = (Entry<double>*) entry.second.get();
                     HW::SetFlag<double>(entry_ptr->name,
                                         reader.GetReal("",
                                                        entry_ptr->name,
@@ -228,7 +228,8 @@ void Configuration::parseConfigFile() {
                 break;
             default:
                 {
-                    Entry<std::string>* entry_ptr = (Entry<std::string>*) entry.get();
+                    Entry<std::string>* entry_ptr =
+                        (Entry<std::string>*) entry.second.get();
                     HW::SetFlag<std::string>(entry_ptr->name,
                                              reader.Get("",
                                                         entry_ptr->name,
