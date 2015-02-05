@@ -2,6 +2,7 @@
 
 #include "src/data_container.h"
 #include "src/schemas.h"
+#include "src/message.h"
 
 #include <iostream>
 
@@ -59,7 +60,6 @@ TEST_CASE("DataContainer::get", "[data]") {
         Message tmp { msg.get<Message>("nested") };
         REQUIRE(tmp.get<std::string>("foo") == "bar");
     }
-
 
     SECTION("it should behave correctly given a null value") {
         REQUIRE(msg.get<std::string>("null") == "");
@@ -136,14 +136,15 @@ TEST_CASE("DataContainer::includes", "[data]") {
 
 TEST_CASE("DataContainer::validate", "[data]") {
     valijson::Schema schema;
+    using Type_Constraint = valijson::constraints::TypeConstraint;
 
-    valijson::constraints::TypeConstraint json_type_object { valijson::constraints::TypeConstraint::kObject };
-    valijson::constraints::TypeConstraint json_type_string { valijson::constraints::TypeConstraint::kString };
-    valijson::constraints::TypeConstraint json_type_array { valijson::constraints::TypeConstraint::kArray };
-    valijson::constraints::TypeConstraint json_type_int { valijson::constraints::TypeConstraint::kInteger };
-    valijson::constraints::TypeConstraint json_type_bool { valijson::constraints::TypeConstraint::kBoolean };
-    valijson::constraints::TypeConstraint json_type_null { valijson::constraints::TypeConstraint::kNull };
-    valijson::constraints::TypeConstraint json_type_double { valijson::constraints::TypeConstraint::kNumber };
+    Type_Constraint json_type_object { Type_Constraint::kObject };
+    Type_Constraint json_type_string { Type_Constraint::kString };
+    Type_Constraint json_type_array { Type_Constraint::kArray };
+    Type_Constraint json_type_int { Type_Constraint::kInteger };
+    Type_Constraint json_type_bool { Type_Constraint::kBoolean };
+    Type_Constraint json_type_null { Type_Constraint::kNull };
+    Type_Constraint json_type_double { Type_Constraint::kNumber };
 
     valijson::constraints::PropertiesConstraint::PropertySchemaMap properties;
     valijson::constraints::PropertiesConstraint::PropertySchemaMap pattern_properties;
@@ -179,7 +180,8 @@ TEST_CASE("DataContainer::validate", "[data]") {
                               properties,
                               pattern_properties));
 
-    schema.addConstraint(new valijson::constraints::RequiredConstraint(required_properties));
+    schema.addConstraint(new valijson::constraints::RequiredConstraint(
+                                    required_properties));
 
     DataContainer msg { JSON };
     std::vector<std::string> errors;

@@ -2,6 +2,7 @@
 #define SRC_AGENT_ENDPOINT_H_
 
 #include "src/module.h"
+#include "src/message.h"
 #include "src/data_container.h"
 #include "src/websocket/endpoint.h"
 

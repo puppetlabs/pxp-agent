@@ -3,6 +3,7 @@
 
 #include "src/action.h"
 #include "src/data_container.h"
+#include "src/message.h"
 
 #include <map>
 #include <string>

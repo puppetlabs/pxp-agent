@@ -3,6 +3,7 @@
 
 #include "src/module.h"
 #include "src/data_container.h"
+#include "src/message.h"
 #include "src/configuration.h"
 #include "src/thread_container.h"
 
