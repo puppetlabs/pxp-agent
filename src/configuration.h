@@ -47,14 +47,30 @@ using Base_ptr = std::unique_ptr<EntryBase>;
 
 class Configuration {
   public:
-    // TODO(ale): implement reset method (change singleton structure)
     static Configuration& Instance() {
         static Configuration instance;
         return instance;
     }
 
+    /// Set the configuration entries to their default values.
+    /// Unset the initialized_ flag.
+    void reset();
+
+    /// Parse the command line arguments and, if specified, the
+    /// configuration file in order to obtain the configuration
+    /// values; validate and normalize them.
+    /// Return a numeric code indicating the parsing outcome (refer to
+    /// HorseWhisperer).
+    /// Throw a cli_parse_error in case it fails to parse the CLI
+    /// arguments.
+    /// Throw a required_not_set_error in case of a missing or invalid
+    /// configuration value.
+    /// Throw a configuration_entry_error if the specified config file
+    /// does not exist.
     int initialize(int argc, char *argv[]);
 
+    /// Set the start function that will be executed when calling
+    /// HorseWhisperer::Start().
     void setStartFunction(std::function<int(std::vector<std::string>)> start_function);
 
     // TODO(ale): HW::GetFlag should use boost::optional or make
@@ -103,16 +119,22 @@ class Configuration {
         }
     }
 
-    void validateConfiguration(int parse_result);
+    /// Ensure all required values are valid. If necessary, expand
+    /// file paths to the expected format.
+    /// Throw a required_not_set_error if any required file path is
+    /// missing; a configuration_entry_error in case of invalid values.
+    void validateAndNormalizeConfiguration();
 
   private:
-    bool initialized_ = false;
+    bool initialized_;
     std::map<std::string, Base_ptr> defaults_;
-    std::string config_file_ = "";
+    std::string config_file_;
     std::function<int(std::vector<std::string>)> start_function_;
 
     Configuration();
     void parseConfigFile();
+    void defineDefaultValues();
+    void setDefaultValues();
 };
 
 }  // namespace CthunAgent
