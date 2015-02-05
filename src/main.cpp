@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
 
     try {
         parse_result = Configuration::Instance().initialize(argc, argv);
-    } catch(configuration_error e ) {
+    } catch(configuration_error e) {
         std::cout << "An error occurred while parsing your configuration." << std::endl;
         std::cout << e.what() << std::endl;
         return 1;
