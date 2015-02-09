@@ -111,6 +111,8 @@ class Endpoint {
     void close(Close_Code code = Close_Code_Values::normal,
                const std::string& reason = DEFAULT_CLOSE_REASON);
 
+    // TODO(ale): move this to the Agent
+
     /// Returns the agent identity
     std::string identity();
 

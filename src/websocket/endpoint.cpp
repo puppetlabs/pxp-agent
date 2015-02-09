@@ -329,8 +329,12 @@ void Endpoint::onMessage(Connection_Handle hdl, Client_Type::message_ptr msg) {
     LOG_TRACE("WebSocket onMessage event:\n%1%", msg->get_payload());
     if (on_message_callback_) {
         try {
-            // NB: on_message_callback_ should not raise; in case of failure, it
-            //     must be able to reply to notify the error...
+            // TODO: should I directly pass msg->get_payload().data()
+            // since we should be getting only binary data?
+            // See http://goo.gl/0fSu3T
+
+            // NB: on_message_callback_ should not raise; in case of
+            // failure; it must be able to notify back the error...
             on_message_callback_(msg->get_payload());
         } catch (std::exception&  e) {
             LOG_ERROR("Unexpected error during onMessage: %1%", e.what());

@@ -36,8 +36,12 @@ class Agent {
     // Send a login message.
     void sendLogin();
 
+    // TODO: use Message class
+
     // Throw a message_validation_error in case of invalid message.
-    Message parseAndValidateMessage(std::string message);
+    DataContainer parseAndValidateMessage(std::string message);
+
+    // Message parseAndValidateMessage(std::string message);
 
     // Send a response message with specified request ID and output
     // to the receiver endpoint.

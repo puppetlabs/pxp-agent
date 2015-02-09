@@ -15,6 +15,8 @@
 
 extern std::string ROOT_PATH;
 
+// TODO: use new Message class
+
 namespace CthunAgent {
 
 const std::string RESULTS_ROOT_DIR { "/tmp/cthun-agent" };
@@ -33,7 +35,7 @@ boost::format msg_format {
 const std::string reverse_txt { (msg_format % "\"reverse\""
                                             % "\"string\""
                                             % "\"maradona\"").str() };
-const Message msg { reverse_txt };
+const DataContainer msg { reverse_txt };
 
 TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
     SECTION("can successfully instantiate from a valid external module") {
@@ -82,7 +84,7 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             std::string bad_reverse_txt { (msg_format % "\"reverse\""
                                                       % "\"string\""
                                                       % "[1, 2, 3, 4 ,5]").str() };
-            Message bad_msg { bad_reverse_txt };
+            DataContainer bad_msg { bad_reverse_txt };
             REQUIRE_THROWS_AS(reverse_module.validateAndCallAction(STRING_ACTION,
                                                                    bad_msg),
                               message_validation_error);
@@ -98,7 +100,7 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             std::string failure_txt { (msg_format % "\"failures_test\""
                                                   % "\"get_an_invalid_result\""
                                                   % "\"maradona\"").str() };
-            Message failure_msg { failure_txt };
+            DataContainer failure_msg { failure_txt };
             REQUIRE_THROWS_AS(test_reverse_module.validateAndCallAction(
                                     "get_an_invalid_result", failure_msg),
                               message_processing_error);
@@ -109,7 +111,7 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             std::string failure_txt { (msg_format % "\"failures_test\""
                                                   % "\"broken_action\""
                                                   % "\"maradona\"").str() };
-            Message failure_msg { failure_txt };
+            DataContainer failure_msg { failure_txt };
             REQUIRE_THROWS_AS(test_reverse_module.validateAndCallAction(
                                     "broken_action", failure_msg),
                               message_processing_error);
@@ -137,7 +139,7 @@ TEST_CASE("ExternalModule::callAction - delayed", "[async]") {
         std::string delayed_txt { (msg_format % "\"reverse_valid\""
                                               % "\"delayed_action\""
                                               % "\"the input string\"").str() };
-        Message delayed_msg { delayed_txt };
+        DataContainer delayed_msg { delayed_txt };
         auto result = test_reverse_module.validateAndCallAction("delayed_action",
                                                                 delayed_msg);
         REQUIRE(result.includes(DELAYED_JOB_ID_LABEL));

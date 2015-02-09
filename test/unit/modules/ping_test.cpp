@@ -23,7 +23,7 @@ static const std::string ping_txt =
     "   },"
     "   \"hops\" : []"
     "}";
-static const Message msg { ping_txt };
+static const DataContainer msg { ping_txt };
 
 TEST_CASE("Modules::Ping::callAction", "[modules]") {
     Modules::Ping ping_module {};
@@ -69,7 +69,7 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
             std::to_string(
                 current_date_microseconds.time_of_day().total_milliseconds() - 42);
 
-        Message ping_msg { (ping_format % current_date_milliseconds % "[]").str() };
+        DataContainer ping_msg { (ping_format % current_date_milliseconds % "[]").str() };
 
         auto result = ping_module.ping(ping_msg);
 
@@ -79,7 +79,7 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
     }
 
     SECTION("it should copy an empty hops entry") {
-        Message ping_msg { (ping_format % "" % "[]").str() };
+        DataContainer ping_msg { (ping_format % "" % "[]").str() };
         auto result = ping_module.ping(ping_msg);
         REQUIRE(result.get<std::vector<DataContainer>>("request_hops").empty());
     }
@@ -100,7 +100,7 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
     SECTION("it should copy the hops entry when msg passed through a single server") {
         hops_str += " ]";
 
-        Message ping_msg { (ping_format % "" % hops_str).str() };
+        DataContainer ping_msg { (ping_format % "" % hops_str).str() };
 
         auto result = ping_module.ping(ping_msg);
         auto hops = result.get<std::vector<DataContainer>>("request_hops");
@@ -117,7 +117,7 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
         hops_str += (hop_format % "server_B" % "026" % "deliver").str();
         hops_str += " ]";
 
-        Message ping_msg { (ping_format % "" % hops_str).str() };
+        DataContainer ping_msg { (ping_format % "" % hops_str).str() };
 
         auto result = ping_module.ping(ping_msg);
         auto hops = result.get<std::vector<DataContainer>>("request_hops");

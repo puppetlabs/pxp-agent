@@ -10,7 +10,7 @@ class Echo : public CthunAgent::Module {
   public:
     Echo();
     DataContainer callAction(const std::string& action_name,
-                             const Message& request);
+                             const DataContainer& request);
 };
 
 }  // namespace Modules

@@ -28,7 +28,7 @@ boost::format status_format {
     "}"
 };
 
-static const Message msg { (status_format % "the-uuid-string").str() };
+static const DataContainer msg { (status_format % "the-uuid-string").str() };
 
 TEST_CASE("Modules::Status::callAction", "[modules]") {
     Modules::Status status_module {};
@@ -48,7 +48,7 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
 
     SECTION("it works properly when an unknown job id is provided") {
         auto job_id = UUID::getUUID();
-        Message unknown_msg { (status_format % job_id).str() };
+        DataContainer unknown_msg { (status_format % job_id).str() };
 
         SECTION("it doesn't throw") {
             REQUIRE_NOTHROW(status_module.callAction(query_action, unknown_msg));
@@ -68,7 +68,7 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
         std::string symlink_path { DEFAULT_ACTION_RESULTS_DIR + symlink_name };
         boost::filesystem::path symlink { symlink_path };
 
-        Message known_msg { (status_format % symlink_name).str() };
+        DataContainer known_msg { (status_format % symlink_name).str() };
 
         try {
             boost::filesystem::create_symlink(to, symlink);

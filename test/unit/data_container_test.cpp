@@ -56,10 +56,20 @@ TEST_CASE("DataContainer::get", "[data]") {
         REQUIRE(tmp[1] == result[1]);
     }
 
-    SECTION("it can recurively get a Message object") {
-        Message tmp { msg.get<Message>("nested") };
-        REQUIRE(tmp.get<std::string>("foo") == "bar");
-    }
+
+
+
+
+
+    // SECTION("it can recurively get a Message object") {
+    //     Message tmp { msg.get<Message>("nested") };
+    //     REQUIRE(tmp.get<std::string>("foo") == "bar");
+    // }
+
+
+
+
+
 
     SECTION("it should behave correctly given a null value") {
         REQUIRE(msg.get<std::string>("null") == "");
@@ -181,7 +191,7 @@ TEST_CASE("DataContainer::validate", "[data]") {
                               pattern_properties));
 
     schema.addConstraint(new valijson::constraints::RequiredConstraint(
-                                    required_properties));
+                              required_properties));
 
     DataContainer msg { JSON };
     std::vector<std::string> errors;

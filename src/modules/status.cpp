@@ -29,7 +29,7 @@ Status::Status() {
 }
 
 DataContainer Status::callAction(const std::string& action_name,
-                                 const Message& request) {
+                                 const DataContainer& request) {
     DataContainer output {};
     DataContainer input { request.get<DataContainer>("data", "params") };
     std::string job_id { input.get<std::string>("job_id") };

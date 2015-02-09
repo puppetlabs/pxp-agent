@@ -30,7 +30,7 @@ Inventory::Inventory() {
 }
 
 DataContainer Inventory::callAction(const std::string& action_name,
-                                    const Message& request) {
+                                    const DataContainer& request) {
     std::ostringstream fact_stream;
     DataContainer data {};
 

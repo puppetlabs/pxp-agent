@@ -10,7 +10,7 @@ LOG_DECLARE_NAMESPACE("module");
 namespace CthunAgent {
 
 DataContainer Module::validateAndCallAction(const std::string& action_name,
-                                            const Message& request) {
+                                            const DataContainer& request) {
     // Validate action name
     if (actions.find(action_name) == actions.end()) {
         throw message_validation_error { "unknown action '" + action_name

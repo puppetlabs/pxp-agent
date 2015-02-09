@@ -28,8 +28,11 @@ namespace CthunAgent {
 
 // Execute binaries and get output and errors
 
-void runCommand(const std::string& exec, std::vector<std::string> args,
-                std::string stdin, std::string &stdout, std::string &stderr) {
+void runCommand(const std::string& exec,
+                std::vector<std::string> args,
+                std::string stdin,
+                std::string &stdout,
+                std::string &stderr) {
     boost::process::context context;
     context.stdin_behavior = boost::process::capture_stream();
     context.stdout_behavior = boost::process::capture_stream();
@@ -57,7 +60,7 @@ void runCommand(const std::string& exec, std::vector<std::string> args,
 
 // Perform delayed actions
 
-void delayedAction(Message request,
+void delayedAction(DataContainer request,
                    std::string job_id,
                    std::string module_path,
                    std::string results_dir,
@@ -140,7 +143,7 @@ ExternalModule::ExternalModule(const std::string& path)
 }
 
 DataContainer ExternalModule::callAction(const std::string& action_name,
-                                         const Message& request) {
+                                         const DataContainer& request) {
     // TODO(ale): consider moving this up to the Module class (enable
     // blocking/non-blocking requests for a given module action pair)
 
@@ -155,7 +158,7 @@ DataContainer ExternalModule::callAction(const std::string& action_name,
 }
 
 DataContainer ExternalModule::callBlockingAction(const std::string& action_name,
-                                                 const Message& request) {
+                                                 const DataContainer& request) {
     std::string stdin = request.get<DataContainer>("data", "params").toString();
     std::string stdout;
     std::string stderr;
@@ -171,7 +174,7 @@ DataContainer ExternalModule::callBlockingAction(const std::string& action_name,
 }
 
 DataContainer ExternalModule::executeDelayedAction(const std::string& action_name,
-                                                   const Message& request,
+                                                   const DataContainer& request,
                                                    const std::string& job_id) {
     DataContainer input { request.get<DataContainer>("data", "params") };
 
@@ -203,7 +206,7 @@ DataContainer ExternalModule::executeDelayedAction(const std::string& action_nam
         std::shared_ptr<std::atomic<bool>> done { new  std::atomic<bool> { false } };
 
         thread_container_.add(std::thread(&delayedAction,
-                                          Message(request),
+                                          DataContainer(request),
                                           job_id,
                                           std::string(path_),
                                           results_dir,

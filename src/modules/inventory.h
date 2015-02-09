@@ -10,7 +10,7 @@ class Inventory : public CthunAgent::Module {
   public:
     Inventory();
     DataContainer callAction(const std::string& action_name,
-                             const Message& request);
+                             const DataContainer& request);
 };
 
 }  // namespace Modules

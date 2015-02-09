@@ -126,37 +126,37 @@ void Agent::setConnectionCallbacks() {
         });
 }
 
+// onOpen callback
 void Agent::sendLogin() {
-    Message msg {};
+    DataContainer envelope{};
     std::string login_id { UUID::getUUID() };
-    msg.set<std::string>(login_id, "id");
-    msg.set<std::string>("1", "version");
-    msg.set<std::string>(StringUtils::getISO8601Time(DEFAULT_MSG_TIMEOUT_SEC),
-                         "expires");
-    msg.set<std::string>(ws_endpoint_ptr_->identity(), "sender");
+    envelope.set<std::string>(login_id, "id");
+    envelope.set<std::string>("1", "version");
+    envelope.set<std::string>(StringUtils::getISO8601Time(DEFAULT_MSG_TIMEOUT_SEC),
+                              "expires");
+    envelope.set<std::string>(ws_endpoint_ptr_->identity(), "sender");
     std::vector<std::string> endpoints { "cth://server" };
-    msg.set<std::vector<std::string>>(endpoints, "endpoints");
+    envelope.set<std::vector<std::string>>(endpoints, "endpoints");
     std::vector<std::string> hops {};
-    msg.set<std::vector<std::string>>(hops, "hops");
-    msg.set<std::string>("http://puppetlabs.com/loginschema", "data_schema");
-    msg.set<std::string>("agent", "data", "type");
-
-    // NOTE(ploubser): I removed login schema message validation. We're making
-    // it, it should be valid.
+    envelope.set<std::vector<std::string>>(hops, "hops");
+    envelope.set<std::string>("http://puppetlabs.com/loginschema", "data_schema");
+    envelope.set<std::string>("agent", "data", "type");
 
     LOG_INFO("Sending login message with id: %1%", login_id);
-    LOG_DEBUG("Login message: %1%", msg.toString());
+    LOG_DEBUG("Login message: %1%", envelope.toString());
 
     try {
-         ws_endpoint_ptr_->send(msg.toString());
+         ws_endpoint_ptr_->send(envelope.toString());
     }  catch(WebSocket::message_error& e) {
         LOG_WARNING(e.what());
         throw e;
     }
 }
 
-Message Agent::parseAndValidateMessage(std::string message) {
-    Message msg { message };
+// TODO: use the new Message class
+
+DataContainer Agent::parseAndValidateMessage(std::string message) {
+    DataContainer msg { message };
     valijson::Schema message_schema = Schemas::network_message();
     std::vector<std::string> errors;
 
@@ -187,10 +187,12 @@ Message Agent::parseAndValidateMessage(std::string message) {
     return msg;
 }
 
+// TODO: use the new Message class
+
 void Agent::sendResponse(std::string receiver_endpoint,
                          std::string request_id,
                          DataContainer response_output) {
-    Message msg {};
+    DataContainer msg {};
     std::string response_id { UUID::getUUID() };
     msg.set<std::string>(response_id, "id");
     msg.set<std::string>("1", "version");
@@ -215,10 +217,13 @@ void Agent::sendResponse(std::string receiver_endpoint,
     }
 }
 
+// TODO: use the new Message class
+
+// onMessage callback
 void Agent::processMessageAndSendResponse(std::string message) {
     LOG_INFO("Received message:\n%1%", message);
-    Message msg;
-    Message response;
+    DataContainer msg;
+    DataContainer response;
 
     try {
         msg = std::move(parseAndValidateMessage(message));

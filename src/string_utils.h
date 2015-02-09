@@ -27,6 +27,10 @@ void displayProgress(double percent, int len,
 /// Return the current time in ISO8601 format
 std::string getISO8601Time(unsigned int modifier_in_seconds = 0);
 
+/// Returns the length of the string txt, in terms of bytes, when
+/// encoded as UTF-8
+int getLengthOfUTF8String(std::string txt);
+
 }  // namespace StringUtils
 }  // namespace CthunAgent
 

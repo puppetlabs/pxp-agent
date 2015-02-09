@@ -18,7 +18,7 @@ static const std::string inventory_txt =
     "    \"params\" : {}"
     "    }"
     "}";
-static const Message msg { inventory_txt };
+static const DataContainer msg { inventory_txt };
 
 TEST_CASE("Modules::Inventory::callAction", "[modules]") {
     Modules::Inventory inventory_module {};

@@ -4,6 +4,8 @@
 #include "src/errors.h"
 #include "src/modules/echo.h"
 
+// TODO: use new Message class
+
 namespace CthunAgent {
 
 static const std::string echo_action { "echo" };
@@ -15,7 +17,7 @@ static const std::string echo_txt =
     "    \"params\" : \"maradona\""
     "    }"
     "}";
-static const Message msg { echo_txt };
+static const DataContainer msg { echo_txt };
 static const std::string bad_echo =
     "{\"data\" : {"
     "    \"module\" : \"echo\","
@@ -38,7 +40,7 @@ TEST_CASE("Module::validateAndCallAction", "[modules]") {
     }
 
     SECTION("it should throw a message_validation_error if the message is invalid") {
-        Message bad_msg { bad_echo };
+        DataContainer bad_msg { bad_echo };
         REQUIRE_THROWS_AS(echo_module.validateAndCallAction(echo_action, bad_msg),
                           message_validation_error);
     }

@@ -37,7 +37,7 @@ Ping::Ping() {
     actions["ping"] = Action { input_schema, output_schema, "interactive" };
 }
 
-DataContainer Ping::ping(const Message& request) {
+DataContainer Ping::ping(const DataContainer& request) {
     int sender_timestamp;
     DataContainer input { request.get<DataContainer>("data", "params") };
     std::istringstream(input.get<std::string>("sender_timestamp")) >>
@@ -61,7 +61,7 @@ DataContainer Ping::ping(const Message& request) {
 }
 
 DataContainer Ping::callAction(const std::string& action_name,
-                               const Message& request) {
+                               const DataContainer& request) {
    return ping(request);
 }
 

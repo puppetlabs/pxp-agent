@@ -17,7 +17,7 @@ class Module {
 
     /// Performs the requested action.
     virtual DataContainer callAction(const std::string& action_name,
-                                     const Message& request) = 0;
+                                     const DataContainer& request) = 0;
 
     /// Validate the json schemas of input and output.
     /// Start the requested action for the particular module.
@@ -26,7 +26,7 @@ class Module {
     /// invalid request input, or if the requested action provides an
     /// invalid output.
     DataContainer validateAndCallAction(const std::string& action_name,
-                                        const Message& request);
+                                        const DataContainer& request);
 };
 
 }  // namespace CthunAgent
