@@ -24,7 +24,7 @@ std::string shellExpand(std::string txt) {
     wordexp_t result;
 
     // Expand and check the success
-    if (wordexp(txt.c_str(), &result, 0) != 0) {
+    if (wordexp(txt.c_str(), &result, 0) != 0 || result.we_wordc == 0) {
         wordfree(&result);
         return "";
     }
