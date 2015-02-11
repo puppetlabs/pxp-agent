@@ -5,7 +5,6 @@
 
 #include <wordexp.h>
 #include <fstream>
-#include <stdexcept>
 
 namespace CthunAgent {
 namespace FileUtils {

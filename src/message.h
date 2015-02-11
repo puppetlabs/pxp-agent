@@ -5,91 +5,66 @@
 #include "src/message_serialization.h"
 
 #include <string>
+#include <vector>
+
 namespace CthunAgent {
 
-
-// Serialization
-
-// std::string
-
-// serialize a 32 bit integer into network format (big-endian)
-
-
-// TODO(ale): add more descriptors
+// TODO(ale): add descriptors when needed (compression, type...)
 namespace ChunkDescriptor {
     static const uint8_t ENVELOPE { 1 };
-    static const uint8_t DATA_JSON { 41 };
+    static const uint8_t PAYLOAD_JSON { 41 };
     static const uint8_t DEBUG { 81 };
 }  // namespace ChunkDescriptor
 
 struct MessageChunk {
     uint8_t descriptor;
-    uint32_t size;
-    std::string data;
+    DataContainer data;
+
+    uint32_t size();  // [byte]
 };
 
-// TODO: deriving from DataContainer to shut up the old code
-
-class Message : DataContainer {
+class Message {
   public:
     // The default ctor is deleted since, for the Cthun protocol, a
-    // valid message must have an envelope chunk; that's an invariant
+    // valid message must have an envelope chunk (invariant)
     Message() = delete;
 
-    // Construct a Message by deserializing a raw message
-    explicit Message(const std::string& binary_payload);
+    // Construct a Message by deserializing the payload delivered
+    // by the transport layer as a std::string
+    explicit Message(const std::string& transport_payload);
 
     // Create a new message with a given envelope
-    explicit Message(DataContainer envelope);
+    explicit Message(MessageChunk envelope);
 
     // ... and a data chunk
-    Message(DataContainer envelope,
-            DataContainer data);
+    Message(MessageChunk envelope,
+            MessageChunk payload);
 
     // ... and a debug chunk
-    Message(DataContainer envelope,
-            DataContainer data,
-            DataContainer debug);
+    Message(MessageChunk envelope,
+            MessageChunk payload,
+            MessageChunk debug);
 
-    // Set fields
-    void setHeader(DataContainer header);
-    void setData(DataContainer data);
-    void setDebug(DataContainer debug);
+    // Add optional chunks
+    void addPayload(MessageChunk payload);
+    void addDebug(MessageChunk debug);
 
-    // Get fields
-    DataContainer getHeader();
-    DataContainer getData();
-
-    // TODO: assuming that a message can contain multiple debug chunks
-    std::vector<DataContainer> getAllDebug();
+    // Get chunks
+    MessageChunk getEnvelope();
+    std::vector<MessageChunk> getPayload();
+    std::vector<MessageChunk> getAllDebug();
 
     // Inspectors
-    bool hasData();
+    bool hasPayload();
     bool hasDebug();
 
-    // serialize message for transport over websocketpp
-    MessageBuffer serialize();
+    // Get the serialized message for transport over websocketpp
+    SerializedMessage getSerialized();
 
-
-
-
-
-  // private:
-  //   int getChunkSize_(DataContainer& chunk);
-
-
-
-
-  // public:
-
-  //   explicit Message(std::string msg) : DataContainer(msg) {}
-  //   explicit Message(const rapidjson::Value& value) : DataContainer(value) {}
-  //   Message(const Message& msg) : DataContainer(msg) {}
-  //   Message(const Message&& msg) : DataContainer(msg) {}
-  //   Message& operator=(Message other) {
-  //       DataContainer::operator=(other);
-  //       return *this;
-  //   }
+  private:
+    MessageChunk envelope_;
+    std::vector<MessageChunk> payload_;
+    std::vector<MessageChunk> debug_;
 };
 
 }  // namespace CthunAgent
