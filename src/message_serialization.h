@@ -96,11 +96,12 @@ inline void serialize(const T& thing,
     try {
         buffer.resize(offset + thing_size);
     } catch(std::bad_alloc) {
-        throw message_processing_error { "bad allocation" };
+        throw message_processing_error { "serialization: bad allocation" };
     } catch(const std::exception& e) {
         throw message_processing_error { e.what() };
     } catch(...) {
-        throw message_processing_error { "failed to allocate memory" };
+        throw message_processing_error { "seriliazation: unexpected error when "
+                                         "allocating memory" };
     }
 
     SerializedMessage::iterator buffer_itr = buffer.begin() + offset;

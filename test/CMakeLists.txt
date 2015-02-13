@@ -11,7 +11,7 @@ set(SOURCES
     # unit/data_container_test.cpp
     # unit/external_module_test.cpp
     # unit/file_utils_test.cpp
-    # unit/message_test.cpp
+    unit/message_test.cpp
     unit/message_serialization_test.cpp
     # unit/module_test.cpp
     # unit/thread_container_test.cpp
