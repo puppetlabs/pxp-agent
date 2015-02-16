@@ -173,6 +173,18 @@ void Endpoint::send(std::string msg) {
     }
 }
 
+void Endpoint::send(void* const serialized_msg_ptr, size_t msg_len) {
+    websocketpp::lib::error_code ec;
+    endpoint_.send(connection_handle_,
+                   serialized_msg_ptr,
+                   msg_len,
+                   websocketpp::frame::opcode::binary,
+                   ec);
+    if (ec) {
+        throw message_error { "Failed to send message: " + ec.message() };
+    }
+}
+
 void Endpoint::ping(const std::string& binary_payload) {
     websocketpp::lib::error_code ec;
     endpoint_.ping(connection_handle_, binary_payload, ec);

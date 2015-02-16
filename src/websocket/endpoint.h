@@ -99,6 +99,7 @@ class Endpoint {
     /// Send the message to the server.
     /// Throw a message_error in case of failure.
     void send(std::string msg);
+    void send(void* const serialized_msg_ptr, size_t msg_len);
 
     /// Ping the server.
     /// Throw a message_error in case of failure.

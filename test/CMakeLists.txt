@@ -6,7 +6,7 @@ set(CATCH_DIRECTORY "${VENDOR_DIRECTORY}/catch")
 set(SOURCES
     main.cpp
 
-    unit/agent_endpoint_test.cpp
+    unit/agent_test.cpp
     unit/configuration_test.cpp
     unit/data_container_test.cpp
     unit/external_module_test.cpp

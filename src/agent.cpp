@@ -15,6 +15,7 @@
 #include <boost/filesystem/path.hpp>
 
 #include <vector>
+#include <memory>
 
 LOG_DECLARE_NAMESPACE("agent");
 
@@ -128,25 +129,42 @@ void Agent::setConnectionCallbacks() {
 
 // onOpen callback
 void Agent::sendLogin() {
-    DataContainer envelope{};
+    DataContainer envelope_stuff {};
     std::string login_id { UUID::getUUID() };
-    envelope.set<std::string>(login_id, "id");
-    envelope.set<std::string>("1", "version");
-    envelope.set<std::string>(StringUtils::getISO8601Time(DEFAULT_MSG_TIMEOUT_SEC),
-                              "expires");
-    envelope.set<std::string>(ws_endpoint_ptr_->identity(), "sender");
+    envelope_stuff.set<std::string>(login_id, "id");
+    envelope_stuff.set<std::string>("1", "version");
+    envelope_stuff.set<std::string>(StringUtils::getISO8601Time(DEFAULT_MSG_TIMEOUT_SEC),
+                                    "expires");
+    envelope_stuff.set<std::string>(ws_endpoint_ptr_->identity(), "sender");
     std::vector<std::string> endpoints { "cth://server" };
-    envelope.set<std::vector<std::string>>(endpoints, "endpoints");
+    envelope_stuff.set<std::vector<std::string>>(endpoints, "endpoints");
     std::vector<std::string> hops {};
-    envelope.set<std::vector<std::string>>(hops, "hops");
-    envelope.set<std::string>("http://puppetlabs.com/loginschema", "data_schema");
-    envelope.set<std::string>("agent", "data", "type");
+    envelope_stuff.set<std::vector<std::string>>(hops, "hops");
+    envelope_stuff.set<std::string>("http://puppetlabs.com/loginschema",
+                                    "data_schema");
+    // envelope_stuff.set<std::string>("agent", "data", "type");
+
+    DataContainer data_stuff {};
+    data_stuff.set<std::string>("agent", "type");
+
+    // TODO(ale): use tokens for descriptors
+
+    MessageChunk envelope { 0x01, envelope_stuff.toString() };
+    MessageChunk data { 0x02, data_stuff.toString() };
 
     LOG_INFO("Sending login message with id: %1%", login_id);
-    LOG_DEBUG("Login message: %1%", envelope.toString());
+    LOG_DEBUG("Login message data: %1%", data.data_portion);
 
     try {
-         ws_endpoint_ptr_->send(envelope.toString());
+        Message msg { envelope };
+        msg.setDataChunk(data);
+        auto serialized_msg = msg.getSerialized();
+
+
+         ws_endpoint_ptr_->send(&serialized_msg[0], serialized_msg.size());
+
+
+         // ws_endpoint_ptr_->send(envelope_data.toString());
     }  catch(WebSocket::message_error& e) {
         LOG_WARNING(e.what());
         throw e;
@@ -222,26 +240,30 @@ void Agent::sendResponse(std::string receiver_endpoint,
 // onMessage callback
 void Agent::processMessageAndSendResponse(std::string message) {
     LOG_INFO("Received message:\n%1%", message);
-    DataContainer msg;
-    DataContainer response;
+    std::unique_ptr<DataContainer> msg;
 
     try {
-        msg = std::move(parseAndValidateMessage(message));
+        auto m = parseAndValidateMessage(message);
+        msg.reset(&m);
+
+
+        // msg = std::move(parseAndValidateMessage(message));
     } catch (message_validation_error& e) {
         LOG_ERROR("Invalid message: %1%", e.what());
         return;
     }
 
-    std::string request_id = msg.get<std::string>("id");
-    std::string module_name = msg.get<std::string>("data", "module");
-    std::string action_name = msg.get<std::string>("data", "action");
-    std::string sender_endpoint = msg.get<std::string>("sender");
+    std::string request_id = msg->get<std::string>("id");
+    std::string module_name = msg->get<std::string>("data", "module");
+    std::string action_name = msg->get<std::string>("data", "action");
+    std::string sender_endpoint = msg->get<std::string>("sender");
 
     try {
         if (modules_.find(module_name) != modules_.end()) {
             std::shared_ptr<Module> module = modules_[module_name];
 
-            auto response_output = module->validateAndCallAction(action_name, msg);
+            auto response_output = module->validateAndCallAction(action_name,
+                                                                 *msg);
 
             sendResponse(sender_endpoint, request_id, response_output);
         } else {
