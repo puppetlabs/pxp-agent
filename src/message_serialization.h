@@ -43,7 +43,7 @@ inline uint32_t getHostNumber(const uint32_t& number) {
     return number;
 }
 
-#endif
+#endif  // BOOST_LITTLE_ENDIAN
 
 //
 // Serialize

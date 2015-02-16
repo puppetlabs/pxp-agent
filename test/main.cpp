@@ -23,7 +23,7 @@ int main(int argc, char* const argv[]) {
     ROOT_PATH = std::string(root_path.string());
 
     // set logging level to fatal
-    CthunAgent::Log::configure_logging(CthunAgent::Log::log_level::trace,
+    CthunAgent::Log::configure_logging(CthunAgent::Log::log_level::fatal,
                                        std::cout);
 
     // configure the Catch session and start it

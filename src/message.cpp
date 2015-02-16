@@ -44,6 +44,17 @@ MessageChunk::MessageChunk(uint8_t _descriptor,
           data_portion { _data_portion } {
 }
 
+MessageChunk::MessageChunk(uint8_t _descriptor,
+                           std::string _data_portion)
+        : MessageChunk(_descriptor, _data_portion.size(), _data_portion) {
+}
+
+bool MessageChunk::operator==(const MessageChunk& other_msg_chunk) const {
+    return descriptor == other_msg_chunk.descriptor
+           && size == other_msg_chunk.size
+           && data_portion == other_msg_chunk.data_portion;
+}
+
 void MessageChunk::serializeOn(SerializedMessage& buffer) const {
     serialize<uint8_t>(descriptor, 1, buffer);
     serialize<uint32_t>(size, 4, buffer);
@@ -254,8 +265,9 @@ void Message::parseMessage_(const std::string& transport_msg) {
     }
 
     if (still_to_parse > 0) {
-        LOG_ERROR("Failed to parse the entire msg (ignoring last %1% bytes); "
-                  "the msg will be processed anyway", still_to_parse);
+        LOG_ERROR("Failed to parse the entire msg (ignoring last %1% byte%2%); "
+                  "the msg will be processed anyway",
+                  still_to_parse, StringUtils::plural(still_to_parse));
         LOG_TRACE("Msg content (unserialized): '%1%'", transport_msg);
     }
 

@@ -44,6 +44,10 @@ struct MessageChunk {
 
     MessageChunk(uint8_t _descriptor, uint32_t _size, std::string _data_portion);
 
+    MessageChunk(uint8_t _descriptor, std::string _data_portion);
+
+    bool operator==(const MessageChunk& other_msg_chunk) const;
+
     void serializeOn(SerializedMessage& buffer) const;
 };
 
