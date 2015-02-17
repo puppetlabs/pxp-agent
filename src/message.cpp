@@ -2,8 +2,14 @@
 #include "src/errors.h"
 #include "src/log.h"
 #include "src/string_utils.h"
+#include "src/data_parser.h"
 
 #include <algorithm>  // find
+
+// TODO(ale): disable assert() once we're confident with the code...
+// To disable assert()
+// #define NDEBUG
+#include <cassert>
 
 LOG_DECLARE_NAMESPACE("message");
 
@@ -33,32 +39,36 @@ static std::vector<uint8_t> SUPPORTED_VERSIONS { 1 };
 
 MessageChunk::MessageChunk() : descriptor { 0 },
                                size { 0 },
-                               data_portion {} {
+                               content {} {
 }
 
 MessageChunk::MessageChunk(uint8_t _descriptor,
                            uint32_t _size,
-                           std::string _data_portion)
+                           std::string _content)
         : descriptor { _descriptor },
           size { _size },
-          data_portion { _data_portion } {
+          content { _content } {
 }
 
 MessageChunk::MessageChunk(uint8_t _descriptor,
-                           std::string _data_portion)
-        : MessageChunk(_descriptor, _data_portion.size(), _data_portion) {
+                           std::string _content)
+        : MessageChunk(_descriptor, _content.size(), _content) {
 }
 
 bool MessageChunk::operator==(const MessageChunk& other_msg_chunk) const {
     return descriptor == other_msg_chunk.descriptor
            && size == other_msg_chunk.size
-           && data_portion == other_msg_chunk.data_portion;
+           && content == other_msg_chunk.content;
 }
 
 void MessageChunk::serializeOn(SerializedMessage& buffer) const {
     serialize<uint8_t>(descriptor, 1, buffer);
     serialize<uint32_t>(size, 4, buffer);
-    serialize<std::string>(data_portion, size, buffer);
+    serialize<std::string>(content, size, buffer);
+}
+
+std::string MessageChunk::toString() const {
+     return std::to_string(descriptor) + std::to_string(size) + content;
 }
 
 //
@@ -172,6 +182,43 @@ SerializedMessage Message::getSerialized() const {
     return buffer;
 }
 
+// Parse, validate, and return the content of chunks
+
+ParsedContent Message::getParsedContent() const {
+    auto envelope_content = DataParser::parseAndValidateChunk(envelope_chunk_);
+
+    DataContainer data_content {};
+    if (hasData()) {
+        auto schema = envelope_content.get<std::string>("data_schema");
+        // assert(SchemaFormat.find(schema) != SchemaFormat.end());
+        data_content = DataParser::parseAndValidateChunk(data_chunk_,
+                                                         SchemaFormat[schema]);
+    }
+
+    std::vector<DataContainer> debug_content {};
+    for (const auto& d_c : debug_chunks_) {
+        debug_content.push_back(DataParser::parseAndValidateChunk(d_c));
+    }
+
+    return ParsedContent { envelope_content, data_content, debug_content };
+}
+
+// toString
+
+std::string Message::toString() const {
+    auto s = std::to_string(version_) + envelope_chunk_.toString();
+
+    if (hasData()) {
+        s += data_chunk_.toString();
+    }
+
+    for (const auto& debug_chunk : debug_chunks_) {
+        s += debug_chunk.toString();
+    }
+
+    return s;
+}
+
 //
 // Message - private interface
 //
@@ -198,7 +245,7 @@ void Message::parseMessage_(const std::string& transport_msg) {
     // Envelope (mandatory chunk)
 
     auto envelope_desc = deserialize<uint8_t>(1, next_itr);
-    auto envelope_desc_bit = envelope_desc & ChunkDescriptor::MASK;
+    auto envelope_desc_bit = envelope_desc & ChunkDescriptor::TYPE_MASK;
     if (envelope_desc_bit != ChunkDescriptor::ENVELOPE) {
         LOG_ERROR("Invalid msg; missing envelope descriptor");
         LOG_TRACE("Invalid msg content (unserialized): '%1%'", transport_msg);
@@ -212,7 +259,7 @@ void Message::parseMessage_(const std::string& transport_msg) {
         throw message_processing_error { "invalid msg: no envelope" };
     }
 
-    auto envelope_data_portion = deserialize<std::string>(envelope_size, next_itr);
+    auto envelope_content = deserialize<std::string>(envelope_size, next_itr);
 
     // Data and debug (optional chunks)
 
@@ -221,7 +268,7 @@ void Message::parseMessage_(const std::string& transport_msg) {
 
     while (still_to_parse > CHUNK_METADATA_SIZE) {
         auto chunk_desc = deserialize<uint8_t>(1, next_itr);
-        auto chunk_desc_bit = chunk_desc & ChunkDescriptor::MASK;
+        auto chunk_desc_bit = chunk_desc & ChunkDescriptor::TYPE_MASK;
 
         if (chunk_desc_bit != ChunkDescriptor::DATA
                 && chunk_desc_bit != ChunkDescriptor::DEBUG) {
@@ -244,8 +291,8 @@ void Message::parseMessage_(const std::string& transport_msg) {
             throw message_processing_error { "invalid msg: missing chunk content" };
         }
 
-        auto chunk_data_portion = deserialize<std::string>(chunk_size, next_itr);
-        MessageChunk chunk { chunk_desc, chunk_size, chunk_data_portion };
+        auto chunk_content = deserialize<std::string>(chunk_size, next_itr);
+        MessageChunk chunk { chunk_desc, chunk_size, chunk_content };
 
         if (chunk_desc_bit == ChunkDescriptor::DATA) {
             if (hasData()) {
@@ -274,7 +321,7 @@ void Message::parseMessage_(const std::string& transport_msg) {
     version_ = msg_version;
     envelope_chunk_ = MessageChunk  { envelope_desc,
                                       envelope_size,
-                                      envelope_data_portion };
+                                      envelope_content };
 }
 
 void Message::validateVersion_(const uint8_t& version) const {
@@ -287,7 +334,7 @@ void Message::validateVersion_(const uint8_t& version) const {
 }
 
 void Message::validateChunk_(const MessageChunk& chunk) const {
-    auto desc_bit = chunk.descriptor & ChunkDescriptor::MASK;
+    auto desc_bit = chunk.descriptor & ChunkDescriptor::TYPE_MASK;
 
     if (ChunkDescriptor::names.find(desc_bit) == ChunkDescriptor::names.end()) {
         LOG_ERROR("Unknown chunk descriptor: %1%",
@@ -295,12 +342,12 @@ void Message::validateChunk_(const MessageChunk& chunk) const {
         throw message_processing_error { "unknown descriptor" };
     }
 
-    if (chunk.size != static_cast<uint32_t>(chunk.data_portion.size())) {
+    if (chunk.size != static_cast<uint32_t>(chunk.content.size())) {
         LOG_ERROR("Incorrect size for %1% chunk; declared %2% byte%3%, "
                   "got %4% byte%5%", ChunkDescriptor::names[desc_bit],
                   chunk.size, StringUtils::plural(chunk.size),
-                  chunk.data_portion.size(),
-                  StringUtils::plural(chunk.data_portion.size()));
+                  chunk.content.size(),
+                  StringUtils::plural(chunk.content.size()));
         throw message_processing_error { "invalid size" };
     }
 }

@@ -104,6 +104,9 @@ class DataContainer {
         return std::move(document_root_);
     }
 
+    // TODO(ale): avoid assertion errors by rapidjson due to invalid
+    // queries
+
     template <typename T>
     T get(std::string first) const {
         const rapidjson::Value& v = document_root_;

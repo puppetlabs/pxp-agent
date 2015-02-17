@@ -21,8 +21,8 @@ Echo::Echo() {
 }
 
 DataContainer Echo::callAction(const std::string& action_name,
-                               const DataContainer& request) {
-    return request.get<DataContainer>("data", "params");
+                               const ParsedContent& request) {
+    return request.data.get<DataContainer>("params");
 }
 
 }  // namespace Modules

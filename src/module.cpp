@@ -10,7 +10,7 @@ LOG_DECLARE_NAMESPACE("module");
 namespace CthunAgent {
 
 DataContainer Module::validateAndCallAction(const std::string& action_name,
-                                            const DataContainer& request) {
+                                            const ParsedContent& request) {
     // Validate action name
     if (actions.find(action_name) == actions.end()) {
         throw message_validation_error { "unknown action '" + action_name
@@ -19,7 +19,7 @@ DataContainer Module::validateAndCallAction(const std::string& action_name,
 
     // Validate request input
     auto action = actions[action_name];
-    DataContainer request_input { request.get<DataContainer>("data", "params") };
+    auto request_input = request.data.get<DataContainer>("params");
 
     LOG_DEBUG("Validating input for '%1% %2%'", module_name, action_name);
     std::vector<std::string> errors;

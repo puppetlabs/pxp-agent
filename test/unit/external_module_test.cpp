@@ -15,7 +15,7 @@
 
 extern std::string ROOT_PATH;
 
-// TODO: use new Message class
+// TODO(ale): use new Message class
 
 namespace CthunAgent {
 

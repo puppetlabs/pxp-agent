@@ -10,6 +10,8 @@ extern std::string ROOT_PATH;
 
 namespace CthunAgent {
 
+// TODO(ale): use new Message class
+
 static const std::string inventory_action { "inventory" };
 static const std::string inventory_txt =
     "{\"data\" : {"

@@ -4,7 +4,7 @@
 #include "src/errors.h"
 #include "src/modules/echo.h"
 
-// TODO: use new Message class
+// TODO(ale): use new Message class
 
 namespace CthunAgent {
 

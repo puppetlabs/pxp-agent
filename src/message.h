@@ -17,7 +17,14 @@ namespace CthunAgent {
 //
 
 namespace ChunkDescriptor {
-    static const uint8_t MASK { 0x0F };
+    // Filter format bits (JSON...)
+    static const uint8_t FORMAT_MASK { 0xF0 };
+
+    // Filter type bits (envelope, data, debug)
+    static const uint8_t TYPE_MASK { 0x0F };
+
+    // All the descriptors that use the JSON format
+    static const std::vector<uint8_t> JSON_DESCRIPTORS { 0x00 };
 
     static const uint8_t ENVELOPE { 0x01 };
     static const uint8_t DATA { 0x02 };
@@ -38,17 +45,29 @@ namespace ChunkDescriptor {
 struct MessageChunk {
     uint8_t descriptor;
     uint32_t size;  // [byte]
-    std::string data_portion;
+    std::string content;
 
     MessageChunk();
 
-    MessageChunk(uint8_t _descriptor, uint32_t _size, std::string _data_portion);
+    MessageChunk(uint8_t _descriptor, uint32_t _size, std::string _content);
 
-    MessageChunk(uint8_t _descriptor, std::string _data_portion);
+    MessageChunk(uint8_t _descriptor, std::string _content);
 
     bool operator==(const MessageChunk& other_msg_chunk) const;
 
     void serializeOn(SerializedMessage& buffer) const;
+
+    std::string toString() const;
+};
+
+//
+// ParsedContent
+//
+
+struct ParsedContent {
+    DataContainer envelope;
+    DataContainer data;
+    std::vector<DataContainer> debug;
 };
 
 //
@@ -64,12 +83,12 @@ class Message {
     // Construct a Message by parsing the payload delivered
     // by the transport layer as a std::string.
     // Throw a message_processing_error in case of invalid message.
-    Message(const std::string& transport_payload);
+    explicit Message(const std::string& transport_payload);
 
     // Create a new message with a given envelope.
     // Throw a message_processing_error in case of invalid chunk
     // (unknown descriptor or wrong size).
-    Message(MessageChunk envelope);
+    explicit Message(MessageChunk envelope);
 
     // ... and a data chunk; throw a message_processing_error as above
     Message(MessageChunk envelope,
@@ -102,6 +121,14 @@ class Message {
     // memory for the buffer.
     SerializedMessage getSerialized() const;
 
+    // Parse, validate, and return the content of chunks.
+    // Each chunk will be processed based on its descriptor.
+    // Throw a message_validation_error in case of invalid message.
+    ParsedContent getParsedContent() const;
+
+    // Return a string representation of all message fields.
+    std::string toString() const;
+
   private:
     uint8_t version_;
     MessageChunk envelope_chunk_;
@@ -116,4 +143,4 @@ class Message {
 
 }  // namespace CthunAgent
 
-#endif  // CTHUN_SRC_DATA_CONTAINER_H_
+#endif  // CTHUN_SRC_MESSAGE_H_

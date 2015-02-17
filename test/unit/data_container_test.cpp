@@ -26,6 +26,15 @@ static const std::string JSON = "{\"foo\" : {\"bar\" : 2},"
 
 namespace CthunAgent {
 
+TEST_CASE("DataContainer:DataContainer", "[data]") {
+    SECTION("default constructor works properly") {
+        DataContainer some_data {};
+
+        REQUIRE_FALSE(some_data.includes("lalala"));
+        REQUIRE(some_data.toString() == "{}");
+    }
+}
+
 TEST_CASE("DataContainer::get", "[data]") {
     DataContainer msg { JSON };
 
@@ -55,21 +64,6 @@ TEST_CASE("DataContainer::get", "[data]") {
         REQUIRE(tmp[0] == result[0]);
         REQUIRE(tmp[1] == result[1]);
     }
-
-
-
-
-
-
-    // SECTION("it can recurively get a Message object") {
-    //     Message tmp { msg.get<Message>("nested") };
-    //     REQUIRE(tmp.get<std::string>("foo") == "bar");
-    // }
-
-
-
-
-
 
     SECTION("it should behave correctly given a null value") {
         REQUIRE(msg.get<std::string>("null") == "");

@@ -98,26 +98,6 @@ DataContainer DataContainer::getValue<>(const rapidjson::Value& value) const {
     return containter;
 }
 
-
-
-
-
-// template<>
-// Message DataContainer::getValue<>(const rapidjson::Value& value) const {
-//     if (value.IsNull()) {
-//         Message container {};
-//         return container;
-//     }
-//     // rvalue return
-//     Message container { value };
-//     return container;
-// }
-
-
-
-
-
-
 template<>
 rapidjson::Value DataContainer::getValue<>(const rapidjson::Value& value) const {
     DataContainer* tmp_this = const_cast<DataContainer*>(this);

@@ -13,6 +13,8 @@ extern std::string ROOT_PATH;
 
 namespace CthunAgent {
 
+// TODO(ale): use new Message class
+
 static const std::string ping_action { "ping" };
 
 static const std::string ping_txt =

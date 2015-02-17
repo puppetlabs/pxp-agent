@@ -36,31 +36,36 @@ Agent::Agent(std::string bin_path) {
     // called by a symlink. The only safe way to refer to external
     // modules is to store them in a known location (ex. ~/cthun/).
 
-    boost::filesystem::path module_path {
-        boost::filesystem::canonical(
-            boost::filesystem::system_complete(
-                boost::filesystem::path(bin_path)).parent_path().parent_path())
+    namespace fs = boost::filesystem;
+
+    fs::path module_path {
+        fs::canonical(
+            fs::system_complete(
+                fs::path(bin_path)).parent_path().parent_path())
     };
     module_path += "/modules";
 
-    if (boost::filesystem::is_directory(module_path)) {
-        boost::filesystem::directory_iterator end;
+    if (fs::is_directory(module_path)) {
+        fs::directory_iterator end;
 
-        for (auto file = boost::filesystem::directory_iterator(module_path);
-                file != end; ++file) {
-            if (!boost::filesystem::is_directory(file->status())) {
-                LOG_INFO(file->path().string());
+        for (auto f = fs::directory_iterator(module_path); f != end; ++f) {
+            if (!fs::is_directory(f->status())) {
+                auto f_p = f->path().string();
+                LOG_INFO(f_p);
 
                 try {
-                    ExternalModule* external = new ExternalModule(file->path().string());
-                    modules_[external->module_name] = std::shared_ptr<Module>(external);
+                    ExternalModule* external = new ExternalModule(f_p);
+                    modules_[external->module_name] =
+                        std::shared_ptr<Module>(external);
+                } catch (std::exception& e) {
+                    LOG_ERROR("Failed to load %1%; %2%", f_p, e.what());
                 } catch (...) {
-                    LOG_ERROR("failed to load: %1%", file->path().string());
+                    LOG_ERROR("Failed to load %1%; unexpected error", f_p);
                 }
             }
         }
     } else {
-        LOG_WARNING("failed to locate the modules directory; external modules "
+        LOG_WARNING("Failed to locate the modules directory; external modules "
                     "will not be loaded");
     }
 }
@@ -127,145 +132,134 @@ void Agent::setConnectionCallbacks() {
         });
 }
 
-// onOpen callback
+void Agent::addCommonEnvelopeEntries(DataContainer& envelope_entries) {
+    auto id = UUID::getUUID();
+    auto expires = StringUtils::getISO8601Time(DEFAULT_MSG_TIMEOUT_SEC);
+
+    envelope_entries.set<std::string>(id, "id");
+    envelope_entries.set<std::string>(expires, "expires");
+    envelope_entries.set<std::string>(ws_endpoint_ptr_->identity(), "sender");
+}
+
+// NB: WebSocket onOpen callback
 void Agent::sendLogin() {
-    DataContainer envelope_stuff {};
-    std::string login_id { UUID::getUUID() };
-    envelope_stuff.set<std::string>(login_id, "id");
-    envelope_stuff.set<std::string>("1", "version");
-    envelope_stuff.set<std::string>(StringUtils::getISO8601Time(DEFAULT_MSG_TIMEOUT_SEC),
-                                    "expires");
-    envelope_stuff.set<std::string>(ws_endpoint_ptr_->identity(), "sender");
+    // Envelope
+    DataContainer envelope_entries {};
+    addCommonEnvelopeEntries(envelope_entries);
     std::vector<std::string> endpoints { "cth://server" };
-    envelope_stuff.set<std::vector<std::string>>(endpoints, "endpoints");
-    std::vector<std::string> hops {};
-    envelope_stuff.set<std::vector<std::string>>(hops, "hops");
-    envelope_stuff.set<std::string>("http://puppetlabs.com/loginschema",
-                                    "data_schema");
-    // envelope_stuff.set<std::string>("agent", "data", "type");
 
-    DataContainer data_stuff {};
-    data_stuff.set<std::string>("agent", "type");
+    envelope_entries.set<std::vector<std::string>>(endpoints, "endpoints");
+    envelope_entries.set<std::string>("http://puppetlabs.com/loginschema",
+                                      "data_schema");
 
-    // TODO(ale): use tokens for descriptors
+    // Data
+    DataContainer data_entries {};
+    data_entries.set<std::string>("agent", "type");
 
-    MessageChunk envelope { 0x01, envelope_stuff.toString() };
-    MessageChunk data { 0x02, data_stuff.toString() };
-
-    LOG_INFO("Sending login message with id: %1%", login_id);
-    LOG_DEBUG("Login message data: %1%", data.data_portion);
+    // Create message chunks
+    MessageChunk envelope { ChunkDescriptor::ENVELOPE,
+                            envelope_entries.toString() };
+    MessageChunk data { ChunkDescriptor::DATA, data_entries.toString() };
 
     try {
         Message msg { envelope };
         msg.setDataChunk(data);
         auto serialized_msg = msg.getSerialized();
 
+        LOG_INFO("Sending login message with id: %1%",
+                 envelope_entries.get<std::string>("id"));
+        LOG_DEBUG("Login message data: %1%", data.content);
 
-         ws_endpoint_ptr_->send(&serialized_msg[0], serialized_msg.size());
-
-
-         // ws_endpoint_ptr_->send(envelope_data.toString());
+        ws_endpoint_ptr_->send(&serialized_msg[0], serialized_msg.size());
     }  catch(WebSocket::message_error& e) {
         LOG_WARNING(e.what());
         throw e;
     }
 }
 
-// TODO: use the new Message class
-
-DataContainer Agent::parseAndValidateMessage(std::string message) {
-    DataContainer msg { message };
-    valijson::Schema message_schema = Schemas::network_message();
-    std::vector<std::string> errors;
-
-    if (!msg.validate(message_schema, errors)) {
-        std::string error_message { "message schema validation failed:\n" };
-        for (auto error : errors) {
-            error_message += error + "\n";
-        }
-
-        throw message_validation_error { error_message };
-    }
-
-    if (std::string("http://puppetlabs.com/cncschema").compare(
-            msg.get<std::string>("data_schema")) != 0) {
-        throw message_validation_error { "message is not of cnc schema" };
-    }
-
-    valijson::Schema data_schema { Schemas::cnc_data() };
-    if (!msg.validate(data_schema, errors, "data")) {
-        std::string error_message { "data schema validation failed:\n" };
-        for (auto error : errors) {
-            error_message += error + "\n";
-        }
-
-        throw message_validation_error { error_message };
-    }
-
-    return msg;
-}
-
-// TODO: use the new Message class
-
 void Agent::sendResponse(std::string receiver_endpoint,
                          std::string request_id,
-                         DataContainer response_output) {
-    DataContainer msg {};
-    std::string response_id { UUID::getUUID() };
-    msg.set<std::string>(response_id, "id");
-    msg.set<std::string>("1", "version");
-    msg.set<std::string>(StringUtils::getISO8601Time(DEFAULT_MSG_TIMEOUT_SEC),
-                         "expires");
-    msg.set<std::string>(ws_endpoint_ptr_->identity(), "sender");
+                         DataContainer response_output,
+                         std::vector<MessageChunk> debug_chunks) {
+    // Envelope
+    DataContainer envelope_entries {};
+    addCommonEnvelopeEntries(envelope_entries);
     std::vector<std::string> endpoints { receiver_endpoint };
-    msg.set<std::vector<std::string>>(endpoints, "endpoints");
-    std::vector<std::string> hops {};
-    msg.set<std::vector<std::string>>(hops, "hops");
-    msg.set<std::string>("http://puppetlabs.com/cncresponseschema", "data_schema");
-    msg.set<DataContainer>(response_output, "data", "response");
+
+    envelope_entries.set<std::vector<std::string>>(endpoints, "endpoints");
+    envelope_entries.set<std::string>("http://puppetlabs.com/cncresponseschema",
+                                      "data_schema");
+
+    // Data
+    DataContainer data_entries {};
+    data_entries.set<DataContainer>(response_output, "response");
+
+    // Create message chunks (debug chunks copied from the reponse)
+    MessageChunk envelope { ChunkDescriptor::ENVELOPE,
+                            envelope_entries.toString() };
+    MessageChunk data { ChunkDescriptor::DATA, data_entries.toString() };
 
     try {
-        std::string response_txt = msg.toString();
-        LOG_INFO("Responding to request %1%; response %2%, size %3%",
-                  request_id, response_id, response_txt.size());
-        LOG_DEBUG("Response %1%:\n%2%", response_id, response_txt);
-        ws_endpoint_ptr_->send(response_txt);
+        Message msg { envelope };
+        msg.setDataChunk(data);
+        for (const auto& d_c : debug_chunks) {
+            msg.addDebugChunk(d_c);
+        }
+        auto serialized_msg = msg.getSerialized();
+
+        LOG_INFO("Responding to request %1%; response %2%, size %3% bytes",
+                  request_id, envelope_entries.get<std::string>("id"),
+                  serialized_msg.size());
+        LOG_DEBUG("Response %1%:\n%2%",
+                  envelope_entries.get<std::string>("id"), msg.toString());
+
+        ws_endpoint_ptr_->send(&serialized_msg[0], serialized_msg.size());
     }  catch(WebSocket::message_error& e) {
-        LOG_ERROR("Failed to send %1%: %2%", response_id, e.what());
+        LOG_ERROR("Failed to send %1%: %2%",
+                  envelope_entries.get<std::string>("id"), e.what());
     }
 }
 
-// TODO: use the new Message class
+// NB: WebSocket onMessage callback
+void Agent::processMessageAndSendResponse(std::string message_txt) {
+    LOG_INFO("Received message:\n%1%", message_txt);
 
-// onMessage callback
-void Agent::processMessageAndSendResponse(std::string message) {
-    LOG_INFO("Received message:\n%1%", message);
-    std::unique_ptr<DataContainer> msg;
-
+    // Serialize the incoming message
+    std::unique_ptr<Message> msg_ptr;
     try {
-        auto m = parseAndValidateMessage(message);
-        msg.reset(&m);
+        msg_ptr.reset(new Message(message_txt));
+    } catch (message_processing_error& e) {
+        LOG_ERROR("Failed to deserialize message: %1%", e.what());
+        return;
+    }
 
-
-        // msg = std::move(parseAndValidateMessage(message));
+    // Parse the message content
+    ParsedContent parsed_content;
+    try {
+        parsed_content = msg_ptr->getParsedContent();
     } catch (message_validation_error& e) {
         LOG_ERROR("Invalid message: %1%", e.what());
         return;
     }
 
-    std::string request_id = msg->get<std::string>("id");
-    std::string module_name = msg->get<std::string>("data", "module");
-    std::string action_name = msg->get<std::string>("data", "action");
-    std::string sender_endpoint = msg->get<std::string>("sender");
+    auto request_id = parsed_content.envelope.get<std::string>("id");
+    auto sender_endpoint = parsed_content.envelope.get<std::string>("sender");
+
+    auto module_name = parsed_content.data.get<std::string>("module");
+    auto action_name = parsed_content.data.get<std::string>("action");
 
     try {
         if (modules_.find(module_name) != modules_.end()) {
-            std::shared_ptr<Module> module = modules_[module_name];
+            std::shared_ptr<Module> module_ptr = modules_[module_name];
 
-            auto response_output = module->validateAndCallAction(action_name,
-                                                                 *msg);
+            // Finally, validate and execute the requested action
+            auto output = module_ptr->validateAndCallAction(action_name,
+                                                            parsed_content);
 
-            sendResponse(sender_endpoint, request_id, response_output);
+            sendResponse(sender_endpoint,
+                         request_id,
+                         output,
+                         msg_ptr->getDebugChunks());
         } else {
             throw message_validation_error { "unknown module " + module_name };
         }
@@ -274,7 +268,10 @@ void Agent::processMessageAndSendResponse(std::string message) {
                   module_name, action_name, request_id, e.what());
         DataContainer err_result;
         err_result.set<std::string>(e.what(), "error");
-        sendResponse(sender_endpoint, request_id, err_result);
+        sendResponse(sender_endpoint,
+                     request_id,
+                     err_result,
+                     msg_ptr->getDebugChunks());
     }
 }
 

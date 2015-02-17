@@ -60,24 +60,25 @@ void runCommand(const std::string& exec,
 
 // Perform delayed actions
 
-void delayedAction(DataContainer request,
+void delayedAction(ParsedContent request,
                    std::string job_id,
                    std::string module_path,
                    std::string results_dir,
                    std::shared_ptr<std::atomic<bool>> done) {
+    // Get the request id
+    auto request_id = request.envelope.get<std::string>("id");
     // Get request parameters
-    auto request_id = request.get<std::string>("id");
-    auto module_name = request.get<std::string>("data", "module");
-    auto action_name = request.get<std::string>("data", "action");
-    auto input = request.get<DataContainer>("data", "params");
+    auto module_name = request.data.get<std::string>("module");
+    auto action_name = request.data.get<std::string>("action");
+    auto request_input = request.data.get<DataContainer>("params");
 
     // Initialize result files
     DataContainer status {};
     status.set<std::string>(module_name, "module");
     status.set<std::string>(action_name, "action");
 
-    if (!input.toString().empty()) {
-        status.set<std::string>(input.toString(), "input");
+    if (!request_input.toString().empty()) {
+        status.set<std::string>(request_input.toString(), "input");
     } else {
         status.set<std::string>("none", "input");
     }
@@ -90,7 +91,7 @@ void delayedAction(DataContainer request,
     FileUtils::writeToFile("", results_dir + "/stderr");
 
     // Prepare and run the command
-    std::string stdin = input.toString();
+    std::string stdin = request_input.toString();
     std::string stdout;
     std::string stderr;
     CthunAgent::Timer timer;
@@ -143,7 +144,7 @@ ExternalModule::ExternalModule(const std::string& path)
 }
 
 DataContainer ExternalModule::callAction(const std::string& action_name,
-                                         const DataContainer& request) {
+                                         const ParsedContent& request) {
     // TODO(ale): consider moving this up to the Module class (enable
     // blocking/non-blocking requests for a given module action pair)
 
@@ -158,14 +159,14 @@ DataContainer ExternalModule::callAction(const std::string& action_name,
 }
 
 DataContainer ExternalModule::callBlockingAction(const std::string& action_name,
-                                                 const DataContainer& request) {
-    std::string stdin = request.get<DataContainer>("data", "params").toString();
+                                                 const ParsedContent& request) {
+    auto request_input = request.data.get<DataContainer>("params").toString();
     std::string stdout;
     std::string stderr;
     LOG_INFO("About to execute '%1% %2%' - stdin: %3%",
-             module_name, action_name, stdin);
+             module_name, action_name, request_input);
 
-    runCommand(path_, { path_, action_name }, stdin, stdout, stderr);
+    runCommand(path_, { path_, action_name }, request_input, stdout, stderr);
 
     LOG_INFO("stdout: %1%", stdout);
     LOG_INFO("stderr: %1%", stderr);
@@ -174,10 +175,8 @@ DataContainer ExternalModule::callBlockingAction(const std::string& action_name,
 }
 
 DataContainer ExternalModule::executeDelayedAction(const std::string& action_name,
-                                                   const DataContainer& request,
+                                                   const ParsedContent& request,
                                                    const std::string& job_id) {
-    DataContainer input { request.get<DataContainer>("data", "params") };
-
     // check if the output directory exists. If it doesn't create it
     if (!FileUtils::fileExists(spool_dir_)) {
         LOG_INFO("%1% directory does not exist. Creating.", spool_dir_);
@@ -206,7 +205,7 @@ DataContainer ExternalModule::executeDelayedAction(const std::string& action_nam
         std::shared_ptr<std::atomic<bool>> done { new  std::atomic<bool> { false } };
 
         thread_container_.add(std::thread(&delayedAction,
-                                          DataContainer(request),
+                                          ParsedContent(request),
                                           job_id,
                                           std::string(path_),
                                           results_dir,
@@ -231,7 +230,7 @@ DataContainer ExternalModule::executeDelayedAction(const std::string& action_nam
 //
 
 const DataContainer ExternalModule::validateModuleAndGetMetadata_() {
-    valijson::Schema metadata_schema = Schemas::external_action_metadata();
+    auto metadata_schema = Schemas::getExternalActionMetadataSchema();
     std::string metadata_txt;
     std::string error;
 

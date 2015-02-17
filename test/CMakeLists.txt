@@ -9,16 +9,17 @@ set(SOURCES
     unit/agent_test.cpp
     unit/configuration_test.cpp
     unit/data_container_test.cpp
-    unit/external_module_test.cpp
+    unit/data_parser_test.cpp
+    # unit/external_module_test.cpp
     unit/file_utils_test.cpp
     unit/message_test.cpp
     unit/message_serialization_test.cpp
-    unit/module_test.cpp
+    # unit/module_test.cpp
     unit/thread_container_test.cpp
 
-    unit/modules/inventory_test.cpp
-    unit/modules/ping_test.cpp
-    unit/modules/status_test.cpp
+    # unit/modules/inventory_test.cpp
+    # unit/modules/ping_test.cpp
+    # unit/modules/status_test.cpp
 )
 
 set(test_BIN cthun-agent-unittests)

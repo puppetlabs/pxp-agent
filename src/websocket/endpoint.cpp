@@ -334,17 +334,13 @@ void Endpoint::onOpen(Connection_Handle hdl) {
             LOG_ERROR("On open callback failure; closing the connection");
         }
     }
-    close(Close_Code_Values::normal, "failed to execute the on open callback");
+    close(Close_Code_Values::normal, "failed to execute the onOpen callback");
 }
 
 void Endpoint::onMessage(Connection_Handle hdl, Client_Type::message_ptr msg) {
     LOG_TRACE("WebSocket onMessage event:\n%1%", msg->get_payload());
     if (on_message_callback_) {
         try {
-            // TODO: should I directly pass msg->get_payload().data()
-            // since we should be getting only binary data?
-            // See http://goo.gl/0fSu3T
-
             // NB: on_message_callback_ should not raise; in case of
             // failure; it must be able to notify back the error...
             on_message_callback_(msg->get_payload());

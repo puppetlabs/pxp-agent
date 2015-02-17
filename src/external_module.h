@@ -26,15 +26,15 @@ class ExternalModule : public Module {
     /// Throw a message_processing_error in case the action fails or
     /// if it returns an invalid output.
     DataContainer callAction(const std::string& action_name,
-                             const DataContainer& request);
+                             const ParsedContent& request);
 
-    // This is public for test purposes
+    // This is public for test purposes.
     DataContainer callBlockingAction(const std::string& action_name,
-                                     const DataContainer& request);
+                                     const ParsedContent& request);
 
     // Public (as above); also passing the job_id for the same reason.
     DataContainer executeDelayedAction(const std::string& action_name,
-                                       const DataContainer& request,
+                                       const ParsedContent& request,
                                        const std::string& job_id);
 
   private:

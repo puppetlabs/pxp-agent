@@ -20,21 +20,21 @@ TEST_CASE("MessageChunk", "[message]") {
 
         REQUIRE(m_c.descriptor == 0);
         REQUIRE(m_c.size == 0);
-        REQUIRE(m_c.data_portion == "");
+        REQUIRE(m_c.content == "");
     }
 
-    SECTION("correctly instantiate without passing the data portion size") {
+    SECTION("correctly instantiate without passing the data size") {
         MessageChunk m_c { 0x01, "lalala" };
 
         REQUIRE(m_c.descriptor == 0x01);
         REQUIRE(m_c.size == 6);
-        REQUIRE(m_c.data_portion == "lalala");
+        REQUIRE(m_c.content == "lalala");
 
         MessageChunk m_c_multi_byte_char { 0x02, "a β requires two bytes" };
 
         REQUIRE(m_c_multi_byte_char.descriptor == 0x02);
         REQUIRE(m_c_multi_byte_char.size == 23);
-        REQUIRE(m_c_multi_byte_char.data_portion == "a β requires two bytes");
+        REQUIRE(m_c_multi_byte_char.content == "a β requires two bytes");
     }
 
     SECTION("serialize correctly") {
@@ -52,6 +52,18 @@ static const MessageChunk envelope_chunk { 0x01, 16, "I am an envelope" };
 static const MessageChunk data_chunk { 0x02, 14, "some data here" };
 static const MessageChunk debug_chunk { 0x03, 18, "lots of debug info" };
 
+TEST_CASE("MessageChunk::toString", "[message]") {
+    SECTION("can get the string representation of the chunk") {
+        REQUIRE_NOTHROW(envelope_chunk.toString());
+    }
+
+    SECTION("the string representation of the chunk is correct") {
+        auto s = envelope_chunk.toString();  // "1" + "16" + "I am an envelope"
+        REQUIRE(s.size() == 1 + 2 + envelope_chunk.size);
+        REQUIRE(s.substr(1 + 2, std::string::npos) == envelope_chunk.content);
+    }
+}
+
 TEST_CASE("Message::Message, getters & inspectors - passing chunks", "[message]") {
     SECTION("can instantiate by passing an envelope chunk") {
         Message msg { envelope_chunk };
@@ -66,7 +78,7 @@ TEST_CASE("Message::Message, getters & inspectors - passing chunks", "[message]"
         REQUIRE(retrieved_env_chunk.descriptor == 1);
         REQUIRE(retrieved_data_chunk.descriptor == 0);
         REQUIRE(retrieved_data_chunk.size == 0);
-        REQUIRE(retrieved_data_chunk.data_portion == "");
+        REQUIRE(retrieved_data_chunk.content == "");
         REQUIRE(retrieved_debug_chunks.empty());
     }
 
@@ -132,25 +144,25 @@ static const SerializedMessage msg_buffer_valid {
     0x01,                           // version
     0x01,                           // envelope descriptor: 0000 0001
     0, 0, 0, 0x06,                  // envelope size
-    'h', 'e', 'a', 'd', 'e', 'r'    // envelope data portion
+    'h', 'e', 'a', 'd', 'e', 'r'    // envelope content
 };
 
 static const SerializedMessage data_chunk_buffer_valid {
     0x02,                           // data descriptor: 0000 0010
     0, 0, 0, 0x05,                  // data size
-    's', 't', 'u', 'f', 'f'         // data data portion (!)
+    's', 't', 'u', 'f', 'f'         // data content
 };
 
 static const SerializedMessage debug_chunk_buffer_valid_1 {
     0x03,                           // debug descriptor: 0000 0011
     0, 0, 0, 0x06,                  // debug size
-    'e', 'r', 'r', 'o', 'r', 's'    // debug data portion
+    'e', 'r', 'r', 'o', 'r', 's'    // debug content
 };
 
 static const SerializedMessage debug_chunk_buffer_valid_2 {
     0x13,                           // debug descriptor: 0001 0011
     0, 0, 0, 0x05 ,                 // debug size
-    's', 't', 'a', 't', 's'         // debug data portion
+    's', 't', 'a', 't', 's'         // debug content
 };
 
 using SM_V = std::vector<SerializedMessage>;
@@ -168,10 +180,10 @@ std::string vecToStr(SerializedMessage msg_buffer,
 void checkChunk(const MessageChunk& m_c,
                 const uint8_t descriptor,
                 const uint32_t size,
-                const std::string&& data_portion) {
+                const std::string& content) {
     REQUIRE(m_c.descriptor == descriptor);
     REQUIRE(m_c.size == size);
-    REQUIRE(m_c.data_portion == data_portion);
+    REQUIRE(m_c.content == content);
 }
 
 TEST_CASE("Message::Message - parsing valid messages", "[message]") {
@@ -518,9 +530,9 @@ TEST_CASE("Message serialization and parsing performance", "[message]") {
             auto data     = parsed_msg.getDataChunk();
             auto debug    = parsed_msg.getDebugChunks();
 
-            if (envelope.data_portion.size() != big_txt_size
-                || data.data_portion.size() != big_txt_size
-                || debug[0].data_portion.size() != big_txt_size) {
+            if (envelope.content.size() != big_txt_size
+                || data.content.size() != big_txt_size
+                || debug[0].content.size() != big_txt_size) {
                 FAIL("parsing failure");
             }
         }
