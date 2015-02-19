@@ -19,7 +19,7 @@ set(SOURCES
 
     unit/modules/inventory_test.cpp
     # unit/modules/ping_test.cpp
-    # unit/modules/status_test.cpp
+    unit/modules/status_test.cpp
 )
 
 set(test_BIN cthun-agent-unittests)
