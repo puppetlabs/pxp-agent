@@ -36,34 +36,10 @@ Ping::Ping() {
 }
 
 DataContainer Ping::ping(const ParsedContent& request) {
-    int sender_timestamp;
-    auto request_input = request.data.get<DataContainer>("params");
-    std::istringstream(request_input.get<std::string>("sender_timestamp")) >>
-        sender_timestamp;
-
-    boost::posix_time::ptime current_date_microseconds =
-        boost::posix_time::microsec_clock::local_time();
-    auto current_date_milliseconds =
-        current_date_microseconds.time_of_day().total_milliseconds();
-    auto time_to_agent = current_date_milliseconds - sender_timestamp;
-
     DataContainer data {};
-    data.set<std::string>(request_input.get<std::string>("sender_timestamp"),
-                          "sender_timestamp");
-    data.set<std::string>(std::to_string(time_to_agent), "time_to_agent");
-    data.set<std::string>(std::to_string(current_date_milliseconds),
-                          "agent_timestamp");
 
-    // TODO(ale): copy hops from the debug data
-    // if (request.debug.empty()) {
-    //     LOG_WARNING("Received no ping timings from server");
-    // }
-
-    // for (const auto& debug_entry : request_debug) {
-
-    // }
-    // data.set<std::vector<DataContainer>>(
-    //     request.debug.get<std::vector<DataContainer>>("hops"), "request_hops");
+    data.set<std::vector<DataContainer>>(
+        request.debug[0].get<std::vector<DataContainer>>("hops"), "request_hops");
 
     return data;
 }
