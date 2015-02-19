@@ -17,10 +17,7 @@ namespace CthunAgent {
 //
 
 namespace ChunkDescriptor {
-    // Filter format bits (JSON...)
-    static const uint8_t FORMAT_MASK { 0xF0 };
-
-    // Filter type bits (envelope, data, debug)
+    // Filter the chunk type bits (envelope, data, debug)
     static const uint8_t TYPE_MASK { 0x0F };
 
     // All the descriptors that use the JSON format

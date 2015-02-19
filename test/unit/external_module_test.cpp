@@ -1,5 +1,6 @@
 #include "test/test.h"
 
+#include "src/message.h"
 #include "src/data_container.h"
 #include "src/errors.h"
 #include "src/external_module.h"
@@ -23,19 +24,22 @@ const std::string RESULTS_ROOT_DIR { "/tmp/cthun-agent" };
 const std::string DELAYED_JOB_ID_LABEL { "id" };
 const std::string STRING_ACTION { "string" };
 
-boost::format msg_format {
-    "{  \"data\" : {"
-    "       \"module\" : %1%,"
-    "       \"action\" : %2%,"
-    "       \"params\" : %3%"
-    "   }"
+boost::format data_format {
+    "{\"module\" : %1%,"
+    " \"action\" : %2%,"
+    " \"params\" : %3%"
     "}"
 };
 
-const std::string reverse_txt { (msg_format % "\"reverse\""
-                                            % "\"string\""
-                                            % "\"maradona\"").str() };
-const DataContainer msg { reverse_txt };
+const std::string reverse_txt { (data_format % "\"reverse\""
+                                             % "\"string\""
+                                             % "\"maradona\"").str() };
+
+static const std::vector<DataContainer> no_debug {};
+
+static const ParsedContent content { DataContainer(),
+                                     DataContainer(reverse_txt),
+                                     no_debug };
 
 TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
     SECTION("can successfully instantiate from a valid external module") {
@@ -70,23 +74,27 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
         ExternalModule reverse_module { ROOT_PATH + "/modules/reverse" };
 
         SECTION("correctly call the shipped reverse module") {
-            auto result = reverse_module.validateAndCallAction(STRING_ACTION, msg);
+            auto result = reverse_module.validateAndCallAction(STRING_ACTION,
+                                                               content);
             REQUIRE(result.toString().find("anodaram") != std::string::npos);
         }
 
         SECTION("throw a message_validation_error if the action is unknown") {
             REQUIRE_THROWS_AS(reverse_module.validateAndCallAction("fake_action",
-                                                                    msg),
+                                                                    content),
                               message_validation_error);
         }
 
         SECTION("throw a message_validation_error if the message is invalid") {
-            std::string bad_reverse_txt { (msg_format % "\"reverse\""
-                                                      % "\"string\""
-                                                      % "[1, 2, 3, 4 ,5]").str() };
-            DataContainer bad_msg { bad_reverse_txt };
+            std::string bad_reverse_txt { (data_format % "\"reverse\""
+                                                       % "\"string\""
+                                                       % "[1, 2, 3, 4 ,5]").str() };
+            ParsedContent bad_content { DataContainer(),
+                                        DataContainer(bad_reverse_txt),
+                                        no_debug };
+
             REQUIRE_THROWS_AS(reverse_module.validateAndCallAction(STRING_ACTION,
-                                                                   bad_msg),
+                                                                   bad_content),
                               message_validation_error);
         }
     }
@@ -97,23 +105,27 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
 
         SECTION("throw a message_processing_error if the module returns an "
                 "invalid result") {
-            std::string failure_txt { (msg_format % "\"failures_test\""
-                                                  % "\"get_an_invalid_result\""
-                                                  % "\"maradona\"").str() };
-            DataContainer failure_msg { failure_txt };
+            std::string failure_txt { (data_format % "\"failures_test\""
+                                                   % "\"get_an_invalid_result\""
+                                                   % "\"maradona\"").str() };
+            ParsedContent failure_content { DataContainer(),
+                                            DataContainer(failure_txt),
+                                            no_debug };
             REQUIRE_THROWS_AS(test_reverse_module.validateAndCallAction(
-                                    "get_an_invalid_result", failure_msg),
+                                    "get_an_invalid_result", failure_content),
                               message_processing_error);
         }
 
         SECTION("throw a message_processing_error if a blocking action throws "
                 "an exception") {
-            std::string failure_txt { (msg_format % "\"failures_test\""
-                                                  % "\"broken_action\""
-                                                  % "\"maradona\"").str() };
-            DataContainer failure_msg { failure_txt };
+            std::string failure_txt { (data_format % "\"failures_test\""
+                                                   % "\"broken_action\""
+                                                   % "\"maradona\"").str() };
+            ParsedContent failure_content { DataContainer(),
+                                            DataContainer(failure_txt),
+                                            no_debug };
             REQUIRE_THROWS_AS(test_reverse_module.validateAndCallAction(
-                                    "broken_action", failure_msg),
+                                    "broken_action", failure_content),
                               message_processing_error);
         }
     }
@@ -136,12 +148,14 @@ TEST_CASE("ExternalModule::callAction - delayed", "[async]") {
     SECTION("it should return the response data containing the delayed job id") {
         ExternalModule test_reverse_module {
             ROOT_PATH + "/test/resources/modules/reverse_valid" };
-        std::string delayed_txt { (msg_format % "\"reverse_valid\""
-                                              % "\"delayed_action\""
-                                              % "\"the input string\"").str() };
-        DataContainer delayed_msg { delayed_txt };
+        std::string delayed_txt { (data_format % "\"reverse_valid\""
+                                               % "\"delayed_action\""
+                                               % "\"the input string\"").str() };
+        ParsedContent delayed_content { DataContainer(),
+                                        DataContainer(delayed_txt),
+                                        no_debug };
         auto result = test_reverse_module.validateAndCallAction("delayed_action",
-                                                                delayed_msg);
+                                                                delayed_content);
         REQUIRE(result.includes(DELAYED_JOB_ID_LABEL));
 
         // Try to clean it up
@@ -171,14 +185,14 @@ TEST_CASE("ExternalModule::executeDelayedAction", "[async]") {
     }
 
     SECTION("it should create the result directory for a given job") {
-        test_reverse_module.executeDelayedAction(STRING_ACTION, msg, job_id);
+        test_reverse_module.executeDelayedAction(STRING_ACTION, content, job_id);
         waitForAction(action_dir);
         CHECK(FileUtils::fileExists(action_dir));
         boost::filesystem::remove_all(action_dir);
     }
 
     SECTION("it should create the status, stdout, and stderr files") {
-        test_reverse_module.executeDelayedAction(STRING_ACTION, msg, job_id);
+        test_reverse_module.executeDelayedAction(STRING_ACTION, content, job_id);
         waitForAction(action_dir);
         CHECK(FileUtils::fileExists(action_dir + "/status"));
         CHECK(FileUtils::fileExists(action_dir + "/stdout"));
@@ -187,7 +201,7 @@ TEST_CASE("ExternalModule::executeDelayedAction", "[async]") {
     }
 
     SECTION("it should correctly write the completed status") {
-        test_reverse_module.executeDelayedAction(STRING_ACTION, msg, job_id);
+        test_reverse_module.executeDelayedAction(STRING_ACTION, content, job_id);
         waitForAction(action_dir);
         CHECK(FileUtils::fileExists(action_dir + "/status"));
 
@@ -200,7 +214,7 @@ TEST_CASE("ExternalModule::executeDelayedAction", "[async]") {
     }
 
     SECTION("it should correctly write the result") {
-        test_reverse_module.executeDelayedAction(STRING_ACTION, msg, job_id);
+        test_reverse_module.executeDelayedAction(STRING_ACTION, content, job_id);
         waitForAction(action_dir);
         CHECK(FileUtils::fileExists(action_dir + "/stdout"));
 
