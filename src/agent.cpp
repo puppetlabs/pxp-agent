@@ -202,6 +202,8 @@ void Agent::sendResponse(std::string receiver_endpoint,
     try {
         Message msg { envelope };
         msg.setDataChunk(data);
+
+        // Copy debug chunks
         for (const auto& d_c : debug_chunks) {
             msg.addDebugChunk(d_c);
         }

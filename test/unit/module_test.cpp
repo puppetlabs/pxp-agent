@@ -14,9 +14,9 @@ static const std::string echo_action { "echo" };
 static const std::string fake_action { "fake_action" };
 
 static const std::string echo_data_txt {
-    "{\"module\" : \"echo\","
-    " \"action\" : \"echo\","
-    " \"params\" : \"maradona\""
+    "{  \"module\" : \"echo\","
+    "   \"action\" : \"echo\","
+    "   \"params\" : \"maradona\""
     "}"
 };
 
@@ -27,9 +27,9 @@ static const ParsedContent content { DataContainer(),
                                      no_debug };
 
 static const std::string bad_echo_data_txt {
-    "{\"module\" : \"echo\","
-    " \"action\" : \"echo\","
-    " \"params\" : [1, 2, 3, 4 ,5]"
+    "{  \"module\" : \"echo\","
+    "   \"action\" : \"echo\","
+    "   \"params\" : [1, 2, 3, 4 ,5]"
     "}"
 };
 

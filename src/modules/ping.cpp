@@ -53,8 +53,17 @@ DataContainer Ping::ping(const ParsedContent& request) {
     data.set<std::string>(std::to_string(time_to_agent), "time_to_agent");
     data.set<std::string>(std::to_string(current_date_milliseconds),
                           "agent_timestamp");
-    data.set<std::vector<DataContainer>>(
-        request.data.get<std::vector<DataContainer>>("hops"), "request_hops");
+
+    // TODO(ale): copy hops from the debug data
+    // if (request.debug.empty()) {
+    //     LOG_WARNING("Received no ping timings from server");
+    // }
+
+    // for (const auto& debug_entry : request_debug) {
+
+    // }
+    // data.set<std::vector<DataContainer>>(
+    //     request.debug.get<std::vector<DataContainer>>("hops"), "request_hops");
 
     return data;
 }

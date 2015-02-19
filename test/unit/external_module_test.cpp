@@ -16,8 +16,6 @@
 
 extern std::string ROOT_PATH;
 
-// TODO(ale): use new Message class
-
 namespace CthunAgent {
 
 const std::string RESULTS_ROOT_DIR { "/tmp/cthun-agent" };
@@ -25,9 +23,9 @@ const std::string DELAYED_JOB_ID_LABEL { "id" };
 const std::string STRING_ACTION { "string" };
 
 boost::format data_format {
-    "{\"module\" : %1%,"
-    " \"action\" : %2%,"
-    " \"params\" : %3%"
+    "{  \"module\" : %1%,"
+    "   \"action\" : %2%,"
+    "   \"params\" : %3%"
     "}"
 };
 
