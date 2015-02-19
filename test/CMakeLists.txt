@@ -18,7 +18,7 @@ set(SOURCES
     unit/thread_container_test.cpp
 
     unit/modules/inventory_test.cpp
-    # unit/modules/ping_test.cpp
+    unit/modules/ping_test.cpp
     unit/modules/status_test.cpp
 )
 

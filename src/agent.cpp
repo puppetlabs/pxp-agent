@@ -149,8 +149,7 @@ void Agent::sendLogin() {
     std::vector<std::string> endpoints { "cth://server" };
 
     envelope_entries.set<std::vector<std::string>>(endpoints, "endpoints");
-    envelope_entries.set<std::string>("http://puppetlabs.com/loginschema",
-                                      "data_schema");
+    envelope_entries.set<std::string>(CTHUN_LOGIN_SCHEMA, "data_schema");
 
     // Data
     DataContainer data_entries {};
@@ -187,8 +186,7 @@ void Agent::sendResponse(std::string receiver_endpoint,
     std::vector<std::string> endpoints { receiver_endpoint };
 
     envelope_entries.set<std::vector<std::string>>(endpoints, "endpoints");
-    envelope_entries.set<std::string>("http://puppetlabs.com/cncresponseschema",
-                                      "data_schema");
+    envelope_entries.set<std::string>(CTHUN_RESPONSE_SCHEMA, "data_schema");
 
     // Data
     DataContainer data_entries {};

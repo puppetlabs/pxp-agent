@@ -17,8 +17,6 @@ extern std::string ROOT_PATH;
 
 namespace CthunAgent {
 
-// TODO(ale): use new Message class
-
 static const std::string query_action { "query" };
 
 boost::format status_format {
