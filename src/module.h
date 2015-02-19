@@ -3,6 +3,7 @@
 
 #include "src/action.h"
 #include "src/data_container.h"
+#include "src/message.h"
 
 #include <map>
 #include <string>
@@ -16,7 +17,7 @@ class Module {
 
     /// Performs the requested action.
     virtual DataContainer callAction(const std::string& action_name,
-                                     const Message& request) = 0;
+                                     const ParsedContent& request) = 0;
 
     /// Validate the json schemas of input and output.
     /// Start the requested action for the particular module.
@@ -25,7 +26,7 @@ class Module {
     /// invalid request input, or if the requested action provides an
     /// invalid output.
     DataContainer validateAndCallAction(const std::string& action_name,
-                                        const Message& request);
+                                        const ParsedContent& request);
 };
 
 }  // namespace CthunAgent

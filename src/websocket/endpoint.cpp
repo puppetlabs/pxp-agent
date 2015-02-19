@@ -173,6 +173,18 @@ void Endpoint::send(std::string msg) {
     }
 }
 
+void Endpoint::send(void* const serialized_msg_ptr, size_t msg_len) {
+    websocketpp::lib::error_code ec;
+    endpoint_.send(connection_handle_,
+                   serialized_msg_ptr,
+                   msg_len,
+                   websocketpp::frame::opcode::binary,
+                   ec);
+    if (ec) {
+        throw message_error { "Failed to send message: " + ec.message() };
+    }
+}
+
 void Endpoint::ping(const std::string& binary_payload) {
     websocketpp::lib::error_code ec;
     endpoint_.ping(connection_handle_, binary_payload, ec);
@@ -322,15 +334,15 @@ void Endpoint::onOpen(Connection_Handle hdl) {
             LOG_ERROR("On open callback failure; closing the connection");
         }
     }
-    close(Close_Code_Values::normal, "failed to execute the on open callback");
+    close(Close_Code_Values::normal, "failed to execute the onOpen callback");
 }
 
 void Endpoint::onMessage(Connection_Handle hdl, Client_Type::message_ptr msg) {
     LOG_TRACE("WebSocket onMessage event:\n%1%", msg->get_payload());
     if (on_message_callback_) {
         try {
-            // NB: on_message_callback_ should not raise; in case of failure, it
-            //     must be able to reply to notify the error...
+            // NB: on_message_callback_ should not raise; in case of
+            // failure; it must be able to notify back the error...
             on_message_callback_(msg->get_payload());
         } catch (std::exception&  e) {
             LOG_ERROR("Unexpected error during onMessage: %1%", e.what());

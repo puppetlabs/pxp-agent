@@ -29,12 +29,12 @@ Status::Status() {
 }
 
 DataContainer Status::callAction(const std::string& action_name,
-                                 const Message& request) {
+                                 const ParsedContent& request) {
     DataContainer output {};
-    DataContainer input { request.get<DataContainer>("data", "params") };
-    std::string job_id { input.get<std::string>("job_id") };
+    auto request_input = request.data.get<DataContainer>("params");
+    auto job_id = request_input.get<std::string>("job_id");
 
-    std::string spool_dir = Configuration::Instance().get<std::string>("spool-dir");
+    auto spool_dir = Configuration::Instance().get<std::string>("spool-dir");
 
     if (!FileUtils::fileExists(spool_dir + job_id)) {
         LOG_ERROR("Found no results for job id %1%", job_id);

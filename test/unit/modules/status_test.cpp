@@ -20,15 +20,19 @@ namespace CthunAgent {
 static const std::string query_action { "query" };
 
 boost::format status_format {
-    "{\"data\" : {"
-    "    \"module\" : \"status\","
+    "{   \"module\" : \"status\","
     "    \"action\" : \"query\","
     "    \"params\" : {\"job_id\" : \"%1%\"}"
-    "    }"
     "}"
 };
 
-static const Message msg { (status_format % "the-uuid-string").str() };
+static const std::string status_txt { (status_format % "the-uuid-string").str() };
+
+static const std::vector<DataContainer> no_debug {};
+
+static const ParsedContent content { DataContainer(),
+                                     DataContainer(status_txt),
+                                     no_debug };
 
 TEST_CASE("Modules::Status::callAction", "[modules]") {
     Modules::Status status_module {};
@@ -43,19 +47,22 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
     }
 
     SECTION("it can call the 'query' action") {
-        REQUIRE_NOTHROW(status_module.callAction(query_action, msg));
+        REQUIRE_NOTHROW(status_module.callAction(query_action, content));
     }
 
     SECTION("it works properly when an unknown job id is provided") {
         auto job_id = UUID::getUUID();
-        Message unknown_msg { (status_format % job_id).str() };
+        std::string other_status_txt { (status_format % job_id).str() };
+        ParsedContent other_content { DataContainer(),
+                                     DataContainer(other_status_txt),
+                                     no_debug };
 
         SECTION("it doesn't throw") {
-            REQUIRE_NOTHROW(status_module.callAction(query_action, unknown_msg));
+            REQUIRE_NOTHROW(status_module.callAction(query_action, other_content));
         }
 
         SECTION("it returns an error") {
-            auto result = status_module.callAction(query_action, unknown_msg);
+            auto result = status_module.callAction(query_action, other_content);
             REQUIRE(result.includes("error"));
         }
     }
@@ -68,7 +75,10 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
         std::string symlink_path { DEFAULT_ACTION_RESULTS_DIR + symlink_name };
         boost::filesystem::path symlink { symlink_path };
 
-        Message known_msg { (status_format % symlink_name).str() };
+        std::string other_status_txt { (status_format % symlink_name).str() };
+        ParsedContent other_content { DataContainer(),
+                                     DataContainer(other_status_txt),
+                                     no_debug };
 
         try {
             boost::filesystem::create_symlink(to, symlink);
@@ -77,21 +87,21 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
         }
 
         SECTION("it doesn't throw") {
-            REQUIRE_NOTHROW(status_module.callAction(query_action, known_msg));
+            REQUIRE_NOTHROW(status_module.callAction(query_action, other_content));
         }
 
         SECTION("it returns the action status") {
-            auto result = status_module.callAction(query_action, known_msg);
+            auto result = status_module.callAction(query_action, other_content);
             REQUIRE(result.get<std::string>("status") == "Completed");
         }
 
         SECTION("it returns the action output") {
-            auto result = status_module.callAction(query_action, known_msg);
+            auto result = status_module.callAction(query_action, other_content);
             REQUIRE(result.get<std::string>("stdout") == "***OUTPUT\n");
         }
 
         SECTION("it returns the action error string") {
-            auto result = status_module.callAction(query_action, known_msg);
+            auto result = status_module.callAction(query_action, other_content);
             REQUIRE(result.get<std::string>("stderr") == "***ERROR\n");
         }
 

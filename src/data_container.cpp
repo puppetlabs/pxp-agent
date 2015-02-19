@@ -1,5 +1,6 @@
 #include "src/data_container.h"
 #include "src/errors.h"
+#include "src/message.h"
 
 namespace CthunAgent {
 
@@ -95,17 +96,6 @@ DataContainer DataContainer::getValue<>(const rapidjson::Value& value) const {
     // rvalue return
     DataContainer containter { value };
     return containter;
-}
-
-template<>
-Message DataContainer::getValue<>(const rapidjson::Value& value) const {
-    if (value.IsNull()) {
-        Message container {};
-        return container;
-    }
-    // rvalue return
-    Message container { value };
-    return container;
 }
 
 template<>

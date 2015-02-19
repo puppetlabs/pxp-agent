@@ -99,6 +99,7 @@ class Endpoint {
     /// Send the message to the server.
     /// Throw a message_error in case of failure.
     void send(std::string msg);
+    void send(void* const serialized_msg_ptr, size_t msg_len);
 
     /// Ping the server.
     /// Throw a message_error in case of failure.
@@ -110,6 +111,8 @@ class Endpoint {
     /// Throw a message_error in case of failure.
     void close(Close_Code code = Close_Code_Values::normal,
                const std::string& reason = DEFAULT_CLOSE_REASON);
+
+    // TODO(ale): move this to the Agent
 
     /// Returns the agent identity
     std::string identity();

@@ -10,7 +10,7 @@ class Status : public CthunAgent::Module {
   public:
     Status();
     DataContainer callAction(const std::string& action_name,
-                             const Message& request);
+                             const ParsedContent& request);
 };
 
 }  // namespace Modules
