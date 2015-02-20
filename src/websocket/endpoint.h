@@ -54,7 +54,7 @@ namespace ConnectionStateValues {
 
 using ConnectionState = ConnectionStateValues::value_;
 
-static const std::string PING_PAYLOAD_DEFAULT { "cthun-agent ping payload" };
+static const std::string PING_PAYLOAD_DEFAULT { "" };
 static const uint32_t CONNECTION_BACKOFF_S { 2 };  // [s]
 
 //
