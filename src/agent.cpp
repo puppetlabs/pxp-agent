@@ -11,9 +11,6 @@
 #include "src/string_utils.h"
 #include "src/websocket/errors.h"
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <vector>
 #include <memory>
 
@@ -21,10 +18,48 @@ LOG_DECLARE_NAMESPACE("agent");
 
 namespace CthunAgent {
 
+namespace fs = boost::filesystem;
+
 static const uint CONNECTION_STATE_CHECK_INTERVAL { 15 };
 static const int DEFAULT_MSG_TIMEOUT_SEC { 10 };
 
-Agent::Agent(std::string bin_path) {
+//
+// Utility functions
+//
+
+std::string getAgentIdentityFromCert_(const std::string& client_crt_path) {
+    // TODO(ale): fix compiler warnings about deprecated openssl types
+
+    std::unique_ptr<std::FILE, int(*)(std::FILE*)> fp {
+        std::fopen(client_crt_path.data(), "r"), std::fclose };
+    if (fp == nullptr) {
+        throw fatal_error { "certificate file '" + client_crt_path
+                            + "' does not exist." };
+    }
+    std::unique_ptr<X509, void(*)(X509*)> cert {
+        PEM_read_X509(fp.get(), NULL, NULL, NULL), X509_free };
+    X509_NAME* subj = X509_get_subject_name(cert.get());
+    X509_NAME_ENTRY* entry = X509_NAME_get_entry(subj, 0);
+    ASN1_STRING* asn1_string = X509_NAME_ENTRY_get_data(entry);
+    unsigned char* tmp = ASN1_STRING_data(asn1_string);
+    int string_size = ASN1_STRING_length(asn1_string);
+    return "cth://" + std::string(tmp, tmp + string_size) + "/cthun-agent";
+}
+
+//
+// Agent
+//
+
+Agent::Agent(std::string bin_path,
+             std::string ca_crt_path,
+             std::string client_crt_path,
+             std::string client_key_path)
+        : ca_crt_path_ { ca_crt_path },
+          client_crt_path_ { client_crt_path },
+          client_key_path_ { client_key_path },
+          identity_ { getAgentIdentityFromCert_(client_crt_path) } {
+    // NB: certificate paths are validated by HW
+
     // declare internal modules
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
     modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
@@ -36,19 +71,61 @@ Agent::Agent(std::string bin_path) {
     // called by a symlink. The only safe way to refer to external
     // modules is to store them in a known location (ex. ~/cthun/).
 
-    namespace fs = boost::filesystem;
-
-    fs::path module_path {
+    fs::path modules_dir_path {
         fs::canonical(
             fs::system_complete(
                 fs::path(bin_path)).parent_path().parent_path())
     };
-    module_path += "/modules";
+    modules_dir_path += "/modules";
+    loadExternalModules_(modules_dir_path);
 
-    if (fs::is_directory(module_path)) {
+    listModules_();
+}
+
+Agent::~Agent() {
+    if (ws_endpoint_ptr_) {
+        // reset callbacks to avoid breaking the WebSocket Endpoint
+        // with invalid reference context
+        LOG_INFO("Resetting the WebSocket event callbacks");
+        ws_endpoint_ptr_->resetCallbacks();
+    }
+}
+
+void Agent::startAgent(std::string server_url) {
+    try {
+        ws_endpoint_ptr_.reset(new WebSocket::Endpoint(server_url,
+                                                       ca_crt_path_,
+                                                       client_crt_path_,
+                                                       client_key_path_));
+    } catch (WebSocket::websocket_error& e) {
+        LOG_WARNING(e.what());
+        throw fatal_error { "failed to initialize" };
+    }
+
+    setConnectionCallbacks_();
+
+    try {
+        ws_endpoint_ptr_->connect();
+    } catch (WebSocket::connection_error& e) {
+        LOG_WARNING(e.what());
+        throw fatal_error { "failed to connect" };
+    }
+    monitorConnectionState_();
+}
+
+std::string Agent::getIdentity() const {
+    return identity_;
+}
+
+//
+// Agent - private interface
+//
+
+void Agent::loadExternalModules_(boost::filesystem::path modules_dir_path) {
+    if (fs::is_directory(modules_dir_path)) {
         fs::directory_iterator end;
 
-        for (auto f = fs::directory_iterator(module_path); f != end; ++f) {
+        for (auto f = fs::directory_iterator(modules_dir_path); f != end; ++f) {
             if (!fs::is_directory(f->status())) {
                 auto f_p = f->path().string();
                 LOG_INFO(f_p);
@@ -70,47 +147,7 @@ Agent::Agent(std::string bin_path) {
     }
 }
 
-Agent::~Agent() {
-    if (ws_endpoint_ptr_) {
-        // reset callbacks to avoid breaking the WebSocket Endpoint
-        // with invalid reference context
-        LOG_INFO("Resetting the WebSocket event callbacks");
-        ws_endpoint_ptr_->resetCallbacks();
-    }
-}
-
-void Agent::startAgent(std::string url,
-                       std::string ca_crt_path,
-                       std::string client_crt_path,
-                       std::string client_key_path) {
-    listModules();
-
-    try {
-        ws_endpoint_ptr_.reset(new WebSocket::Endpoint(url,
-                                                       ca_crt_path,
-                                                       client_crt_path,
-                                                       client_key_path));
-    } catch (WebSocket::websocket_error& e) {
-        LOG_WARNING(e.what());
-        throw fatal_error { "failed to initialize" };
-    }
-
-    setConnectionCallbacks();
-
-    try {
-        ws_endpoint_ptr_->connect();
-    } catch (WebSocket::connection_error& e) {
-        LOG_WARNING(e.what());
-        throw fatal_error { "failed to connect" };
-    }
-    monitorConnectionState();
-}
-
-//
-// Agent - private
-//
-
-void Agent::listModules() {
+void Agent::listModules_() const {
     LOG_INFO("Loaded modules:");
     for (auto module : modules_) {
         LOG_INFO("   %1%", module.first);
@@ -120,32 +157,32 @@ void Agent::listModules() {
     }
 }
 
-void Agent::setConnectionCallbacks() {
+void Agent::setConnectionCallbacks_() {
     ws_endpoint_ptr_->setOnOpenCallback(
         [this]() {
-            sendLogin();
+            sendLogin_();
         });
 
     ws_endpoint_ptr_->setOnMessageCallback(
         [this](std::string message) {
-            processMessageAndSendResponse(message);
+            processMessageAndSendResponse_(message);
         });
 }
 
-void Agent::addCommonEnvelopeEntries(DataContainer& envelope_entries) {
-    auto id = UUID::getUUID();
+void Agent::addCommonEnvelopeEntries_(DataContainer& envelope_entries) {
+    auto msg_id = UUID::getUUID();
     auto expires = StringUtils::getISO8601Time(DEFAULT_MSG_TIMEOUT_SEC);
 
-    envelope_entries.set<std::string>(id, "id");
+    envelope_entries.set<std::string>(msg_id, "id");
     envelope_entries.set<std::string>(expires, "expires");
-    envelope_entries.set<std::string>(ws_endpoint_ptr_->identity(), "sender");
+    envelope_entries.set<std::string>(identity_, "sender");
 }
 
 // NB: WebSocket onOpen callback
-void Agent::sendLogin() {
+void Agent::sendLogin_() {
     // Envelope
     DataContainer envelope_entries {};
-    addCommonEnvelopeEntries(envelope_entries);
+    addCommonEnvelopeEntries_(envelope_entries);
     std::vector<std::string> endpoints { "cth://server" };
 
     envelope_entries.set<std::vector<std::string>>(endpoints, "endpoints");
@@ -176,13 +213,13 @@ void Agent::sendLogin() {
     }
 }
 
-void Agent::sendResponse(std::string receiver_endpoint,
-                         std::string request_id,
-                         DataContainer response_output,
-                         std::vector<MessageChunk> debug_chunks) {
+void Agent::sendResponse_(std::string receiver_endpoint,
+                          std::string request_id,
+                          DataContainer response_output,
+                          std::vector<MessageChunk> debug_chunks) {
     // Envelope
     DataContainer envelope_entries {};
-    addCommonEnvelopeEntries(envelope_entries);
+    addCommonEnvelopeEntries_(envelope_entries);
     std::vector<std::string> endpoints { receiver_endpoint };
 
     envelope_entries.set<std::vector<std::string>>(endpoints, "endpoints");
@@ -221,7 +258,7 @@ void Agent::sendResponse(std::string receiver_endpoint,
 }
 
 // NB: WebSocket onMessage callback
-void Agent::processMessageAndSendResponse(std::string message_txt) {
+void Agent::processMessageAndSendResponse_(std::string message_txt) {
     LOG_INFO("Received message:\n%1%", message_txt);
 
     // Serialize the incoming message
@@ -256,10 +293,10 @@ void Agent::processMessageAndSendResponse(std::string message_txt) {
             auto output = module_ptr->validateAndCallAction(action_name,
                                                             parsed_content);
 
-            sendResponse(sender_endpoint,
-                         request_id,
-                         output,
-                         msg_ptr->getDebugChunks());
+            sendResponse_(sender_endpoint,
+                          request_id,
+                          output,
+                          msg_ptr->getDebugChunks());
         } else {
             throw message_validation_error { "unknown module " + module_name };
         }
@@ -268,14 +305,14 @@ void Agent::processMessageAndSendResponse(std::string message_txt) {
                   module_name, action_name, request_id, e.what());
         DataContainer err_result;
         err_result.set<std::string>(e.what(), "error");
-        sendResponse(sender_endpoint,
-                     request_id,
-                     err_result,
-                     msg_ptr->getDebugChunks());
+        sendResponse_(sender_endpoint,
+                      request_id,
+                      err_result,
+                      msg_ptr->getDebugChunks());
     }
 }
 
-void Agent::monitorConnectionState() {
+void Agent::monitorConnectionState_() {
     for (;;) {
         sleep(CONNECTION_STATE_CHECK_INTERVAL);
 

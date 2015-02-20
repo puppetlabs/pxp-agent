@@ -31,10 +31,6 @@ Endpoint::Endpoint(const std::string& server_url,
           client_crt_path_ { client_crt_path },
           client_key_path_ { client_key_path },
           connection_state_ { ConnectionStateValues::initialized } {
-    // Determine our name (this may throw a file_not_found_exception
-    // and the dtor won't be called, but it's ok at this point)
-    identity_ = getClientIdentityFromCert_();
-
     // Turn off websocketpp logging to avoid runtime errors (see CTH-69)
     endpoint_.clear_access_channels(websocketpp::log::alevel::all);
     endpoint_.clear_error_channels(websocketpp::log::elevel::all);
@@ -64,7 +60,7 @@ Endpoint::Endpoint(const std::string& server_url,
         LOG_DEBUG("Failed to configure the websocket endpoint; about to stop "
                   "the event loop");
         cleanUp_();
-        throw endpoint_error { "Failed to initialize" };
+        throw endpoint_error { "failed to initialize" };
     }
 }
 
@@ -161,7 +157,7 @@ void Endpoint::connect(int max_connect_attempts) {
     } while (try_again);
 
     connection_backoff_s_ = CONNECTION_BACKOFF_S;
-    throw connection_error { "Failed to connect after " + std::to_string(idx)
+    throw connection_error { "failed to connect after " + std::to_string(idx)
                              + " attempt" + StringUtils::plural(idx) };
 }
 
@@ -169,7 +165,7 @@ void Endpoint::send(std::string msg) {
     websocketpp::lib::error_code ec;
     endpoint_.send(connection_handle_, msg, websocketpp::frame::opcode::binary, ec);
     if (ec) {
-        throw message_error { "Failed to send message: " + ec.message() };
+        throw message_error { "failed to send message: " + ec.message() };
     }
 }
 
@@ -181,7 +177,7 @@ void Endpoint::send(void* const serialized_msg_ptr, size_t msg_len) {
                    websocketpp::frame::opcode::binary,
                    ec);
     if (ec) {
-        throw message_error { "Failed to send message: " + ec.message() };
+        throw message_error { "failed to send message: " + ec.message() };
     }
 }
 
@@ -189,7 +185,7 @@ void Endpoint::ping(const std::string& binary_payload) {
     websocketpp::lib::error_code ec;
     endpoint_.ping(connection_handle_, binary_payload, ec);
     if (ec) {
-        throw message_error { "Failed to ping: " + ec.message() };
+        throw message_error { "failed to ping: " + ec.message() };
     }
 }
 
@@ -198,36 +194,13 @@ void Endpoint::close(Close_Code code, const std::string& reason) {
     websocketpp::lib::error_code ec;
     endpoint_.close(connection_handle_, code, reason, ec);
     if (ec) {
-        throw message_error { "Failed to close connetion: " + ec.message() };
+        throw message_error { "failed to close connetion: " + ec.message() };
     }
-}
-
-std::string Endpoint::identity() {
-    return identity_;
 }
 
 //
 // Private methods
 //
-
-std::string Endpoint::getClientIdentityFromCert_() {
-    // TODO(ale): fix compiler warnings about deprecated openssl types
-
-    std::unique_ptr<std::FILE, int(*)(std::FILE*)> fp {
-        std::fopen(client_crt_path_.data(), "r"), std::fclose };
-    if (fp == nullptr) {
-        throw file_not_found_error { "Certificate file '" + client_crt_path_ +
-                                     "' does not exist." };
-    }
-    std::unique_ptr<X509, void(*)(X509*)> cert {
-        PEM_read_X509(fp.get(), NULL, NULL, NULL), X509_free };
-    X509_NAME* subj = X509_get_subject_name(cert.get());
-    X509_NAME_ENTRY* entry = X509_NAME_get_entry(subj, 0);
-    ASN1_STRING* asn1_string = X509_NAME_ENTRY_get_data(entry);
-    unsigned char* tmp = ASN1_STRING_data(asn1_string);
-    int string_size = ASN1_STRING_length(asn1_string);
-    return "cth://" + std::string(tmp, tmp + string_size) + "/cthun-agent";
-}
 
 void Endpoint::cleanUp_() {
     endpoint_.stop_perpetual();
@@ -246,7 +219,7 @@ void Endpoint::connect_() {
     Client_Type::connection_ptr connection_ptr {
         endpoint_.get_connection(server_url_, ec) };
     if (ec) {
-        throw connection_error { "Failed to connect to " + server_url_ + ": "
+        throw connection_error { "failed to connect to " + server_url_ + ": "
                                  + ec.message() };
     }
     connection_handle_ = connection_ptr->get_handle();

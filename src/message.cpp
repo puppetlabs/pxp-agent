@@ -190,7 +190,7 @@ ParsedContent Message::getParsedContent() const {
     DataContainer data_content {};
     if (hasData()) {
         auto schema = envelope_content.get<std::string>("data_schema");
-        // assert(SchemaFormat.find(schema) != SchemaFormat.end());
+        assert(SchemaFormat.find(schema) != SchemaFormat.end());
         data_content = DataParser::parseAndValidateChunk(data_chunk_,
                                                          SchemaFormat[schema]);
     }

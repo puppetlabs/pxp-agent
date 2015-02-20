@@ -43,12 +43,12 @@ int startAgent(std::vector<std::string> arguments   ) {
     }
 
     try {
-        Agent agent { HW::GetFlag<std::string>("module-dir") };
+        Agent agent { HW::GetFlag<std::string>("module-dir"),
+                      FileUtils::shellExpand(HW::GetFlag<std::string>("ca")),
+                      FileUtils::shellExpand(HW::GetFlag<std::string>("cert")),
+                      FileUtils::shellExpand(HW::GetFlag<std::string>("key")) };
 
-        agent.startAgent(HW::GetFlag<std::string>("server"),
-                         FileUtils::shellExpand(HW::GetFlag<std::string>("ca")),
-                         FileUtils::shellExpand(HW::GetFlag<std::string>("cert")),
-                         FileUtils::shellExpand(HW::GetFlag<std::string>("key")));
+        agent.startAgent(HW::GetFlag<std::string>("server"));
     } catch (fatal_error& e) {
         LOG_ERROR("fatal error: %1%", e.what());
         return 1;
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
     try {
         parse_result = Configuration::Instance().initialize(argc, argv);
     } catch(configuration_error e) {
-        std::cout << "An error occurred while parsing your configuration." << std::endl;
+        std::cout << "An error occurred while parsing your configuration.\n";
         std::cout << e.what() << std::endl;
         return 1;
     }
@@ -98,8 +98,8 @@ int main(int argc, char *argv[]) {
             return 0;
         default:
             std::cout << "An unexpected code was returned when trying to parse"
-                      << "command line arguments - " << parse_result << ". Aborting"
-                      << std::endl;
+                      << "command line arguments - " << parse_result
+                      << ". Aborting" << std::endl;
             return 1;
     }
 }
