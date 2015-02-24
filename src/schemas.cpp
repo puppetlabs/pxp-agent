@@ -125,6 +125,7 @@ valijson::Schema Schemas::getEnvelopeSchema() {
     V_C::TypeConstraint json_type_string { V_C::TypeConstraint::kString };
     V_C::TypeConstraint json_type_array { V_C::TypeConstraint::kArray };
     V_C::TypeConstraint json_type_integer { V_C::TypeConstraint::kInteger };
+    V_C::TypeConstraint json_type_boolean { V_C::TypeConstraint::kBoolean };
 
     V_C::PropertiesConstraint::PropertySchemaMap properties;
     V_C::PropertiesConstraint::PropertySchemaMap pattern_properties;
@@ -150,6 +151,9 @@ valijson::Schema Schemas::getEnvelopeSchema() {
     required_properties.insert("data_schema");
     // TODO(richardc): maybe this has a set form
     properties["data_schema"].addConstraint(json_type_string);
+
+    // optional destination_report (server handled)
+    properties["destination_report"].addConstraint(json_type_boolean);
 
     // constrain the properties to just those in the properies and
     // pattern_properties maps
