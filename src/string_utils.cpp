@@ -5,7 +5,6 @@
 #include <iostream>
 #include <ctime>
 #include <time.h>
-#include <codecvt>
 
 namespace CthunAgent {
 namespace StringUtils {
@@ -63,11 +62,6 @@ std::string getISO8601Time(unsigned int modifier_in_seconds) {
     boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time()
                                  + boost::posix_time::seconds(modifier_in_seconds);
     return boost::posix_time::to_iso_extended_string(t) + "Z";
-}
-
-int getLengthOfUTF8String(std::string txt) {
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cv;
-    return static_cast<int>(cv.from_bytes(txt).size());
 }
 
 }  // namespace StringUtils
