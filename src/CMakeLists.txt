@@ -27,6 +27,16 @@ set(LIBRARY_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/thread_container.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/websocket/endpoint.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/websocket/connection_timings.cpp"
+
+    "${CTHUN_CLIENT_SOURCE_DIR}/connector/client_metadata.cpp"
+    "${CTHUN_CLIENT_SOURCE_DIR}/connector/connection.cpp"
+    "${CTHUN_CLIENT_SOURCE_DIR}/connector/connector.cpp"
+    "${CTHUN_CLIENT_SOURCE_DIR}/connector/timings.cpp"
+    "${CTHUN_CLIENT_SOURCE_DIR}/data_container/data_container.cpp"
+    "${CTHUN_CLIENT_SOURCE_DIR}/message/message.cpp"
+    "${CTHUN_CLIENT_SOURCE_DIR}/validator/schema.cpp"
+    "${CTHUN_CLIENT_SOURCE_DIR}/validator/validator.cpp"
+
     ${INIH_SOURCE_DIR}/ini.c
     ${INIH_SOURCE_DIR}/cpp/INIReader.cpp
 )

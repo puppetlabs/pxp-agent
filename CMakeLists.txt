@@ -48,6 +48,12 @@ include(${VENDOR_DIRECTORY}/valijson.cmake)
 include(${VENDOR_DIRECTORY}/horsewhisperer.cmake)
 include(${VENDOR_DIRECTORY}/inih.cmake)
 
+# TODO(ale): integrate CthunClient in a better way
+
+# CthunClient macros
+set (CTHUN_CLIENT_INCLUDE_DIRS "${VENDOR_DIRECTORY}/cthun-client")
+set (CTHUN_CLIENT_SOURCE_DIR "${CTHUN_CLIENT_INCLUDE_DIRS}/cthun-client/src")
+
 # Set include directories
 
 include_directories(
@@ -58,6 +64,7 @@ include_directories(
     SYSTEM ${RAPIDJSON_INCLUDE_DIRS}
     SYSTEM ${HORSEWHISPERER_INCLUDE_DIRS}
     SYSTEM ${INIH_INCLUDE_DIRS}
+    SYSTEM ${CTHUN_CLIENT_INCLUDE_DIRS}
 )
 
 # Add the main binary
