@@ -7,20 +7,17 @@ SET (MAINFOLDER ${PROJECT_SOURCE_DIR})
 SET (EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
 SET (LIBRARY_OUTPUT_PATH "${MAINFOLDER}/lib")
 
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/vendor/leatherman/cmake")
+
 # Set compiler-specific flags
+include(cflags)
+set(CMAKE_CXX_FLAGS ${LEATHERMAN_CXX_FLAGS})
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-reorder -Wno-unused-parameter -Wno-deprecated-register")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-
-    # NB: -pthread is needed for fedora20 (cmake does not add the library, even
-    # afer finding it)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-unused-parameter -pthread")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable -Wno-reorder")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable -Wno-reorder -pthread")
 endif()
-
-set(EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
 
 set(VENDOR_DIRECTORY "${PROJECT_SOURCE_DIR}/vendor")
 list(APPEND CMAKE_MODULE_PATH ${VENDOR_DIRECTORY})
@@ -30,6 +27,9 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /opt/local/lib)
     set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} /opt/local/include)
 endif()
+
+# Load up common leatherman configuration, before we load any files
+include(options)
 
 # Find libraries
 
@@ -48,6 +48,14 @@ include(${VENDOR_DIRECTORY}/valijson.cmake)
 include(${VENDOR_DIRECTORY}/horsewhisperer.cmake)
 include(${VENDOR_DIRECTORY}/inih.cmake)
 
+# Pull in leatherman libraries
+set(LEATHERMAN_USE_LOCALE TRUE)
+set(LEATHERMAN_USE_CATCH TRUE)
+set(LEATHERMAN_USE_NOWIDE TRUE)
+set(LEATHERMAN_USE_LOGGING TRUE)
+add_subdirectory("vendor/leatherman")
+
+
 # Set include directories
 
 include_directories(
@@ -58,6 +66,8 @@ include_directories(
     SYSTEM ${RAPIDJSON_INCLUDE_DIRS}
     SYSTEM ${HORSEWHISPERER_INCLUDE_DIRS}
     SYSTEM ${INIH_INCLUDE_DIRS}
+    SYSTEM /home/branan/prefix/include
+    ${LEATHERMAN_INCLUDE_DIRS}
 )
 
 # Add the main binary
@@ -70,45 +80,6 @@ enable_testing()
 add_subdirectory(test)
 
 # Add cpplint target
-
-include(FindPythonInterp)
-if (NOT PYTHONINTERP_FOUND)
-    message(STATUS "Python not found; 'cpplint' target will not be available")
-else()
-    set(CPPLINT_FILTER
-        "-build/c++11"            # <thread>, <condvar>, etc...
-        "-whitespace/indent"      # We use 4 space indentation
-        "-build/include"          # Why?
-        "-build/namespaces"       # What's a namespace to do
-        "-legal/copyright"        # Not yet
-        "-runtime/references"     # Not sure about this religion
-        "-readability/streams"    # What?
-        "-readability/namespace"  # Ignore nested namespace comment formatting
-        "-whitespace/braces"      # Is there a k&r setting?
-        "-whitespace/line_length" # Well yeah, but ... not just now
-        "-runtime/arrays"         # Sizing an array with a 'const int' doesn't make it variable sized
-        "-readability/todo"       # Seriously? todo comments need to identify an owner? pffft
-        "-whitespace/empty_loop_body" # Can't handle do { ... } while(expr);
-        "-runtime/int"            # Some C types are needed for library interop
-        "-runtime/explicit"       # Using implicit conversion from string to regex for regex calls.
-        "-build/header_guard"     # Disable header guards (cpplint doesn't yet support enforcing #pragma once)
-    )
-
-    FILE (GLOB_RECURSE ALL_SOURCES src/*.cpp src/*.h test/*.cpp test/*.h)
-
-    set(CPPLINT_PATH "${MAINFOLDER}/ext/cpplint.py")
-
-    set(CPPLINT_ARGS "")
-    if (CPPLINT_FILTER)
-        string(REPLACE ";" "," CPPLINT_FILTER "${CPPLINT_FILTER}")
-        set(CPPLINT_ARGS "${CPPLINT_ARGS}--filter=${CPPLINT_FILTER}")
-    endif()
-    if (MSVC)
-        set(CPPLINT_ARGS "${CPPLINT_ARGS} --output=vs7")
-    endif()
-
-    ADD_CUSTOM_TARGET(cpplint
-        COMMAND ${PYTHON_EXECUTABLE} ${CPPLINT_PATH} ${CPPLINT_ARGS} ${ALL_SOURCES}
-        VERBATIM
-    )
-endif()
+FILE (GLOB_RECURSE ALL_SOURCES src/*.cpp src/*.h test/*.cpp test/*.h)
+add_cpplint_files(${ALL_SOURCES})
+enable_cpplint()

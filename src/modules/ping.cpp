@@ -1,5 +1,7 @@
 #include "src/modules/ping.h"
-#include "src/log.h"
+
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.modules.ping"
+#include <leatherman/logging/logging.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <valijson/constraints/concrete_constraints.hpp>
@@ -7,8 +9,6 @@
 #include <ctime>
 #include <string>
 #include <sstream>
-
-LOG_DECLARE_NAMESPACE("modules.ping");
 
 namespace CthunAgent {
 namespace Modules {

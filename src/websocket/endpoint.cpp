@@ -1,7 +1,9 @@
 #include "src/websocket/endpoint.h"
 #include "src/websocket/errors.h"
-#include "src/log.h"
 #include "src/string_utils.h"
+
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.websocket.endpoint"
+#include <leatherman/logging/logging.hpp>
 
 // HERE(ale): we are inheriting openssl include from elsewhere
 
@@ -12,8 +14,6 @@
 // To disable assert()
 // #define NDEBUG
 #include <cassert>
-
-LOG_DECLARE_NAMESPACE("websocket.endpoint");
 
 namespace CthunAgent {
 namespace WebSocket {

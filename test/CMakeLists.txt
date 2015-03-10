@@ -1,7 +1,6 @@
 # allow include directives with absolute paths for cthun-agent sources
 set(BASEPATH "${CMAKE_CURRENT_LIST_DIR}/..")
 include_directories("${BASEPATH}")
-set(CATCH_DIRECTORY "${VENDOR_DIRECTORY}/catch")
 
 set(SOURCES
     main.cpp
@@ -25,7 +24,7 @@ set(SOURCES
 set(test_BIN cthun-agent-unittests)
 
 include_directories(
-    ${CATCH_DIRECTORY}
+    ${LEATHERMAN_CATCH_INCLUDE}
 )
 
 ADD_EXECUTABLE(${test_BIN} ${SOURCES})

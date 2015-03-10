@@ -6,15 +6,16 @@
 #include "src/external_module.h"
 #include "src/schemas.h"
 #include "src/errors.h"
-#include "src/log.h"
 #include "src/uuid.h"
 #include "src/string_utils.h"
 #include "src/websocket/errors.h"
 
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.agent"
+#include <leatherman/logging/logging.hpp>
+
+
 #include <vector>
 #include <memory>
-
-LOG_DECLARE_NAMESPACE("agent");
 
 namespace CthunAgent {
 

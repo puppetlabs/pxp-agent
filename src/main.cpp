@@ -1,14 +1,16 @@
 #include "src/agent.h"
 #include "src/errors.h"
-#include "src/log.h"
 #include "src/file_utils.h"
 #include "configuration.h"
+
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.cthun_agent_main"
+#include <leatherman/logging/logging.hpp>
 
 #include <fstream>
 
 #include <horsewhisperer/horsewhisperer.h>
 
-LOG_DECLARE_NAMESPACE("cthun_agent_main");
+namespace Log = leatherman::logging;
 
 namespace CthunAgent {
 
@@ -37,9 +39,11 @@ int startAgent(std::vector<std::string> arguments   ) {
 
     if (!logfile.empty()) {
         file_stream.open(logfile);
-        Log::configure_logging(log_level, file_stream);
+        Log::setup_logging(file_stream);
+        Log::set_level(log_level);
     } else {
-        Log::configure_logging(log_level, console_stream);
+        Log::setup_logging(console_stream);
+        Log::set_level(log_level);
     }
 
     try {
