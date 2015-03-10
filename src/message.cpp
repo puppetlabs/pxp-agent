@@ -1,8 +1,10 @@
 #include "src/message.h"
 #include "src/errors.h"
-#include "src/log.h"
 #include "src/string_utils.h"
 #include "src/data_parser.h"
+
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.message"
+#include <leatherman/logging/logging.hpp>
 
 #include <algorithm>  // find
 
@@ -10,8 +12,6 @@
 // To disable assert()
 // #define NDEBUG
 #include <cassert>
-
-LOG_DECLARE_NAMESPACE("message");
 
 namespace CthunAgent {
 
