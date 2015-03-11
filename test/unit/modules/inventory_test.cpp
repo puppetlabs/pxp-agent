@@ -1,6 +1,5 @@
 #include "test/test.h"
 
-#include "src/data_container.h"
 #include "src/errors.h"
 #include "src/modules/inventory.h"
 
@@ -10,6 +9,8 @@
 extern std::string ROOT_PATH;
 
 namespace CthunAgent {
+
+// TODO(ale): update this to cthun-client
 
 static const std::string inventory_action { "inventory" };
 static const std::string inventory_txt {

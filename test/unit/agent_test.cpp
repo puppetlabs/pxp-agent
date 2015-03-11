@@ -2,13 +2,13 @@
 
 #include "src/agent.h"
 #include "src/errors.h"
-#include "src/websocket/errors.h"
 
 extern std::string ROOT_PATH;
 
 namespace CthunAgent {
 
 const std::string TEST_AGENT_IDENTITY { "cth://cthun-client/cthun-agent" };
+const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/cthun/" };
 
 std::string getCa() {
     static const std::string ca {
@@ -36,29 +36,27 @@ std::string getBin() {
 
 TEST_CASE("Agent::Agent", "[agent]") {
     SECTION("does not throw if it fails to find the modules directory") {
-        REQUIRE_NOTHROW(Agent(getBin() + "/fake_dir", getCa(), getCert(),
-                              getKey()));
+        REQUIRE_NOTHROW(Agent(getBin() + "/fake_dir", TEST_SERVER_URL,
+                              getCa(), getCert(), getKey()));
     }
 
     SECTION("should throw a fatal_error if client cert path is invalid") {
-        REQUIRE_THROWS_AS(Agent(getBin(), getCa(), "spam", getKey()),
+        REQUIRE_THROWS_AS(Agent(getBin(), TEST_SERVER_URL,
+                                getCa(), "spam", getKey()),
                           fatal_error);
     }
 
     SECTION("successfully instantiates with valid arguments") {
-        REQUIRE_NOTHROW(Agent(getBin(), getCa(), getCert(), getKey()));
-    }
-
-    SECTION("retrieves the identity from the client certificate") {
-        Agent agent { getBin(), getCa(), getCert(), getKey() };
-        REQUIRE(agent.getIdentity() == TEST_AGENT_IDENTITY);
+        REQUIRE_NOTHROW(Agent(getBin(), TEST_SERVER_URL,
+                              getCa(), getCert(), getKey()));
     }
 }
 
 TEST_CASE("Agent::startAgent", "[agent]") {
     SECTION("should throw a fatal_error if the server url is invalid") {
-        Agent agent { getBin(), getCa(), getCert(), getKey() };
-        REQUIRE_THROWS_AS(agent.startAgent("foo"), fatal_error);
+        Agent agent { getBin(), "foo", getCa(), getCert(), getKey() };
+        REQUIRE_THROWS_AS(agent.start(),
+                          fatal_error);
     }
 }
 

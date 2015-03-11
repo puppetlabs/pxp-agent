@@ -1,7 +1,5 @@
 #include "test/test.h"
 
-#include "src/message.h"
-#include "src/data_container.h"
 #include "src/errors.h"
 #include "src/external_module.h"
 #include "src/uuid.h"
@@ -17,6 +15,8 @@
 extern std::string ROOT_PATH;
 
 namespace CthunAgent {
+
+// TODO(ale): update this to cthun-client
 
 const std::string RESULTS_ROOT_DIR { "/tmp/cthun-agent" };
 const std::string DELAYED_JOB_ID_LABEL { "id" };

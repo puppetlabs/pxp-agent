@@ -5,24 +5,25 @@
 namespace CthunAgent {
 namespace Modules {
 
+static const std::string ECHO { "echo" };
+
 Echo::Echo() {
-    module_name = "echo";
+    module_name = ECHO;
 
-    valijson::constraints::TypeConstraint json_type_string {
-        valijson::constraints::TypeConstraint::kString };
+    // TODO(ale): revisit once we require the JSON format for all data
+    CthunClient::Schema input_schema { ECHO };
+    CthunClient::Schema output_schema { ECHO };
 
-    valijson::Schema input_schema;
-    input_schema.addConstraint(json_type_string);
+    actions[ECHO] = Action { "interactive" };
 
-    valijson::Schema output_schema;
-    output_schema.addConstraint(json_type_string);
-
-    actions["echo"] = Action { input_schema, output_schema, "interactive" };
+    input_validator_.registerSchema(input_schema);
+    output_validator_.registerSchema(output_schema);
 }
 
-DataContainer Echo::callAction(const std::string& action_name,
-                               const ParsedContent& request) {
-    return request.data.get<DataContainer>("params");
+CthunClient::DataContainer Echo::callAction(
+                            const std::string& action_name,
+                            const CthunClient::ParsedChunks& parsed_chunks) {
+    return parsed_chunks.data.get<CthunClient::DataContainer>("params");
 }
 
 }  // namespace Modules

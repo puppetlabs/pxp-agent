@@ -2,7 +2,6 @@
 
 #include "test/test.h"
 
-#include "src/data_container.h"
 #include "src/errors.h"
 #include "src/uuid.h"
 #include "src/file_utils.h"
@@ -14,6 +13,8 @@
 #include <boost/filesystem/path.hpp>
 
 extern std::string ROOT_PATH;
+
+// TODO(ale): update this to cthun-client
 
 namespace CthunAgent {
 

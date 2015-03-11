@@ -7,6 +7,7 @@ RM    := rm -rf
 
 all: ./build/Makefile
 	@ $(MAKE) -C build
+	@ $(MAKE) test ARGS="-V"
 
 build:
 	@ mkdir build

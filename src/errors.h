@@ -12,12 +12,6 @@ class agent_error : public std::runtime_error {
     explicit agent_error(std::string const& msg) : std::runtime_error(msg) {}
 };
 
-/// Error due to an invalid command line arguments.
-class request_error : public agent_error {
-  public:
-    explicit request_error(std::string const& msg) : agent_error(msg) {}
-};
-
 /// Fatal error class.
 class fatal_error : public agent_error {
   public:
@@ -37,48 +31,26 @@ class file_error : public agent_error {
 };
 
 //
-// Message errors
+// CNC request errors
 //
 
-class message_error : public agent_error {
+class request_error : public agent_error {
   public:
-    explicit message_error(std::string const& msg) : agent_error(msg) {}
+    explicit request_error(std::string const& msg) : agent_error(msg) {}
 };
 
-/// Message validation error.
-class message_validation_error : public message_error {
+/// Error due to an invalid request message.
+class request_validation_error : public request_error {
   public:
-    explicit message_validation_error(std::string const& msg)
-            : message_error(msg) {}
+    explicit request_validation_error(std::string const& msg)
+            : request_error(msg) {}
 };
 
-/// Message processing error.
-class message_processing_error : public message_error {
+/// Error due to a failure during the processing of a request message.
+class request_processing_error : public request_error {
   public:
-    explicit message_processing_error(std::string const& msg)
-            : message_error(msg) {}
-};
-
-//
-// Data container errors
-//
-
-/// Error thrown when a message string is invalid.
-class message_parse_error : public agent_error {
-  public:
-    explicit message_parse_error(std::string const& msg) : agent_error(msg) {}
-};
-
-/// Error thrown when a nested message index is invalid.
-class message_index_error : public agent_error {
-  public:
-    explicit message_index_error(std::string const& msg) : agent_error(msg) {}
-};
-
-/// Error thrown when trying to set or get invalid type.
-class data_type_error : public agent_error {
-  public:
-    explicit data_type_error(std::string const& msg) : agent_error(msg) {}
+    explicit request_processing_error(std::string const& msg)
+            : request_error(msg) {}
 };
 
 //
@@ -87,7 +59,8 @@ class data_type_error : public agent_error {
 
 class configuration_error : public agent_error {
   public:
-    explicit configuration_error(std::string const& msg) : agent_error(msg) {}
+    explicit configuration_error(std::string const& msg)
+            : agent_error(msg) {}
 };
 
 /// Error thrown when trying to set the configuration object before

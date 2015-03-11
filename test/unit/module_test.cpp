@@ -1,7 +1,5 @@
 #include "test/test.h"
 
-#include "src/message.h"
-#include "src/data_container.h"
 #include "src/errors.h"
 #include "src/modules/echo.h"
 
@@ -9,6 +7,8 @@
 #include <vector>
 
 namespace CthunAgent {
+
+// TODO(ale): update this to cthun-client
 
 static const std::string echo_action { "echo" };
 static const std::string fake_action { "fake_action" };

@@ -2,7 +2,7 @@
 #include "src/errors.h"
 #include "src/log.h"
 #include "src/file_utils.h"
-#include "configuration.h"
+#include "src/configuration.h"
 
 #include <fstream>
 
@@ -44,11 +44,12 @@ int startAgent(std::vector<std::string> arguments   ) {
 
     try {
         Agent agent { HW::GetFlag<std::string>("module-dir"),
+                      HW::GetFlag<std::string>("server"),
                       FileUtils::shellExpand(HW::GetFlag<std::string>("ca")),
                       FileUtils::shellExpand(HW::GetFlag<std::string>("cert")),
                       FileUtils::shellExpand(HW::GetFlag<std::string>("key")) };
 
-        agent.startAgent(HW::GetFlag<std::string>("server"));
+        agent.start();
     } catch (fatal_error& e) {
         LOG_ERROR("fatal error: %1%", e.what());
         return 1;

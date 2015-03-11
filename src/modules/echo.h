@@ -2,7 +2,6 @@
 #define SRC_MODULES_ECHO_H_
 
 #include "src/module.h"
-#include "src/message.h"
 
 namespace CthunAgent {
 namespace Modules {
@@ -10,8 +9,9 @@ namespace Modules {
 class Echo : public CthunAgent::Module {
   public:
     Echo();
-    DataContainer callAction(const std::string& action_name,
-                             const ParsedContent& request);
+    CthunClient::DataContainer callAction(
+                    const std::string& action_name,
+                    const CthunClient::ParsedChunks& parsed_chunks);
 };
 
 }  // namespace Modules

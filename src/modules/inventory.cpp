@@ -13,33 +13,33 @@ LOG_DECLARE_NAMESPACE("modules.inventory");
 namespace CthunAgent {
 namespace Modules {
 
+static const std::string INVENTORY { "inventory" };
+
 Inventory::Inventory() {
-    module_name = "inventory";
+    module_name = INVENTORY;
 
-    valijson::constraints::TypeConstraint json_type_object {
-        valijson::constraints::TypeConstraint::kObject
-    };
+    // Inventory data has only the JSON Object type constraint
+    CthunClient::Schema input_schema { INVENTORY };
+    CthunClient::Schema output_schema { INVENTORY };
 
-    valijson::Schema input_schema;
-    input_schema.addConstraint(json_type_object);
+    actions[INVENTORY] = Action { "interactive" };
 
-    valijson::Schema output_schema;
-    output_schema.addConstraint(json_type_object);
-
-    actions["inventory"] = Action { input_schema, output_schema, "interactive" };
+    input_validator_.registerSchema(input_schema);
+    output_validator_.registerSchema(output_schema);
 }
 
-DataContainer Inventory::callAction(const std::string& action_name,
-                                    const ParsedContent& request) {
+CthunClient::DataContainer Inventory::callAction(
+                                const std::string& action_name,
+                                const CthunClient::ParsedChunks& parsed_chunks) {
     std::ostringstream fact_stream;
-    DataContainer data {};
+    CthunClient::DataContainer data {};
 
     facter::facts::collection facts;
     facts.add_default_facts();
     facts.write(fact_stream, facter::facts::format::json);
 
     LOG_TRACE("facts: %1%", fact_stream.str());
-    data.set<std::string>(fact_stream.str(), "facts");
+    data.set<std::string>("facts", fact_stream.str());
 
     return data;
 }
