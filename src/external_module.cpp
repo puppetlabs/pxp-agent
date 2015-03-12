@@ -135,14 +135,19 @@ CthunClient::Validator getMetadataValidator_() {
     CthunClient::Schema metadata_schema { METADATA_SCHEMA_NAME,
                                           CthunClient::ContentType::Json };
     using T_C = CthunClient::TypeConstraint;
-    metadata_schema.addConstraint("name", T_C::String, true);
     metadata_schema.addConstraint("description", T_C::String, true);
-    metadata_schema.addConstraint("behaviour", T_C::String, false);
+    metadata_schema.addConstraint("actions", T_C::Array, true);
 
     // 'actions' is an array of actions; define the action sub_schema
     CthunClient::Schema action_schema { ACTION_SCHEMA_NAME,
                                         CthunClient::ContentType::Json };
-    action_schema.addConstraint("actions", T_C::Array, true);
+    action_schema.addConstraint("description", T_C::String, false);
+    action_schema.addConstraint("name", T_C::String, true);
+    action_schema.addConstraint("input", T_C::Object, true);
+    action_schema.addConstraint("output", T_C::Object, true);
+    action_schema.addConstraint("behaviour", T_C::String, false);
+
+    metadata_schema.addConstraint("actions", action_schema, false);
 
     CthunClient::Validator validator {};
     validator.registerSchema(metadata_schema);
@@ -285,7 +290,6 @@ const CthunClient::DataContainer ExternalModule::getMetadata_() {
         metadata_validator_.validate(metadata, METADATA_SCHEMA_NAME);
         LOG_INFO("External module %1%: metadata validation OK", module_name);
     } catch (CthunClient::validation_error& e) {
-        LOG_ERROR("Invalid module metadata: %1%", e.what());
         throw module_error { std::string("metadata validation failure: ")
                              + e.what() };
     }

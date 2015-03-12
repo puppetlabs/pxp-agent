@@ -164,7 +164,7 @@ CthunClient::Schema Agent::getCncRequestSchema_() const {
     schema.addConstraint("module", T_C::String, true);
     schema.addConstraint("action", T_C::String, true);
     // TODO(ale): evaluate changing params; ambiguous
-    schema.addConstraint("params", T_C::String, false);
+    schema.addConstraint("params", T_C::Object, false);
     return schema;
 }
 
@@ -189,7 +189,7 @@ void Agent::cncRequestCallback_(const CthunClient::ParsedChunks& parsed_chunks) 
         auto module_name = parsed_chunks.data.get<std::string>("module");
         auto action_name = parsed_chunks.data.get<std::string>("action");
 
-        if (modules_.find(module_name) != modules_.end()) {
+        if (modules_.find(module_name) == modules_.end()) {
             throw request_validation_error { "unknown module: " + module_name };
         }
 
