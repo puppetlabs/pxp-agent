@@ -3,7 +3,6 @@
 #include "src/errors.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <valijson/constraints/concrete_constraints.hpp>
 
 #include <ctime>
 #include <string>

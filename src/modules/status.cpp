@@ -4,8 +4,6 @@
 #include "src/configuration.h"
 #include "src/errors.h"
 
-#include <valijson/constraints/concrete_constraints.hpp>
-
 #include <fstream>
 
 LOG_DECLARE_NAMESPACE("modules.status");

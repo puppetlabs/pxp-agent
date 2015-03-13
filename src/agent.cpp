@@ -10,9 +10,9 @@
 #include "src/modules/ping.h"
 #include "src/modules/status.h"
 
-#include <cthun-client/src/connector/errors.h>
-#include <cthun-client/src/data_container/data_container.h>
-#include <cthun-client/src/validator/validator.h>  // Validator
+#include <cthun-client/connector/errors.h>
+#include <cthun-client/data_container/data_container.h>
+#include <cthun-client/validator/validator.h>  // Validator
 
 #include <vector>
 #include <memory>

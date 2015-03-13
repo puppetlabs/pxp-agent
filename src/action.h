@@ -1,7 +1,7 @@
 #ifndef SRC_AGENT_ACTION_H_
 #define SRC_AGENT_ACTION_H_
 
-#include <cthun-client/src/validator/schema.h>
+#include <cthun-client/validator/schema.h>
 
 namespace CthunAgent {
 

@@ -3,10 +3,10 @@
 
 #include "src/module.h"
 
-#include <cthun-client/src/connector/connector.h>
-#include <cthun-client/src/message/chunks.h>       // ParsedChunk
-#include <cthun-client/src/message/message.h>      // schema names
-#include <cthun-client/src/validator/schema.h>     // ContentType, Schema
+#include <cthun-client/connector/connector.h>
+#include <cthun-client/message/chunks.h>       // ParsedChunk
+#include <cthun-client/message/message.h>      // schema names
+#include <cthun-client/validator/schema.h>     // ContentType, Schema
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
