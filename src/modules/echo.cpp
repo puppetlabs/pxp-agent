@@ -1,7 +1,5 @@
 #include "src/modules/echo.h"
 
-#include <valijson/constraints/concrete_constraints.hpp>
-
 namespace CthunAgent {
 namespace Modules {
 

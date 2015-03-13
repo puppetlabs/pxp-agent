@@ -4,8 +4,6 @@
 
 #include <facter/facts/collection.hpp>
 
-#include <valijson/constraints/concrete_constraints.hpp>
-
 #include <sstream>
 
 LOG_DECLARE_NAMESPACE("modules.inventory");

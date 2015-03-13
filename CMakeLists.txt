@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.12)
-project(cthun-agent C CXX)
+project(cthun-agent)
 
 # Project Output Paths
 
@@ -42,17 +42,7 @@ find_package(facter REQUIRED)
 include(${VENDOR_DIRECTORY}/boost-process.cmake)
 include(${VENDOR_DIRECTORY}/horsewhisperer.cmake)
 include(${VENDOR_DIRECTORY}/inih.cmake)
-
-# TODO(ale): integrate CthunClient in a better way; remove local libraries
-
-# CthunClient macros
-set (CTHUN_CLIENT_INCLUDE_DIRS "${VENDOR_DIRECTORY}/cthun-client")
-set (CTHUN_CLIENT_SOURCE_DIR "${CTHUN_CLIENT_INCLUDE_DIRS}/cthun-client/src")
-set (CTHUN_CLIENT_VENDOR_DIR "${CTHUN_CLIENT_INCLUDE_DIRS}/cthun-client/vendor")
-
-include(${CTHUN_CLIENT_VENDOR_DIR}/rapidjson.cmake)
-include(${CTHUN_CLIENT_VENDOR_DIR}/valijson.cmake)
-include(${CTHUN_CLIENT_VENDOR_DIR}/websocketpp.cmake)
+include(${VENDOR_DIRECTORY}/cthun-client.cmake)
 
 # Set include directories
 
@@ -62,9 +52,6 @@ include_directories(
     SYSTEM ${HORSEWHISPERER_INCLUDE_DIRS}
     SYSTEM ${INIH_INCLUDE_DIRS}
     SYSTEM ${CTHUN_CLIENT_INCLUDE_DIRS}
-    SYSTEM ${RAPIDJSON_INCLUDE_DIRS}
-    SYSTEM ${VALIJSON_INCLUDE_DIRS}
-    SYSTEM ${WEBSOCKETPP_INCLUDE_DIRS}
 )
 
 # Add the main binary
