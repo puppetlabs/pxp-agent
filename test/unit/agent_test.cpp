@@ -12,19 +12,19 @@ const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/cthun/" };
 
 std::string getCa() {
     static const std::string ca {
-        ROOT_PATH + "/test-resources/ssl/ca/ca_crt.pem" };
+        ROOT_PATH + "/test/resources/config/ca_crt.pem" };
     return ca;
 }
 
 std::string getCert() {
     static const std::string cert {
-        ROOT_PATH + "/test-resources/ssl/certs/cthun-client.pem" };
+        ROOT_PATH + "/test/resources/config/test_crt.pem" };
     return cert;
 }
 
 std::string getKey() {
     static const std::string key {
-        ROOT_PATH + "/test-resources/ssl/private_keys/cthun-client.pem" };
+        ROOT_PATH + "/test/resources/config/test_key.pem" };
     return key;
 }
 
