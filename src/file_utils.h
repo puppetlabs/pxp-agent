@@ -1,7 +1,7 @@
 #ifndef SRC_FILEUTILS_H_
 #define SRC_FILEUTILS_H_
 
-#include "src/data_container.h"
+#include <cthun-client/data_container/data_container.h>
 
 #include <wordexp.h>
 #include <fstream>

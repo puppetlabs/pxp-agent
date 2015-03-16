@@ -1,8 +1,10 @@
 #include "test/test.h"
 
-#include "src/data_container.h"
 #include "src/errors.h"
 #include "src/modules/ping.h"
+
+#include <cthun-client/data_container/data_container.h>
+#include <cthun-client/message/chunks.h>       // ParsedChunks
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/format.hpp>
@@ -22,13 +24,12 @@ static const std::string ping_data_txt {
     "}"
 };
 
-static const std::string debug_txt { "{\"hops\" : []}" };
-static const DataContainer debug_entry { debug_txt };
-static const std::vector<DataContainer> debug { debug_entry };
+static const std::vector<std::string> debug { "{\"hops\" : []}" };
 
-static const ParsedContent content { DataContainer(),
-                                     DataContainer(ping_data_txt),
-                                     debug };
+static const CthunClient::ParsedChunks parsed_chunks {
+                    CthunClient::DataContainer(),
+                    CthunClient::DataContainer(ping_data_txt),
+                    debug };
 
 TEST_CASE("Modules::Ping::callAction", "[modules]") {
     Modules::Ping ping_module {};
@@ -42,11 +43,11 @@ TEST_CASE("Modules::Ping::callAction", "[modules]") {
     }
 
     SECTION("it can call the ping action") {
-        REQUIRE_NOTHROW(ping_module.callAction(ping_action, content));
+        REQUIRE_NOTHROW(ping_module.callAction(ping_action, parsed_chunks));
     }
 
     SECTION("it should return the request_hops entries") {
-        auto result = ping_module.callAction(ping_action, content);
+        auto result = ping_module.callAction(ping_action, parsed_chunks);
         REQUIRE(result.includes("request_hops"));
     }
 }
@@ -68,14 +69,17 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
     SECTION("it should copy an empty hops entry") {
         auto data_txt = (data_format % "").str();
         auto debug_txt = (debug_format % "[]").str();
-        std::vector<DataContainer> other_debug { DataContainer(debug_txt) };
+        std::vector<std::string> other_debug { debug_txt };
 
-        ParsedContent other_content { DataContainer(),
-                                      DataContainer(data_txt),
-                                      other_debug };
+        CthunClient::ParsedChunks other_chunks {
+                    CthunClient::DataContainer(),
+                    CthunClient::DataContainer(ping_data_txt),
+                    other_debug };
 
-        auto result = ping_module.ping(other_content);
-        REQUIRE(result.get<std::vector<DataContainer>>("request_hops").empty());
+        auto result = ping_module.ping(other_chunks);
+        auto hops = result.get<std::vector<CthunClient::DataContainer>>(
+                        "request_hops");
+        REQUIRE(hops.empty());
     }
 
     boost::format hop_format {
@@ -95,15 +99,17 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
     SECTION("it should copy the hops entry when msg passed through a single server") {
         auto data_txt = (data_format % "").str();
         auto debug_txt = (debug_format % hops_str).str();
-        std::vector<DataContainer> other_debug { DataContainer(debug_txt) };
+        std::vector<std::string> other_debug { debug_txt };
 
 
-        ParsedContent other_content { DataContainer(),
-                                      DataContainer(data_txt),
-                                      other_debug };
+        CthunClient::ParsedChunks other_chunks {
+                CthunClient::DataContainer(),
+                CthunClient::DataContainer(data_txt),
+                other_debug };
 
-        auto result = ping_module.ping(other_content);
-        auto hops = result.get<std::vector<DataContainer>>("request_hops");
+        auto result = ping_module.ping(other_chunks);
+        auto hops = result.get<std::vector<CthunClient::DataContainer>>(
+                        "request_hops");
 
         REQUIRE(hops.size() == 4);
         REQUIRE(hops[3].get<std::string>("time") == "007");

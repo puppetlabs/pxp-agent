@@ -2,7 +2,6 @@
 #define SRC_MODULES_INVENTORY_H_
 
 #include "src/module.h"
-#include "src/message.h"
 
 namespace CthunAgent {
 namespace Modules {
@@ -10,8 +9,9 @@ namespace Modules {
 class Inventory : public CthunAgent::Module {
   public:
     Inventory();
-    DataContainer callAction(const std::string& action_name,
-                             const ParsedContent& request);
+    CthunClient::DataContainer callAction(
+                    const std::string& action_name,
+                    const CthunClient::ParsedChunks& parsed_chunks);
 };
 
 }  // namespace Modules

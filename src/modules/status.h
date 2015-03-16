@@ -9,8 +9,9 @@ namespace Modules {
 class Status : public CthunAgent::Module {
   public:
     Status();
-    DataContainer callAction(const std::string& action_name,
-                             const ParsedContent& request);
+    CthunClient::DataContainer callAction(
+                    const std::string& action_name,
+                    const CthunClient::ParsedChunks& parsed_chunks);
 };
 
 }  // namespace Modules

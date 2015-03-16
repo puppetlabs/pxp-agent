@@ -11,22 +11,17 @@ set(APPLICATION_SOURCES
 set(LIBRARY_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/agent.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/configuration.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/data_container.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/data_parser.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/external_module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/file_utils.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/log.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/message.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/echo.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/inventory.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/ping.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/status.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/schemas.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/string_utils.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/thread_container.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/websocket/endpoint.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/websocket/connection_timings.cpp"
+
     ${INIH_SOURCE_DIR}/ini.c
     ${INIH_SOURCE_DIR}/cpp/INIReader.cpp
 )
@@ -44,6 +39,7 @@ SET(LIBS
     ${OPENSSL_CRYPTO_LIBRARY}
     ${PTHREADS}
     ${facter_LIBRARY}
+    ${CTHUN_CLIENT_LIB}
 )
 
 add_library(cthun-agent ${LIBRARY_SOURCES})

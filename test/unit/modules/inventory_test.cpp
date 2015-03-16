@@ -1,8 +1,10 @@
 #include "test/test.h"
 
-#include "src/data_container.h"
 #include "src/errors.h"
 #include "src/modules/inventory.h"
+
+#include <cthun-client/data_container/data_container.h>
+#include <cthun-client/message/chunks.h>       // ParsedChunks
 
 #include <string>
 #include <vector>
@@ -19,10 +21,11 @@ static const std::string inventory_txt {
     "}"
 };
 
-static const std::vector<DataContainer> no_debug {};
-static const ParsedContent content { DataContainer(),
-                                     DataContainer(inventory_txt),
-                                     no_debug };
+static const std::vector<std::string> no_debug {};
+static const CthunClient::ParsedChunks parsed_chunks {
+                    CthunClient::DataContainer(),
+                    CthunClient::DataContainer(inventory_txt),
+                    no_debug };
 
 TEST_CASE("Modules::Inventory::callAction", "[modules]") {
     Modules::Inventory inventory_module {};
@@ -37,11 +40,13 @@ TEST_CASE("Modules::Inventory::callAction", "[modules]") {
     }
 
     SECTION("it can call the inventory action") {
-        REQUIRE_NOTHROW(inventory_module.callAction(inventory_action, content));
+        REQUIRE_NOTHROW(inventory_module.callAction(inventory_action,
+                                                    parsed_chunks));
     }
 
     SECTION("it should execute the inventory action correctly") {
-        auto result = inventory_module.callAction(inventory_action, content);
+        auto result = inventory_module.callAction(inventory_action,
+                                                  parsed_chunks);
         CHECK(result.toString().find("facts") != std::string::npos);
     }
 }

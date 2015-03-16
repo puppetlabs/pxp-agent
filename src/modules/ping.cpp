@@ -1,8 +1,8 @@
 #include "src/modules/ping.h"
 #include "src/log.h"
+#include "src/errors.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <valijson/constraints/concrete_constraints.hpp>
 
 #include <ctime>
 #include <string>
@@ -15,38 +15,51 @@ namespace Modules {
 
 namespace V_C = valijson::constraints;
 
+static const std::string PING { "ping" };
+
 Ping::Ping() {
-    module_name = "ping";
+    module_name = PING;
 
-    V_C::TypeConstraint json_type_object { V_C::TypeConstraint::kObject };
-    V_C::TypeConstraint json_type_string { V_C::TypeConstraint::kString };
+    CthunClient::Schema input_schema { PING };
+    input_schema.addConstraint("sender_timestamp",
+                               CthunClient::TypeConstraint::String);
 
-    valijson::Schema input_schema;
-    V_C::PropertiesConstraint::PropertySchemaMap properties;
-    V_C::PropertiesConstraint::PropertySchemaMap pattern_properties;
+    CthunClient::Schema output_schema { PING };
 
-    properties["sender_timestamp"].addConstraint(json_type_string);
-    input_schema.addConstraint(new V_C::PropertiesConstraint(properties,
-                                                             pattern_properties));
+    actions[PING] = Action { "interactive" };
 
-    valijson::Schema output_schema;
-    output_schema.addConstraint(json_type_object);
-
-    actions["ping"] = Action { input_schema, output_schema, "interactive" };
+    input_validator_.registerSchema(input_schema);
+    output_validator_.registerSchema(output_schema);
 }
 
-DataContainer Ping::ping(const ParsedContent& request) {
-    DataContainer data {};
+CthunClient::DataContainer Ping::ping(
+                                const CthunClient::ParsedChunks& parsed_chunks) {
+    CthunClient::DataContainer data {};
 
-    data.set<std::vector<DataContainer>>(
-        request.debug[0].get<std::vector<DataContainer>>("hops"), "request_hops");
+    if (parsed_chunks.debug.empty()) {
+        LOG_ERROR("Found no debug entry in the request message");
+        throw request_processing_error { "no debug entry" };
+    }
 
+    // TODO(ale): revisit this once we formalize the debug format
+    try {
+        CthunClient::DataContainer debug_entry { parsed_chunks.debug[0] };
+
+        data.set<std::vector<CthunClient::DataContainer>>(
+                "request_hops",
+                debug_entry.get<std::vector<CthunClient::DataContainer>>("hops"));
+    } catch (CthunClient::parse_error& e) {
+        LOG_ERROR("Failed to parse debug entry: %1%", e.what());
+        LOG_DEBUG("Debug entry: %1%", parsed_chunks.debug[0]);
+        throw request_processing_error { "debug entry is not valid JSON" };
+    }
     return data;
 }
 
-DataContainer Ping::callAction(const std::string& action_name,
-                               const ParsedContent& request) {
-   return ping(request);
+CthunClient::DataContainer Ping::callAction(
+                                const std::string& action_name,
+                                const CthunClient::ParsedChunks& parsed_chunks) {
+   return ping(parsed_chunks);
 }
 
 }  // namespace Modules
