@@ -62,7 +62,7 @@ class ThreadContainer {
   private:
     std::string name_;
     std::vector<std::shared_ptr<ManagedThread>> threads_;
-    std::thread monitoring_thread_;
+    std::unique_ptr<std::thread> monitoring_thread_ptr_;
     bool destructing_;
     std::mutex mutex_;
     std::condition_variable cond_var_;

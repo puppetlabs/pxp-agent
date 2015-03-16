@@ -4,7 +4,7 @@
 #include "src/action.h"
 
 #include <cthun-client/data_container/data_container.h>
-#include <cthun-client/message/chunks.h>       // ParsedChunk
+#include <cthun-client/message/chunks.h>       // ParsedChunks
 #include <cthun-client/validator/validator.h>  // Validator
 
 #include <map>

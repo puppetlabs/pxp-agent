@@ -41,7 +41,7 @@ ThreadContainer::ThreadContainer(const std::string& name,
           check_interval { _check_interval },
           threads_threshold { _threads_threshold },
           threads_ {},
-          monitoring_thread_ {},
+          monitoring_thread_ptr_ { nullptr },
           destructing_ { false },
           mutex_ {},
           cond_var_ {},
@@ -57,8 +57,8 @@ ThreadContainer::~ThreadContainer() {
         cond_var_.notify_one();
     }
 
-    if (monitoring_thread_.joinable()) {
-        monitoring_thread_.join();
+    if (monitoring_thread_ptr_ != nullptr && monitoring_thread_ptr_->joinable()) {
+        monitoring_thread_ptr_->join();
     }
 
     // Detach the completed threads
@@ -90,14 +90,15 @@ void ThreadContainer::add(std::thread task,
         LOG_DEBUG("%1% threads stored in the '%2%' ThreadContainer; about "
                   "to start a the monitoring thread", threads_.size(), name_);
 
-        if (monitoring_thread_.joinable()) {
+        if (monitoring_thread_ptr_ != nullptr
+                && monitoring_thread_ptr_->joinable()) {
             LOG_DEBUG("Joining the old (idle) monitoring thread instance");
-            monitoring_thread_.join();
+            monitoring_thread_ptr_->join();
         }
 
         is_monitoring_ = true;
-        monitoring_thread_ = std::move(
-            std::thread(&ThreadContainer::monitoringTask_, this));
+        monitoring_thread_ptr_.reset(
+            new std::thread(&ThreadContainer::monitoringTask_, this));
     }
 }
 
@@ -131,25 +132,32 @@ void ThreadContainer::monitoringTask_() {
 
     while (true) {
         std::unique_lock<std::mutex> the_lock { mutex_ };
+        auto now = std::chrono::system_clock::now();
 
-        // Wait for thread objects or for the destructing_ flag
-        cond_var_.wait(the_lock,
-                       [this] {return destructing_ || !threads_.empty();});
+        // Wait for thread objects or for the check interval timeout
+        cond_var_.wait_until(the_lock,
+                             now + std::chrono::milliseconds(check_interval));
 
         if (destructing_) {
             // The dtor has been invoked
             return;
         }
 
-        // Get the range with the pointers of those thread objects
+        if (threads_.empty()) {
+            // Nothing to do
+            the_lock.unlock();
+            break;
+        }
+
+        // Get the range with the pointers of the thread objects
         // that have completed their execution
         auto detached_threads_it = std::remove_if(threads_.begin(),
                                                   threads_.end(),
                                                   detachIfCompleted);
 
-        // Delete the threads that have finished;
-        // note that we keep the pointers of the thread instance that
-        // are still executing to be able to destroy them when exiting
+        // ... and delete them; note that we keep the pointers of the
+        // thread instances that are still executing to be able to
+        // destroy them when exiting
         auto num_deletes = std::distance(detached_threads_it, threads_.end());
         if (num_deletes > 0) {
             LOG_DEBUG("About to delete %1% thread objects that have completed "
@@ -160,14 +168,13 @@ void ThreadContainer::monitoringTask_() {
         }
 
         if (threads_.size() < threads_threshold) {
-            // Not many threads stored; don't need to monitor
+            // Not enough threads stored; don't need to monitor
             LOG_DEBUG("Stopping the monitoring task");
             is_monitoring_ = false;
             return;
         }
 
         the_lock.unlock();
-        std::this_thread::sleep_for(std::chrono::milliseconds(check_interval));
     }
 }
 

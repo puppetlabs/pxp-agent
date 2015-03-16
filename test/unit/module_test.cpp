@@ -3,6 +3,9 @@
 #include "src/errors.h"
 #include "src/modules/echo.h"
 
+#include <cthun-client/data_container/data_container.h>
+#include <cthun-client/message/chunks.h>       // ParsedChunks
+
 #include <string>
 #include <vector>
 
@@ -16,15 +19,16 @@ static const std::string fake_action { "fake_action" };
 static const std::string echo_data_txt {
     "{  \"module\" : \"echo\","
     "   \"action\" : \"echo\","
-    "   \"params\" : \"maradona\""
+    "   \"params\" : { \"txt\" : \"maradona\" }"
     "}"
 };
 
-static const std::vector<DataContainer> no_debug {};
+static const std::vector<std::string> no_debug {};
 
-static const ParsedContent content { DataContainer(),
-                                     DataContainer(echo_data_txt),
-                                     no_debug };
+static const CthunClient::ParsedChunks parsed_chunks {
+                CthunClient::DataContainer(),
+                CthunClient::DataContainer(echo_data_txt),
+                no_debug };
 
 static const std::string bad_echo_data_txt {
     "{  \"module\" : \"echo\","
@@ -33,26 +37,31 @@ static const std::string bad_echo_data_txt {
     "}"
 };
 
-static const ParsedContent bad_content { DataContainer(),
-                                         DataContainer(bad_echo_data_txt),
-                                         no_debug };
+static const CthunClient::ParsedChunks bad_parsed_chunks {
+                CthunClient::DataContainer(),
+                CthunClient::DataContainer(bad_echo_data_txt),
+                no_debug };
 
 TEST_CASE("Module::validateAndCallAction", "[modules]") {
     Modules::Echo echo_module {};
 
     SECTION("it should correctly call echo") {
-        auto result = echo_module.validateAndCallAction(echo_action, content);
-        REQUIRE(result.toString().find("maradona") != std::string::npos);
+        auto result = echo_module.performRequest(echo_action, parsed_chunks);
+        auto txt = result.get<std::string>("txt");
+        REQUIRE(txt == "maradona");
     }
 
-    SECTION("it should throw a message_validation_error if the action is unknown") {
-        REQUIRE_THROWS_AS(echo_module.validateAndCallAction(fake_action, content),
-                          message_validation_error);
+    SECTION("it should throw a request_validation_error if the action "
+            "is unknown") {
+        REQUIRE_THROWS_AS(echo_module.performRequest(fake_action, parsed_chunks),
+                          request_validation_error);
     }
 
-    SECTION("it should throw a message_validation_error if the message is invalid") {
-        REQUIRE_THROWS_AS(echo_module.validateAndCallAction(echo_action, bad_content),
-                          message_validation_error);
+    SECTION("it should throw a request_validation_error if the request "
+            "is invalid") {
+        REQUIRE_THROWS_AS(echo_module.performRequest(echo_action,
+                                                     bad_parsed_chunks),
+                          request_validation_error);
     }
 }
 

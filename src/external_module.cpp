@@ -68,61 +68,58 @@ void delayedAction(CthunClient::ParsedChunks parsed_chunks,
                    std::string module_path,
                    std::string results_dir,
                    std::shared_ptr<std::atomic<bool>> done) {
-    // Get the request id
+    // Get request info
     auto request_id = parsed_chunks.envelope.get<std::string>("id");
-    // Get request parameters
     auto module_name = parsed_chunks.data.get<std::string>("module");
     auto action_name = parsed_chunks.data.get<std::string>("action");
     auto request_input =
         parsed_chunks.data.get<CthunClient::DataContainer>("params");
 
-    // Initialize result files
-    CthunClient::DataContainer status {};
-    status.set<std::string>(module_name, "module");
-    status.set<std::string>(action_name, "action");
+    // Initialize result files (out, err, and status)
+    CthunClient::DataContainer action_status {};
+    action_status.set<std::string>("module", module_name);
+    action_status.set<std::string>("action", action_name);
+    action_status.set<std::string>("status", "running");
+    action_status.set<std::string>("duration", "0 s");
 
     if (!request_input.toString().empty()) {
-        status.set<std::string>(request_input.toString(), "input");
+        action_status.set<std::string>("input", request_input.toString());
     } else {
-        status.set<std::string>("none", "input");
+        action_status.set<std::string>("input", "none");
     }
 
-    status.set<std::string>("running", "status");
-    status.set<std::string>("0", "duration");
-
-    FileUtils::writeToFile(status.toString() + "\n", results_dir + "/status");
     FileUtils::writeToFile("", results_dir + "/stdout");
     FileUtils::writeToFile("", results_dir + "/stderr");
+    FileUtils::writeToFile(action_status.toString() + "\n",
+                           results_dir + "/status");
 
-    // Prepare and run the command
+    // Prepare and run the action command
     std::string stdin = request_input.toString();
     std::string stdout;
     std::string stderr;
     CthunAgent::Timer timer;
-
     runCommand(module_path, { module_path, action_name }, stdin, stdout, stderr);
 
-    status.set<std::string>(std::to_string(timer.elapsedSeconds()) + "s",
-                            "duration");
-
-    // Validate (creating a DataContainer validates the json output)
+    // Ensure output is valid JSON by instantiating DataContainer
     try {
-        CthunClient::DataContainer result { stdout };
+        CthunClient::DataContainer output { stdout };
     } catch (CthunClient::parse_error) {
         // TODO(ale): report outcome (perhaps with a 'success' field)
         stderr = "ERROR: failed to validate the '" + module_name + " "
-                 + action_name + "' output\n" + stderr;
+                 + action_name + "' output:\n" + stderr;
     }
 
-    // Write results to files
-    FileUtils::writeToFile(stdout + "\n", results_dir + "/stdout");
+    // Update result files
+    std::string duration { std::to_string(timer.elapsedSeconds()) + " s" };
+    action_status.set<std::string>("status", "completed");
+    action_status.set<std::string>("duration", duration);
 
+    FileUtils::writeToFile(stdout + "\n", results_dir + "/stdout");
+    FileUtils::writeToFile(action_status.toString() + "\n",
+                           results_dir + "/status");
     if (!stderr.empty()) {
         FileUtils::writeToFile(stderr + "\n", results_dir + "/stderr");
     }
-
-    status.set<std::string>("completed", "status");
-    FileUtils::writeToFile(status.toString() + "\n", results_dir + "/status");
 
     // Set the completion atomic flag
     *done = true;
@@ -207,8 +204,15 @@ CthunClient::DataContainer ExternalModule::callBlockingAction(
 
     runCommand(path_, { path_, action_name }, request_input, stdout, stderr);
 
-    LOG_INFO("'%1% %2%' results:\n  stdout: %3%\n  stderr: %4%",
-             module_name, action_name, stdout, stderr);
+    if (stdout.empty()) {
+        LOG_INFO("'%1% %2%' produced no output", module_name, action_name);
+    } else {
+        LOG_INFO("'%1% %2%' output: %3%", module_name, action_name, stdout);
+    }
+
+    if (!stderr.empty()) {
+        LOG_ERROR("'%1% %2%' error: %3%", module_name, action_name, stderr);
+    }
 
     return CthunClient::DataContainer { (stdout.empty() ? "{}" : stdout) };
 }
@@ -229,15 +233,15 @@ CthunClient::DataContainer ExternalModule::executeDelayedAction(
     std::string results_dir { spool_dir_ + job_id };
 
     if (!FileUtils::fileExists(results_dir)) {
-        LOG_INFO("Creating result directory for delayed action '%1% %2%' %3%",
-                 module_name, action_name, job_id);
+        LOG_INFO("Creating result directory for delayed action '%1% %2%', "
+                 "id: %3%", module_name, action_name, job_id);
         if (!FileUtils::createDirectory(results_dir)) {
             throw request_processing_error { "failed to create directory "
                                              + results_dir };
         }
     }
 
-    LOG_INFO("Starting delayed action '%1% %2%' %3%",
+    LOG_INFO("Starting delayed action '%1% %2%', id: %3%",
              module_name, action_name, job_id);
 
     // start thread
@@ -261,9 +265,10 @@ CthunClient::DataContainer ExternalModule::executeDelayedAction(
 
     // return response with the job id
     CthunClient::DataContainer response_output {};
-    response_output.set<std::string>("Requested excution of action: "
-                                     + action_name, "status");
-    response_output.set<std::string>(job_id, "id");
+    response_output.set<std::string>("status",
+            std::string("Requested excution of action: " + action_name));
+    response_output.set<std::string>("id", static_cast<std::string>(job_id));
+
     return response_output;
 }
 
@@ -302,7 +307,7 @@ const CthunClient::DataContainer ExternalModule::getMetadata_() {
 // ensuring that the action behaviour is known.
 void ExternalModule::registerAction_(const CthunClient::DataContainer& action) {
     auto action_name = action.get<std::string>("name");
-    LOG_INFO("Validating action %1%", action_name);
+    LOG_INFO("Validating action '%1% %2%'", module_name, action_name);
 
     try {
         auto input_schema_json = action.get<CthunClient::DataContainer>("input");
@@ -315,29 +320,31 @@ void ExternalModule::registerAction_(const CthunClient::DataContainer& action) {
 
         if (!behaviour.empty()) {
             if (behaviour == "interactive") {
-                LOG_DEBUG("Found interactive action: %1%", action_name);
+                LOG_DEBUG("The behaviour of action '%1% %2%' is interactive",
+                          module_name, action_name);
             } else if (behaviour == "delayed") {
-                LOG_DEBUG("Found delayed action: %1%", action_name);
+                LOG_DEBUG("The behaviour of action '%1% %2%' is interactive",
+                          module_name, action_name);
             } else {
-                LOG_ERROR("Unknown behaviour defined for action %1%: %2%",
-                          action_name, behaviour);
+                LOG_ERROR("Unknown behaviour defined for action '%1% %2%': %3%",
+                          module_name, action_name, behaviour);
                 throw module_error { "unknown behavior of " + action_name };
             }
         } else {
-            LOG_DEBUG("Found no behaviour for action %1%; using 'interactive'",
-                      action_name);
+            LOG_DEBUG("Found no behaviour for action '%1% %2%'; "
+                      "using 'interactive'", module_name, action_name);
             behaviour = "interactive";
         }
 
-        LOG_INFO("Action %1% of external module %2%: validation OK",
-                 action_name, module_name);
+        LOG_INFO("Action '%1% %2%' has been validated", module_name, action_name);
         actions[action_name] = Action { behaviour };
         input_validator_.registerSchema(input_schema);
         output_validator_.registerSchema(output_schema);
     } catch (CthunClient::schema_error& e) {
-        LOG_ERROR("Failed to parse input/output schemas of %1%: %2%",
-                  action_name, e.what());
-        throw module_error { "invalid schemas of " + action_name };
+        LOG_ERROR("Failed to parse input/output schemas of action '%1% %2%': %3%",
+                  module_name, action_name, e.what());
+        throw module_error { std::string("invalid schemas of '" + module_name
+                                         + " " + action_name + "'") };
     }
 }
 

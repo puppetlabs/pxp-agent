@@ -8,13 +8,14 @@
 #include "src/modules/status.h"
 #include "src/configuration.h"
 
+#include <cthun-client/data_container/data_container.h>
+#include <cthun-client/message/chunks.h>       // ParsedChunks
+
 #include <boost/format.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
 extern std::string ROOT_PATH;
-
-// TODO(ale): update this to cthun-client
 
 namespace CthunAgent {
 
@@ -29,11 +30,12 @@ boost::format status_format {
 
 static const std::string status_txt { (status_format % "the-uuid-string").str() };
 
-static const std::vector<DataContainer> no_debug {};
+static const std::vector<std::string> no_debug {};
 
-static const ParsedContent content { DataContainer(),
-                                     DataContainer(status_txt),
-                                     no_debug };
+static const CthunClient::ParsedChunks parsed_chunks {
+                    CthunClient::DataContainer(),
+                    CthunClient::DataContainer(status_txt),
+                    no_debug };
 
 TEST_CASE("Modules::Status::callAction", "[modules]") {
     Modules::Status status_module {};
@@ -48,22 +50,23 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
     }
 
     SECTION("it can call the 'query' action") {
-        REQUIRE_NOTHROW(status_module.callAction(query_action, content));
+        REQUIRE_NOTHROW(status_module.callAction(query_action, parsed_chunks));
     }
 
     SECTION("it works properly when an unknown job id is provided") {
         auto job_id = UUID::getUUID();
         std::string other_status_txt { (status_format % job_id).str() };
-        ParsedContent other_content { DataContainer(),
-                                     DataContainer(other_status_txt),
-                                     no_debug };
+        CthunClient::ParsedChunks other_chunks {
+                CthunClient::DataContainer(),
+                CthunClient::DataContainer(other_status_txt),
+                no_debug };
 
         SECTION("it doesn't throw") {
-            REQUIRE_NOTHROW(status_module.callAction(query_action, other_content));
+            REQUIRE_NOTHROW(status_module.callAction(query_action, other_chunks));
         }
 
         SECTION("it returns an error") {
-            auto result = status_module.callAction(query_action, other_content);
+            auto result = status_module.callAction(query_action, other_chunks);
             REQUIRE(result.includes("error"));
         }
     }
@@ -77,10 +80,10 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
         boost::filesystem::path symlink { symlink_path };
 
         std::string other_status_txt { (status_format % symlink_name).str() };
-        ParsedContent other_content { DataContainer(),
-                                     DataContainer(other_status_txt),
-                                     no_debug };
-
+        CthunClient::ParsedChunks other_chunks {
+                CthunClient::DataContainer(),
+                CthunClient::DataContainer(other_status_txt),
+                no_debug };
         try {
             boost::filesystem::create_symlink(to, symlink);
         } catch (boost::filesystem::filesystem_error) {
@@ -88,21 +91,21 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
         }
 
         SECTION("it doesn't throw") {
-            REQUIRE_NOTHROW(status_module.callAction(query_action, other_content));
+            REQUIRE_NOTHROW(status_module.callAction(query_action, other_chunks));
         }
 
         SECTION("it returns the action status") {
-            auto result = status_module.callAction(query_action, other_content);
+            auto result = status_module.callAction(query_action, other_chunks);
             REQUIRE(result.get<std::string>("status") == "Completed");
         }
 
         SECTION("it returns the action output") {
-            auto result = status_module.callAction(query_action, other_content);
+            auto result = status_module.callAction(query_action, other_chunks);
             REQUIRE(result.get<std::string>("stdout") == "***OUTPUT\n");
         }
 
         SECTION("it returns the action error string") {
-            auto result = status_module.callAction(query_action, other_content);
+            auto result = status_module.callAction(query_action, other_chunks);
             REQUIRE(result.get<std::string>("stderr") == "***ERROR\n");
         }
 

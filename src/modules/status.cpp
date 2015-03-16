@@ -37,7 +37,7 @@ CthunClient::DataContainer Status::callAction(
 
     if (!FileUtils::fileExists(spool_dir + job_id)) {
         LOG_ERROR("Found no results for job id %1%", job_id);
-        output.set<std::string>("No job exists for id: " + job_id, "error");
+        output.set<std::string>("error", "No job exists for id: " + job_id);
         return output;
     }
 
@@ -46,7 +46,7 @@ CthunClient::DataContainer Status::callAction(
 
     auto status_txt = status.get<std::string>("status");
     if (status_txt == "running") {
-        output.set<std::string>("Running", "status");
+        output.set<std::string>("status", "Running");
     } else if (status_txt == "completed") {
         output.set<std::string>("status", "Completed");
         output.set<std::string>("stdout",

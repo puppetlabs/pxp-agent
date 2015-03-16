@@ -6,6 +6,9 @@
 #include "src/file_utils.h"
 #include "src/timer.h"
 
+#include <cthun-client/data_container/data_container.h>
+#include <cthun-client/message/chunks.h>       // ParsedChunks
+
 #include <boost/filesystem/operations.hpp>
 #include <boost/format.hpp>
 
@@ -33,11 +36,12 @@ const std::string reverse_txt { (data_format % "\"reverse\""
                                              % "\"string\""
                                              % "\"maradona\"").str() };
 
-static const std::vector<DataContainer> no_debug {};
+static const std::vector<std::string> no_debug {};
 
-static const ParsedContent content { DataContainer(),
-                                     DataContainer(reverse_txt),
-                                     no_debug };
+static const CthunClient::ParsedChunks content {
+                    CthunClient::DataContainer(),
+                    CthunClient::DataContainer(reverse_txt),
+                    no_debug };
 
 TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
     SECTION("can successfully instantiate from a valid external module") {
@@ -72,28 +76,29 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
         ExternalModule reverse_module { ROOT_PATH + "/modules/reverse" };
 
         SECTION("correctly call the shipped reverse module") {
-            auto result = reverse_module.validateAndCallAction(STRING_ACTION,
+            auto result = reverse_module.performRequest(STRING_ACTION,
                                                                content);
             REQUIRE(result.toString().find("anodaram") != std::string::npos);
         }
 
-        SECTION("throw a message_validation_error if the action is unknown") {
-            REQUIRE_THROWS_AS(reverse_module.validateAndCallAction("fake_action",
+        SECTION("throw a request_validation_error if the action is unknown") {
+            REQUIRE_THROWS_AS(reverse_module.performRequest("fake_action",
                                                                     content),
-                              message_validation_error);
+                              request_validation_error);
         }
 
-        SECTION("throw a message_validation_error if the message is invalid") {
+        SECTION("throw a request_validation_error if the message is invalid") {
             std::string bad_reverse_txt { (data_format % "\"reverse\""
                                                        % "\"string\""
                                                        % "[1, 2, 3, 4 ,5]").str() };
-            ParsedContent bad_content { DataContainer(),
-                                        DataContainer(bad_reverse_txt),
-                                        no_debug };
+            CthunClient::ParsedChunks bad_content {
+                    CthunClient::DataContainer(),
+                    CthunClient::DataContainer(bad_reverse_txt),
+                    no_debug };
 
-            REQUIRE_THROWS_AS(reverse_module.validateAndCallAction(STRING_ACTION,
-                                                                   bad_content),
-                              message_validation_error);
+            REQUIRE_THROWS_AS(reverse_module.performRequest(STRING_ACTION,
+                                                            bad_content),
+                              request_validation_error);
         }
     }
 
@@ -101,30 +106,34 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
         ExternalModule test_reverse_module {
             ROOT_PATH + "/test/resources/modules/failures_test" };
 
-        SECTION("throw a message_processing_error if the module returns an "
+        SECTION("throw a request_processing_error if the module returns an "
                 "invalid result") {
             std::string failure_txt { (data_format % "\"failures_test\""
                                                    % "\"get_an_invalid_result\""
                                                    % "\"maradona\"").str() };
-            ParsedContent failure_content { DataContainer(),
-                                            DataContainer(failure_txt),
-                                            no_debug };
-            REQUIRE_THROWS_AS(test_reverse_module.validateAndCallAction(
+            CthunClient::ParsedChunks failure_content {
+                    CthunClient::DataContainer(),
+                    CthunClient::DataContainer(failure_txt),
+                    no_debug };
+
+            REQUIRE_THROWS_AS(test_reverse_module.performRequest(
                                     "get_an_invalid_result", failure_content),
-                              message_processing_error);
+                              request_processing_error);
         }
 
-        SECTION("throw a message_processing_error if a blocking action throws "
+        SECTION("throw a request_processing_error if a blocking action throws "
                 "an exception") {
             std::string failure_txt { (data_format % "\"failures_test\""
                                                    % "\"broken_action\""
                                                    % "\"maradona\"").str() };
-            ParsedContent failure_content { DataContainer(),
-                                            DataContainer(failure_txt),
-                                            no_debug };
-            REQUIRE_THROWS_AS(test_reverse_module.validateAndCallAction(
+            CthunClient::ParsedChunks failure_content {
+                    CthunClient::DataContainer(),
+                    CthunClient::DataContainer(failure_txt),
+                    no_debug };
+
+            REQUIRE_THROWS_AS(test_reverse_module.performRequest(
                                     "broken_action", failure_content),
-                              message_processing_error);
+                              request_processing_error);
         }
     }
 }
@@ -149,16 +158,19 @@ TEST_CASE("ExternalModule::callAction - delayed", "[async]") {
         std::string delayed_txt { (data_format % "\"reverse_valid\""
                                                % "\"delayed_action\""
                                                % "\"the input string\"").str() };
-        ParsedContent delayed_content { DataContainer(),
-                                        DataContainer(delayed_txt),
-                                        no_debug };
-        auto result = test_reverse_module.validateAndCallAction("delayed_action",
-                                                                delayed_content);
+        CthunClient::ParsedChunks delayed_content {
+                CthunClient::DataContainer(),
+                CthunClient::DataContainer(delayed_txt),
+                no_debug };
+        auto result = test_reverse_module.performRequest("delayed_action",
+                                                         delayed_content);
+
         REQUIRE(result.includes(DELAYED_JOB_ID_LABEL));
 
         // Try to clean it up
         std::string action_dir { RESULTS_ROOT_DIR + "/"
                                  + result.get<std::string>(DELAYED_JOB_ID_LABEL) };
+
         if (FileUtils::fileExists(action_dir)) {
             waitForAction(action_dir);
             boost::filesystem::remove_all(action_dir);
@@ -173,6 +185,7 @@ TEST_CASE("ExternalModule::executeDelayedAction", "[async]") {
 
     ExternalModule test_reverse_module {
         ROOT_PATH + "/test/resources/modules/reverse_valid" };
+
     std::string action_parent_dir { RESULTS_ROOT_DIR + "/" };
     auto job_id = UUID::getUUID();
     auto action_dir = action_parent_dir + job_id;

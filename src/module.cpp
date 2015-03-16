@@ -65,7 +65,7 @@ CthunClient::DataContainer Module::performRequest(
                       module_name, action_name);
             output_validator_.validate(response_output, action_name);
         } catch (CthunClient::validation_error) {
-            throw request_validation_error { "the action '" + module_name + " "
+            throw request_processing_error { "the action '" + module_name + " "
                                              + action_name + "' returned an "
                                              "invalid result" };
         }
