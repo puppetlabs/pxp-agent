@@ -59,13 +59,14 @@ Agent::Agent(const std::string& bin_path,
              const std::string& ca,
              const std::string& crt,
              const std::string& key)
-        try : connector_ { server_url, AGENT_CLIENT_TYPE, ca, crt, key },
+        try
+            : connector_ { server_url, AGENT_CLIENT_TYPE, ca, crt, key },
               modules_ {} {
     // NB: certificate paths are validated by HW
-    loadInternalModules_();
+    loadInternalModules();
     auto modules_dir_path = getModulesDirPath(bin_path);
-    loadExternalModulesFrom_(modules_dir_path);
-    logLoadedModules_();
+    loadExternalModulesFrom(modules_dir_path);
+    logLoadedModules();
 } catch (CthunClient::connection_config_error& e) {
     throw fatal_error { std::string("failed to configure the agent: ")
                         + e.what() };
@@ -73,9 +74,9 @@ Agent::Agent(const std::string& bin_path,
 
 void Agent::start() {
     connector_.registerMessageCallback(
-        getCncRequestSchema_(),
+        getCncRequestSchema(),
         [this](const CthunClient::ParsedChunks& parsed_chunks) {
-            cncRequestCallback_(parsed_chunks);
+            cncRequestCallback(parsed_chunks);
         });
 
     try {
@@ -91,6 +92,8 @@ void Agent::start() {
         throw fatal_error { "failed to connect" };
     }
 
+    // The agent is now connected and the request handlers are set;
+    // we can now loop indefinetely until the user sends a sigkill
     while(true) {
         sleep(10);
     }
@@ -100,14 +103,14 @@ void Agent::start() {
 // Agent - private interface
 //
 
-void Agent::loadInternalModules_() {
+void Agent::loadInternalModules() {
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
     modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
     modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
     modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
 }
 
-void Agent::loadExternalModulesFrom_(fs::path dir_path) {
+void Agent::loadExternalModulesFrom(fs::path dir_path) {
     LOG_INFO("Loading external modules from %1%", dir_path.string());
 
     if (fs::is_directory(dir_path)) {
@@ -136,7 +139,7 @@ void Agent::loadExternalModulesFrom_(fs::path dir_path) {
     }
 }
 
-void Agent::logLoadedModules_() const {
+void Agent::logLoadedModules() const {
     for (auto& module : modules_) {
         std::string txt { "found no action" };
         std::string actions_list { "" };
@@ -157,7 +160,7 @@ void Agent::logLoadedModules_() const {
     }
 }
 
-CthunClient::Schema Agent::getCncRequestSchema_() const {
+CthunClient::Schema Agent::getCncRequestSchema() const {
     CthunClient::Schema schema { CthunClient::CTHUN_REQUEST_SCHEMA_NAME,
                                  CthunClient::ContentType::Json };
     using T_C = CthunClient::TypeConstraint;
@@ -168,7 +171,7 @@ CthunClient::Schema Agent::getCncRequestSchema_() const {
     return schema;
 }
 
-void Agent::cncRequestCallback_(const CthunClient::ParsedChunks& parsed_chunks) {
+void Agent::cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks) {
     auto request_id = parsed_chunks.envelope.get<std::string>("id");
     auto sender_endpoint = parsed_chunks.envelope.get<std::string>("sender");
 

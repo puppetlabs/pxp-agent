@@ -72,8 +72,8 @@ class ExternalModule : public Module {
     /// Validator
     static const CthunClient::Validator metadata_validator_;
 
-    const CthunClient::DataContainer getMetadata_();
-    void registerAction_(const CthunClient::DataContainer& action);
+    const CthunClient::DataContainer getMetadata();
+    void registerAction(const CthunClient::DataContainer& action);
 };
 
 }  // namespace CthunAgent

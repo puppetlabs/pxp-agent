@@ -27,6 +27,15 @@ class Agent {
           const std::string& client_crt_path,
           const std::string& client_key_path);
 
+    // Start the agent and loop indefinetely, by:
+    //  - loading the internal and external modules;
+    //  - retrieving the agent identity from the certificate file;
+    //  - establishing the underlying communications layer connection;
+    //  - connecting to the Cthun server;
+    //  - setting the handlers to process incoming requests.
+    //
+    // Throw a fatal_error in case of unexpected failures; errors
+    // such as message sending failures are only logged.
     void start();
 
   private:
@@ -37,23 +46,23 @@ class Agent {
     std::map<std::string, std::shared_ptr<Module>> modules_;
 
     // Load the modules from the src/modules directory.
-    void loadInternalModules_();
+    void loadInternalModules();
 
     // Load the external modules contained in the specified directory.
-    void loadExternalModulesFrom_(boost::filesystem::path modules_dir_path);
+    void loadExternalModulesFrom(boost::filesystem::path modules_dir_path);
 
     // Log the loaded modules.
-    void logLoadedModules_() const;
+    void logLoadedModules() const;
 
     // Returns the json validation schema for a cnc request.
-    CthunClient::Schema getCncRequestSchema_() const;
+    CthunClient::Schema getCncRequestSchema() const;
 
     // Callback for the CthunClient::Connector to handle incoming
     // messages. It will reply to the sender with the requested
     // output.
     // Throw a request_validation error in case: no parsed data; data
     // is not in JSON format; unknown module.
-    void cncRequestCallback_(const CthunClient::ParsedChunks& parsed_chunks);
+    void cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks);
 };
 
 }  // namespace CthunAgent

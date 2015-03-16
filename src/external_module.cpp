@@ -127,7 +127,7 @@ void delayedAction(CthunClient::ParsedChunks parsed_chunks,
 
 // Provides the metadata validator
 
-CthunClient::Validator getMetadataValidator_() {
+CthunClient::Validator getMetadataValidator() {
     // Metadata schema
     CthunClient::Schema metadata_schema { METADATA_SCHEMA_NAME,
                                           CthunClient::ContentType::Json };
@@ -157,7 +157,7 @@ CthunClient::Validator getMetadataValidator_() {
 
 // Metadata validator (static member)
 const CthunClient::Validator ExternalModule::metadata_validator_ {
-        getMetadataValidator_() };
+        getMetadataValidator() };
 
 ExternalModule::ExternalModule(const std::string& path)
         : spool_dir_ { Configuration::Instance().get<std::string>("spool-dir") },
@@ -167,11 +167,11 @@ ExternalModule::ExternalModule(const std::string& path)
     module_name = module_path.filename().string();
     thread_container_.setName(module_name);
 
-    auto metadata = getMetadata_();
+    auto metadata = getMetadata();
 
     for (auto& action_metadata :
             metadata.get<std::vector<CthunClient::DataContainer>>("actions")) {
-        registerAction_(action_metadata);
+        registerAction(action_metadata);
     }
 }
 
@@ -277,7 +277,7 @@ CthunClient::DataContainer ExternalModule::executeDelayedAction(
 //
 
 // Retrieve and validate the module metadata
-const CthunClient::DataContainer ExternalModule::getMetadata_() {
+const CthunClient::DataContainer ExternalModule::getMetadata() {
     std::string metadata_txt;
     std::string error;
 
@@ -305,7 +305,7 @@ const CthunClient::DataContainer ExternalModule::getMetadata_() {
 // Register the specified action after: ensuring that the input and
 // output schemas are valid JSON (i.e. we can instantiate Schema);
 // ensuring that the action behaviour is known.
-void ExternalModule::registerAction_(const CthunClient::DataContainer& action) {
+void ExternalModule::registerAction(const CthunClient::DataContainer& action) {
     auto action_name = action.get<std::string>("name");
     LOG_INFO("Validating action '%1% %2%'", module_name, action_name);
 
