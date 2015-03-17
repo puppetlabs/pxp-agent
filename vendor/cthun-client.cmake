@@ -15,4 +15,4 @@ externalproject_add(
 )
 externalproject_get_property(cthun-client SOURCE_DIR)
 set(CTHUN_CLIENT_INCLUDE_DIRS "${SOURCE_DIR}/src")
-set(CTHUN_CLIENT_LIB "${SOURCE_DIR}/lib/libcthun-client.a")
+set(CTHUN_CLIENT_LIB "${SOURCE_DIR}/lib/libcthun-client.so")
