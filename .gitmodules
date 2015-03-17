@@ -1,3 +1,6 @@
 [submodule "vendor/cthun-client/cthun-client"]
 	path = vendor/cthun-client/cthun-client
 	url = git@github.com:puppetlabs/cthun-client.git
+[submodule "vendor/leatherman"]
+	path = vendor/leatherman
+	url = git@github.com:puppetlabs/leatherman.git

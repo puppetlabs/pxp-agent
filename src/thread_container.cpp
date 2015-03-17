@@ -1,11 +1,11 @@
 #include "src/thread_container.h"
-#include "src/log.h"
 
 #include <chrono>
 #include <algorithm>  // remove_if
 #include <iterator>   // distance
 
-LOG_DECLARE_NAMESPACE("thread_container");
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.thread_container"
+#include <leatherman/logging/logging.hpp>
 
 namespace CthunAgent {
 

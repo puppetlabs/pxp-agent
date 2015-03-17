@@ -29,6 +29,19 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} /opt/local/include)
 endif()
 
+# Set the client library's logging prefix
+set(CTHUN_CLIENT_LOGGING_PREFIX "puppetlabs.cthun_agent")
+
+# Leatherman it up
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/vendor/leatherman/cmake")
+include(options)
+
+set(LEATHERMAN_USE_LOCALE TRUE)
+set(LEATHERMAN_USE_NOWIDE TRUE)
+set(LEATHERMAN_USE_CATCH TRUE)
+set(LEATHERMAN_USE_LOGGING TRUE)
+add_subdirectory("vendor/leatherman")
+
 # Find libraries
 
 find_package(Boost 1.54 REQUIRED
@@ -52,6 +65,7 @@ include_directories(
     SYSTEM ${HORSEWHISPERER_INCLUDE_DIRS}
     SYSTEM ${INIH_INCLUDE_DIRS}
     SYSTEM ${CTHUN_CLIENT_INCLUDE_DIRS}
+    SYSTEM ${LEATHERMAN_INCLUDE_DIRS}
 )
 
 # Add the main binary
@@ -69,45 +83,6 @@ add_test(
 )
 
 # Add cpplint target
-
-include(FindPythonInterp)
-if (NOT PYTHONINTERP_FOUND)
-    message(STATUS "Python not found; 'cpplint' target will not be available")
-else()
-    set(CPPLINT_FILTER
-        "-build/c++11"            # <thread>, <condvar>, etc...
-        "-whitespace/indent"      # We use 4 space indentation
-        "-build/include"          # Why?
-        "-build/namespaces"       # What's a namespace to do
-        "-legal/copyright"        # Not yet
-        "-runtime/references"     # Not sure about this religion
-        "-readability/streams"    # What?
-        "-readability/namespace"  # Ignore nested namespace comment formatting
-        "-whitespace/braces"      # Is there a k&r setting?
-        "-whitespace/line_length" # Well yeah, but ... not just now
-        "-runtime/arrays"         # Sizing an array with a 'const int' doesn't make it variable sized
-        "-readability/todo"       # Seriously? todo comments need to identify an owner? pffft
-        "-whitespace/empty_loop_body" # Can't handle do { ... } while(expr);
-        "-runtime/int"            # Some C types are needed for library interop
-        "-runtime/explicit"       # Using implicit conversion from string to regex for regex calls.
-        "-build/header_guard"     # Disable header guards (cpplint doesn't yet support enforcing #pragma once)
-    )
-
-    FILE (GLOB_RECURSE ALL_SOURCES src/*.cpp src/*.h test/*.cpp test/*.h)
-
-    set(CPPLINT_PATH "${MAINFOLDER}/ext/cpplint.py")
-
-    set(CPPLINT_ARGS "")
-    if (CPPLINT_FILTER)
-        string(REPLACE ";" "," CPPLINT_FILTER "${CPPLINT_FILTER}")
-        set(CPPLINT_ARGS "${CPPLINT_ARGS}--filter=${CPPLINT_FILTER}")
-    endif()
-    if (MSVC)
-        set(CPPLINT_ARGS "${CPPLINT_ARGS} --output=vs7")
-    endif()
-
-    ADD_CUSTOM_TARGET(cpplint
-        COMMAND ${PYTHON_EXECUTABLE} ${CPPLINT_PATH} ${CPPLINT_ARGS} ${ALL_SOURCES}
-        VERBATIM
-    )
-endif()
+FILE (GLOB_RECURSE ALL_SOURCES src/*.cpp src/*.h test/*.cpp test/*.h)
+add_cpplint_files(${ALL_SOURCES})
+enable_cpplint()

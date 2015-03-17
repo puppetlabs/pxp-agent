@@ -1,45 +1,43 @@
 #include "src/agent.h"
 #include "src/errors.h"
-#include "src/log.h"
 #include "src/file_utils.h"
 #include "src/configuration.h"
+
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.main"
+#include <leatherman/logging/logging.hpp>
 
 #include <fstream>
 
 #include <horsewhisperer/horsewhisperer.h>
 
-LOG_DECLARE_NAMESPACE("cthun_agent_main");
-
 namespace CthunAgent {
 
 namespace HW = HorseWhisperer;
 
-int startAgent(std::vector<std::string> arguments   ) {
-    Log::log_level log_level;
-
-    switch (HW::GetFlag<int>("vlevel")) {
-        case 0:
-            log_level = Log::log_level::info;
-            break;
-        case 1:
-            log_level = Log::log_level::debug;
-            break;
-        case 2:
-            log_level = Log::log_level::trace;
-            break;
-        default:
-            log_level = Log::log_level::trace;
-    }
-
-    std::ostream& console_stream = std::cout;
+int startAgent(std::vector<std::string> arguments) {
     std::string logfile { HW::GetFlag<std::string>("logfile") };
     std::ofstream file_stream;
 
     if (!logfile.empty()) {
         file_stream.open(logfile);
-        Log::configure_logging(log_level, file_stream);
+        leatherman::logging::setup_logging(file_stream);
     } else {
-        Log::configure_logging(log_level, console_stream);
+        leatherman::logging::setup_logging(std::cout);
+        leatherman::logging::set_colorization(true);
+    }
+
+    switch (HW::GetFlag<int>("vlevel")) {
+        case 0:
+            leatherman::logging::set_level(leatherman::logging::log_level::info);
+            break;
+        case 1:
+            leatherman::logging::set_level(leatherman::logging::log_level::debug);
+            break;
+        case 2:
+            leatherman::logging::set_level(leatherman::logging::log_level::trace);
+            break;
+        default:
+            leatherman::logging::set_level(leatherman::logging::log_level::trace);
     }
 
     try {

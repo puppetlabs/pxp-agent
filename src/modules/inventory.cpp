@@ -1,12 +1,12 @@
 #include "src/modules/inventory.h"
-#include "src/log.h"
 #include "src/errors.h"
 
 #include <facter/facts/collection.hpp>
 
 #include <sstream>
 
-LOG_DECLARE_NAMESPACE("modules.inventory");
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.modules.inventory"
+#include <leatherman/logging/logging.hpp>
 
 namespace CthunAgent {
 namespace Modules {
