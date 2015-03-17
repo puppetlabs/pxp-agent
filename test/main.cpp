@@ -4,10 +4,11 @@
 
 #include "test/test.h"
 
-#include "src/log.h"
-
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.test"
+#include <leatherman/logging/logging.hpp>
 
 std::string ROOT_PATH;
 
@@ -23,8 +24,8 @@ int main(int argc, char* const argv[]) {
     ROOT_PATH = std::string(root_path.string());
 
     // set logging level to fatal
-    CthunAgent::Log::configure_logging(CthunAgent::Log::log_level::fatal,
-                                       std::cout);
+    leatherman::logging::setup_logging(std::cout);
+    leatherman::logging::set_level(leatherman::logging::log_level::fatal);
 
     // configure the Catch session and start it
 

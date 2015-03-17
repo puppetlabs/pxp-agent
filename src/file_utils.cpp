@@ -1,8 +1,10 @@
 #include "src/file_utils.h"
-#include "src/log.h"
 #include "src/errors.h"
 
 #include <boost/filesystem.hpp>
+
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.file_utils"
+#include <leatherman/logging/logging.hpp>
 
 #include <wordexp.h>
 #include <fstream>
@@ -10,9 +12,6 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <stdio.h>
-
-
-LOG_DECLARE_NAMESPACE("file_utils");
 
 namespace CthunAgent {
 namespace FileUtils {

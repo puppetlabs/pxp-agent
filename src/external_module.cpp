@@ -1,10 +1,12 @@
 #include "src/external_module.h"
 #include "src/action.h"
 #include "src/errors.h"
-#include "src/log.h"
 #include "src/file_utils.h"
 #include "src/timer.h"
 #include "src/uuid.h"
+
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.external_module"
+#include <leatherman/logging/logging.hpp>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -18,8 +20,6 @@
 // To disable assert()
 // #define NDEBUG
 #include <cassert>
-
-LOG_DECLARE_NAMESPACE("external_module");
 
 namespace CthunAgent {
 

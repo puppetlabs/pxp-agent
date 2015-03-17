@@ -1,6 +1,5 @@
 #include "src/agent.h"
 #include "src/errors.h"
-#include "src/log.h"
 #include "src/uuid.h"
 #include "src/string_utils.h"
 
@@ -14,10 +13,11 @@
 #include <cthun-client/data_container/data_container.h>
 #include <cthun-client/validator/validator.h>  // Validator
 
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.agent"
+#include <leatherman/logging/logging.hpp>
+
 #include <vector>
 #include <memory>
-
-LOG_DECLARE_NAMESPACE("agent");
 
 namespace CthunAgent {
 

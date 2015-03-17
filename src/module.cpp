@@ -1,10 +1,10 @@
 #include "src/module.h"
 #include "src/errors.h"
-#include "src/log.h"
 
 #include <iostream>
 
-LOG_DECLARE_NAMESPACE("module");
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.module"
+#include <leatherman/logging/logging.hpp>
 
 namespace CthunAgent {
 

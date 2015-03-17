@@ -13,7 +13,6 @@ set(LIBRARY_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/configuration.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/external_module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/file_utils.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/log.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/module.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/echo.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/modules/inventory.cpp"
