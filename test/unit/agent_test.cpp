@@ -52,12 +52,4 @@ TEST_CASE("Agent::Agent", "[agent]") {
     }
 }
 
-TEST_CASE("Agent::startAgent", "[agent]") {
-    SECTION("should throw a fatal_error if the server url is invalid") {
-        Agent agent { getBin(), "foo", getCa(), getCert(), getKey() };
-        REQUIRE_THROWS_AS(agent.start(),
-                          fatal_error);
-    }
-}
-
 }  // namespace CthunAgent
