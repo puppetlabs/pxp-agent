@@ -81,7 +81,6 @@ void Agent::start() {
 
     try {
         connector_.connect();
-        connector_.enablePersistence();
     } catch (CthunClient::connection_config_error& e) {
         LOG_ERROR("Failed to configure the underlying communications layer: %1%",
                   e.what());
@@ -93,9 +92,15 @@ void Agent::start() {
     }
 
     // The agent is now connected and the request handlers are set;
-    // we can now loop indefinetely until the user sends a sigkill
-    while(true) {
-        sleep(10);
+    // we can now call the monitoring method that will block this
+    // thread of execution.
+    // Note that, in case the underlying connection drops, the
+    // connector will keep trying to re-establish it indefinitely
+    // (the max_connect_attempts is 0 by default).
+    try {
+        connector_.monitorConnection();
+    } catch (CthunClient::connection_fatal_error) {
+        throw fatal_error { "failed to reconnect" };
     }
 }
 
@@ -173,9 +178,9 @@ CthunClient::Schema Agent::getCncRequestSchema() const {
 
 void Agent::cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks) {
     auto request_id = parsed_chunks.envelope.get<std::string>("id");
-    auto sender_endpoint = parsed_chunks.envelope.get<std::string>("sender");
+    auto requester_endpoint = parsed_chunks.envelope.get<std::string>("sender");
 
-    LOG_INFO("Received message %1% from %2%", request_id, sender_endpoint);
+    LOG_INFO("Received message %1% from %2%", request_id, requester_endpoint);
     LOG_DEBUG("Message %1%:\n%2%", request_id, parsed_chunks.toString());
 
     try {
@@ -210,7 +215,7 @@ void Agent::cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks) {
         }
 
         try {
-            connector_.send(std::vector<std::string> { sender_endpoint },
+            connector_.send(std::vector<std::string> { requester_endpoint },
                             CthunClient::CTHUN_RESPONSE_SCHEMA_NAME,
                             DEFAULT_MSG_TIMEOUT_SEC,
                             data_json,
@@ -219,11 +224,11 @@ void Agent::cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks) {
             // We failed to send the response; it's up to the
             // requester to ask again
             LOG_ERROR("Failed to reply to the %1% request from %2%: %3%",
-                      request_id, sender_endpoint, e.what());
+                      request_id, requester_endpoint, e.what());
         }
     } catch (request_error& e) {
         LOG_ERROR("Failed to process message %1% from %2%: %3%",
-                  request_id, sender_endpoint, e.what());
+                  request_id, requester_endpoint, e.what());
         CthunClient::DataContainer error_data_json;
 
         // TODO(ale): make error handling consistent in our protocol
@@ -235,13 +240,13 @@ void Agent::cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks) {
         error_data_json.set<std::string>("error", e.what());
 
         try {
-            connector_.send(std::vector<std::string> { sender_endpoint },
+            connector_.send(std::vector<std::string> { requester_endpoint },
                             CthunClient::CTHUN_RESPONSE_SCHEMA_NAME,
                             DEFAULT_MSG_TIMEOUT_SEC,
                             error_data_json);
         } catch (CthunClient::connection_error& e) {
             LOG_ERROR("Failed send an error response to the %1% request "
-                      "from %2%: %3%", request_id, sender_endpoint, e.what());
+                      "from %2%: %3%", request_id, requester_endpoint, e.what());
         }
     }
 }
