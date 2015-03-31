@@ -5,23 +5,10 @@ project(cthun-agent)
 
 set(MAINFOLDER ${PROJECT_SOURCE_DIR})
 set(EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
-set(LIBRARY_OUTPUT_PATH "${MAINFOLDER}/lib")
+set(LIBRARY_OUTPUT_PATH "${MAINFOLDER}/bin")
 set(EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
 set(VENDOR_DIRECTORY "${PROJECT_SOURCE_DIR}/vendor")
 list(APPEND CMAKE_MODULE_PATH ${VENDOR_DIRECTORY})
-
-# Set compiler-specific flags
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-reorder -Wno-unused-parameter -Wno-deprecated-register")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-
-    # NB: -pthread is needed for fedora20 (cmake does not add the library, even
-    # afer finding it)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-unused-parameter -pthread")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-endif()
 
 # prefer openssl from ports
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
@@ -35,6 +22,11 @@ set(CTHUN_CLIENT_LOGGING_PREFIX "puppetlabs.cthun_agent")
 # Leatherman it up
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/vendor/leatherman/cmake")
 include(options)
+
+# Set compiler flags
+include(cflags) # Leatherman
+set(CTHUN_AGENT_FLAGS "")
+set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS} ${CTHUN_AGENT_FLAGS}")
 
 set(LEATHERMAN_USE_LOCALE TRUE)
 set(LEATHERMAN_USE_NOWIDE TRUE)
@@ -57,25 +49,14 @@ include(${VENDOR_DIRECTORY}/horsewhisperer.cmake)
 include(${VENDOR_DIRECTORY}/inih.cmake)
 include(${VENDOR_DIRECTORY}/cthun-client.cmake)
 
-# Set include directories
-
-include_directories(
-    SYSTEM ${Boost_INCLUDE_DIRS}
-    SYSTEM ${Boost_Process_INCLUDE_DIRS}
-    SYSTEM ${HORSEWHISPERER_INCLUDE_DIRS}
-    SYSTEM ${INIH_INCLUDE_DIRS}
-    SYSTEM ${CTHUN_CLIENT_INCLUDE_DIRS}
-    SYSTEM ${LEATHERMAN_INCLUDE_DIRS}
-)
-
 # Add the main binary
 
-add_subdirectory(src)
+add_subdirectory(lib)
+add_subdirectory(exe)
 
 # Add the test suite
 
 enable_testing()
-add_subdirectory(test)
 
 add_test(
     NAME "cthun-agent\\ library\\ tests"
@@ -83,6 +64,6 @@ add_test(
 )
 
 # Add cpplint target
-FILE (GLOB_RECURSE ALL_SOURCES src/*.cpp src/*.h test/*.cpp test/*.h)
+FILE (GLOB_RECURSE ALL_SOURCES lib/*.cc lib/*.hpp exe/*.cc exe/*.hpp)
 add_cpplint_files(${ALL_SOURCES})
 enable_cpplint()

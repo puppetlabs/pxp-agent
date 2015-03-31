@@ -12,5 +12,5 @@ externalproject_add(
     INSTALL_COMMAND ""
 )
 externalproject_get_property(cthun-client SOURCE_DIR)
-set(CTHUN_CLIENT_INCLUDE_DIRS "${SOURCE_DIR}/src")
-set(CTHUN_CLIENT_LIB "${SOURCE_DIR}/lib/libcthun-client.so")
+set(CTHUN_CLIENT_INCLUDE_DIRS "${SOURCE_DIR}/lib/inc")
+set(CTHUN_CLIENT_LIB "${SOURCE_DIR}/bin/libcthun-client.so")
