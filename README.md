@@ -5,7 +5,7 @@ This is the experimental agent for the Cthun command and control framework.
 ## Building from source
 
 ### Build requirements
- - a C++11 compiler (clang/gcc 4.7
+ - a C++11 compiler (clang/gcc 4.7)
  - gnumake
  - cmake
  - boost
@@ -18,7 +18,7 @@ Build with make and make install
 
 The cthun agent can be configured using a config file or supplying arguments on the command line.
 
-The agent will first look in the user's home directory for *.cthun-agent* and then in 
+The agent will first look in the user's home directory for *.cthun-agent* and then in
 */etc/cthun/agent.cfg. A different config file can be specified by passing the --config-file flag
 
 The config files use the INI format
