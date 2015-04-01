@@ -34,9 +34,11 @@ void addTasksTo(ThreadContainer& container,
     }
 
     if (task_duration_us == 0) {
-        // Ensure that the spawned thred doesn't outlive the caller,
-        // to avoid aborting the tests... See below ;)
-        usleep(50);  // 0.05 ms
+        // Ensure that the spawned thred doesn't outlive the caller
+        // when it's suppose to finish immediately (that could happen
+        // due to thread processing ovehead for the OS), otherwise a
+        // terminate call will abort the tests... See below
+        usleep(10000);  // 10 ms
     }
 
     usleep(caller_duration_us);
@@ -82,7 +84,7 @@ TEST_CASE("ThreadContainer::monitoringTask", "[async]") {
     // NB: tesitng start, stop, and restart of the monitoring thread
     // in a single section to reduce the test duration
     SECTION("the monitoring thread is properly started, stopped, and restarted") {
-        uint32_t task_duration_us { 100000 };
+        uint32_t task_duration_us { 100000 };  // 100 ms
         ThreadContainer container { "TESTING_3_1" };
 
         addTasksTo(container, 10 * THREADS_THRESHOLD, 0, task_duration_us);

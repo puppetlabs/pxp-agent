@@ -73,32 +73,31 @@ class Configuration {
     /// HorseWhisperer::Start().
     void setStartFunction(std::function<int(std::vector<std::string>)> start_function);
 
-    // TODO(ale): HW::GetFlag should use boost::optional or make
-    // the default value explicit instead of using the default ctor
-
     /// If Configuration was already initialized, return the value
-    /// set for the specified flag (NB: the value can be a default).
+    /// set for the specified flag (NB: the value can be a default);
+    /// throw a configuration_entry_error such flag is unknown.
     /// If Configuration was not initialized so far, but the requested
     /// flag is known, return the default value; throw a
     /// configuration_entry_error otherwise.
     template <typename T>
     T get(std::string flagname) {
         if (initialized_) {
-            return HW::GetFlag<T>(flagname);
+            try {
+                return HW::GetFlag<T>(flagname);
+            } catch (HW::undefined_flag_error& e) {
+                throw configuration_entry_error { std::string { e.what() } };
+            }
         }
 
-        // Configuration instance not initialized; try to get default
+        // Configuration instance not initialized; get default
         auto entry = defaults_.find(flagname);
-        if (entry != defaults_.end()) {
+        if (entry == defaults_.end()) {
+            throw configuration_entry_error { "no default value for " + flagname };
+        } else {
             Entry<T>* entry_ptr = (Entry<T>*) entry->second.get();
             return entry_ptr->value;
         }
-
-        throw configuration_entry_error { "no default value for " + flagname };
     }
-
-    // TODO(ale): HW::SetFlag should specify the outcome (unknown flag
-    // or invalid value) as done by HW::Parse
 
     /// Set the specified value for a given configuration flag.
     /// Throw an uninitialized_error in case the Configuration was not
@@ -112,10 +111,12 @@ class Configuration {
                                         "initialized" };
         }
 
-        auto failure = HW::SetFlag<T>(flagname, value);
-        if (failure) {
-            throw configuration_entry_error { "unknown flag name or invalid "
-                                              "value for " + flagname };
+        try {
+            HW::SetFlag<T>(flagname, value);
+        } catch (HW::flag_validation_error) {
+            throw configuration_entry_error { "invalid value for " + flagname };
+        } catch (HW::undefined_flag_error) {
+            throw configuration_entry_error { "unknown flag name: " + flagname };
         }
     }
 
