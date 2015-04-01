@@ -117,13 +117,10 @@ TEST_CASE("Configuration::get", "[configuration]") {
                     == "/fake/dir");
         }
 
-        SECTION("dont throw if the flag is unknown") {
-            REQUIRE_NOTHROW(Configuration::Instance()
-                                .get<std::string>("still_dont_exist"));
-        }
-
-        SECTION("return a default value if the flag is unknown") {
-            REQUIRE(Configuration::Instance().get<std::string>("nada") == "");
+        SECTION("throw a configuration error if the flag is unknown") {
+            REQUIRE_THROWS_AS(
+                Configuration::Instance().get<std::string>("still_dont_exist"),
+                configuration_entry_error);
         }
 
         resetTest();
