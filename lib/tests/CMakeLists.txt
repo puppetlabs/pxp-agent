@@ -8,6 +8,7 @@ include_directories(
     SYSTEM ${INIH_INCLUDE_DIRS}
     SYSTEM ${CTHUN_CLIENT_INCLUDE_DIRS}
     SYSTEM ${LEATHERMAN_CATCH_INCLUDE}
+    SYSTEM ${CATCH_DIRECTORY}
 )
 
 set(SOURCES
@@ -25,12 +26,13 @@ set(SOURCES
 
 set(test_BIN cthun-agent-unittests)
 
-include_directories(
-    ${CATCH_DIRECTORY}
+set (CTHUN-AGENT_TEST_LIBS
+    ${CTHUN_CLIENT_LIB}
+    libcthun-agent
 )
 
 add_executable(${test_BIN} ${SOURCES})
-target_link_libraries(${test_BIN} libcthun-agent)
+target_link_libraries(${test_BIN} ${CTHUN-AGENT_TEST_LIBS})
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lpthread -pthread")

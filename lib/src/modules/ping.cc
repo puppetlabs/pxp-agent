@@ -48,7 +48,7 @@ CthunClient::DataContainer Ping::ping(
         data.set<std::vector<CthunClient::DataContainer>>(
                 "request_hops",
                 debug_entry.get<std::vector<CthunClient::DataContainer>>("hops"));
-    } catch (CthunClient::parse_error& e) {
+    } catch (CthunClient::data_parse_error& e) {
         LOG_ERROR("Failed to parse debug entry: %1%", e.what());
         LOG_DEBUG("Debug entry: %1%", parsed_chunks.debug[0]);
         throw request_processing_error { "debug entry is not valid JSON" };
