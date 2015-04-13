@@ -103,7 +103,7 @@ void delayedAction(CthunClient::ParsedChunks parsed_chunks,
     // Ensure output is valid JSON by instantiating DataContainer
     try {
         CthunClient::DataContainer output { stdout };
-    } catch (CthunClient::parse_error) {
+    } catch (CthunClient::data_parse_error) {
         // TODO(ale): report outcome (perhaps with a 'success' field)
         stderr = "ERROR: failed to validate the '" + module_name + " "
                  + action_name + "' output:\n" + stderr;
