@@ -12,15 +12,13 @@
 
 namespace CthunAgent {
 
-// TODO(ale): update this to cthun-client
-
 static const std::string echo_action { "echo" };
 static const std::string fake_action { "fake_action" };
 
 static const std::string echo_data_txt {
     "{  \"module\" : \"echo\","
     "   \"action\" : \"echo\","
-    "   \"params\" : { \"txt\" : \"maradona\" }"
+    "   \"params\" : { \"argument\" : \"maradona\" }"
     "}"
 };
 
@@ -48,7 +46,7 @@ TEST_CASE("Module::validateAndCallAction", "[modules]") {
 
     SECTION("it should correctly call echo") {
         auto result = echo_module.performRequest(echo_action, parsed_chunks);
-        auto txt = result.get<std::string>("txt");
+        auto txt = result.get<std::string>("outcome");
         REQUIRE(txt == "maradona");
     }
 
