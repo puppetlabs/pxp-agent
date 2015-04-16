@@ -12,7 +12,6 @@ namespace CthunAgent {
 
 namespace HW = HorseWhisperer;
 
-
 static const std::string VERSION_STRING = "cthun-agent version - 0.0.1\n";
 static const std::string DEFAULT_ACTION_RESULTS_DIR = "/tmp/cthun-agent/";
 
@@ -138,7 +137,6 @@ class Configuration {
     Configuration();
     void parseConfigFile();
     void defineDefaultValues();
-    void defineRelativeValues(std::string bin_path);
     void setDefaultValues();
 };
 

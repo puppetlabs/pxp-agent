@@ -7,6 +7,8 @@ namespace CthunAgent {
 
 namespace fs = boost::filesystem;
 
+const std::string DEFAULT_MODULES_DIR { "/usr/share/cthun-agent/modules" };
+
 //
 // Private
 //
@@ -23,9 +25,6 @@ void Configuration::defineDefaultValues() {
     HW::SetHelpBanner("Usage: cthun-agent [options]");
     HW::SetVersion(VERSION_STRING);
 
-    // TODO(ale): consider having a .cthun directory for config,
-    // modules, action outcome, etc... - revisit all paths
-
     // start setting the config file path to known existent locations;
     // HW will overwrite it with the one parsed from CLI, if specified
     if (FileUtils::fileExists(FileUtils::shellExpand("~/.cthun-agent"))) {
@@ -33,6 +32,12 @@ void Configuration::defineDefaultValues() {
     // TODO(ploubser): This will have to changed when the AIO agent is done
     } else if (FileUtils::fileExists("/etc/puppetlabs/agent/cthun.cfg")) {
         config_file_ = "/etc/puppetlabs/agent/cthun.cfg";
+    }
+
+    std::string modules_dir { "" };
+
+    if (fs::is_directory(DEFAULT_MODULES_DIR)) {
+        modules_dir = DEFAULT_MODULES_DIR;
     }
 
     defaults_.insert(std::pair<std::string, Base_ptr>("server", Base_ptr(
@@ -83,27 +88,6 @@ void Configuration::defineDefaultValues() {
                                "Specify directory to spool delayed results to",
                                Types::String,
                                DEFAULT_ACTION_RESULTS_DIR))));
-}
-
-void Configuration::defineRelativeValues(std::string bin_path) {
-    // Determine the default modules directory, based on the exe path
-    std::string modules_dir { "" };
-
-    if (fs::is_directory(bin_path)) {
-        // NOTE(ale): CTH-76 - assuming that the exe is in the
-        // CTHUN-AGENT-ROOT/exe, this doesn't work if bin_path
-        // (argv[0]) has only the name of the executable, neither when
-        // the exe is called by a symlink. So, we check if the
-        // obtained directory is a valid directory.
-        fs::path modules_path { bin_path };
-        modules_path = fs::canonical(fs::system_complete(modules_path));
-        modules_path = modules_path.parent_path().parent_path();
-        modules_path += "/modules";
-
-        if (fs::is_directory(modules_path)) {
-            modules_dir = modules_path.string();
-        }
-    }
 
     defaults_.insert(std::pair<std::string, Base_ptr>("modules-dir", Base_ptr(
         new Entry<std::string>("modules-dir",
@@ -232,7 +216,6 @@ void Configuration::reset() {
 }
 
 int Configuration::initialize(int argc, char *argv[]) {
-    defineRelativeValues(std::string { argv[0] });
     setDefaultValues();
 
     HW::DefineAction("start", 0, false, "Start the agent (Default)",
