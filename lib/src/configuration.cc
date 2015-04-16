@@ -1,7 +1,11 @@
 #include <cthun-agent/configuration.hpp>
 #include <cthun-agent/file_utils.hpp>
 
+#include <boost/filesystem/operations.hpp>
+
 namespace CthunAgent {
+
+namespace fs = boost::filesystem;
 
 //
 // Private
@@ -19,6 +23,9 @@ void Configuration::defineDefaultValues() {
     HW::SetHelpBanner("Usage: cthun-agent [options]");
     HW::SetVersion(VERSION_STRING);
 
+    // TODO(ale): consider having a .cthun directory for config,
+    // modules, action outcome, etc... - revisit all paths
+
     // start setting the config file path to known existent locations;
     // HW will overwrite it with the one parsed from CLI, if specified
     if (FileUtils::fileExists(FileUtils::shellExpand("~/.cthun-agent"))) {
@@ -31,7 +38,7 @@ void Configuration::defineDefaultValues() {
     defaults_.insert(std::pair<std::string, Base_ptr>("server", Base_ptr(
         new Entry<std::string>("server",
                                "s",
-                               "Cthun servers url",
+                               "Cthun server URL",
                                Types::String,
                                ""))));
 
@@ -59,7 +66,7 @@ void Configuration::defineDefaultValues() {
     defaults_.insert(std::pair<std::string, Base_ptr>("logfile", Base_ptr(
         new Entry<std::string>("logfile",
                                "",
-                               "Log file (defaults to console logging",
+                               "Log file (defaults to console logging)",
                                Types::String,
                                ""))));
 
@@ -76,6 +83,34 @@ void Configuration::defineDefaultValues() {
                                "Specify directory to spool delayed results to",
                                Types::String,
                                DEFAULT_ACTION_RESULTS_DIR))));
+}
+
+void Configuration::defineRelativeValues(std::string bin_path) {
+    // Determine the default modules directory, based on the exe path
+    std::string modules_dir { "" };
+
+    if (fs::is_directory(bin_path)) {
+        // NOTE(ale): CTH-76 - assuming that the exe is in the
+        // CTHUN-AGENT-ROOT/exe, this doesn't work if bin_path
+        // (argv[0]) has only the name of the executable, neither when
+        // the exe is called by a symlink. So, we check if the
+        // obtained directory is a valid directory.
+        fs::path modules_path { bin_path };
+        modules_path = fs::canonical(fs::system_complete(modules_path));
+        modules_path = modules_path.parent_path().parent_path();
+        modules_path += "/modules";
+
+        if (fs::is_directory(modules_path)) {
+            modules_dir = modules_path.string();
+        }
+    }
+
+    defaults_.insert(std::pair<std::string, Base_ptr>("modules-dir", Base_ptr(
+        new Entry<std::string>("modules-dir",
+                               "",
+                               "Specify directory containing external modules",
+                               Types::String,
+                               modules_dir))));
 }
 
 void Configuration::setDefaultValues() {
@@ -197,12 +232,11 @@ void Configuration::reset() {
 }
 
 int Configuration::initialize(int argc, char *argv[]) {
+    defineRelativeValues(std::string { argv[0] });
     setDefaultValues();
 
     HW::DefineAction("start", 0, false, "Start the agent (Default)",
                      "Start the agent", start_function_);
-    HW::DefineActionFlag<std::string>("start", "module-dir", "External module directory",
-                                      "", nullptr);
 
     // manipulate argc and v to make start the default action.
     // TODO(ploubser): Add ability to specify default action to HorseWhisperer

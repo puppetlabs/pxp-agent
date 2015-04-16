@@ -12,10 +12,11 @@ namespace CthunAgent {
 
 namespace HW = HorseWhisperer;
 
+
 static const std::string VERSION_STRING = "cthun-agent version - 0.0.1\n";
 static const std::string DEFAULT_ACTION_RESULTS_DIR = "/tmp/cthun-agent/";
 
-enum Types { Integer, String, Bool, Double};
+enum Types { Integer, String, Bool, Double };
 
 struct EntryBase {
     // config option name. must match one of the flag names and config file option
@@ -48,7 +49,7 @@ using Base_ptr = std::unique_ptr<EntryBase>;
 class Configuration {
   public:
     static Configuration& Instance() {
-        static Configuration instance;
+        static Configuration instance {};
         return instance;
     }
 
@@ -56,8 +57,10 @@ class Configuration {
     /// Unset the initialized_ flag.
     void reset();
 
+    /// Define the default configuration values that depend on the
+    /// location of the executable.
     /// Parse the command line arguments and, if specified, the
-    /// configuration file in order to obtain the configuration
+    /// configuration file, in order to obtain the configuration
     /// values; validate and normalize them.
     /// Return a numeric code indicating the parsing outcome (refer to
     /// HorseWhisperer).
@@ -135,6 +138,7 @@ class Configuration {
     Configuration();
     void parseConfigFile();
     void defineDefaultValues();
+    void defineRelativeValues(std::string bin_path);
     void setDefaultValues();
 };
 

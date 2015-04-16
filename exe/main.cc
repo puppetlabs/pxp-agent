@@ -41,7 +41,7 @@ int startAgent(std::vector<std::string> arguments) {
     }
 
     try {
-        Agent agent { HW::GetFlag<std::string>("module-dir"),
+        Agent agent { HW::GetFlag<std::string>("modules-dir"),
                       HW::GetFlag<std::string>("server"),
                       FileUtils::shellExpand(HW::GetFlag<std::string>("ca")),
                       FileUtils::shellExpand(HW::GetFlag<std::string>("cert")),

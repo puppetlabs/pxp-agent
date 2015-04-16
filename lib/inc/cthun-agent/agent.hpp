@@ -21,7 +21,7 @@ class Agent {
   public:
     Agent() = delete;
 
-    Agent(const std::string& bin_path,
+    Agent(const std::string& modules_dir,
           const std::string& server_url,
           const std::string& ca_crt_path,
           const std::string& client_crt_path,

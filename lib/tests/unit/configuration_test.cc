@@ -38,9 +38,10 @@ TEST_CASE("Configuration::setStartFunction", "[configuration]") {
     int argc= 9;
     int test_val = 0;
 
-    Configuration::Instance().setStartFunction([&test_val] (std::vector<std::string> arg) -> int {
-        return 1;
-    });
+    Configuration::Instance().setStartFunction(
+        [&test_val] (std::vector<std::string> arg) -> int {
+            return 1;
+        });
 
     Configuration::Instance().initialize(argc, const_cast<char**>(argv));
 

@@ -32,28 +32,10 @@ static const std::string SCHEMA_NAME_CNC { "cnc_schema" };
 static const int DEFAULT_MSG_TIMEOUT_SEC { 10 };
 
 //
-// Free functions
-//
-
-fs::path getModulesDirPath(const std::string& bin_path) {
-    // TODO(ale): CTH-76 - this doesn't work if bin_path (argv[0]) has
-    // only the name of the executable, neither when cthun_agent is
-    // called by a symlink. The only safe way to refer to external
-    // modules is to store them in a known location (ex. ~/cthun/).
-
-    fs::path modules_dir_path {
-        fs::canonical(
-            fs::system_complete(
-                fs::path(bin_path)).parent_path().parent_path()) };
-    modules_dir_path += "/modules";
-    return modules_dir_path;
-}
-
-//
 // Agent
 //
 
-Agent::Agent(const std::string& bin_path,
+Agent::Agent(const std::string& modules_dir,
              const std::string& server_url,
              const std::string& ca,
              const std::string& crt,
@@ -63,8 +45,14 @@ Agent::Agent(const std::string& bin_path,
               modules_ {} {
     // NB: certificate paths are validated by HW
     loadInternalModules();
-    auto modules_dir_path = getModulesDirPath(bin_path);
-    loadExternalModulesFrom(modules_dir_path);
+
+    if (!modules_dir.empty()) {
+        loadExternalModulesFrom(modules_dir);
+    } else {
+        LOG_INFO("The modules directory was not provided; no external module "
+                 "will be loaded");
+    }
+
     logLoadedModules();
 } catch (CthunClient::connection_config_error& e) {
     throw fatal_error { std::string("failed to configure the agent: ")
