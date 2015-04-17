@@ -27,7 +27,7 @@ void removeFile(const std::string& file_path);
 /// Write content to file in the specified mode.
 /// Throw a file_error in case it fails to open the file to write.
 void streamToFile(const std::string& text,
-                  const std::string&  file_path,
+                  const std::string& file_path,
                   std::ios_base::openmode mode);
 
 /// Write content to file. If file exists, its previous content will

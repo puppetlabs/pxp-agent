@@ -15,9 +15,14 @@ void configureTest() {
     std::string ca = ROOT_PATH + "/lib/tests/resources/config/ca_crt.pem";
     std::string cert = ROOT_PATH +  "/lib/tests/resources/config/test_crt.pem";
     std::string key = ROOT_PATH + "/lib/tests/resources/config/test_key.pem";
+    std::string module_dir = ROOT_PATH + "/modules";
 
-    const char* argv[] = { "test-command", "--server", server.data(), "--ca", ca.data(),
-                           "--cert", cert.data(), "--key", key.data() };
+    const char* argv[] = { "test-command",
+                           "--server", server.data(),
+                           "--ca", ca.data(),
+                           "--cert", cert.data(),
+                           "--key", key.data(),
+                           "--modules-dir", module_dir.data() };
     int argc= 9;
 
     Configuration::Instance().initialize(argc, const_cast<char**>(argv));
@@ -32,15 +37,21 @@ TEST_CASE("Configuration::setStartFunction", "[configuration]") {
     std::string ca = ROOT_PATH + "/lib/tests/resources/config/ca_crt.pem";
     std::string cert = ROOT_PATH +  "/lib/tests/resources/config/test_crt.pem";
     std::string key = ROOT_PATH + "/lib/tests/resources/config/test_key.pem";
+    std::string module_dir = ROOT_PATH + "/modules";
 
-    const char* argv[] = { "test-command", "--server", server.data(), "--ca", ca.data(),
-                           "--cert", cert.data(), "--key", key.data() };
+    const char* argv[] = { "test-command",
+                           "--server", server.data(),
+                           "--ca", ca.data(),
+                           "--cert", cert.data(),
+                           "--key", key.data(),
+                           "--modules-dir", module_dir.data() };
     int argc= 9;
     int test_val = 0;
 
-    Configuration::Instance().setStartFunction([&test_val] (std::vector<std::string> arg) -> int {
-        return 1;
-    });
+    Configuration::Instance().setStartFunction(
+        [&test_val] (std::vector<std::string> arg) -> int {
+            return 1;
+        });
 
     Configuration::Instance().initialize(argc, const_cast<char**>(argv));
 

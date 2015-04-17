@@ -1,7 +1,13 @@
 #include <cthun-agent/configuration.hpp>
 #include <cthun-agent/file_utils.hpp>
 
+#include <boost/filesystem/operations.hpp>
+
 namespace CthunAgent {
+
+namespace fs = boost::filesystem;
+
+const std::string DEFAULT_MODULES_DIR { "/usr/share/cthun-agent/modules" };
 
 //
 // Private
@@ -28,10 +34,16 @@ void Configuration::defineDefaultValues() {
         config_file_ = "/etc/puppetlabs/agent/cthun.cfg";
     }
 
+    std::string modules_dir { "" };
+
+    if (fs::is_directory(DEFAULT_MODULES_DIR)) {
+        modules_dir = DEFAULT_MODULES_DIR;
+    }
+
     defaults_.insert(std::pair<std::string, Base_ptr>("server", Base_ptr(
         new Entry<std::string>("server",
                                "s",
-                               "Cthun servers url",
+                               "Cthun server URL",
                                Types::String,
                                ""))));
 
@@ -59,7 +71,7 @@ void Configuration::defineDefaultValues() {
     defaults_.insert(std::pair<std::string, Base_ptr>("logfile", Base_ptr(
         new Entry<std::string>("logfile",
                                "",
-                               "Log file (defaults to console logging",
+                               "Log file (defaults to console logging)",
                                Types::String,
                                ""))));
 
@@ -76,6 +88,13 @@ void Configuration::defineDefaultValues() {
                                "Specify directory to spool delayed results to",
                                Types::String,
                                DEFAULT_ACTION_RESULTS_DIR))));
+
+    defaults_.insert(std::pair<std::string, Base_ptr>("modules-dir", Base_ptr(
+        new Entry<std::string>("modules-dir",
+                               "",
+                               "Specify directory containing external modules",
+                               Types::String,
+                               modules_dir))));
 }
 
 void Configuration::setDefaultValues() {
@@ -201,8 +220,6 @@ int Configuration::initialize(int argc, char *argv[]) {
 
     HW::DefineAction("start", 0, false, "Start the agent (Default)",
                      "Start the agent", start_function_);
-    HW::DefineActionFlag<std::string>("start", "module-dir", "External module directory",
-                                      "", nullptr);
 
     // manipulate argc and v to make start the default action.
     // TODO(ploubser): Add ability to specify default action to HorseWhisperer
