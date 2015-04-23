@@ -11,7 +11,7 @@
 #include <cthun-agent/configuration.hpp>
 
 #include <cthun-client/data_container/data_container.hpp>
-#include <cthun-client/message/chunks.hpp>       // ParsedChunks
+#include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
 
 #include <boost/format.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -32,7 +32,7 @@ boost::format status_format {
 
 static const std::string status_txt { (status_format % "the-uuid-string").str() };
 
-static const std::vector<std::string> no_debug {};
+static const std::vector<CthunClient::DataContainer> no_debug {};
 
 static const CthunClient::ParsedChunks parsed_chunks {
                     CthunClient::DataContainer(),

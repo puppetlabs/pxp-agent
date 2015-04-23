@@ -27,7 +27,8 @@ namespace fs = boost::filesystem;
 //
 
 static const std::string AGENT_CLIENT_TYPE { "agent" };
-static const std::string SCHEMA_NAME_CNC { "cnc_schema" };
+static const std::string CTHUN_REQUEST_SCHEMA_NAME { "http://puppetlabs.com/cnc_request" };
+static const std::string CTHUN_RESPONSE_SCHEMA_NAME { "http://puppetlabs.com/cnc_response" };
 
 static const int DEFAULT_MSG_TIMEOUT_SEC { 10 };
 
@@ -89,6 +90,9 @@ void Agent::start() {
     } catch (CthunClient::connection_fatal_error) {
         throw fatal_error { "failed to reconnect" };
     }
+
+    // TODO(ale): wait for the associate session response, once the
+    // associated state is exposed by Connector
 }
 
 //
@@ -153,7 +157,7 @@ void Agent::logLoadedModules() const {
 }
 
 CthunClient::Schema Agent::getCncRequestSchema() const {
-    CthunClient::Schema schema { CthunClient::CTHUN_REQUEST_SCHEMA_NAME,
+    CthunClient::Schema schema { CTHUN_REQUEST_SCHEMA_NAME,
                                  CthunClient::ContentType::Json };
     using T_C = CthunClient::TypeConstraint;
     schema.addConstraint("module", T_C::String, true);
@@ -194,16 +198,13 @@ void Agent::cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks) {
 
         // Wrap debug data
         std::vector<CthunClient::DataContainer> debug {};
-        for (auto& debug_txt : parsed_chunks.debug) {
-            CthunClient::DataContainer debug_entry {};
-            // TODO(ale): make this consistent with the debug format
-            debug_entry.set<std::string>("debug_data", debug_txt);
+        for (auto& debug_entry : parsed_chunks.debug) {
             debug.push_back(debug_entry);
         }
 
         try {
             connector_.send(std::vector<std::string> { requester_endpoint },
-                            CthunClient::CTHUN_RESPONSE_SCHEMA_NAME,
+                            CTHUN_RESPONSE_SCHEMA_NAME,
                             DEFAULT_MSG_TIMEOUT_SEC,
                             data_json,
                             debug);
@@ -228,7 +229,7 @@ void Agent::cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks) {
 
         try {
             connector_.send(std::vector<std::string> { requester_endpoint },
-                            CthunClient::CTHUN_RESPONSE_SCHEMA_NAME,
+                            CTHUN_RESPONSE_SCHEMA_NAME,
                             DEFAULT_MSG_TIMEOUT_SEC,
                             error_data_json);
         } catch (CthunClient::connection_error& e) {

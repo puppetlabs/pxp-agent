@@ -6,7 +6,7 @@
 #include <cthun-agent/errors.hpp>
 
 #include <cthun-client/data_container/data_container.hpp>
-#include <cthun-client/message/chunks.hpp>       // ParsedChunks
+#include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
 
 #include <string>
 #include <vector>
@@ -23,7 +23,7 @@ static const std::string inventory_txt {
     "}"
 };
 
-static const std::vector<std::string> no_debug {};
+static const std::vector<CthunClient::DataContainer> no_debug {};
 static const CthunClient::ParsedChunks parsed_chunks {
                     CthunClient::DataContainer(),
                     CthunClient::DataContainer(inventory_txt),

@@ -8,7 +8,7 @@
 #include <cthun-agent/timer.hpp>
 
 #include <cthun-client/data_container/data_container.hpp>
-#include <cthun-client/message/chunks.hpp>       // ParsedChunks
+#include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/format.hpp>
@@ -38,7 +38,7 @@ const std::string reverse_txt { (data_format % "\"reverse\""
                                              % "\"string\""
                                              % "\"maradona\"").str() };
 
-static const std::vector<std::string> no_debug {};
+static const std::vector<CthunClient::DataContainer> no_debug {};
 
 static const CthunClient::ParsedChunks content {
                     CthunClient::DataContainer(),
