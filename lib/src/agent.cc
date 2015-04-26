@@ -29,6 +29,7 @@ namespace fs = boost::filesystem;
 static const std::string AGENT_CLIENT_TYPE { "agent" };
 static const std::string CTHUN_REQUEST_SCHEMA_NAME { "http://puppetlabs.com/cnc_request" };
 static const std::string CTHUN_RESPONSE_SCHEMA_NAME { "http://puppetlabs.com/cnc_response" };
+static const std::string CTHUN_ERROR_SCHEMA_NAME { "http://puppetlabs.com/cnc_error_message" };
 
 static const int DEFAULT_MSG_TIMEOUT_SEC { 10 };
 
@@ -218,20 +219,16 @@ void Agent::cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks) {
         LOG_ERROR("Failed to process message %1% from %2%: %3%",
                   request_id, requester_endpoint, e.what());
         CthunClient::DataContainer error_data_json;
-
-        // TODO(ale): make error handling consistent in our protocol
-        // specs; we should have an error schema
-
-        // TODO(ale): we should specify the id of the request; more in
-        // general, we should specify the request id in every response
-
-        error_data_json.set<std::string>("error", e.what());
+        error_data_json.set<std::string>("description", e.what());
+        error_data_json.set<std::string>("id", request_id);
 
         try {
             connector_.send(std::vector<std::string> { requester_endpoint },
-                            CTHUN_RESPONSE_SCHEMA_NAME,
+                            CTHUN_ERROR_SCHEMA_NAME,
                             DEFAULT_MSG_TIMEOUT_SEC,
                             error_data_json);
+            LOG_INFO("Replied to message %1% from %2% with an error message",
+                     request_id, requester_endpoint);
         } catch (CthunClient::connection_error& e) {
             LOG_ERROR("Failed send an error response to the %1% request "
                       "from %2%: %3%", request_id, requester_endpoint, e.what());
