@@ -5,7 +5,7 @@
 #include <cthun-agent/errors.hpp>
 
 #include <cthun-client/data_container/data_container.hpp>
-#include <cthun-client/message/chunks.hpp>       // ParsedChunks
+#include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/format.hpp>
@@ -25,7 +25,9 @@ static const std::string ping_data_txt {
     "}"
 };
 
-static const std::vector<std::string> debug { "{\"hops\" : []}" };
+static const std::vector<CthunClient::DataContainer> debug {
+    CthunClient::DataContainer { "{\"hops\" : []}" }
+};
 
 static const CthunClient::ParsedChunks parsed_chunks {
                     CthunClient::DataContainer(),
@@ -70,7 +72,9 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
     SECTION("it should copy an empty hops entry") {
         auto data_txt = (data_format % "").str();
         auto debug_txt = (debug_format % "[]").str();
-        std::vector<std::string> other_debug { debug_txt };
+        std::vector<CthunClient::DataContainer> other_debug {
+            CthunClient::DataContainer { debug_txt }
+        };
 
         CthunClient::ParsedChunks other_chunks {
                     CthunClient::DataContainer(),
@@ -100,8 +104,9 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
     SECTION("it should copy the hops entry when msg passed through a single server") {
         auto data_txt = (data_format % "").str();
         auto debug_txt = (debug_format % hops_str).str();
-        std::vector<std::string> other_debug { debug_txt };
-
+        std::vector<CthunClient::DataContainer> other_debug {
+            CthunClient::DataContainer { debug_txt }
+        };
 
         CthunClient::ParsedChunks other_chunks {
                 CthunClient::DataContainer(),

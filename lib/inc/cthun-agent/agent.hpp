@@ -4,8 +4,8 @@
 #include <cthun-agent/module.hpp>
 
 #include <cthun-client/connector/connector.hpp>
-#include <cthun-client/message/chunks.hpp>       // ParsedChunk
-#include <cthun-client/message/message.hpp>      // schema names
+#include <cthun-client/protocol/chunks.hpp>      // ParsedChunk
+#include <cthun-client/protocol/message.hpp>     // schema names
 #include <cthun-client/validator/schema.hpp>     // ContentType, Schema
 
 #include <boost/filesystem/operations.hpp>

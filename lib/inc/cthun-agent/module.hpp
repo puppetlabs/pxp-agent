@@ -4,7 +4,7 @@
 #include <cthun-agent/action.hpp>
 
 #include <cthun-client/data_container/data_container.hpp>
-#include <cthun-client/message/chunks.hpp>       // ParsedChunks
+#include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
 #include <cthun-client/validator/validator.hpp>  // Validator
 
 #include <map>
