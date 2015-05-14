@@ -37,7 +37,8 @@ static const std::vector<CthunClient::DataContainer> no_debug {};
 static const CthunClient::ParsedChunks parsed_chunks {
                     CthunClient::DataContainer(),
                     CthunClient::DataContainer(status_txt),
-                    no_debug };
+                    no_debug,
+                    0 };
 
 TEST_CASE("Modules::Status::callAction", "[modules]") {
     Modules::Status status_module {};
@@ -61,7 +62,8 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
         CthunClient::ParsedChunks other_chunks {
                 CthunClient::DataContainer(),
                 CthunClient::DataContainer(other_status_txt),
-                no_debug };
+                no_debug,
+                0 };
 
         SECTION("it doesn't throw") {
             REQUIRE_NOTHROW(status_module.callAction(query_action, other_chunks));
@@ -85,7 +87,8 @@ TEST_CASE("Modules::Status::callAction", "[modules]") {
         CthunClient::ParsedChunks other_chunks {
                 CthunClient::DataContainer(),
                 CthunClient::DataContainer(other_status_txt),
-                no_debug };
+                no_debug,
+                0 };
         try {
             boost::filesystem::create_symlink(to, symlink);
         } catch (boost::filesystem::filesystem_error) {

@@ -27,7 +27,8 @@ static const std::vector<CthunClient::DataContainer> no_debug {};
 static const CthunClient::ParsedChunks parsed_chunks {
                 CthunClient::DataContainer(),
                 CthunClient::DataContainer(echo_data_txt),
-                no_debug };
+                no_debug,
+                0 };
 
 static const std::string bad_echo_data_txt {
     "{  \"module\" : \"echo\","
@@ -39,7 +40,8 @@ static const std::string bad_echo_data_txt {
 static const CthunClient::ParsedChunks bad_parsed_chunks {
                 CthunClient::DataContainer(),
                 CthunClient::DataContainer(bad_echo_data_txt),
-                no_debug };
+                no_debug,
+                0 };
 
 TEST_CASE("Module::validateAndCallAction", "[modules]") {
     Modules::Echo echo_module {};

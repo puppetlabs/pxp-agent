@@ -176,11 +176,17 @@ void Agent::cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks) {
     LOG_DEBUG("Message %1%:\n%2%", request_id, parsed_chunks.toString());
 
     try {
-        // Inspect envelope
+        // NOTE(ale): in case of bad data, we currently don't do
+        // anything with the debug chunks
+
+        // NB: all callback exceptions will be caught by the
+        // WebSocket onMessage handler
         if (!parsed_chunks.has_data) {
             throw request_validation_error { "no data" };
         }
-
+        if (parsed_chunks.invalid_data) {
+            throw request_validation_error { "invalid data" };
+        }
         if (parsed_chunks.data_type != CthunClient::ContentType::Json) {
             throw request_validation_error { "data is not in JSON format" };
         }
@@ -198,6 +204,12 @@ void Agent::cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks) {
         auto data_json = module_ptr->performRequest(action_name, parsed_chunks);
 
         // Wrap debug data
+        if (parsed_chunks.num_invalid_debug){
+            LOG_WARNING("Message %1% contained %2% bad debug chunk%3%",
+                        request_id, parsed_chunks.num_invalid_debug,
+                        StringUtils::plural(parsed_chunks.num_invalid_debug));
+        }
+
         std::vector<CthunClient::DataContainer> debug {};
         for (auto& debug_entry : parsed_chunks.debug) {
             debug.push_back(debug_entry);

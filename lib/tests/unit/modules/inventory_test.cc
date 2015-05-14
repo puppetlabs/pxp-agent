@@ -27,7 +27,8 @@ static const std::vector<CthunClient::DataContainer> no_debug {};
 static const CthunClient::ParsedChunks parsed_chunks {
                     CthunClient::DataContainer(),
                     CthunClient::DataContainer(inventory_txt),
-                    no_debug };
+                    no_debug,
+                    0 };
 
 TEST_CASE("Modules::Inventory::callAction", "[modules]") {
     Modules::Inventory inventory_module {};

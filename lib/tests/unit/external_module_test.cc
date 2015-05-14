@@ -21,8 +21,6 @@ extern std::string ROOT_PATH;
 
 namespace CthunAgent {
 
-// TODO(ale): update this to cthun-client
-
 const std::string RESULTS_ROOT_DIR { "/tmp/cthun-agent" };
 const std::string DELAYED_JOB_ID_LABEL { "id" };
 const std::string STRING_ACTION { "string" };
@@ -41,9 +39,10 @@ const std::string reverse_txt { (data_format % "\"reverse\""
 static const std::vector<CthunClient::DataContainer> no_debug {};
 
 static const CthunClient::ParsedChunks content {
-                    CthunClient::DataContainer(),
-                    CthunClient::DataContainer(reverse_txt),
-                    no_debug };
+                    CthunClient::DataContainer(),             // envelope
+                    CthunClient::DataContainer(reverse_txt),  // data
+                    no_debug,   // debug
+                    0 };        // num invalid debug chunks
 
 TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
     SECTION("can successfully instantiate from a valid external module") {
@@ -96,7 +95,8 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             CthunClient::ParsedChunks bad_content {
                     CthunClient::DataContainer(),
                     CthunClient::DataContainer(bad_reverse_txt),
-                    no_debug };
+                    no_debug,
+                    0 };
 
             REQUIRE_THROWS_AS(reverse_module.performRequest(STRING_ACTION,
                                                             bad_content),
@@ -116,7 +116,8 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             CthunClient::ParsedChunks failure_content {
                     CthunClient::DataContainer(),
                     CthunClient::DataContainer(failure_txt),
-                    no_debug };
+                    no_debug,
+                    0 };
 
             REQUIRE_THROWS_AS(test_reverse_module.performRequest(
                                     "get_an_invalid_result", failure_content),
@@ -131,7 +132,8 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             CthunClient::ParsedChunks failure_content {
                     CthunClient::DataContainer(),
                     CthunClient::DataContainer(failure_txt),
-                    no_debug };
+                    no_debug,
+                    0 };
 
             REQUIRE_THROWS_AS(test_reverse_module.performRequest(
                                     "broken_action", failure_content),
@@ -163,7 +165,8 @@ TEST_CASE("ExternalModule::callAction - delayed", "[async]") {
         CthunClient::ParsedChunks delayed_content {
                 CthunClient::DataContainer(),
                 CthunClient::DataContainer(delayed_txt),
-                no_debug };
+                no_debug,
+                0 };
         auto result = test_reverse_module.performRequest("delayed_action",
                                                          delayed_content);
 
