@@ -32,6 +32,7 @@ set(LEATHERMAN_USE_LOCALE TRUE)
 set(LEATHERMAN_USE_NOWIDE TRUE)
 set(LEATHERMAN_USE_CATCH TRUE)
 set(LEATHERMAN_USE_LOGGING TRUE)
+leatherman_logging_line_numbers()
 add_subdirectory("vendor/leatherman")
 
 # Find libraries

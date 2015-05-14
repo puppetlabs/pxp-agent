@@ -32,7 +32,8 @@ static const std::vector<CthunClient::DataContainer> debug {
 static const CthunClient::ParsedChunks parsed_chunks {
                     CthunClient::DataContainer(),
                     CthunClient::DataContainer(ping_data_txt),
-                    debug };
+                    debug,
+                    0 };
 
 TEST_CASE("Modules::Ping::callAction", "[modules]") {
     Modules::Ping ping_module {};
@@ -79,7 +80,8 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
         CthunClient::ParsedChunks other_chunks {
                     CthunClient::DataContainer(),
                     CthunClient::DataContainer(ping_data_txt),
-                    other_debug };
+                    other_debug,
+                    0 };
 
         auto result = ping_module.ping(other_chunks);
         auto hops = result.get<std::vector<CthunClient::DataContainer>>(
@@ -111,7 +113,8 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
         CthunClient::ParsedChunks other_chunks {
                 CthunClient::DataContainer(),
                 CthunClient::DataContainer(data_txt),
-                other_debug };
+                other_debug,
+                0 };
 
         auto result = ping_module.ping(other_chunks);
         auto hops = result.get<std::vector<CthunClient::DataContainer>>(
