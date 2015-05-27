@@ -60,8 +60,6 @@ class Agent {
     // Callback for the CthunClient::Connector to handle incoming
     // messages. It will reply to the sender with the requested
     // output.
-    // Throw a request_validation error in case: no parsed data; data
-    // is not in JSON format; unknown module.
     void cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks);
 };
 

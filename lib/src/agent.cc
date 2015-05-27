@@ -179,14 +179,14 @@ void Agent::cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks) {
         // NOTE(ale): in case of bad data, we currently don't do
         // anything with the debug chunks
 
-        // NB: all callback exceptions will be caught by the
-        // WebSocket onMessage handler
         if (!parsed_chunks.has_data) {
             throw request_validation_error { "no data" };
         }
         if (parsed_chunks.invalid_data) {
             throw request_validation_error { "invalid data" };
         }
+
+        // NOTE(ale): currently, we don't support ContentType::Binary
         if (parsed_chunks.data_type != CthunClient::ContentType::Json) {
             throw request_validation_error { "data is not in JSON format" };
         }
