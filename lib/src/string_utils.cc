@@ -38,7 +38,6 @@ std::string getExpiryDatetime(int expiry_minutes) {
     return std::string { expiry_time_buffer };
 }
 
-// TODO(ale): test on Linux
 void displayProgress(double percent, int len, std::string status) {
     printf("%c[2K", 27);
     printf("\r");
