@@ -37,22 +37,20 @@ std::vector<CthunClient::DataContainer> wrapDebug(
 // Action task
 
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
-                           std::string action_name,
-                           const CthunClient::ParsedChunks parsed_chunks,
+                           ActionRequest request,
                            std::string job_id,
                            std::string results_dir,
                            std::shared_ptr<CthunClient::Connector> connector_ptr,
                            std::shared_ptr<std::atomic<bool>> done) {
-    auto request_id = parsed_chunks.envelope.get<std::string>("id");
-    auto requester = parsed_chunks.envelope.get<std::string>("sender");
-    auto transaction_id = parsed_chunks.data.get<std::string>("transaction_id");
-    auto request_input_txt =
-        parsed_chunks.data.get<CthunClient::DataContainer>("params").toString();
+    auto request_input_txt = request.parsedChunks()
+                                    .data
+                                    .get<CthunClient::DataContainer>("params")
+                                    .toString();
 
     // Initialize outcome files
     CthunClient::DataContainer action_status {};
-    action_status.set<std::string>("module", module_ptr->module_name);
-    action_status.set<std::string>("action", action_name);
+    action_status.set<std::string>("module", request.module());
+    action_status.set<std::string>("action", request.action());
     action_status.set<std::string>("status", "running");
     action_status.set<std::string>("duration", "0 s");
 
@@ -73,28 +71,32 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     ActionOutcome outcome {};
 
     try {
-        outcome = module_ptr->executeAction(action_name, parsed_chunks);
+        outcome = module_ptr->executeAction(request.action(),
+                                            request.parsedChunks());
 
-        if (parsed_chunks.data.get<bool>("notify_outcome")) {
+        if (request.parsedChunks().data.get<bool>("notify_outcome")) {
             // Send back results
             CthunClient::DataContainer response_data {};
-            response_data.set<std::string>("transaction_id", transaction_id);
+            response_data.set<std::string>("transaction_id",
+                                           request.transactionId());
             response_data.set<std::string>("job_id", job_id);
             response_data.set<CthunClient::DataContainer>("results",
                                                           outcome.results);
 
             try {
                 // NOTE(ale): debug was sent in provisional response
-                connector_ptr->send(std::vector<std::string> { requester },
+                connector_ptr->send(std::vector<std::string> { request.sender() },
                                     RPCSchemas::NON_BLOCKING_RESPONSE_TYPE,
                                     DEFAULT_MSG_TIMEOUT_SEC,
                                     response_data);
                 LOG_INFO("Sent response for non-blocking request %1% by %2%, "
-                         "transaction %3%", request_id, requester, transaction_id);
+                         "transaction %3%", request.id(), request.sender(),
+                         request.transactionId());
             } catch (CthunClient::connection_error& e) {
                 LOG_ERROR("Failed to reply to non-blocking request %1% by %2%, "
                           "transaction %3% (no further attempts): %4%",
-                          request_id, requester, transaction_id, e.what());
+                          request.id(), request.sender(), request.transactionId(),
+                          e.what());
             }
         }
     } catch (request_error& e) {
@@ -102,22 +104,23 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 
         // Send back an RPC error message
         CthunClient::DataContainer rpc_error_data {};
-        rpc_error_data.set<std::string>("transaction_id", transaction_id);
-        rpc_error_data.set<std::string>("id", request_id);
+        rpc_error_data.set<std::string>("transaction_id", request.transactionId());
+        rpc_error_data.set<std::string>("id", request.id());
         rpc_error_data.set<std::string>("description", e.what());
 
         try {
-            connector_ptr->send(std::vector<std::string> { requester },
+            connector_ptr->send(std::vector<std::string> { request.sender() },
                                 RPCSchemas::RPC_ERROR_MSG_TYPE,
                                 DEFAULT_MSG_TIMEOUT_SEC,
                                 rpc_error_data);
             LOG_INFO("Replied to non-blocking request %1% by %2%, transaction "
-                     "%3%, with an RPC error message", request_id, requester,
-                     transaction_id);
+                     "%3%, job ID %4%, with an RPC error message", request.id(),
+                     request.sender(), request.transactionId(), job_id);
         } catch (CthunClient::connection_error& e) {
             LOG_ERROR("Failed to send RPC error message for non-blocking request "
-                      "%1% by %2%, transaction %3% (no further attempts): %4%",
-                      request_id, requester, transaction_id, e.what());
+                      "%1% by %2%, transaction %3%, job ID %4% (no further "
+                      "attempts): %5%", request.id(), request.sender(),
+                      request.transactionId(), job_id, e.what());
         }
     }
 
@@ -141,8 +144,8 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                                    results_dir + "/stdout");
         }
     } else {
-        err_msg = "Failed to execute '" + module_ptr->module_name + " "
-                  + action_name + "': " + err_msg;
+        err_msg = "Failed to execute '" + request.module() + " "
+                  + request.action() + "': " + err_msg;
         FileUtils::writeToFile(err_msg + "\n", results_dir + "/stderr");
     }
 
@@ -168,24 +171,19 @@ RequestProcessor::RequestProcessor(
     }
 }
 
-void RequestProcessor::processBlockingRequest(
-                        std::shared_ptr<Module> module_ptr,
-                        const std::string& action_name,
-                        const CthunClient::ParsedChunks& parsed_chunks) {
+void RequestProcessor::processBlockingRequest(std::shared_ptr<Module> module_ptr,
+                                              const ActionRequest& request) {
     // Execute action; possible request errors will be propagated
-    auto outcome = module_ptr->executeAction(action_name, parsed_chunks);
+    auto outcome = module_ptr->executeAction(request.action(), request.parsedChunks());
 
     // Send back response
-    auto request_id = parsed_chunks.envelope.get<std::string>("id");
-    auto requester = parsed_chunks.envelope.get<std::string>("sender");
-    auto transaction_id = parsed_chunks.data.get<std::string>("transaction_id");
-    auto debug = wrapDebug(parsed_chunks);
+    auto debug = wrapDebug(request.parsedChunks());
     CthunClient::DataContainer response_data {};
-    response_data.set<std::string>("transaction_id", transaction_id);
+    response_data.set<std::string>("transaction_id", request.transactionId());
     response_data.set<CthunClient::DataContainer>("results", outcome.results);
 
     try {
-        connector_ptr_->send(std::vector<std::string> { requester },
+        connector_ptr_->send(std::vector<std::string> { request.sender() },
                              RPCSchemas::BLOCKING_RESPONSE_TYPE,
                              DEFAULT_MSG_TIMEOUT_SEC,
                              response_data,
@@ -194,18 +192,13 @@ void RequestProcessor::processBlockingRequest(
         // We failed to send the response; it's up to the requester to
         // request the action again
         LOG_ERROR("Failed to reply to blocking request %1% from %2%, "
-                  "transaction %3%: %4%", request_id, requester,
-                  transaction_id, e.what());
+                  "transaction %3%: %4%", request.id(), request.sender(),
+                  request.transactionId(), e.what());
     }
 }
 
-void RequestProcessor::processNonBlockingRequest(
-                        std::shared_ptr<Module> module_ptr,
-                        const std::string& action_name,
-                        const CthunClient::ParsedChunks& parsed_chunks) {
-    auto request_id = parsed_chunks.envelope.get<std::string>("id");
-    auto requester = parsed_chunks.envelope.get<std::string>("sender");
-    auto transaction_id = parsed_chunks.data.get<std::string>("transaction_id");
+void RequestProcessor::processNonBlockingRequest(std::shared_ptr<Module> module_ptr,
+                                                 const ActionRequest& request) {
     auto job_id = UUID::getUUID();
 
     // HERE(ale): assuming spool_dir ends with '/' (up to Configuration)
@@ -213,8 +206,8 @@ void RequestProcessor::processNonBlockingRequest(
 
     if (!boost::filesystem::exists(results_dir)) {
         LOG_DEBUG("Creating results directory for the '%1% %2%' job with ID %3% "
-                  "for request transaction %4%", module_ptr->module_name,
-                  action_name, job_id, transaction_id);
+                  "for request transaction %4%", request.module(),
+                  request.action(), job_id, request.transactionId());
         if (!FileUtils::createDirectory(results_dir)) {
             throw request_processing_error { "failed to create directory '"
                                              + results_dir + "'" };
@@ -223,8 +216,8 @@ void RequestProcessor::processNonBlockingRequest(
 
     // Spawn action task
     LOG_DEBUG("Starting '%1% %2%' job with ID %3% for non-blocking request %4% "
-              "by %5%, transaction %6%", module_ptr->module_name, action_name,
-              job_id, request_id, requester, transaction_id);
+              "by %5%, transaction %6%",request.module(), request.action(),
+              job_id, request.id(), request.sender(), request.transactionId());
     std::string err_msg {};
 
     try {
@@ -233,8 +226,7 @@ void RequestProcessor::processNonBlockingRequest(
 
         thread_container_.add(std::thread(&nonBlockingActionTask,
                                           module_ptr,
-                                          action_name,
-                                          parsed_chunks,
+                                          request,
                                           job_id,
                                           results_dir,
                                           connector_ptr_,
@@ -242,14 +234,14 @@ void RequestProcessor::processNonBlockingRequest(
                               done);
     } catch (std::exception& e) {
         LOG_ERROR("Failed to spawn '%1% %2%' action job with ID %3%: %4%",
-                  module_ptr->module_name, action_name, job_id, e.what());
+                  request.module(), request.action(), job_id, e.what());
         err_msg = std::string { "failed to start action task: " } + e.what();
     }
 
     // Send back provisional data
-    auto debug = wrapDebug(parsed_chunks);
+    auto debug = wrapDebug(request.parsedChunks());
     CthunClient::DataContainer provisional_data {};
-    provisional_data.set<std::string>("transaction_id", transaction_id);
+    provisional_data.set<std::string>("transaction_id", request.transactionId());
     provisional_data.set<bool>("success", err_msg.empty());
     provisional_data.set<std::string>("job_id", job_id);
     if (!err_msg.empty()) {
@@ -257,17 +249,18 @@ void RequestProcessor::processNonBlockingRequest(
     }
 
     try {
-        connector_ptr_->send(std::vector<std::string> { requester },
+        connector_ptr_->send(std::vector<std::string> { request.sender() },
                              RPCSchemas::PROVISIONAL_RESPONSE_TYPE,
                              DEFAULT_MSG_TIMEOUT_SEC,
                              provisional_data,
                              debug);
         LOG_INFO("Sent provisional response for request %1% by %2%, "
-                 "transaction %3%", request_id, requester, transaction_id);
+                 "transaction %3%", request.id(), request.sender(),
+                 request.transactionId());
     } catch (CthunClient::connection_error& e) {
         LOG_ERROR("Failed to send provisional response for request %1% by "
                   "%2%, transaction %3% (no further attempts): %4%",
-                  request_id, requester, transaction_id, e.what());
+                  request.id(), request.sender(), request.transactionId(), e.what());
     }
 }
 

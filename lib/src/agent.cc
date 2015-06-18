@@ -250,13 +250,9 @@ void Agent::processRequest(const ActionRequest& request) {
     auto module_ptr = modules_.at(request.module());
 
     if (request.type() == RequestType::Blocking) {
-        request_processor_.processBlockingRequest(module_ptr,
-                                                  request.action(),
-                                                  request.parsedChunks());
+        request_processor_.processBlockingRequest(module_ptr, request);
     } else {
-        request_processor_.processNonBlockingRequest(module_ptr,
-                                                     request.action(),
-                                                     request.parsedChunks());
+        request_processor_.processNonBlockingRequest(module_ptr, request);
     }
 }
 

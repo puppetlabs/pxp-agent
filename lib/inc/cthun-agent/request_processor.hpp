@@ -3,6 +3,7 @@
 
 #include <cthun-agent/module.hpp>
 #include <cthun-agent/thread_container.hpp>
+#include <cthun-agent/action_request.hpp>
 
 #include <cthun-client/connector/connector.hpp>
 
@@ -25,8 +26,7 @@ class RequestProcessor {
     /// In case it fails to send the response, no further attempt will
     /// be made.
     void processBlockingRequest(std::shared_ptr<Module> module_ptr,
-                                const std::string& action_name,
-                                const CthunClient::ParsedChunks& parsed_chunks);
+                                const ActionRequest& request);
 
     /// Start a task for the specified action in a separate execution
     /// thread. Once the task has started, send a provisional response
@@ -36,8 +36,7 @@ class RequestProcessor {
     /// task will also write the action outcome and request metadata
     /// to disk.
     void processNonBlockingRequest(std::shared_ptr<Module> module_ptr,
-                                   const std::string& action_name,
-                                   const CthunClient::ParsedChunks& parsed_chunks);
+                                   const ActionRequest& request);
 
   private:
     /// Cthun Connector pointer
