@@ -229,8 +229,7 @@ void RequestProcessor::processNonBlockingRequest(
 
     try {
         // Flag to enable signaling from task to thread_container
-        std::shared_ptr<std::atomic<bool>> done {
-            new  std::atomic<bool> { false } };
+        auto done = std::make_shared<std::atomic<bool>>(false);
 
         thread_container_.add(std::thread(&nonBlockingActionTask,
                                           module_ptr,
