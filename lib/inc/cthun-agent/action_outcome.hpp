@@ -13,6 +13,8 @@ struct ActionOutcome {
     Type type;
     std::string stderr;
     std::string stdout;
+
+    // TODO(ale): use leatherman::json_container::JsonContainer
     CthunClient::DataContainer results;
 
     ActionOutcome() {
