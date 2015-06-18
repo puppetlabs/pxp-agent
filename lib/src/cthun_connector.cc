@@ -13,7 +13,7 @@ namespace LTH_JC = leatherman::json_container;
 
 static const int DEFAULT_MSG_TIMEOUT_SEC { 2 };
 
-std::vector<LTH_JC::JsonContainer> wrapDebug(
+std::vector<lth_jc::JsonContainer> wrapDebug(
                         const CthunClient::ParsedChunks& parsed_chunks) {
     auto request_id = parsed_chunks.envelope.get<std::string>("id");
     if (parsed_chunks.num_invalid_debug) {
@@ -21,7 +21,7 @@ std::vector<LTH_JC::JsonContainer> wrapDebug(
                     request_id, parsed_chunks.num_invalid_debug,
                     StringUtils::plural(parsed_chunks.num_invalid_debug));
     }
-    std::vector<LTH_JC::JsonContainer> debug {};
+    std::vector<lth_jc::JsonContainer> debug {};
     for (auto& debug_entry : parsed_chunks.debug) {
         debug.push_back(debug_entry);
     }
@@ -40,7 +40,7 @@ CthunConnector::CthunConnector(const std::string& server_url,
 void CthunConnector::sendCthunError(const std::string& request_id,
                                     const std::string& description,
                                     const std::vector<std::string>& endpoints) {
-    LTH_JC::JsonContainer cthun_error_data {};
+    lth_jc::JsonContainer cthun_error_data {};
     cthun_error_data.set<std::string>("id", request_id);
     cthun_error_data.set<std::string>("description", description);
 
@@ -59,7 +59,7 @@ void CthunConnector::sendCthunError(const std::string& request_id,
 
 void CthunConnector::sendRPCError(const ActionRequest& request,
                                   const std::string& description) {
-    LTH_JC::JsonContainer rpc_error_data {};
+    lth_jc::JsonContainer rpc_error_data {};
     rpc_error_data.set<std::string>("transaction_id", request.transactionId());
     rpc_error_data.set<std::string>("id", request.id());
     rpc_error_data.set<std::string>("description", description);
@@ -82,11 +82,11 @@ void CthunConnector::sendRPCError(const ActionRequest& request,
 
 void CthunConnector::sendBlockingResponse(
                                 const ActionRequest& request,
-                                const LTH_JC::JsonContainer& results) {
+                                const lth_jc::JsonContainer& results) {
     auto debug = wrapDebug(request.parsedChunks());
-    LTH_JC::JsonContainer response_data {};
+    lth_jc::JsonContainer response_data {};
     response_data.set<std::string>("transaction_id", request.transactionId());
-    response_data.set<LTH_JC::JsonContainer>("results", results);
+    response_data.set<lth_jc::JsonContainer>("results", results);
 
     try {
         send(std::vector<std::string> { request.sender() },
@@ -103,12 +103,12 @@ void CthunConnector::sendBlockingResponse(
 
 void CthunConnector::sendNonBlockingResponse(
                                 const ActionRequest& request,
-                                const LTH_JC::JsonContainer& results,
+                                const lth_jc::JsonContainer& results,
                                 const std::string& job_id) {
-    LTH_JC::JsonContainer response_data {};
+    lth_jc::JsonContainer response_data {};
     response_data.set<std::string>("transaction_id", request.transactionId());
     response_data.set<std::string>("job_id", job_id);
-    response_data.set<LTH_JC::JsonContainer>("results", results);
+    response_data.set<lth_jc::JsonContainer>("results", results);
 
     try {
         // NOTE(ale): assuming debug was sent in provisional response
@@ -131,7 +131,7 @@ void CthunConnector::sendProvisionalResponse(const ActionRequest& request,
                                              const std::string& job_id,
                                              const std::string& error) {
     auto debug = wrapDebug(request.parsedChunks());
-    LTH_JC::JsonContainer provisional_data {};
+    lth_jc::JsonContainer provisional_data {};
     provisional_data.set<std::string>("transaction_id", request.transactionId());
     provisional_data.set<bool>("success", error.empty());
     provisional_data.set<std::string>("job_id", job_id);

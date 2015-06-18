@@ -14,7 +14,7 @@ class Ping : public CthunAgent::Module {
     /// Ping calculates the time it took for a message to travel from
     /// the controller to the agent. It will then add that duration
     /// and the current server time in milliseconds to the response.
-    LTH_JC::JsonContainer ping(const ActionRequest& request);
+    lth_jc::JsonContainer ping(const ActionRequest& request);
 
   private:
     ActionOutcome callAction(const ActionRequest& request);

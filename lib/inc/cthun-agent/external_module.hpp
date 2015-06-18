@@ -39,9 +39,9 @@ class ExternalModule : public Module {
     /// Validator
     static const CthunClient::Validator metadata_validator_;
 
-    const LTH_JC::JsonContainer getMetadata();
+    const lth_jc::JsonContainer getMetadata();
 
-    void registerAction(const LTH_JC::JsonContainer& action);
+    void registerAction(const lth_jc::JsonContainer& action);
 
     ActionOutcome callAction(const ActionRequest& reqeust);
 };

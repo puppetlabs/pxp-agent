@@ -1,7 +1,7 @@
 #include <cthun-agent/modules/status.hpp>
-#include <cthun-agent/file_utils.hpp>
 #include <cthun-agent/configuration.hpp>
-#include <cthun-agent/errors.hpp>
+#include <boost/filesystem.hpp>
+#include <leatherman/file_util/file.hpp>
 
 #include <fstream>
 
@@ -10,6 +10,8 @@
 
 namespace CthunAgent {
 namespace Modules {
+
+namespace lth_file = leatherman::file_util;
 
 static const std::string QUERY { "query" };
 
@@ -24,18 +26,18 @@ Status::Status() {
 }
 
 ActionOutcome Status::callAction(const ActionRequest& request) {
-    LTH_JC::JsonContainer results {};
+    lth_jc::JsonContainer results {};
     auto job_id = request.params().get<std::string>("job_id");
     auto results_dir = Configuration::Instance().get<std::string>("spool-dir")
                        + job_id;
 
-    if (!FileUtils::fileExists(results_dir)) {
+    if (!boost::filesystem::exists(results_dir)) {
         LOG_ERROR("Found no results for job id %1%", job_id);
         results.set<std::string>("status", "Unknown");
     } else {
         LOG_DEBUG("Retrieving results for job id %1% from %2%", job_id, results_dir);
-        LTH_JC::JsonContainer status {
-            FileUtils::readFileAsString(results_dir + "/status") };
+        lth_jc::JsonContainer status {
+                lth_file::read(results_dir + "/status") };
 
         auto status_txt = status.get<std::string>("status");
         if (status_txt == "running") {
@@ -43,9 +45,9 @@ ActionOutcome Status::callAction(const ActionRequest& request) {
         } else if (status_txt == "completed") {
             results.set<std::string>("status", "Completed");
             results.set<std::string>("stdout",
-                        FileUtils::readFileAsString(results_dir + "/stdout"));
+                                     lth_file::read(results_dir + "/stdout"));
             results.set<std::string>("stderr",
-                        FileUtils::readFileAsString(results_dir + "/stderr"));
+                                     lth_file::read(results_dir + "/stderr"));
         } else {
             std::string tmp { "Job '" + job_id + "' is in unknown state: " };
             results.set<std::string>("status", tmp + status_txt);

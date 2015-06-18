@@ -13,7 +13,7 @@
 
 namespace CthunAgent {
 
-namespace LTH_JC = leatherman::json_container;
+namespace lth_jc = leatherman::json_container;
 
 static const std::string inventory_action { "inventory" };
 static const std::string inventory_txt {
@@ -23,10 +23,10 @@ static const std::string inventory_txt {
     "}"
 };
 
-static const std::vector<LTH_JC::JsonContainer> no_debug {};
+static const std::vector<lth_jc::JsonContainer> no_debug {};
 static const CthunClient::ParsedChunks parsed_chunks {
-                    LTH_JC::JsonContainer(),
-                    LTH_JC::JsonContainer(inventory_txt),
+                    lth_jc::JsonContainer(),
+                    lth_jc::JsonContainer(inventory_txt),
                     no_debug,
                     0 };
 

@@ -1,6 +1,5 @@
 #include <cthun-agent/request_processor.hpp>
 #include <cthun-agent/action_outcome.hpp>
-#include <cthun-agent/file_utils.hpp>
 #include <cthun-agent/string_utils.hpp>
 #include <cthun-agent/rpc_schemas.hpp>
 #include <cthun-agent/timer.hpp>
@@ -10,8 +9,9 @@
 #include <cthun-agent/modules/inventory.hpp>
 #include <cthun-agent/modules/ping.hpp>
 #include <cthun-agent/modules/status.hpp>
-
 #include <leatherman/json_container/json_container.hpp>
+
+#include <leatherman/file_util/file.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.action_executer"
 #include <leatherman/logging/logging.hpp>
@@ -26,7 +26,8 @@
 namespace CthunAgent {
 
 namespace fs = boost::filesystem;
-namespace LTH_JC = leatherman::json_container;
+namespace lth_jc = leatherman::json_container;
+namespace lth_file = leatherman::file_util;
 
 //
 // Results Storage
@@ -50,20 +51,20 @@ class ResultsStorage {
                const std::string& duration) {
         action_status.set<std::string>("status", "completed");
         action_status.set<std::string>("duration", duration);
-        FileUtils::writeToFile(action_status.toString() + "\n", status_path);
+        lth_file::atomic_write_to_file(action_status.toString() + "\n", status_path);
 
         if (exec_error.empty()) {
             if (outcome.type == ActionOutcome::Type::External) {
-                FileUtils::writeToFile(outcome.stdout + "\n", out_path);
+                lth_file::atomic_write_to_file(outcome.stdout + "\n", out_path);
                 if (!outcome.stderr.empty()) {
-                    FileUtils::writeToFile(outcome.stderr + "\n", err_path);
+                    lth_file::atomic_write_to_file(outcome.stderr + "\n", err_path);
                 }
             } else {
                 // ActionOutcome::Type::Internal
-                FileUtils::writeToFile(outcome.results.toString() + "\n", out_path);
+                lth_file::atomic_write_to_file(outcome.results.toString() + "\n", out_path);
             }
         } else {
-            FileUtils::writeToFile(exec_error, err_path);
+            lth_file::atomic_write_to_file(exec_error, err_path);
         }
     }
 
@@ -73,14 +74,14 @@ class ResultsStorage {
     std::string out_path;
     std::string err_path;
     std::string status_path;
-    LTH_JC::JsonContainer action_status;
+    lth_jc::JsonContainer action_status;
 
     void initialize(const ActionRequest& request, const std::string results_dir) {
         if (!fs::exists(results_dir)) {
             LOG_DEBUG("Creating results directory for '%1% %2%', transaction "
                        "%3%, in '%4%'", request.module(), request.action(),
                        request.transactionId(), results_dir);
-            if (!FileUtils::createDirectory(results_dir)) {
+            if (!fs::create_directory(results_dir)) {
                 throw file_error { "failed to create directory '"
                                    + results_dir + "'" };
             }
@@ -97,16 +98,15 @@ class ResultsStorage {
             action_status.set<std::string>("input", "none");
         }
 
-        FileUtils::writeToFile("", out_path);
-        FileUtils::writeToFile("", err_path);
-        FileUtils::writeToFile(action_status.toString() + "\n", status_path);
+        lth_file::atomic_write_to_file("", out_path);
+        lth_file::atomic_write_to_file("", err_path);
+        lth_file::atomic_write_to_file(action_status.toString() + "\n", status_path);
     }
 };
 
 //
 // Non-blocking action task
 //
-
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ActionRequest&& request,
                            std::string job_id,
@@ -151,7 +151,7 @@ RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr
 
     if (!fs::exists(spool_dir_)) {
         LOG_INFO("Creating spool directory '%1%'", spool_dir_);
-        if (!FileUtils::createDirectory(spool_dir_)) {
+        if (!fs::create_directory(spool_dir_)) {
             throw fatal_error { "failed to create the results directory '"
                                 + spool_dir_ + "'" };
         }

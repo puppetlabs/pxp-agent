@@ -1,7 +1,8 @@
 #include <cthun-agent/external_module.hpp>
 #include <cthun-agent/errors.hpp>
-#include <cthun-agent/file_utils.hpp>
 #include <cthun-agent/uuid.hpp>
+
+#include <leatherman/file_util/file.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.external_module"
 #include <leatherman/logging/logging.hpp>
@@ -94,7 +95,7 @@ ExternalModule::ExternalModule(const std::string& path) : path_ { path } {
     auto metadata = getMetadata();
 
     for (auto& action_metadata :
-            metadata.get<std::vector<LTH_JC::JsonContainer>>("actions")) {
+            metadata.get<std::vector<lth_jc::JsonContainer>>("actions")) {
         registerAction(action_metadata);
     }
 }
@@ -109,7 +110,7 @@ const CthunClient::Validator ExternalModule::metadata_validator_ {
 
 
 // Retrieve and validate the module metadata
-const LTH_JC::JsonContainer ExternalModule::getMetadata() {
+const lth_jc::JsonContainer ExternalModule::getMetadata() {
     std::string metadata_txt;
     std::string error;
 
@@ -121,7 +122,7 @@ const LTH_JC::JsonContainer ExternalModule::getMetadata() {
         throw module_error { "failed to load external module metadata" };
     }
 
-    LTH_JC::JsonContainer metadata { metadata_txt };
+    lth_jc::JsonContainer metadata { metadata_txt };
 
     try {
         metadata_validator_.validate(metadata, METADATA_SCHEMA_NAME);
@@ -136,15 +137,15 @@ const LTH_JC::JsonContainer ExternalModule::getMetadata() {
 
 // Register the specified action after ensuring that the input and
 // output schemas are valid JSON (i.e. we can instantiate Schema).
-void ExternalModule::registerAction(const LTH_JC::JsonContainer& action) {
+void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
     auto action_name = action.get<std::string>("name");
     LOG_INFO("Validating action '%1% %2%'", module_name, action_name);
 
     try {
-        auto input_schema_json = action.get<LTH_JC::JsonContainer>("input");
+        auto input_schema_json = action.get<lth_jc::JsonContainer>("input");
         CthunClient::Schema input_schema { action_name, input_schema_json };
 
-        auto output_schema_json = action.get<LTH_JC::JsonContainer>("output");
+        auto output_schema_json = action.get<lth_jc::JsonContainer>("output");
         CthunClient::Schema output_schema { action_name, output_schema_json };
 
         // Input & output schemas are valid JSON; store metadata
@@ -181,11 +182,11 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     }
 
     // Ensure output format is valid JSON by instantiating JsonContainer
-    LTH_JC::JsonContainer results {};
+    lth_jc::JsonContainer results {};
 
     try {
-        results = LTH_JC::JsonContainer { stdout };
-    } catch (LTH_JC::data_parse_error& e) {
+        results = lth_jc::JsonContainer { stdout };
+    } catch (lth_jc::data_parse_error& e) {
         LOG_ERROR("'%1% %2%' output is not valid JSON: %3%",
                   module_name, action_name, e.what());
         std::string err_msg { "'" + module_name + " " + action_name + "' "

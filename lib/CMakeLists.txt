@@ -19,7 +19,6 @@ set(LIBRARY_SOURCES
     src/configuration.cc
     src/cthun_connector.cc
     src/external_module.cc
-    src/file_utils.cc
     src/module.cc
     src/modules/echo.cc
     src/modules/inventory.cc
@@ -48,6 +47,7 @@ SET(LIBS
     ${OPENSSL_CRYPTO_LIBRARY}
     ${PTHREADS}
     ${facter_LIBRARY}
+    ${LEATHERMAN_LIBRARIES}
 )
 
 add_library(libcthun-agent ${LIBRARY_SOURCES})

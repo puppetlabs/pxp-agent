@@ -1,7 +1,8 @@
 #include <cthun-agent/agent.hpp>
 #include <cthun-agent/errors.hpp>
-#include <cthun-agent/file_utils.hpp>
 #include <cthun-agent/configuration.hpp>
+
+#include <leatherman/file_util/file.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.main"
 #include <leatherman/logging/logging.hpp>
@@ -13,6 +14,7 @@
 namespace CthunAgent {
 
 namespace HW = HorseWhisperer;
+namespace lth_file = leatherman::file_util;
 
 int startAgent(std::vector<std::string> arguments) {
     std::string logfile { HW::GetFlag<std::string>("logfile") };

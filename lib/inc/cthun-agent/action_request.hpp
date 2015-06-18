@@ -11,7 +11,7 @@
 
 namespace CthunAgent {
 
-namespace LTH_JC = leatherman::json_container;
+namespace lth_jc = leatherman::json_container;
 
 enum class RequestType { Blocking, NonBlocking };
 static std::map<RequestType, std::string> requestTypeNames {
@@ -38,7 +38,7 @@ class ActionRequest {
     const CthunClient::ParsedChunks& parsedChunks() const;
 
     // The following accessors perform lazy initialization
-    const LTH_JC::JsonContainer& params() const;
+    const lth_jc::JsonContainer& params() const;
     const std::string& paramsTxt() const;
 
   private:
@@ -52,7 +52,7 @@ class ActionRequest {
     CthunClient::ParsedChunks parsed_chunks_;
 
     // Lazy initialized
-    mutable LTH_JC::JsonContainer params_;
+    mutable lth_jc::JsonContainer params_;
     mutable std::string params_txt_;
 
     void init();
