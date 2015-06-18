@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 extern std::string ROOT_PATH;
 
@@ -38,19 +39,21 @@ TEST_CASE("Modules::Inventory::callAction", "[modules]") {
     }
 
     SECTION("the inventory module has the inventory action") {
-        REQUIRE(inventory_module.actions.find(inventory_action)
-                != inventory_module.actions.end());
+        auto found = std::find(inventory_module.actions.begin(),
+                               inventory_module.actions.end(),
+                               inventory_action);
+        REQUIRE(found != inventory_module.actions.end());
     }
 
     SECTION("it can call the inventory action") {
-        REQUIRE_NOTHROW(inventory_module.callAction(inventory_action,
-                                                    parsed_chunks));
+        REQUIRE_NOTHROW(inventory_module.executeAction(inventory_action,
+                                                       parsed_chunks));
     }
 
     SECTION("it should execute the inventory action correctly") {
-        auto result = inventory_module.callAction(inventory_action,
-                                                  parsed_chunks);
-        CHECK(result.toString().find("facts") != std::string::npos);
+        auto outcome = inventory_module.executeAction(inventory_action,
+                                                      parsed_chunks);
+        CHECK(outcome.results.toString().find("facts") != std::string::npos);
     }
 }
 
