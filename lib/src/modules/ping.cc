@@ -19,14 +19,11 @@ static const std::string PING { "ping" };
 
 Ping::Ping() {
     module_name = PING;
-
+    actions.push_back(PING);
     CthunClient::Schema input_schema { PING };
     input_schema.addConstraint("sender_timestamp",
                                CthunClient::TypeConstraint::String);
-
     CthunClient::Schema output_schema { PING };
-
-    actions[PING] = Action { "interactive" };
 
     input_validator_.registerSchema(input_schema);
     output_validator_.registerSchema(output_schema);
@@ -56,10 +53,9 @@ CthunClient::DataContainer Ping::ping(
     return data;
 }
 
-CthunClient::DataContainer Ping::callAction(
-                                const std::string& action_name,
-                                const CthunClient::ParsedChunks& parsed_chunks) {
-   return ping(parsed_chunks);
+ActionOutcome Ping::callAction(const std::string& action_name,
+                               const CthunClient::ParsedChunks& parsed_chunks) {
+   return ActionOutcome { ping(parsed_chunks) };
 }
 
 }  // namespace Modules
