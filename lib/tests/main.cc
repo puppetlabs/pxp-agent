@@ -10,14 +10,23 @@
 
 #include <iostream>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.test"
+// To enable log messages:
+// #define ENABLE_LOGGING
+
+#ifdef ENABLE_LOGGING
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pegasus.test"
 #include <leatherman/logging/logging.hpp>
+#endif
 
 std::string ROOT_PATH;
 
 // TODO(ale): manage Catch test case tags; list and describe tags
 
 int main(int argc, char* const argv[]) {
+#ifdef ENABLE_LOGGING
+    leatherman::logging::set_level(leatherman::logging::log_level::debug);
+#endif
+
     // set the path of the cthun-agent root dir into a global
     boost::filesystem::path root_path {
         boost::filesystem::canonical(
@@ -26,15 +35,7 @@ int main(int argc, char* const argv[]) {
     };
     ROOT_PATH = std::string(root_path.string());
 
-    // set logging level to fatal
-    leatherman::logging::setup_logging(std::cout);
-    leatherman::logging::set_level(leatherman::logging::log_level::fatal);
-
     // configure the Catch session and start it
-
-    // TODO(ale): improve output by properly using reporters
-    // (dump the xml to a file and use an external parser)
-
     Catch::Session test_session;
     test_session.applyCommandLine(argc, argv);
 
