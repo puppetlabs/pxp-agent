@@ -7,6 +7,7 @@ namespace CthunAgent {
 
 namespace fs = boost::filesystem;
 
+const std::string VERSION_STRING = "cthun-agent version - 0.0.1\n";
 const std::string DEFAULT_MODULES_DIR { "/usr/share/cthun-agent/modules" };
 
 //
@@ -286,6 +287,5 @@ void Configuration::validateAndNormalizeConfiguration() {
         }
     }
 }
-
 
 }  // namespace CthunAgent
