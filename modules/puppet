@@ -22,8 +22,7 @@ def action_metadata
         },
         :output => {
           :type => "object"
-        },
-        :behaviour => "delayed"
+        }
       }
     ]
   }
