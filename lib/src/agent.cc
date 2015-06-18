@@ -159,121 +159,104 @@ void Agent::logLoadedModules() const {
 
 void Agent::blockingRequestCallback(
                 const CthunClient::ParsedChunks& parsed_chunks) {
-    validateAndProcessRequest(parsed_chunks, RequestType::Blocking);
+    validateAndProcessRequest(RequestType::Blocking, parsed_chunks);
 }
 
 void Agent::nonBlockingRequestCallback(
                 const CthunClient::ParsedChunks& parsed_chunks) {
-    validateAndProcessRequest(parsed_chunks, RequestType::NonBlocking);
+    validateAndProcessRequest(RequestType::NonBlocking, parsed_chunks);
 }
 
 void Agent::validateAndProcessRequest(
-                const CthunClient::ParsedChunks& parsed_chunks,
-                const RequestType& request_type) {
-    auto request_id = parsed_chunks.envelope.get<std::string>("id");
-    auto requester = parsed_chunks.envelope.get<std::string>("sender");
-    LOG_INFO("Received %1% request %2% by %3%",
-             requestTypeNames[request_type], request_id, requester);
-    LOG_DEBUG("Request %1%:\n%2%", request_id, parsed_chunks.toString());
+                const RequestType& request_type,
+                const CthunClient::ParsedChunks& parsed_chunks) {
+    ActionRequest request {};
 
     try {
-        validateRequestFormat(parsed_chunks);
-    } catch (request_validation_error& e) {
+        // Inspect and validate the request message format
+        request = ActionRequest { request_type, parsed_chunks };
+    } catch (request_format_error& e) {
         // Bad message; send a *Cthun core error*
-        LOG_ERROR("Invalid %1% request by %2%: %3%",
-                  request_id, requester, e.what());
+
+        auto id = parsed_chunks.envelope.get<std::string>("id");
+        auto sender = parsed_chunks.envelope.get<std::string>("sender");
+
+        LOG_ERROR("Invalid %1% request by %2%: %3%", id, sender, e.what());
         CthunClient::DataContainer cthun_error_data {};
-        cthun_error_data.set<std::string>("id", request_id);
+        cthun_error_data.set<std::string>("id", id);
         cthun_error_data.set<std::string>("description", e.what());
 
         try {
-            connector_ptr_->send(std::vector<std::string> { requester },
+            connector_ptr_->send(std::vector<std::string> { sender },
                                  CthunClient::Protocol::ERROR_MSG_TYPE,
                                  DEFAULT_MSG_TIMEOUT_SEC,
                                  cthun_error_data);
             LOG_INFO("Replied to %1% request %2% by %3% with a Cthun core "
-                     "error message", requestTypeNames[request_type],
-                     request_id, requester);
+                     "error message", requestTypeNames[request_type], id, sender);
         } catch (CthunClient::connection_error& e) {
             LOG_ERROR("Failed to send Cthun core error message for request %1% "
-                      "by %2%: %3%", request_id, requester, e.what());
+                      "by %2%: %3%", id, sender, e.what());
         }
     }
 
-    auto transaction_id = parsed_chunks.data.get<std::string>("transaction_id");
     LOG_INFO("About to process %1% request %2% by %3%, transaction %4%",
-             requestTypeNames[request_type], request_id, requester,
-             transaction_id);
+             requestTypeNames[request_type], request.id(), request.sender(),
+             request.transactionId());
 
     try {
-        validateRequestContent(parsed_chunks);
-        processRequest(parsed_chunks, request_type);
+        // Validate the data content and process the request
+        validateRequestContent(request);
+        processRequest(request);
     } catch (request_error& e) {
         // Invalid request or process failure; send an *RPC error*
-        LOG_ERROR("Failed to process request %1% by %2%, transaction %3%: %4%",
-                  request_id, requester, transaction_id, e.what());
+
+        LOG_ERROR("Failed to process %1% request %2% by %3%, transaction %4%: "
+                  "%5%", requestTypeNames[request_type], request.id(),
+                  request.sender(), request.transactionId(), e.what());
         CthunClient::DataContainer rpc_error_data {};
-        rpc_error_data.set<std::string>("transaction_id", transaction_id);
-        rpc_error_data.set<std::string>("id", request_id);
+        rpc_error_data.set<std::string>("transaction_id", request.transactionId());
+        rpc_error_data.set<std::string>("id", request.id());
         rpc_error_data.set<std::string>("description", e.what());
 
         try {
-            connector_ptr_->send(std::vector<std::string> { requester },
+            connector_ptr_->send(std::vector<std::string> { request.sender() },
                                  RPCSchemas::RPC_ERROR_MSG_TYPE,
                                  DEFAULT_MSG_TIMEOUT_SEC,
                                  rpc_error_data);
             LOG_INFO("Replied to %1% request %2% by %3%, transaction %4%, with "
                      "an RPC error message", requestTypeNames[request_type],
-                     request_id, requester, transaction_id);
+                     request.id(), request.sender(), request.transactionId());
         } catch (CthunClient::connection_error& e) {
             LOG_ERROR("Failed to send RPC error message for request %1% by "
                       "%2%, transaction %3% (no further attempts): %4%",
-                      request_id, requester, transaction_id, e.what());
+                      request.id(), request.sender(), request.transactionId(),
+                      e.what());
         }
     }
 }
 
-void Agent::validateRequestFormat(const CthunClient::ParsedChunks& parsed_chunks) {
-    if (!parsed_chunks.has_data) {
-        throw request_validation_error { "no data" };
-    }
-    if (parsed_chunks.invalid_data) {
-        throw request_validation_error { "invalid data" };
-    }
-    // NOTE(ale): currently, we don't support ContentType::Binary
-    if (parsed_chunks.data_type != CthunClient::ContentType::Json) {
-        throw request_validation_error { "data is not in JSON format" };
-    }
-}
-
-void Agent::validateRequestContent(const CthunClient::ParsedChunks& parsed_chunks) {
-    auto module_name = parsed_chunks.data.get<std::string>("module");
-    auto action_name = parsed_chunks.data.get<std::string>("action");
-
+void Agent::validateRequestContent(const ActionRequest& request) {
     try {
-        if (!modules_.at(module_name)->hasAction(action_name)) {
-            throw request_validation_error { "unknown action '" + action_name
-                                             + "' for module " + module_name };
+        if (!modules_.at(request.module())->hasAction(request.action())) {
+            throw request_processing_error { "unknown action '" + request.action()
+                                             + "' for module " + request.module() };
         }
     } catch (std::out_of_range& e) {
-        throw request_validation_error { "unknown module: " + module_name };
+        throw request_processing_error { "unknown module: " + request.module() };
     }
 }
 
-void Agent::processRequest(const CthunClient::ParsedChunks& parsed_chunks,
-                           const RequestType& request_type) {
-    auto module_name = parsed_chunks.data.get<std::string>("module");
-    auto action_name = parsed_chunks.data.get<std::string>("action");
-    auto module_ptr = modules_.at(module_name);
+void Agent::processRequest(const ActionRequest& request) {
+    auto module_ptr = modules_.at(request.module());
 
-    if (request_type == RequestType::Blocking) {
+    if (request.type() == RequestType::Blocking) {
         request_processor_.processBlockingRequest(module_ptr,
-                                                  action_name,
-                                                  parsed_chunks);
+                                                  request.action(),
+                                                  request.parsedChunks());
     } else {
         request_processor_.processNonBlockingRequest(module_ptr,
-                                                     action_name,
-                                                     parsed_chunks);
+                                                     request.action(),
+                                                     request.parsedChunks());
     }
 }
 

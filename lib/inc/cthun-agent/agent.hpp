@@ -3,6 +3,7 @@
 
 #include <cthun-agent/module.hpp>
 #include <cthun-agent/request_processor.hpp>
+#include <cthun-agent/action_request.hpp>
 
 #include <cthun-client/connector/connector.hpp>
 #include <cthun-client/protocol/chunks.hpp>      // ParsedChunk
@@ -40,11 +41,6 @@ class Agent {
     void start();
 
   private:
-    enum class RequestType { Blocking, NonBlocking };
-    std::map<RequestType, std::string> requestTypeNames {
-        {RequestType::Blocking, "blocking"},
-        {RequestType::NonBlocking, "non blocking"} };
-
     // Cthun connector
     std::shared_ptr<CthunClient::Connector> connector_ptr_;
 
@@ -78,15 +74,12 @@ class Agent {
     // outcome when finished.
     void nonBlockingRequestCallback(const CthunClient::ParsedChunks& parsed_chunks);
 
-    void validateAndProcessRequest(const CthunClient::ParsedChunks& parsed_chunks,
-                                   const RequestType& request_type);
+    void validateAndProcessRequest(const RequestType& request_type,
+                                   const CthunClient::ParsedChunks& parsed_chunks);
 
-    void validateRequestFormat(const CthunClient::ParsedChunks& parsed_chunks);
+    void validateRequestContent(const ActionRequest& request);
 
-    void validateRequestContent(const CthunClient::ParsedChunks& parsed_chunks);
-
-    void processRequest(const CthunClient::ParsedChunks& parsed_chunks,
-                        const RequestType& request_type);
+    void processRequest(const ActionRequest& request);
 };
 
 }  // namespace CthunAgent
