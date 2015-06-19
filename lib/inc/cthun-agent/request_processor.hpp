@@ -39,15 +39,15 @@ class RequestProcessor {
                                    const ActionRequest& request);
 
   private:
+    /// Manages the lifecycle of non-blocking action jobs
+    ThreadContainer thread_container_;
+
     /// Cthun Connector pointer
     std::shared_ptr<CthunClient::Connector> connector_ptr_;
 
     /// Where the directories for non-blocking actions results will
     /// be created
     const std::string spool_dir_;
-
-    /// Manages the lifecycle of non-blocking action jobs
-    ThreadContainer thread_container_;
 };
 
 }  // namespace CthunAgent

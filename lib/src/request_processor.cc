@@ -34,35 +34,81 @@ std::vector<CthunClient::DataContainer> wrapDebug(
     return debug;
 }
 
+// Results Storage
+
+class ResultsStorage {
+  public:
+    // Throw a file_error in case of failure while writing to any of
+    // result files
+    ResultsStorage(const ActionRequest& request, const std::string results_dir_)
+            : module { request.module() },
+              action { request.action() },
+              out_path { results_dir_ + "/stdout" },
+              err_path { results_dir_ + "/stderr" },
+              status_path { results_dir_ + "/status" },
+              action_status {} {
+        initialize(request);
+    }
+
+    void write(const ActionOutcome& outcome, const std::string& exec_error,
+               const std::string& duration) {
+        action_status.set<std::string>("status", "completed");
+        action_status.set<std::string>("duration", duration);
+        FileUtils::writeToFile(action_status.toString() + "\n", status_path);
+
+        if (exec_error.empty()) {
+            if (outcome.type == ActionOutcome::Type::External) {
+                FileUtils::writeToFile(outcome.stdout + "\n", out_path);
+                if (!outcome.stderr.empty()) {
+                    FileUtils::writeToFile(outcome.stderr + "\n", err_path);
+                }
+            } else {
+                // ActionOutcome::Type::Internal
+                FileUtils::writeToFile(outcome.results.toString() + "\n", out_path);
+            }
+        } else {
+            std::string err_msg { "Failed to execute '" + module + " " + action
+                                  + "': " + exec_error + "\n" };
+            FileUtils::writeToFile(err_msg, err_path);
+        }
+    }
+
+  private:
+    std::string module;
+    std::string action;
+    std::string out_path;
+    std::string err_path;
+    std::string status_path;
+    CthunClient::DataContainer action_status;
+
+    void initialize(const ActionRequest& request) {
+        action_status.set<std::string>("module", module);
+        action_status.set<std::string>("action", action);
+        action_status.set<std::string>("status", "running");
+        action_status.set<std::string>("duration", "0 s");
+
+        if (!request.paramsTxt().empty()) {
+            action_status.set<std::string>("input", request.paramsTxt());
+        } else {
+            action_status.set<std::string>("input", "none");
+        }
+
+        FileUtils::writeToFile("", out_path);
+        FileUtils::writeToFile("", err_path);
+        FileUtils::writeToFile(action_status.toString() + "\n", status_path);
+    }
+};
+
 // Action task
 
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ActionRequest request,
                            std::string job_id,
-                           std::string results_dir,
+                           ResultsStorage results_storage,
                            std::shared_ptr<CthunClient::Connector> connector_ptr,
                            std::shared_ptr<std::atomic<bool>> done) {
-    // Initialize result files
-    CthunClient::DataContainer action_status {};
-    action_status.set<std::string>("module", request.module());
-    action_status.set<std::string>("action", request.action());
-    action_status.set<std::string>("status", "running");
-    action_status.set<std::string>("duration", "0 s");
-
-    if (!request.paramsTxt().empty()) {
-        action_status.set<std::string>("input", request.paramsTxt());
-    } else {
-        action_status.set<std::string>("input", "none");
-    }
-
-    FileUtils::writeToFile("", results_dir + "/stdout");
-    FileUtils::writeToFile("", results_dir + "/stderr");
-    FileUtils::writeToFile(action_status.toString() + "\n",
-                           results_dir + "/status");
-
-    // Execute action
     CthunAgent::Timer timer {};
-    std::string err_msg {};
+    std::string exec_error {};
     ActionOutcome outcome {};
 
     try {
@@ -94,7 +140,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
             }
         }
     } catch (request_error& e) {
-        err_msg = e.what();
+        exec_error = e.what();
 
         // Send back an RPC error message
         CthunClient::DataContainer rpc_error_data {};
@@ -119,29 +165,8 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     }
 
     // Store results on disk
-    std::string duration { std::to_string(timer.elapsedSeconds()) + " s" };
-    action_status.set<std::string>("status", "completed");
-    action_status.set<std::string>("duration", duration);
-    FileUtils::writeToFile(action_status.toString() + "\n",
-                           results_dir + "/status");
-    if (err_msg.empty()) {
-        if (outcome.type == ActionOutcome::Type::External) {
-            FileUtils::writeToFile(outcome.stdout + "\n",
-                                   results_dir + "/stdout");
-            if (!outcome.stderr.empty()) {
-                FileUtils::writeToFile(outcome.stderr + "\n",
-                                       results_dir + "/stderr");
-            }
-        } else {
-            // ActionOutcome::Type::Internal
-            FileUtils::writeToFile(outcome.results.toString() + "\n",
-                                   results_dir + "/stdout");
-        }
-    } else {
-        err_msg = "Failed to execute '" + request.module() + " "
-                  + request.action() + "': " + err_msg;
-        FileUtils::writeToFile(err_msg + "\n", results_dir + "/stderr");
-    }
+    auto duration = std::to_string(timer.elapsedSeconds()) + " s";
+    results_storage.write(outcome, exec_error, duration);
 
     // Flag end of processing
     *done = true;
@@ -153,9 +178,9 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 
 RequestProcessor::RequestProcessor(
                         std::shared_ptr<CthunClient::Connector> connector_ptr)
-        : connector_ptr_ { connector_ptr },
-          spool_dir_ { Configuration::Instance().get<std::string>("spool-dir") },
-          thread_container_ { "Action Executer" } {
+        : thread_container_ { "Action Executer" },
+          connector_ptr_ { connector_ptr },
+          spool_dir_ { Configuration::Instance().get<std::string>("spool-dir") } {
     if (!boost::filesystem::exists(spool_dir_)) {
         LOG_INFO("Creating spool directory '%1%'", spool_dir_);
         if (!FileUtils::createDirectory(spool_dir_)) {
@@ -222,10 +247,16 @@ void RequestProcessor::processNonBlockingRequest(std::shared_ptr<Module> module_
                                           module_ptr,
                                           request,
                                           job_id,
-                                          results_dir,
+                                          ResultsStorage { request, results_dir },
                                           connector_ptr_,
                                           done),
                               done);
+    } catch (file_error& e) {
+        // Failed to instantiate ResultsStorage
+        LOG_ERROR("Failed to initialize result files for  '%1% %2%' action job "
+                  "with ID %3%: %4%", request.module(), request.action(),
+                  job_id, e.what());
+        err_msg = std::string { "failed to initialize result files: " } + e.what();
     } catch (std::exception& e) {
         LOG_ERROR("Failed to spawn '%1% %2%' action job with ID %3%: %4%",
                   request.module(), request.action(), job_id, e.what());
