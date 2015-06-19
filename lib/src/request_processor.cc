@@ -42,20 +42,15 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            std::string results_dir,
                            std::shared_ptr<CthunClient::Connector> connector_ptr,
                            std::shared_ptr<std::atomic<bool>> done) {
-    auto request_input_txt = request.parsedChunks()
-                                    .data
-                                    .get<CthunClient::DataContainer>("params")
-                                    .toString();
-
-    // Initialize outcome files
+    // Initialize result files
     CthunClient::DataContainer action_status {};
     action_status.set<std::string>("module", request.module());
     action_status.set<std::string>("action", request.action());
     action_status.set<std::string>("status", "running");
     action_status.set<std::string>("duration", "0 s");
 
-    if (!request_input_txt.empty()) {
-        action_status.set<std::string>("input", request_input_txt);
+    if (!request.paramsTxt().empty()) {
+        action_status.set<std::string>("input", request.paramsTxt());
     } else {
         action_status.set<std::string>("input", "none");
     }

@@ -14,34 +14,47 @@ ActionRequest::ActionRequest() {
 ActionRequest::ActionRequest(RequestType type,
                              const CthunClient::ParsedChunks& parsed_chunks)
         : type_ { type },
-          job_id_ {},
-          parsed_chunks_ { parsed_chunks } {
+          notify_outcome_ { true },
+          parsed_chunks_ { parsed_chunks },
+          params_ { "{}" },
+          params_txt_ { "" } {
     init();
 }
 
 ActionRequest::ActionRequest(RequestType type,
                              CthunClient::ParsedChunks&& parsed_chunks)
         : type_ { type },
-          job_id_ {},
-          parsed_chunks_ { parsed_chunks } {
+          notify_outcome_ { true },
+          parsed_chunks_ { parsed_chunks },
+          params_ { "{}" },
+          params_txt_ { "" } {
     init();
-}
-
-void ActionRequest::setJobId(const std::string& job_id) {
-    assert(type_ == RequestType::NonBlocking);
-    job_id_ = job_id;
 }
 
 const RequestType& ActionRequest::type() const { return type_; }
 const std::string& ActionRequest::id() const { return id_; }
-const std::string& ActionRequest::sender() const { return sender_; }
+const std::string& ActionRequest::sender() const{ return sender_; }
 const std::string& ActionRequest::transactionId() const { return transaction_id_; }
 const std::string& ActionRequest::module() const { return module_; }
 const std::string& ActionRequest::action() const { return action_; }
-const std::string& ActionRequest::jobId() const { return job_id_; }
+const bool& ActionRequest::notifyOutcome() const { return notify_outcome_; }
 
 const CthunClient::ParsedChunks& ActionRequest::parsedChunks() const {
     return parsed_chunks_;
+}
+
+const CthunClient::DataContainer& ActionRequest::params() const {
+    if (params_.empty()) {
+        params_ = parsed_chunks_.data.get<CthunClient::DataContainer>("params");
+    }
+    return params_;
+}
+
+const std::string& ActionRequest::paramsTxt() const {
+    if (params_txt_.empty()) {
+        params_txt_ = params().toString();
+    }
+    return params_txt_;
 }
 
 // Private interface
@@ -59,6 +72,10 @@ void ActionRequest::init() {
     transaction_id_ = parsed_chunks_.data.get<std::string>("transaction_id");
     module_ = parsed_chunks_.data.get<std::string>("module");
     action_ = parsed_chunks_.data.get<std::string>("action");
+
+    if (type_ == RequestType::NonBlocking) {
+        notify_outcome_ = parsed_chunks_.data.get<bool>("notify_outcome");
+    }
 }
 
 void ActionRequest::validateFormat() {

@@ -2,6 +2,7 @@
 #define SRC_AGENT_ACTION_REQUEST_HPP_
 
 #include <cthun-client/protocol/chunks.hpp>      // ParsedChunk
+#include <cthun-client/data_container/data_container.hpp>
 
 #include <stdexcept>
 #include <string>
@@ -31,7 +32,12 @@ class ActionRequest {
     const std::string& transactionId() const;
     const std::string& module() const;
     const std::string& action() const;
+    const bool& notifyOutcome() const;
     const CthunClient::ParsedChunks& parsedChunks() const;
+
+    // Perform lazy initialization
+    const CthunClient::DataContainer& params() const;
+    const std::string& paramsTxt() const;
 
   private:
     RequestType type_;
@@ -40,7 +46,12 @@ class ActionRequest {
     std::string transaction_id_;
     std::string module_;
     std::string action_;
+    bool notify_outcome_;
     CthunClient::ParsedChunks parsed_chunks_;
+
+    // Lazy initialized
+    mutable CthunClient::DataContainer params_;
+    mutable std::string params_txt_;
 
     void
     init();
