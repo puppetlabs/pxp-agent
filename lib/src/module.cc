@@ -20,22 +20,21 @@ bool Module::hasAction(const std::string& action_name) {
            != actions.end();
 }
 
-ActionOutcome Module::executeAction(
-                        const std::string& action_name,
-                        const CthunClient::ParsedChunks& parsed_chunks) {
-    // Assuming the request message contains JSON data
-    assert(parsed_chunks.has_data);
-    assert(parsed_chunks.data_type == CthunClient::ContentType::Json);
+ActionOutcome Module::executeAction(const ActionRequest& request) {
+    auto& action_name = request.action();
     assert(hasAction(action_name));
-
-    auto request_input =
-        parsed_chunks.data.get<CthunClient::DataContainer>("params");
 
     // Validate request input
     try {
         LOG_DEBUG("Validating input for '%1% %2%'", module_name, action_name);
         // NB: the registred schemas have the same name as the action
-        input_validator_.validate(request_input, action_name);
+
+        // TODO(ale): try to make const the DataContainer argument of
+        // CthunClient::Validator::validate() to avoid copying
+
+        CthunClient::DataContainer input_params { request.params() };
+
+        input_validator_.validate(input_params, action_name);
     } catch (CthunClient::validation_error) {
         throw request_validation_error { "invalid input for '" + module_name
                                          + " " + action_name + "'" };
@@ -43,7 +42,7 @@ ActionOutcome Module::executeAction(
 
     try {
         // Execute action
-        auto outcome = callAction(action_name, parsed_chunks);
+        auto outcome = callAction(request);
 
         // Validate action output
         LOG_DEBUG("Validating the result output for '%1% %2%'",

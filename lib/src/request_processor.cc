@@ -66,8 +66,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     ActionOutcome outcome {};
 
     try {
-        outcome = module_ptr->executeAction(request.action(),
-                                            request.parsedChunks());
+        outcome = module_ptr->executeAction(request);
 
         if (request.parsedChunks().data.get<bool>("notify_outcome")) {
             // Send back results
@@ -169,7 +168,7 @@ RequestProcessor::RequestProcessor(
 void RequestProcessor::processBlockingRequest(std::shared_ptr<Module> module_ptr,
                                               const ActionRequest& request) {
     // Execute action; possible request errors will be propagated
-    auto outcome = module_ptr->executeAction(request.action(), request.parsedChunks());
+    auto outcome = module_ptr->executeAction(request);
 
     // Send back response
     auto debug = wrapDebug(request.parsedChunks());
@@ -211,7 +210,7 @@ void RequestProcessor::processNonBlockingRequest(std::shared_ptr<Module> module_
 
     // Spawn action task
     LOG_DEBUG("Starting '%1% %2%' job with ID %3% for non-blocking request %4% "
-              "by %5%, transaction %6%",request.module(), request.action(),
+              "by %5%, transaction %6%", request.module(), request.action(),
               job_id, request.id(), request.sender(), request.transactionId());
     std::string err_msg {};
 

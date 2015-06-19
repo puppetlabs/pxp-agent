@@ -77,7 +77,9 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
         ExternalModule reverse_module { ROOT_PATH + "/modules/reverse" };
 
         SECTION("correctly call the shipped reverse module") {
-            auto outcome = reverse_module.executeAction(STRING_ACTION, content);
+            ActionRequest request { RequestType::Blocking, content };
+            auto outcome = reverse_module.executeAction(request);
+
             REQUIRE(outcome.stdout.find("anodaram") != std::string::npos);
         }
 
@@ -90,8 +92,9 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
                     CthunClient::DataContainer(bad_reverse_txt),
                     no_debug,
                     0 };
+            ActionRequest request { RequestType::Blocking, bad_content };
 
-            REQUIRE_THROWS_AS(reverse_module.executeAction(STRING_ACTION, bad_content),
+            REQUIRE_THROWS_AS(reverse_module.executeAction(request),
                               request_validation_error);
         }
     }
@@ -110,9 +113,9 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
                     CthunClient::DataContainer(failure_txt),
                     no_debug,
                     0 };
+            ActionRequest request { RequestType::Blocking, failure_content };
 
-            REQUIRE_THROWS_AS(test_reverse_module.executeAction(
-                                    "get_an_invalid_result", failure_content),
+            REQUIRE_THROWS_AS(test_reverse_module.executeAction(request),
                               request_processing_error);
         }
 
@@ -126,9 +129,9 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
                     CthunClient::DataContainer(failure_txt),
                     no_debug,
                     0 };
+            ActionRequest request { RequestType::Blocking, failure_content };
 
-            REQUIRE_THROWS_AS(test_reverse_module.executeAction("broken_action",
-                                                                failure_content),
+            REQUIRE_THROWS_AS(test_reverse_module.executeAction(request),
                               request_processing_error);
         }
     }

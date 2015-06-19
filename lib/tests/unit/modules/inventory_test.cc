@@ -33,6 +33,7 @@ static const CthunClient::ParsedChunks parsed_chunks {
 
 TEST_CASE("Modules::Inventory::callAction", "[modules]") {
     Modules::Inventory inventory_module {};
+    ActionRequest request { RequestType::Blocking, parsed_chunks };
 
     SECTION("the inventory module is correctly named") {
         REQUIRE(inventory_module.module_name == "inventory");
@@ -46,13 +47,11 @@ TEST_CASE("Modules::Inventory::callAction", "[modules]") {
     }
 
     SECTION("it can call the inventory action") {
-        REQUIRE_NOTHROW(inventory_module.executeAction(inventory_action,
-                                                       parsed_chunks));
+        REQUIRE_NOTHROW(inventory_module.executeAction(request));
     }
 
     SECTION("it should execute the inventory action correctly") {
-        auto outcome = inventory_module.executeAction(inventory_action,
-                                                      parsed_chunks);
+        auto outcome = inventory_module.executeAction(request);
         CHECK(outcome.results.toString().find("facts") != std::string::npos);
     }
 }

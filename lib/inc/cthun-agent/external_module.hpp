@@ -43,8 +43,7 @@ class ExternalModule : public Module {
 
     void registerAction(const CthunClient::DataContainer& action);
 
-    ActionOutcome callAction(const std::string& action_name,
-                             const CthunClient::ParsedChunks& parsed_chunks);
+    ActionOutcome callAction(const ActionRequest& reqeust);
 };
 
 }  // namespace CthunAgent

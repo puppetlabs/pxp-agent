@@ -160,18 +160,15 @@ void ExternalModule::registerAction(const CthunClient::DataContainer& action) {
     }
 }
 
-ActionOutcome ExternalModule::callAction(
-                                const std::string& action_name,
-                                const CthunClient::ParsedChunks& parsed_chunks) {
+ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     std::string stdout {};
     std::string stderr {};
-    auto request_input_txt =
-        parsed_chunks.data.get<CthunClient::DataContainer>("params").toString();
+    auto& action_name = request.action();
 
     LOG_INFO("About to execute '%1% %2%' - request input: %3%",
-             module_name, action_name, request_input_txt);
+             module_name, action_name, request.paramsTxt());
 
-    runCommand(path_, { path_, action_name }, request_input_txt, stdout, stderr);
+    runCommand(path_, { path_, action_name }, request.paramsTxt(), stdout, stderr);
 
     if (stdout.empty()) {
         LOG_DEBUG("'%1% %2%' produced no output", module_name, action_name);

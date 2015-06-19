@@ -23,12 +23,9 @@ Status::Status() {
     output_validator_.registerSchema(output_schema);
 }
 
-ActionOutcome Status::callAction(const std::string& action_name,
-                                 const CthunClient::ParsedChunks& parsed_chunks) {
+ActionOutcome Status::callAction(const ActionRequest& request) {
     CthunClient::DataContainer results {};
-    auto request_input = parsed_chunks.data
-                                      .get<CthunClient::DataContainer>("params");
-    auto job_id = request_input.get<std::string>("job_id");
+    auto job_id = request.params().get<std::string>("job_id");
     auto spool_dir = Configuration::Instance().get<std::string>("spool-dir");
 
     if (!FileUtils::fileExists(spool_dir + job_id)) {

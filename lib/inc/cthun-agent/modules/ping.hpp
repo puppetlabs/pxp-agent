@@ -14,11 +14,10 @@ class Ping : public CthunAgent::Module {
     /// Ping calculates the time it took for a message to travel from
     /// the controller to the agent. It will then add that duration
     /// and the current server time in milliseconds to the response.
-    CthunClient::DataContainer ping(const CthunClient::ParsedChunks& request);
+    CthunClient::DataContainer ping(const ActionRequest& request);
 
   private:
-    ActionOutcome callAction(const std::string& action_name,
-                             const CthunClient::ParsedChunks& parsed_chunks);
+    ActionOutcome callAction(const ActionRequest& request);
 };
 
 }  // namespace Modules
