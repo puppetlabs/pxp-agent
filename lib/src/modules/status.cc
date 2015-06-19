@@ -32,6 +32,8 @@ ActionOutcome Status::callAction(const std::string& action_name,
     auto spool_dir = Configuration::Instance().get<std::string>("spool-dir");
 
     if (!FileUtils::fileExists(spool_dir + job_id)) {
+        // TODO(ale): return "unknown" in this case; see RPC specs
+
         LOG_ERROR("Found no results for job id %1%", job_id);
         results.set<std::string>("error", "No job exists for id: " + job_id);
         return results;
