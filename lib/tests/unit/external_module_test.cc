@@ -5,7 +5,6 @@
 #include <cthun-agent/external_module.hpp>
 #include <cthun-agent/uuid.hpp>
 #include <cthun-agent/file_utils.hpp>
-#include <cthun-agent/timer.hpp>
 
 #include <cthun-client/data_container/data_container.hpp>
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
@@ -131,19 +130,6 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             REQUIRE_THROWS_AS(test_reverse_module.executeAction("broken_action",
                                                                 failure_content),
                               request_processing_error);
-        }
-    }
-}
-
-void waitForAction(const std::string& action_dir) {
-    Timer timer {};
-    while (timer.elapsedSeconds() < 2) {  // [s]
-        usleep(10000);  // [us]
-        if (FileUtils::fileExists(action_dir + "/status")) {
-            auto status = FileUtils::readFileAsString(action_dir + "/status");
-            if (status.find("completed") != std::string::npos) {
-                return;
-            }
         }
     }
 }
