@@ -17,8 +17,6 @@ static std::map<RequestType, std::string> requestTypeNames {
 
 class ActionRequest {
   public:
-    ActionRequest();
-
     /// Throw a request_format_error in case is not possible to
     /// retrieve the data chunk.
     ActionRequest(RequestType type_,
@@ -35,7 +33,7 @@ class ActionRequest {
     const bool& notifyOutcome() const;
     const CthunClient::ParsedChunks& parsedChunks() const;
 
-    // Perform lazy initialization
+    // The following accessors perform lazy initialization
     const CthunClient::DataContainer& params() const;
     const std::string& paramsTxt() const;
 
@@ -53,8 +51,7 @@ class ActionRequest {
     mutable CthunClient::DataContainer params_;
     mutable std::string params_txt_;
 
-    void
-    init();
+    void init();
     void validateFormat();
 };
 

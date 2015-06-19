@@ -8,9 +8,6 @@
 
 namespace CthunAgent {
 
-ActionRequest::ActionRequest() {
-}
-
 ActionRequest::ActionRequest(RequestType type,
                              const CthunClient::ParsedChunks& parsed_chunks)
         : type_ { type },

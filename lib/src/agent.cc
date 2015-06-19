@@ -170,11 +170,12 @@ void Agent::nonBlockingRequestCallback(
 void Agent::validateAndProcessRequest(
                 const RequestType& request_type,
                 const CthunClient::ParsedChunks& parsed_chunks) {
-    ActionRequest request {};
+    std::unique_ptr<ActionRequest> request_ptr;
 
     try {
         // Inspect and validate the request message format
-        request = ActionRequest { request_type, parsed_chunks };
+        request_ptr = std::unique_ptr<ActionRequest>(
+            new ActionRequest { request_type, parsed_chunks });
     } catch (request_format_error& e) {
         // Bad message; send a *Cthun core error*
 
@@ -200,37 +201,39 @@ void Agent::validateAndProcessRequest(
     }
 
     LOG_INFO("About to process %1% request %2% by %3%, transaction %4%",
-             requestTypeNames[request_type], request.id(), request.sender(),
-             request.transactionId());
+             requestTypeNames[request_type], request_ptr->id(),
+             request_ptr->sender(), request_ptr->transactionId());
 
     try {
         // Validate the data content and process the request
-        validateRequestContent(request);
-        processRequest(request);
+        validateRequestContent(*request_ptr);
+        processRequest(*request_ptr);
     } catch (request_error& e) {
         // Invalid request or process failure; send an *RPC error*
 
         LOG_ERROR("Failed to process %1% request %2% by %3%, transaction %4%: "
-                  "%5%", requestTypeNames[request_type], request.id(),
-                  request.sender(), request.transactionId(), e.what());
+                  "%5%", requestTypeNames[request_type], request_ptr->id(),
+                  request_ptr->sender(), request_ptr->transactionId(), e.what());
         CthunClient::DataContainer rpc_error_data {};
-        rpc_error_data.set<std::string>("transaction_id", request.transactionId());
-        rpc_error_data.set<std::string>("id", request.id());
+        rpc_error_data.set<std::string>("transaction_id",
+                                        request_ptr->transactionId());
+        rpc_error_data.set<std::string>("id", request_ptr->id());
         rpc_error_data.set<std::string>("description", e.what());
 
         try {
-            connector_ptr_->send(std::vector<std::string> { request.sender() },
+            connector_ptr_->send(std::vector<std::string> { request_ptr->sender() },
                                  RPCSchemas::RPC_ERROR_MSG_TYPE,
                                  DEFAULT_MSG_TIMEOUT_SEC,
                                  rpc_error_data);
             LOG_INFO("Replied to %1% request %2% by %3%, transaction %4%, with "
                      "an RPC error message", requestTypeNames[request_type],
-                     request.id(), request.sender(), request.transactionId());
+                     request_ptr->id(), request_ptr->sender(),
+                     request_ptr->transactionId());
         } catch (CthunClient::connection_error& e) {
             LOG_ERROR("Failed to send RPC error message for request %1% by "
                       "%2%, transaction %3% (no further attempts): %4%",
-                      request.id(), request.sender(), request.transactionId(),
-                      e.what());
+                      request_ptr->id(), request_ptr->sender(),
+                      request_ptr->transactionId(), e.what());
         }
     }
 }
