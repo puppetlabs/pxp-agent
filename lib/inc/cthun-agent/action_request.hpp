@@ -25,15 +25,12 @@ class ActionRequest {
     ActionRequest(RequestType type_,
                   CthunClient::ParsedChunks&& parsed_chunks_);
 
-    void setJobId(const std::string& job_id);
-
     const RequestType& type() const;
     const std::string& id() const;
     const std::string& sender() const;
     const std::string& transactionId() const;
     const std::string& module() const;
     const std::string& action() const;
-    const std::string& jobId() const;
     const CthunClient::ParsedChunks& parsedChunks() const;
 
   private:
@@ -43,7 +40,6 @@ class ActionRequest {
     std::string transaction_id_;
     std::string module_;
     std::string action_;
-    std::string job_id_;
     CthunClient::ParsedChunks parsed_chunks_;
 
     void
