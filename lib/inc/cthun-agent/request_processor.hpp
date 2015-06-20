@@ -8,6 +8,8 @@
 
 #include <cthun-client/data_container/data_container.hpp>
 
+#include <boost/filesystem/path.hpp>
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,7 +20,8 @@ class RequestProcessor {
   public:
     RequestProcessor() = delete;
 
-    explicit RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr);
+    RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
+                     const std::string& modules_dir );
 
     /// Execute the specified action.
     ///
@@ -36,8 +39,8 @@ class RequestProcessor {
     /// containing the action outcome, after the action is done. The
     /// task will also write the action outcome and request metadata
     /// to disk.
-    void processRequest(std::shared_ptr<Module> module_ptr,
-                        const ActionRequest& request);
+    void processRequest(const RequestType& request_type,
+                        const CthunClient::ParsedChunks& parsed_chunks);
 
   private:
     /// Manages the lifecycle of non-blocking action jobs
@@ -50,12 +53,23 @@ class RequestProcessor {
     /// be created
     const std::string spool_dir_;
 
-    void processBlockingRequest(std::shared_ptr<Module> module_ptr,
-                                const ActionRequest& request);
+    // Modules
+    std::map<std::string, std::shared_ptr<Module>> modules_;
 
-    void processNonBlockingRequest(std::shared_ptr<Module> module_ptr,
-                                   const ActionRequest& request);
+    void validateRequestContent(const ActionRequest& request);
 
+    void processBlockingRequest(const ActionRequest& request);
+
+    void processNonBlockingRequest(const ActionRequest& request);
+
+    /// Load the modules from the src/modules directory
+    void loadInternalModules();
+
+    /// Load the external modules contained in the specified directory
+    void loadExternalModulesFrom(boost::filesystem::path modules_dir_path);
+
+    /// Log the loaded modules
+    void logLoadedModules() const;
 };
 
 }  // namespace CthunAgent

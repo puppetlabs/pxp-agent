@@ -2,20 +2,28 @@
 #include <cthun-agent/action_outcome.hpp>
 #include <cthun-agent/configuration.hpp>
 #include <cthun-agent/file_utils.hpp>
+#include <cthun-agent/string_utils.hpp>
 #include <cthun-agent/rpc_schemas.hpp>
 #include <cthun-agent/timer.hpp>
 #include <cthun-agent/uuid.hpp>
-
-#include <boost/filesystem.hpp>
+#include <cthun-agent/external_module.hpp>
+#include <cthun-agent/modules/echo.hpp>
+#include <cthun-agent/modules/inventory.hpp>
+#include <cthun-agent/modules/ping.hpp>
+#include <cthun-agent/modules/status.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.action_executer"
 #include <leatherman/logging/logging.hpp>
+
+#include <boost/filesystem/operations.hpp>
 
 #include <vector>
 #include <atomic>
 #include <functional>
 
 namespace CthunAgent {
+
+namespace fs = boost::filesystem;
 
 //
 // Results Storage
@@ -121,33 +129,76 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 // Public interface
 //
 
-RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr)
+RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
+                                   const std::string& modules_dir)
         : thread_container_ { "Action Executer" },
           connector_ptr_ { connector_ptr },
           spool_dir_ { Configuration::Instance().get<std::string>("spool-dir") } {
-    if (!boost::filesystem::exists(spool_dir_)) {
+    if (!fs::exists(spool_dir_)) {
         LOG_INFO("Creating spool directory '%1%'", spool_dir_);
         if (!FileUtils::createDirectory(spool_dir_)) {
             throw fatal_error { "failed to create the results directory '"
                                 + spool_dir_ + "'" };
         }
     }
+
+    // NB: certificate paths are validated by HW
+    loadInternalModules();
+
+    if (!modules_dir.empty()) {
+        loadExternalModulesFrom(modules_dir);
+    } else {
+        LOG_INFO("The modules directory was not provided; no external module "
+                 "will be loaded");
+    }
+
+    logLoadedModules();
 }
 
-void RequestProcessor::processRequest(std::shared_ptr<Module> module_ptr,
-                                      const ActionRequest& request) {
+void RequestProcessor::processRequest(const RequestType& request_type,
+                                      const CthunClient::ParsedChunks& parsed_chunks) {
     try {
-        if (request.type() == RequestType::Blocking) {
-            processBlockingRequest(module_ptr, request);
-        } else {
-            processNonBlockingRequest(module_ptr, request);
+        // Inspect and validate the request message format
+        ActionRequest request { request_type, parsed_chunks };
+
+        LOG_INFO("About to process %1% request %2% by %3%, transaction %4%",
+                 requestTypeNames[request_type], request.id(), request.sender(),
+                 request.transactionId());
+
+        try {
+            // We can access the request content; validate it
+            validateRequestContent(request);
+        } catch (request_validation_error& e) {
+            // Invalid request; send *RPC error*
+
+            LOG_ERROR("Invalid %1% request %2% by %3%, transaction %4%: %5%",
+                      requestTypeNames[request_type], request.id(),
+                      request.sender(), request.transactionId(), e.what());
+            connector_ptr_->sendRPCError(request, e.what());
+            return;
         }
-    } catch (request_error& e) {
-        // Process failure; send an *RPC error*
-        LOG_ERROR("Failed to process %1% request %2% by %3%, transaction %4%: "
-                  "%5%", requestTypeNames[request.type()], request.id(),
-                  request.sender(), request.transactionId(), e.what());
-        connector_ptr_->sendRPCError(request, e.what());
+
+        try {
+            if (request.type() == RequestType::Blocking) {
+                processBlockingRequest(request);
+            } else {
+                processNonBlockingRequest(request);
+            }
+        } catch (request_error& e) {
+            // Process failure; send *RPC error*
+            LOG_ERROR("Failed to process %1% request %2% by %3%, transaction %4%: "
+                      "%5%", requestTypeNames[request.type()], request.id(),
+                      request.sender(), request.transactionId(), e.what());
+            connector_ptr_->sendRPCError(request, e.what());
+        }
+    } catch (request_format_error& e) {
+        // Failed to instantiate ActionRequest - bad message; send *Cthun error*
+
+        auto id = parsed_chunks.envelope.get<std::string>("id");
+        auto sender = parsed_chunks.envelope.get<std::string>("sender");
+        std::vector<std::string> endpoints { sender };
+        LOG_ERROR("Invalid %1% request by %2%: %3%", id, sender, e.what());
+        connector_ptr_->sendCthunError(id, e.what(), endpoints);
     }
 }
 
@@ -155,22 +206,31 @@ void RequestProcessor::processRequest(std::shared_ptr<Module> module_ptr,
 // Private interface
 //
 
-void RequestProcessor::processBlockingRequest(std::shared_ptr<Module> module_ptr,
-                                              const ActionRequest& request) {
+void RequestProcessor::validateRequestContent(const ActionRequest& request) {
+    try {
+        if (!modules_.at(request.module())->hasAction(request.action())) {
+            throw request_validation_error { "unknown action '" + request.action()
+                                             + "' for module " + request.module() };
+        }
+    } catch (std::out_of_range& e) {
+        throw request_validation_error { "unknown module: " + request.module() };
+    }
+}
+
+void RequestProcessor::processBlockingRequest(const ActionRequest& request) {
     // Execute action; possible request errors will be propagated
-    auto outcome = module_ptr->executeAction(request);
+    auto outcome = modules_[request.module()]->executeAction(request);
 
     connector_ptr_->sendBlockingResponse(request, outcome.results);
 }
 
-void RequestProcessor::processNonBlockingRequest(std::shared_ptr<Module> module_ptr,
-                                                 const ActionRequest& request) {
+void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
     auto job_id = UUID::getUUID();
 
     // HERE(ale): assuming spool_dir ends with '/' (up to Configuration)
     std::string results_dir { spool_dir_ + job_id };
 
-    if (!boost::filesystem::exists(results_dir)) {
+    if (!fs::exists(results_dir)) {
         LOG_DEBUG("Creating results directory for the '%1% %2%' job with ID %3% "
                   "for request transaction %4%", request.module(),
                   request.action(), job_id, request.transactionId());
@@ -180,10 +240,11 @@ void RequestProcessor::processNonBlockingRequest(std::shared_ptr<Module> module_
         }
     }
 
-    // Spawn action task
     LOG_DEBUG("Starting '%1% %2%' job with ID %3% for non-blocking request %4% "
               "by %5%, transaction %6%", request.module(), request.action(),
               job_id, request.id(), request.sender(), request.transactionId());
+
+    // Keep track of errors to write on file
     std::string err_msg {};
 
     try {
@@ -191,7 +252,7 @@ void RequestProcessor::processNonBlockingRequest(std::shared_ptr<Module> module_
         auto done = std::make_shared<std::atomic<bool>>(false);
 
         thread_container_.add(std::thread(&nonBlockingActionTask,
-                                          module_ptr,
+                                          modules_[request.module()],
                                           request,
                                           job_id,
                                           ResultsStorage { request, results_dir },
@@ -200,8 +261,8 @@ void RequestProcessor::processNonBlockingRequest(std::shared_ptr<Module> module_
                               done);
     } catch (file_error& e) {
         // Failed to instantiate ResultsStorage
-        LOG_ERROR("Failed to initialize result files for  '%1% %2%' action job "
-                  "with ID %3%: %4%", request.module(), request.action(),
+        LOG_ERROR("Failed to initialize the result files for '%1% %2%' action "
+                  "job with ID %3%: %4%", request.module(), request.action(),
                   job_id, e.what());
         err_msg = std::string { "failed to initialize result files: " } + e.what();
     } catch (std::exception& e) {
@@ -212,6 +273,63 @@ void RequestProcessor::processNonBlockingRequest(std::shared_ptr<Module> module_
 
     // Send back provisional data
     connector_ptr_->sendProvisionalResponse(request, job_id, err_msg);
+}
+
+void RequestProcessor::loadInternalModules() {
+    modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
+    modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
+    modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
+    modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
+}
+
+void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
+    LOG_INFO("Loading external modules from %1%", dir_path.string());
+
+    if (fs::is_directory(dir_path)) {
+        fs::directory_iterator end;
+
+        for (auto f = fs::directory_iterator(dir_path); f != end; ++f) {
+            if (!fs::is_directory(f->status())) {
+                auto f_p = f->path().string();
+
+                try {
+                    ExternalModule* e_m = new ExternalModule(f_p);
+                    modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
+                } catch (module_error& e) {
+                    LOG_ERROR("Failed to load %1%; %2%", f_p, e.what());
+                } catch (std::exception& e) {
+                    LOG_ERROR("Unexpected error when loading %1%; %2%",
+                              f_p, e.what());
+                } catch (...) {
+                    LOG_ERROR("Unexpected error when loading %1%", f_p);
+                }
+            }
+        }
+    } else {
+        LOG_WARNING("Failed to locate the modules directory; no external "
+                    "module will be loaded");
+    }
+}
+
+void RequestProcessor::logLoadedModules() const {
+    for (auto& module : modules_) {
+        std::string txt { "found no action" };
+        std::string actions_list { "" };
+
+        for (auto& action : module.second->actions) {
+            if (actions_list.empty()) {
+                txt = "action";
+                actions_list += ": ";
+            } else {
+                actions_list += ", ";
+            }
+            actions_list += action;
+        }
+
+        auto txt_suffix = StringUtils::plural(module.second->actions.size());
+        LOG_INFO("Loaded '%1%' module - %2%%3%%4%",
+                 module.first, txt, txt_suffix, actions_list);
+    }
 }
 
 }  // namespace CthunAgent
