@@ -20,6 +20,7 @@
 #include <vector>
 #include <atomic>
 #include <functional>
+#include <stdexcept>  // out_of_range
 
 namespace CthunAgent {
 
@@ -33,14 +34,14 @@ class ResultsStorage {
   public:
     // Throw a file_error in case of failure while writing to any of
     // result files
-    ResultsStorage(const ActionRequest& request, const std::string results_dir_)
+    ResultsStorage(const ActionRequest& request, const std::string& results_dir)
             : module { request.module() },
               action { request.action() },
-              out_path { results_dir_ + "/stdout" },
-              err_path { results_dir_ + "/stderr" },
-              status_path { results_dir_ + "/status" },
+              out_path { results_dir + "/stdout" },
+              err_path { results_dir + "/stderr" },
+              status_path { results_dir + "/status" },
               action_status {} {
-        initialize(request);
+        initialize(request, results_dir);
     }
 
     void write(const ActionOutcome& outcome, const std::string& exec_error,
@@ -60,9 +61,7 @@ class ResultsStorage {
                 FileUtils::writeToFile(outcome.results.toString() + "\n", out_path);
             }
         } else {
-            std::string err_msg { "Failed to execute '" + module + " " + action
-                                  + "': " + exec_error + "\n" };
-            FileUtils::writeToFile(err_msg, err_path);
+            FileUtils::writeToFile(exec_error, err_path);
         }
     }
 
@@ -74,7 +73,17 @@ class ResultsStorage {
     std::string status_path;
     CthunClient::DataContainer action_status;
 
-    void initialize(const ActionRequest& request) {
+    void initialize(const ActionRequest& request, const std::string results_dir) {
+        if (!fs::exists(results_dir)) {
+            LOG_DEBUG("Creating results directory for '%1% %2%', transaction "
+                       "%3%, in '%4%'", request.module(), request.action(),
+                       request.transactionId(), results_dir);
+            if (!FileUtils::createDirectory(results_dir)) {
+                throw file_error { "failed to create directory '"
+                                   + results_dir + "'" };
+            }
+        }
+
         action_status.set<std::string>("module", module);
         action_status.set<std::string>("action", action);
         action_status.set<std::string>("status", "running");
@@ -113,8 +122,9 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
             connector_ptr->sendNonBlockingResponse(request, outcome.results, job_id);
         }
     } catch (request_error& e) {
-        exec_error = e.what();
-        connector_ptr->sendRPCError(request, exec_error);
+        connector_ptr->sendRPCError(request, e.what());
+        exec_error = "Failed to execute '" + request.module() + " "
+                     + request.action() + "': " + e.what() + "\n";
     }
 
     // Store results on disk
@@ -230,21 +240,11 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
     // HERE(ale): assuming spool_dir ends with '/' (up to Configuration)
     std::string results_dir { spool_dir_ + job_id };
 
-    if (!fs::exists(results_dir)) {
-        LOG_DEBUG("Creating results directory for the '%1% %2%' job with ID %3% "
-                  "for request transaction %4%", request.module(),
-                  request.action(), job_id, request.transactionId());
-        if (!FileUtils::createDirectory(results_dir)) {
-            throw request_processing_error { "failed to create directory '"
-                                             + results_dir + "'" };
-        }
-    }
-
     LOG_DEBUG("Starting '%1% %2%' job with ID %3% for non-blocking request %4% "
               "by %5%, transaction %6%", request.module(), request.action(),
               job_id, request.id(), request.sender(), request.transactionId());
 
-    // Keep track of errors to write on file
+    // To keep track of errors and write them on file
     std::string err_msg {};
 
     try {
