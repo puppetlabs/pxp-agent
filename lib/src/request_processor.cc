@@ -7,6 +7,8 @@
 #include <cthun-agent/timer.hpp>
 #include <cthun-agent/uuid.hpp>
 
+#include <cthun-client/protocol/schemas.hpp>
+
 #include <boost/filesystem.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.action_executer"
@@ -14,6 +16,7 @@
 
 #include <vector>
 #include <atomic>
+#include <functional>
 
 namespace CthunAgent {
 
@@ -34,7 +37,9 @@ std::vector<CthunClient::DataContainer> wrapDebug(
     return debug;
 }
 
+//
 // Results Storage
+//
 
 class ResultsStorage {
   public:
@@ -99,13 +104,15 @@ class ResultsStorage {
     }
 };
 
-// Action task
+//
+// Non-blocking action task
+//
 
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
-                           ActionRequest request,
+                           ActionRequest&& request,
                            std::string job_id,
                            ResultsStorage results_storage,
-                           std::shared_ptr<CthunClient::Connector> connector_ptr,
+                           RequestProcessor& request_processor,
                            std::shared_ptr<std::atomic<bool>> done) {
     CthunAgent::Timer timer {};
     std::string exec_error {};
@@ -115,53 +122,13 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
         outcome = module_ptr->executeAction(request);
 
         if (request.parsedChunks().data.get<bool>("notify_outcome")) {
-            // Send back results
-            CthunClient::DataContainer response_data {};
-            response_data.set<std::string>("transaction_id",
-                                           request.transactionId());
-            response_data.set<std::string>("job_id", job_id);
-            response_data.set<CthunClient::DataContainer>("results",
-                                                          outcome.results);
-
-            try {
-                // NOTE(ale): debug was sent in provisional response
-                connector_ptr->send(std::vector<std::string> { request.sender() },
-                                    RPCSchemas::NON_BLOCKING_RESPONSE_TYPE,
-                                    DEFAULT_MSG_TIMEOUT_SEC,
-                                    response_data);
-                LOG_INFO("Sent response for non-blocking request %1% by %2%, "
-                         "transaction %3%", request.id(), request.sender(),
-                         request.transactionId());
-            } catch (CthunClient::connection_error& e) {
-                LOG_ERROR("Failed to reply to non-blocking request %1% by %2%, "
-                          "transaction %3% (no further attempts): %4%",
-                          request.id(), request.sender(), request.transactionId(),
-                          e.what());
-            }
+            request_processor.replyNonBlockingResponse(request,
+                                                       outcome.results,
+                                                       job_id);
         }
     } catch (request_error& e) {
         exec_error = e.what();
-
-        // Send back an RPC error message
-        CthunClient::DataContainer rpc_error_data {};
-        rpc_error_data.set<std::string>("transaction_id", request.transactionId());
-        rpc_error_data.set<std::string>("id", request.id());
-        rpc_error_data.set<std::string>("description", e.what());
-
-        try {
-            connector_ptr->send(std::vector<std::string> { request.sender() },
-                                RPCSchemas::RPC_ERROR_MSG_TYPE,
-                                DEFAULT_MSG_TIMEOUT_SEC,
-                                rpc_error_data);
-            LOG_INFO("Replied to non-blocking request %1% by %2%, transaction "
-                     "%3%, job ID %4%, with an RPC error message", request.id(),
-                     request.sender(), request.transactionId(), job_id);
-        } catch (CthunClient::connection_error& e) {
-            LOG_ERROR("Failed to send RPC error message for non-blocking request "
-                      "%1% by %2%, transaction %3%, job ID %4% (no further "
-                      "attempts): %5%", request.id(), request.sender(),
-                      request.transactionId(), job_id, e.what());
-        }
+        request_processor.replyRPCError(request, exec_error);
     }
 
     // Store results on disk
@@ -190,16 +157,56 @@ RequestProcessor::RequestProcessor(
     }
 }
 
-void RequestProcessor::processBlockingRequest(std::shared_ptr<Module> module_ptr,
-                                              const ActionRequest& request) {
-    // Execute action; possible request errors will be propagated
-    auto outcome = module_ptr->executeAction(request);
+void RequestProcessor::replyCthunError(const std::string& request_id,
+                                       const std::string& description,
+                                       const std::vector<std::string>& endpoints) {
+    CthunClient::DataContainer cthun_error_data {};
+    cthun_error_data.set<std::string>("id", request_id);
+    cthun_error_data.set<std::string>("description", description);
 
-    // Send back response
+    try {
+        connector_ptr_->send(endpoints,
+                             CthunClient::Protocol::ERROR_MSG_TYPE,
+                             DEFAULT_MSG_TIMEOUT_SEC,
+                             cthun_error_data);
+        LOG_INFO("Replied to request %1% with a Cthun core error message",
+                 request_id);
+    } catch (CthunClient::connection_error& e) {
+        LOG_ERROR("Failed to send Cthun core error message for request %1%: %3%",
+                  request_id, e.what());
+    }
+}
+
+void RequestProcessor::replyRPCError(const ActionRequest& request,
+                                     const std::string& description) {
+    CthunClient::DataContainer rpc_error_data {};
+    rpc_error_data.set<std::string>("transaction_id", request.transactionId());
+    rpc_error_data.set<std::string>("id", request.id());
+    rpc_error_data.set<std::string>("description", description);
+
+    try {
+        connector_ptr_->send(std::vector<std::string> { request.sender() },
+                             RPCSchemas::RPC_ERROR_MSG_TYPE,
+                             DEFAULT_MSG_TIMEOUT_SEC,
+                             rpc_error_data);
+        LOG_INFO("Replied to %1% request %2% by %3%, transaction %4%, with "
+                 "an RPC error message", requestTypeNames[request.type()],
+                 request.id(), request.sender(), request.transactionId());
+    } catch (CthunClient::connection_error& e) {
+        LOG_ERROR("Failed to send RPC error message for %1% request %2% by "
+                  "%3%, transaction %4% (no further sending attempts): %5%",
+                  requestTypeNames[request.type()], request.id(),
+                  request.sender(), request.transactionId(), description);
+    }
+}
+
+void RequestProcessor::replyBlockingResponse(
+                            const ActionRequest& request,
+                            const CthunClient::DataContainer& results) {
     auto debug = wrapDebug(request.parsedChunks());
     CthunClient::DataContainer response_data {};
     response_data.set<std::string>("transaction_id", request.transactionId());
-    response_data.set<CthunClient::DataContainer>("results", outcome.results);
+    response_data.set<CthunClient::DataContainer>("results", results);
 
     try {
         connector_ptr_->send(std::vector<std::string> { request.sender() },
@@ -208,12 +215,93 @@ void RequestProcessor::processBlockingRequest(std::shared_ptr<Module> module_ptr
                              response_data,
                              debug);
     } catch (CthunClient::connection_error& e) {
-        // We failed to send the response; it's up to the requester to
-        // request the action again
         LOG_ERROR("Failed to reply to blocking request %1% from %2%, "
                   "transaction %3%: %4%", request.id(), request.sender(),
                   request.transactionId(), e.what());
     }
+}
+
+void RequestProcessor::replyNonBlockingResponse(
+                            const ActionRequest& request,
+                            const CthunClient::DataContainer& results,
+                            const std::string& job_id) {
+    CthunClient::DataContainer response_data {};
+    response_data.set<std::string>("transaction_id", request.transactionId());
+    response_data.set<std::string>("job_id", job_id);
+    response_data.set<CthunClient::DataContainer>("results", results);
+
+    try {
+        // NOTE(ale): assuming debug was sent in provisional response
+        connector_ptr_->send(std::vector<std::string> { request.sender() },
+                            RPCSchemas::NON_BLOCKING_RESPONSE_TYPE,
+                            DEFAULT_MSG_TIMEOUT_SEC,
+                            response_data);
+        LOG_INFO("Sent response for non-blocking request %1% by %2%, "
+                 "transaction %3%", request.id(), request.sender(),
+                 request.transactionId());
+    } catch (CthunClient::connection_error& e) {
+        LOG_ERROR("Failed to reply to non-blocking request %1% by %2%, "
+                  "transaction %3% (no further attempts): %4%",
+                  request.id(), request.sender(), request.transactionId(),
+                  e.what());
+    }
+}
+
+void RequestProcessor::replyProvisionalResponse(const ActionRequest& request,
+                                                const std::string& job_id,
+                                                const std::string& error) {
+    auto debug = wrapDebug(request.parsedChunks());
+    CthunClient::DataContainer provisional_data {};
+    provisional_data.set<std::string>("transaction_id", request.transactionId());
+    provisional_data.set<bool>("success", error.empty());
+    provisional_data.set<std::string>("job_id", job_id);
+    if (!error.empty()) {
+        provisional_data.set<std::string>("error", error);
+    }
+
+    try {
+        connector_ptr_->send(std::vector<std::string> { request.sender() },
+                             RPCSchemas::PROVISIONAL_RESPONSE_TYPE,
+                             DEFAULT_MSG_TIMEOUT_SEC,
+                             provisional_data,
+                             debug);
+        LOG_INFO("Sent provisional response for request %1% by %2%, "
+                 "transaction %3%", request.id(), request.sender(),
+                 request.transactionId());
+    } catch (CthunClient::connection_error& e) {
+        LOG_ERROR("Failed to send provisional response for request %1% by "
+                  "%2%, transaction %3% (no further attempts): %4%",
+                  request.id(), request.sender(), request.transactionId(), e.what());
+    }
+}
+
+void RequestProcessor::processRequest(std::shared_ptr<Module> module_ptr,
+                                      const ActionRequest& request) {
+    try {
+        if (request.type() == RequestType::Blocking) {
+            processBlockingRequest(module_ptr, request);
+        } else {
+            processNonBlockingRequest(module_ptr, request);
+        }
+    } catch (request_error& e) {
+        // Process failure; send an *RPC error*
+        LOG_ERROR("Failed to process %1% request %2% by %3%, transaction %4%: "
+                  "%5%", requestTypeNames[request.type()], request.id(),
+                  request.sender(), request.transactionId(), e.what());
+        replyRPCError(request, e.what());
+    }
+}
+
+//
+// Private interface
+//
+
+void RequestProcessor::processBlockingRequest(std::shared_ptr<Module> module_ptr,
+                                              const ActionRequest& request) {
+    // Execute action; possible request errors will be propagated
+    auto outcome = module_ptr->executeAction(request);
+
+    replyBlockingResponse(request, outcome.results);
 }
 
 void RequestProcessor::processNonBlockingRequest(std::shared_ptr<Module> module_ptr,
@@ -248,7 +336,7 @@ void RequestProcessor::processNonBlockingRequest(std::shared_ptr<Module> module_
                                           request,
                                           job_id,
                                           ResultsStorage { request, results_dir },
-                                          connector_ptr_,
+                                          std::ref(*this),
                                           done),
                               done);
     } catch (file_error& e) {
@@ -264,29 +352,7 @@ void RequestProcessor::processNonBlockingRequest(std::shared_ptr<Module> module_
     }
 
     // Send back provisional data
-    auto debug = wrapDebug(request.parsedChunks());
-    CthunClient::DataContainer provisional_data {};
-    provisional_data.set<std::string>("transaction_id", request.transactionId());
-    provisional_data.set<bool>("success", err_msg.empty());
-    provisional_data.set<std::string>("job_id", job_id);
-    if (!err_msg.empty()) {
-        provisional_data.set<std::string>("error", err_msg);
-    }
-
-    try {
-        connector_ptr_->send(std::vector<std::string> { request.sender() },
-                             RPCSchemas::PROVISIONAL_RESPONSE_TYPE,
-                             DEFAULT_MSG_TIMEOUT_SEC,
-                             provisional_data,
-                             debug);
-        LOG_INFO("Sent provisional response for request %1% by %2%, "
-                 "transaction %3%", request.id(), request.sender(),
-                 request.transactionId());
-    } catch (CthunClient::connection_error& e) {
-        LOG_ERROR("Failed to send provisional response for request %1% by "
-                  "%2%, transaction %3% (no further attempts): %4%",
-                  request.id(), request.sender(), request.transactionId(), e.what());
-    }
+    replyProvisionalResponse(request, job_id, err_msg);
 }
 
 }  // namespace CthunAgent

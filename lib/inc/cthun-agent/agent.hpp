@@ -78,8 +78,6 @@ class Agent {
                                    const CthunClient::ParsedChunks& parsed_chunks);
 
     void validateRequestContent(const ActionRequest& request);
-
-    void processRequest(const ActionRequest& request);
 };
 
 }  // namespace CthunAgent

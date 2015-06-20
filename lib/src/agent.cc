@@ -12,7 +12,6 @@
 #include <cthun-client/connector/errors.hpp>
 #include <cthun-client/data_container/data_container.hpp>
 #include <cthun-client/validator/validator.hpp>  // Validator
-#include <cthun-client/protocol/schemas.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.agent"
 #include <leatherman/logging/logging.hpp>
@@ -170,92 +169,48 @@ void Agent::nonBlockingRequestCallback(
 void Agent::validateAndProcessRequest(
                 const RequestType& request_type,
                 const CthunClient::ParsedChunks& parsed_chunks) {
-    std::unique_ptr<ActionRequest> request_ptr;
-
     try {
         // Inspect and validate the request message format
-        request_ptr = std::unique_ptr<ActionRequest>(
-            new ActionRequest { request_type, parsed_chunks });
+        ActionRequest request { request_type, parsed_chunks };
+
+        LOG_INFO("About to process %1% request %2% by %3%, transaction %4%",
+                 requestTypeNames[request_type], request.id(), request.sender(),
+                 request.transactionId());
+
+        try {
+            // We can access the request content; validate it
+            validateRequestContent(request);
+        } catch (request_validation_error& e) {
+            // Invalid request; send an *RPC error*
+
+            LOG_ERROR("Invalid %1% request %2% by %3%, transaction %4%: %5%",
+                      requestTypeNames[request_type], request.id(),
+                      request.sender(), request.transactionId(), e.what());
+            request_processor_.replyRPCError(request, e.what());
+            return;
+        }
+
+        // RequestProcessor deals with possible proccessing errors
+        request_processor_.processRequest(modules_[request.module()], request);
     } catch (request_format_error& e) {
         // Bad message; send a *Cthun core error*
 
         auto id = parsed_chunks.envelope.get<std::string>("id");
         auto sender = parsed_chunks.envelope.get<std::string>("sender");
-
+        std::vector<std::string> endpoints { sender };
         LOG_ERROR("Invalid %1% request by %2%: %3%", id, sender, e.what());
-        CthunClient::DataContainer cthun_error_data {};
-        cthun_error_data.set<std::string>("id", id);
-        cthun_error_data.set<std::string>("description", e.what());
-
-        try {
-            connector_ptr_->send(std::vector<std::string> { sender },
-                                 CthunClient::Protocol::ERROR_MSG_TYPE,
-                                 DEFAULT_MSG_TIMEOUT_SEC,
-                                 cthun_error_data);
-            LOG_INFO("Replied to %1% request %2% by %3% with a Cthun core "
-                     "error message", requestTypeNames[request_type], id, sender);
-        } catch (CthunClient::connection_error& e) {
-            LOG_ERROR("Failed to send Cthun core error message for request %1% "
-                      "by %2%: %3%", id, sender, e.what());
-        }
-    }
-
-    LOG_INFO("About to process %1% request %2% by %3%, transaction %4%",
-             requestTypeNames[request_type], request_ptr->id(),
-             request_ptr->sender(), request_ptr->transactionId());
-
-    try {
-        // Validate the data content and process the request
-        validateRequestContent(*request_ptr);
-        processRequest(*request_ptr);
-    } catch (request_error& e) {
-        // Invalid request or process failure; send an *RPC error*
-
-        LOG_ERROR("Failed to process %1% request %2% by %3%, transaction %4%: "
-                  "%5%", requestTypeNames[request_type], request_ptr->id(),
-                  request_ptr->sender(), request_ptr->transactionId(), e.what());
-        CthunClient::DataContainer rpc_error_data {};
-        rpc_error_data.set<std::string>("transaction_id",
-                                        request_ptr->transactionId());
-        rpc_error_data.set<std::string>("id", request_ptr->id());
-        rpc_error_data.set<std::string>("description", e.what());
-
-        try {
-            connector_ptr_->send(std::vector<std::string> { request_ptr->sender() },
-                                 RPCSchemas::RPC_ERROR_MSG_TYPE,
-                                 DEFAULT_MSG_TIMEOUT_SEC,
-                                 rpc_error_data);
-            LOG_INFO("Replied to %1% request %2% by %3%, transaction %4%, with "
-                     "an RPC error message", requestTypeNames[request_type],
-                     request_ptr->id(), request_ptr->sender(),
-                     request_ptr->transactionId());
-        } catch (CthunClient::connection_error& e) {
-            LOG_ERROR("Failed to send RPC error message for request %1% by "
-                      "%2%, transaction %3% (no further attempts): %4%",
-                      request_ptr->id(), request_ptr->sender(),
-                      request_ptr->transactionId(), e.what());
-        }
+        request_processor_.replyCthunError(id, e.what(), endpoints);
     }
 }
 
 void Agent::validateRequestContent(const ActionRequest& request) {
     try {
         if (!modules_.at(request.module())->hasAction(request.action())) {
-            throw request_processing_error { "unknown action '" + request.action()
+            throw request_validation_error { "unknown action '" + request.action()
                                              + "' for module " + request.module() };
         }
     } catch (std::out_of_range& e) {
-        throw request_processing_error { "unknown module: " + request.module() };
-    }
-}
-
-void Agent::processRequest(const ActionRequest& request) {
-    auto module_ptr = modules_.at(request.module());
-
-    if (request.type() == RequestType::Blocking) {
-        request_processor_.processBlockingRequest(module_ptr, request);
-    } else {
-        request_processor_.processNonBlockingRequest(module_ptr, request);
+        throw request_validation_error { "unknown module: " + request.module() };
     }
 }
 
