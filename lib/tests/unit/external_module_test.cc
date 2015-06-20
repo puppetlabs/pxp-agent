@@ -82,21 +82,6 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
 
             REQUIRE(outcome.stdout.find("anodaram") != std::string::npos);
         }
-
-        SECTION("throw a request_validation_error if the message is invalid") {
-            std::string bad_reverse_txt { (data_format % "\"reverse\""
-                                                       % "\"string\""
-                                                       % "[1, 2, 3, 4 ,5]").str() };
-            CthunClient::ParsedChunks bad_content {
-                    CthunClient::DataContainer(),
-                    CthunClient::DataContainer(bad_reverse_txt),
-                    no_debug,
-                    0 };
-            ActionRequest request { RequestType::Blocking, bad_content };
-
-            REQUIRE_THROWS_AS(reverse_module.executeAction(request),
-                              request_validation_error);
-        }
     }
 
     SECTION("it should handle module failures") {

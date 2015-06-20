@@ -64,13 +64,6 @@ TEST_CASE("Module::executeAction", "[modules]") {
         auto txt = outcome.results.get<std::string>("outcome");
         REQUIRE(txt == "maradona");
     }
-
-    SECTION("it should throw a request_validation_error if the request "
-            "is invalid") {
-        ActionRequest request { RequestType::Blocking, bad_parsed_chunks };
-        REQUIRE_THROWS_AS(echo_module.executeAction(request),
-                          request_validation_error);
-    }
 }
 
 }  // namespace CthunAgent

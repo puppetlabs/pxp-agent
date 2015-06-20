@@ -217,6 +217,7 @@ void RequestProcessor::processRequest(const RequestType& request_type,
 //
 
 void RequestProcessor::validateRequestContent(const ActionRequest& request) {
+    // Validate requested module and action
     try {
         if (!modules_.at(request.module())->hasAction(request.action())) {
             throw request_validation_error { "unknown action '" + request.action()
@@ -224,6 +225,25 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
         }
     } catch (std::out_of_range& e) {
         throw request_validation_error { "unknown module: " + request.module() };
+    }
+
+    // Validate request input params
+    try {
+        LOG_DEBUG("Validating input for parameters of '%1% %2%' request %3% "
+                  "by %4%, transaction %5%", request.module(), request.action(),
+                  request.id(), request.sender(), request.transactionId());
+
+        // TODO(ale): try to make const the DataContainer argument of
+        // CthunClient::Validator::validate() to avoid copying
+
+        CthunClient::DataContainer input_params { request.params() };
+        auto& validator = modules_.at(request.module())->input_validator_;
+
+        // NB: the registred schemas have the same name as the action
+        validator.validate(input_params, request.action());
+    } catch (CthunClient::validation_error) {
+        throw request_validation_error { "invalid input for '" + request.module()
+                                         + " " + request.action() + "'" };
     }
 }
 
