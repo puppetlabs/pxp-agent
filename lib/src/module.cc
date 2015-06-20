@@ -1,6 +1,5 @@
 #include <cthun-agent/module.hpp>
 #include <cthun-agent/errors.hpp>
-#include <cthun-agent/file_utils.hpp>
 
 #include <iostream>
 #include <algorithm>
