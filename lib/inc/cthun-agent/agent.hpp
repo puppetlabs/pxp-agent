@@ -1,16 +1,12 @@
 #ifndef SRC_AGENT_ENDPOINT_H_
 #define SRC_AGENT_ENDPOINT_H_
 
-#include <cthun-agent/module.hpp>
 #include <cthun-agent/request_processor.hpp>
 #include <cthun-agent/action_request.hpp>
 #include <cthun-agent/cthun_connector.hpp>
 
 #include <cthun-client/protocol/chunks.hpp>      // ParsedChunk
-#include <cthun-client/protocol/message.hpp>     // schema names
-#include <cthun-client/validator/schema.hpp>     // ContentType, Schema
 
-#include <map>
 #include <memory>
 #include <string>
 

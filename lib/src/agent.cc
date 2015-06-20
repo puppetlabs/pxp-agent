@@ -6,8 +6,6 @@
 #include <leatherman/logging/logging.hpp>
 
 #include <vector>
-#include <memory>
-#include <stdexcept>  // out_of_range
 
 namespace CthunAgent {
 
