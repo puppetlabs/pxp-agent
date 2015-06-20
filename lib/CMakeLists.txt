@@ -16,6 +16,7 @@ set(LIBRARY_SOURCES
     src/action_request.cc
     src/agent.cc
     src/configuration.cc
+    src/cthun_connector.cc
     src/external_module.cc
     src/file_utils.cc
     src/module.cc

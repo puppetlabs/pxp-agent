@@ -32,11 +32,8 @@ Agent::Agent(const std::string& modules_dir,
              const std::string& crt,
              const std::string& key)
         try
-            : connector_ptr_ { new CthunClient::Connector(server_url,
-                                                          AGENT_CLIENT_TYPE,
-                                                          ca,
-                                                          crt,
-                                                          key) },
+            : connector_ptr_ { new CthunConnector(server_url, AGENT_CLIENT_TYPE,
+                                                  ca, crt, key) },
               modules_ {},
               request_processor_ { connector_ptr_ } {
     // NB: certificate paths are validated by HW
@@ -186,7 +183,7 @@ void Agent::validateAndProcessRequest(
             LOG_ERROR("Invalid %1% request %2% by %3%, transaction %4%: %5%",
                       requestTypeNames[request_type], request.id(),
                       request.sender(), request.transactionId(), e.what());
-            request_processor_.replyRPCError(request, e.what());
+            connector_ptr_->sendRPCError(request, e.what());
             return;
         }
 
@@ -199,7 +196,7 @@ void Agent::validateAndProcessRequest(
         auto sender = parsed_chunks.envelope.get<std::string>("sender");
         std::vector<std::string> endpoints { sender };
         LOG_ERROR("Invalid %1% request by %2%: %3%", id, sender, e.what());
-        request_processor_.replyCthunError(id, e.what(), endpoints);
+        connector_ptr_->sendCthunError(id, e.what(), endpoints);
     }
 }
 

@@ -4,8 +4,8 @@
 #include <cthun-agent/module.hpp>
 #include <cthun-agent/thread_container.hpp>
 #include <cthun-agent/action_request.hpp>
+#include <cthun-agent/cthun_connector.hpp>
 
-#include <cthun-client/connector/connector.hpp>
 #include <cthun-client/data_container/data_container.hpp>
 
 #include <memory>
@@ -14,33 +14,11 @@
 
 namespace CthunAgent {
 
-static const int DEFAULT_MSG_TIMEOUT_SEC { 10 };
-
 class RequestProcessor {
   public:
     RequestProcessor() = delete;
 
-    explicit RequestProcessor(std::shared_ptr<CthunClient::Connector> connector_ptr);
-
-    // TODO(ale): consider moving out the Connector::send() wrappers
-
-    void replyCthunError(const std::string& request_id,
-                         const std::string& description,
-                         const std::vector<std::string>& endpoints);
-
-    void replyRPCError(const ActionRequest& request,
-                       const std::string& description);
-
-    void replyBlockingResponse(const ActionRequest& request,
-                               const CthunClient::DataContainer& results);
-
-    void replyNonBlockingResponse(const ActionRequest& request,
-                                  const CthunClient::DataContainer& results,
-                                  const std::string& job_id);
-
-    void replyProvisionalResponse(const ActionRequest& request,
-                                  const std::string& job_id,
-                                  const std::string& error);
+    explicit RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr);
 
     /// Execute the specified action.
     ///
@@ -66,7 +44,7 @@ class RequestProcessor {
     ThreadContainer thread_container_;
 
     /// Cthun Connector pointer
-    std::shared_ptr<CthunClient::Connector> connector_ptr_;
+    std::shared_ptr<CthunConnector> connector_ptr_;
 
     /// Where the directories for non-blocking actions results will
     /// be created

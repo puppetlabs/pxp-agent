@@ -4,8 +4,8 @@
 #include <cthun-agent/module.hpp>
 #include <cthun-agent/request_processor.hpp>
 #include <cthun-agent/action_request.hpp>
+#include <cthun-agent/cthun_connector.hpp>
 
-#include <cthun-client/connector/connector.hpp>
 #include <cthun-client/protocol/chunks.hpp>      // ParsedChunk
 #include <cthun-client/protocol/message.hpp>     // schema names
 #include <cthun-client/validator/schema.hpp>     // ContentType, Schema
@@ -42,7 +42,7 @@ class Agent {
 
   private:
     // Cthun connector
-    std::shared_ptr<CthunClient::Connector> connector_ptr_;
+    std::shared_ptr<CthunConnector> connector_ptr_;
 
     // Modules
     std::map<std::string, std::shared_ptr<Module>> modules_;
