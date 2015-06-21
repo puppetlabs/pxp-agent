@@ -73,9 +73,9 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
             REQUIRE_NOTHROW(status_module.executeAction(request));
         }
 
-        SECTION("it returns an error") {
+        SECTION("it returns status 'Unknown'") {
             auto outcome = status_module.executeAction(request);
-            REQUIRE(outcome.results.includes("error"));
+            REQUIRE(outcome.results.get<std::string>("status") == "Unknown");
         }
     }
 
