@@ -1,6 +1,8 @@
 #include <cthun-agent/configuration.hpp>
 #include <cthun-agent/file_utils.hpp>
 
+#include "version-inl.h"
+
 #include <boost/filesystem/operations.hpp>
 
 namespace CthunAgent {
@@ -23,7 +25,7 @@ Configuration::Configuration() : initialized_ { false },
 void Configuration::defineDefaultValues() {
     HW::SetAppName("cthun-agent");
     HW::SetHelpBanner("Usage: cthun-agent [options]");
-    HW::SetVersion(VERSION_STRING);
+    HW::SetVersion(CTHUN_AGENT_VERSION);
 
     // start setting the config file path to known existent locations;
     // HW will overwrite it with the one parsed from CLI, if specified
@@ -286,6 +288,5 @@ void Configuration::validateAndNormalizeConfiguration() {
         }
     }
 }
-
 
 }  // namespace CthunAgent

@@ -11,6 +11,7 @@
 #include <boost/format.hpp>
 
 #include <vector>
+#include <algorithm>
 
 extern std::string ROOT_PATH;
 
@@ -35,7 +36,7 @@ static const CthunClient::ParsedChunks parsed_chunks {
                     debug,
                     0 };
 
-TEST_CASE("Modules::Ping::callAction", "[modules]") {
+TEST_CASE("Modules::Ping::executeAction", "[modules]") {
     Modules::Ping ping_module {};
 
     SECTION("the ping module is correctly named") {
@@ -43,16 +44,19 @@ TEST_CASE("Modules::Ping::callAction", "[modules]") {
     }
 
     SECTION("the ping module has the ping action") {
-        REQUIRE(ping_module.actions.find(ping_action) != ping_module.actions.end());
+        auto found = std::find(ping_module.actions.begin(),
+                               ping_module.actions.end(),
+                               "ping");
+        REQUIRE(found != ping_module.actions.end());
     }
 
     SECTION("it can call the ping action") {
-        REQUIRE_NOTHROW(ping_module.callAction(ping_action, parsed_chunks));
+        REQUIRE_NOTHROW(ping_module.executeAction(ping_action, parsed_chunks));
     }
 
     SECTION("it should return the request_hops entries") {
-        auto result = ping_module.callAction(ping_action, parsed_chunks);
-        REQUIRE(result.includes("request_hops"));
+        auto outcome = ping_module.executeAction(ping_action, parsed_chunks);
+        REQUIRE(outcome.results.includes("request_hops"));
     }
 }
 

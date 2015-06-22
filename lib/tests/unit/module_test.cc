@@ -43,25 +43,30 @@ static const CthunClient::ParsedChunks bad_parsed_chunks {
                 no_debug,
                 0 };
 
-TEST_CASE("Module::validateAndCallAction", "[modules]") {
+TEST_CASE("Module::hasAction", "[modules]") {
+    Modules::Echo echo_module {};
+
+    SECTION("correctly reports false") {
+        REQUIRE(!echo_module.hasAction("foo"));
+    }
+
+    SECTION("correctly reports true") {
+        REQUIRE(echo_module.hasAction(echo_action));
+    }
+}
+
+TEST_CASE("Module::executeAction", "[modules]") {
     Modules::Echo echo_module {};
 
     SECTION("it should correctly call echo") {
-        auto result = echo_module.performRequest(echo_action, parsed_chunks);
-        auto txt = result.get<std::string>("outcome");
+        auto outcome = echo_module.executeAction(echo_action, parsed_chunks);
+        auto txt = outcome.results.get<std::string>("outcome");
         REQUIRE(txt == "maradona");
-    }
-
-    SECTION("it should throw a request_validation_error if the action "
-            "is unknown") {
-        REQUIRE_THROWS_AS(echo_module.performRequest(fake_action, parsed_chunks),
-                          request_validation_error);
     }
 
     SECTION("it should throw a request_validation_error if the request "
             "is invalid") {
-        REQUIRE_THROWS_AS(echo_module.performRequest(echo_action,
-                                                     bad_parsed_chunks),
+        REQUIRE_THROWS_AS(echo_module.executeAction(echo_action, bad_parsed_chunks),
                           request_validation_error);
     }
 }

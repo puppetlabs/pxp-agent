@@ -10,6 +10,13 @@ set(EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
 set(VENDOR_DIRECTORY "${PROJECT_SOURCE_DIR}/vendor")
 list(APPEND CMAKE_MODULE_PATH ${VENDOR_DIRECTORY})
 
+# set a version
+set(APPLICATION_VERSION_STRING "0.0.1")
+
+# expand a version template
+configure_file(templates/version-inl.h ${CMAKE_BINARY_DIR}/generated/version-inl.h )
+include_directories( ${CMAKE_BINARY_DIR}/generated/ )
+
 # prefer openssl from ports
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /opt/local/lib)

@@ -40,7 +40,6 @@ def action_metadata
       },
       { :name => "delayed_action",
         :description => "echoes the input string asynchronously",
-        :behaviour => "delayed",
         :input => {
           :type => "string",
         },
@@ -65,7 +64,7 @@ def action_hash
   puts hash.to_json
 end
 
-def delayed_action
+def action_delayed_action
   puts $stdin.read.chomp.to_json
 end
 

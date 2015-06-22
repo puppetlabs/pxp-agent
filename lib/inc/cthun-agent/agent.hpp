@@ -2,6 +2,7 @@
 #define SRC_AGENT_ENDPOINT_H_
 
 #include <cthun-agent/module.hpp>
+#include <cthun-agent/request_processor.hpp>
 
 #include <cthun-client/connector/connector.hpp>
 #include <cthun-client/protocol/chunks.hpp>      // ParsedChunk
@@ -39,11 +40,19 @@ class Agent {
     void start();
 
   private:
+    enum class RequestType { Blocking, NonBlocking };
+    std::map<RequestType, std::string> requestTypeNames {
+        {RequestType::Blocking, "blocking"},
+        {RequestType::NonBlocking, "non blocking"} };
+
     // Cthun connector
-    CthunClient::Connector connector_;
+    std::shared_ptr<CthunClient::Connector> connector_ptr_;
 
     // Modules
     std::map<std::string, std::shared_ptr<Module>> modules_;
+
+    // Action Executer
+    RequestProcessor request_processor_;
 
     // Load the modules from the src/modules directory.
     void loadInternalModules();
@@ -54,13 +63,30 @@ class Agent {
     // Log the loaded modules.
     void logLoadedModules() const;
 
-    // Returns the json validation schema for a cnc request.
-    CthunClient::Schema getCncRequestSchema() const;
+    // Callback for CthunClient::Connector handling incoming RPC
+    // blocking requests; it will execute the requested action and,
+    // once finished, reply to the sender with an RPC blocking
+    // response containing the action outcome.
+    void blockingRequestCallback(const CthunClient::ParsedChunks& parsed_chunks);
 
-    // Callback for the CthunClient::Connector to handle incoming
-    // messages. It will reply to the sender with the requested
-    // output.
-    void cncRequestCallback(const CthunClient::ParsedChunks& parsed_chunks);
+    // Callback for CthunClient::Connector handling incoming RPC
+    // non-blocking requests; it will start a job for the requested
+    // action and reply with a provisional response containing the job
+    // id. The reults will be stored in files in spool-dir.
+    // In case the request has the notify_outcome field flagged, it
+    // will send an RPC non-blocking response containing the action
+    // outcome when finished.
+    void nonBlockingRequestCallback(const CthunClient::ParsedChunks& parsed_chunks);
+
+    void validateAndProcessRequest(const CthunClient::ParsedChunks& parsed_chunks,
+                                   const RequestType& request_type);
+
+    void validateRequestFormat(const CthunClient::ParsedChunks& parsed_chunks);
+
+    void validateRequestContent(const CthunClient::ParsedChunks& parsed_chunks);
+
+    void processRequest(const CthunClient::ParsedChunks& parsed_chunks,
+                        const RequestType& request_type);
 };
 
 }  // namespace CthunAgent

@@ -9,9 +9,10 @@ namespace Modules {
 class Inventory : public CthunAgent::Module {
   public:
     Inventory();
-    CthunClient::DataContainer callAction(
-                    const std::string& action_name,
-                    const CthunClient::ParsedChunks& parsed_chunks);
+
+  private:
+    ActionOutcome callAction(const std::string& action_name,
+                             const CthunClient::ParsedChunks& parsed_chunks);
 };
 
 }  // namespace Modules

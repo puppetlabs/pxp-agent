@@ -31,7 +31,7 @@ class file_error : public agent_error {
 };
 
 //
-// CNC request errors
+// RPC request errors
 //
 
 class request_error : public agent_error {
