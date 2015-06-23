@@ -6,6 +6,8 @@
 
 namespace CthunAgent {
 
+// TODO(ale): consider moving this to the relevant files
+
 /// Base error class.
 class agent_error : public std::runtime_error {
   public:
@@ -39,7 +41,15 @@ class request_error : public agent_error {
     explicit request_error(std::string const& msg) : agent_error(msg) {}
 };
 
-/// Error due to an invalid request message.
+/// Error due to a request message with invalid format such that it is
+/// not possible to retrieve the content of the data chunk.
+class request_format_error : public request_error {
+  public:
+    explicit request_format_error(std::string const& msg)
+            : request_error(msg) {}
+};
+
+/// Error due to a request message with invalid content.
 class request_validation_error : public request_error {
   public:
     explicit request_validation_error(std::string const& msg)

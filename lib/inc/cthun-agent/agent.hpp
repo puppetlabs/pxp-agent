@@ -1,18 +1,12 @@
 #ifndef SRC_AGENT_ENDPOINT_H_
 #define SRC_AGENT_ENDPOINT_H_
 
-#include <cthun-agent/module.hpp>
 #include <cthun-agent/request_processor.hpp>
+#include <cthun-agent/action_request.hpp>
+#include <cthun-agent/cthun_connector.hpp>
 
-#include <cthun-client/connector/connector.hpp>
 #include <cthun-client/protocol/chunks.hpp>      // ParsedChunk
-#include <cthun-client/protocol/message.hpp>     // schema names
-#include <cthun-client/validator/schema.hpp>     // ContentType, Schema
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
-#include <map>
 #include <memory>
 #include <string>
 
@@ -40,28 +34,11 @@ class Agent {
     void start();
 
   private:
-    enum class RequestType { Blocking, NonBlocking };
-    std::map<RequestType, std::string> requestTypeNames {
-        {RequestType::Blocking, "blocking"},
-        {RequestType::NonBlocking, "non blocking"} };
-
     // Cthun connector
-    std::shared_ptr<CthunClient::Connector> connector_ptr_;
-
-    // Modules
-    std::map<std::string, std::shared_ptr<Module>> modules_;
+    std::shared_ptr<CthunConnector> connector_ptr_;
 
     // Action Executer
     RequestProcessor request_processor_;
-
-    // Load the modules from the src/modules directory.
-    void loadInternalModules();
-
-    // Load the external modules contained in the specified directory.
-    void loadExternalModulesFrom(boost::filesystem::path modules_dir_path);
-
-    // Log the loaded modules.
-    void logLoadedModules() const;
 
     // Callback for CthunClient::Connector handling incoming RPC
     // blocking requests; it will execute the requested action and,
@@ -77,16 +54,6 @@ class Agent {
     // will send an RPC non-blocking response containing the action
     // outcome when finished.
     void nonBlockingRequestCallback(const CthunClient::ParsedChunks& parsed_chunks);
-
-    void validateAndProcessRequest(const CthunClient::ParsedChunks& parsed_chunks,
-                                   const RequestType& request_type);
-
-    void validateRequestFormat(const CthunClient::ParsedChunks& parsed_chunks);
-
-    void validateRequestContent(const CthunClient::ParsedChunks& parsed_chunks);
-
-    void processRequest(const CthunClient::ParsedChunks& parsed_chunks,
-                        const RequestType& request_type);
 };
 
 }  // namespace CthunAgent

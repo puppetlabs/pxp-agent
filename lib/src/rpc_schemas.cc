@@ -23,8 +23,9 @@ CthunClient::Schema BlockingRequestSchema() {
 
 CthunClient::Schema BlockingResponseSchema() {
     CthunClient::Schema schema { BLOCKING_RESPONSE_TYPE, C_Type::Json };
-    // NB: additionalProperties = true
+    // NB: additionalProperties = false
     schema.addConstraint("transaction_id", T_Constraint::String, true);
+    schema.addConstraint("results", T_Constraint::Object, true);
     return schema;
 }
 
@@ -41,9 +42,10 @@ CthunClient::Schema NonBlockingRequestSchema() {
 
 CthunClient::Schema NonBlockingResponseSchema() {
     CthunClient::Schema schema { NON_BLOCKING_RESPONSE_TYPE, C_Type::Json };
-    // NB: additionalProperties = true
+    // NB: additionalProperties = false
     schema.addConstraint("transaction_id", T_Constraint::String, true);
     schema.addConstraint("job_id", T_Constraint::String, true);
+    schema.addConstraint("results", T_Constraint::Object, true);
     return schema;
 }
 

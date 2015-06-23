@@ -59,15 +59,10 @@ TEST_CASE("Module::executeAction", "[modules]") {
     Modules::Echo echo_module {};
 
     SECTION("it should correctly call echo") {
-        auto outcome = echo_module.executeAction(echo_action, parsed_chunks);
+        ActionRequest request { RequestType::Blocking, parsed_chunks };
+        auto outcome = echo_module.executeAction(request);
         auto txt = outcome.results.get<std::string>("outcome");
         REQUIRE(txt == "maradona");
-    }
-
-    SECTION("it should throw a request_validation_error if the request "
-            "is invalid") {
-        REQUIRE_THROWS_AS(echo_module.executeAction(echo_action, bad_parsed_chunks),
-                          request_validation_error);
     }
 }
 

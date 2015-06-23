@@ -16,9 +16,8 @@ Echo::Echo() {
     output_validator_.registerSchema(output_schema);
 }
 
-ActionOutcome Echo::callAction(const std::string& action_name,
-                               const CthunClient::ParsedChunks& parsed_chunks) {
-    auto params = parsed_chunks.data.get<CthunClient::DataContainer>("params");
+ActionOutcome Echo::callAction(const ActionRequest& request) {
+    auto params = request.params();
     CthunClient::DataContainer results {};
 
     if (params.includes("argument")

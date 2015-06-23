@@ -10,8 +10,7 @@ class Status : public CthunAgent::Module {
   public:
     Status();
   private:
-    ActionOutcome callAction(const std::string& action_name,
-                             const CthunClient::ParsedChunks& parsed_chunks);
+    ActionOutcome callAction(const ActionRequest& request);
 };
 
 }  // namespace Modules

@@ -55,7 +55,8 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
     }
 
     SECTION("it can call the 'query' action") {
-        REQUIRE_NOTHROW(status_module.executeAction(query_action, parsed_chunks));
+        ActionRequest request { RequestType::Blocking, parsed_chunks };
+        REQUIRE_NOTHROW(status_module.executeAction(request));
     }
 
     SECTION("it works properly when an unknown job id is provided") {
@@ -66,14 +67,15 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
                 CthunClient::DataContainer(other_status_txt),
                 no_debug,
                 0 };
+        ActionRequest request { RequestType::Blocking, other_chunks };
 
         SECTION("it doesn't throw") {
-            REQUIRE_NOTHROW(status_module.executeAction(query_action, other_chunks));
+            REQUIRE_NOTHROW(status_module.executeAction(request));
         }
 
-        SECTION("it returns an error") {
-            auto outcome = status_module.executeAction(query_action, other_chunks);
-            REQUIRE(outcome.results.includes("error"));
+        SECTION("it returns status 'Unknown'") {
+            auto outcome = status_module.executeAction(request);
+            REQUIRE(outcome.results.get<std::string>("status") == "Unknown");
         }
     }
 
@@ -91,6 +93,8 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
                 CthunClient::DataContainer(other_status_txt),
                 no_debug,
                 0 };
+        ActionRequest request { RequestType::Blocking, other_chunks };
+
         try {
             boost::filesystem::create_symlink(to, symlink);
         } catch (boost::filesystem::filesystem_error) {
@@ -98,21 +102,21 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
         }
 
         SECTION("it doesn't throw") {
-            REQUIRE_NOTHROW(status_module.executeAction(query_action, other_chunks));
+            REQUIRE_NOTHROW(status_module.executeAction(request));
         }
 
         SECTION("it returns the action status") {
-            auto outcome = status_module.executeAction(query_action, other_chunks);
+            auto outcome = status_module.executeAction(request);
             REQUIRE(outcome.results.get<std::string>("status") == "Completed");
         }
 
         SECTION("it returns the action output") {
-            auto outcome = status_module.executeAction(query_action, other_chunks);
+            auto outcome = status_module.executeAction(request);
             REQUIRE(outcome.results.get<std::string>("stdout") == "***OUTPUT\n");
         }
 
         SECTION("it returns the action error string") {
-            auto outcome = status_module.executeAction(query_action, other_chunks);
+            auto outcome = status_module.executeAction(request);
             REQUIRE(outcome.results.get<std::string>("stderr") == "***ERROR\n");
         }
 

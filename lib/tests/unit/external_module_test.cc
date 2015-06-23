@@ -5,7 +5,6 @@
 #include <cthun-agent/external_module.hpp>
 #include <cthun-agent/uuid.hpp>
 #include <cthun-agent/file_utils.hpp>
-#include <cthun-agent/timer.hpp>
 
 #include <cthun-client/data_container/data_container.hpp>
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
@@ -78,22 +77,10 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
         ExternalModule reverse_module { ROOT_PATH + "/modules/reverse" };
 
         SECTION("correctly call the shipped reverse module") {
-            auto outcome = reverse_module.executeAction(STRING_ACTION, content);
+            ActionRequest request { RequestType::Blocking, content };
+            auto outcome = reverse_module.executeAction(request);
+
             REQUIRE(outcome.stdout.find("anodaram") != std::string::npos);
-        }
-
-        SECTION("throw a request_validation_error if the message is invalid") {
-            std::string bad_reverse_txt { (data_format % "\"reverse\""
-                                                       % "\"string\""
-                                                       % "[1, 2, 3, 4 ,5]").str() };
-            CthunClient::ParsedChunks bad_content {
-                    CthunClient::DataContainer(),
-                    CthunClient::DataContainer(bad_reverse_txt),
-                    no_debug,
-                    0 };
-
-            REQUIRE_THROWS_AS(reverse_module.executeAction(STRING_ACTION, bad_content),
-                              request_validation_error);
         }
     }
 
@@ -111,9 +98,9 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
                     CthunClient::DataContainer(failure_txt),
                     no_debug,
                     0 };
+            ActionRequest request { RequestType::Blocking, failure_content };
 
-            REQUIRE_THROWS_AS(test_reverse_module.executeAction(
-                                    "get_an_invalid_result", failure_content),
+            REQUIRE_THROWS_AS(test_reverse_module.executeAction(request),
                               request_processing_error);
         }
 
@@ -127,23 +114,10 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
                     CthunClient::DataContainer(failure_txt),
                     no_debug,
                     0 };
+            ActionRequest request { RequestType::Blocking, failure_content };
 
-            REQUIRE_THROWS_AS(test_reverse_module.executeAction("broken_action",
-                                                                failure_content),
+            REQUIRE_THROWS_AS(test_reverse_module.executeAction(request),
                               request_processing_error);
-        }
-    }
-}
-
-void waitForAction(const std::string& action_dir) {
-    Timer timer {};
-    while (timer.elapsedSeconds() < 2) {  // [s]
-        usleep(10000);  // [us]
-        if (FileUtils::fileExists(action_dir + "/status")) {
-            auto status = FileUtils::readFileAsString(action_dir + "/status");
-            if (status.find("completed") != std::string::npos) {
-                return;
-            }
         }
     }
 }

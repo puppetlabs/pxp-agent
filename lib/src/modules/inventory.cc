@@ -24,8 +24,7 @@ Inventory::Inventory() {
     output_validator_.registerSchema(output_schema);
 }
 
-ActionOutcome Inventory::callAction(const std::string& action_name,
-                                    const CthunClient::ParsedChunks& parsed_chunks) {
+ActionOutcome Inventory::callAction(const ActionRequest& request) {
     std::ostringstream fact_stream;
     CthunClient::DataContainer results {};
 

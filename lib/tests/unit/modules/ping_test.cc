@@ -38,6 +38,7 @@ static const CthunClient::ParsedChunks parsed_chunks {
 
 TEST_CASE("Modules::Ping::executeAction", "[modules]") {
     Modules::Ping ping_module {};
+    ActionRequest request { RequestType::Blocking, parsed_chunks };
 
     SECTION("the ping module is correctly named") {
         REQUIRE(ping_module.module_name == "ping");
@@ -51,11 +52,11 @@ TEST_CASE("Modules::Ping::executeAction", "[modules]") {
     }
 
     SECTION("it can call the ping action") {
-        REQUIRE_NOTHROW(ping_module.executeAction(ping_action, parsed_chunks));
+        REQUIRE_NOTHROW(ping_module.executeAction(request));
     }
 
     SECTION("it should return the request_hops entries") {
-        auto outcome = ping_module.executeAction(ping_action, parsed_chunks);
+        auto outcome = ping_module.executeAction(request);
         REQUIRE(outcome.results.includes("request_hops"));
     }
 }
@@ -86,8 +87,9 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
                     CthunClient::DataContainer(ping_data_txt),
                     other_debug,
                     0 };
+        ActionRequest other_request { RequestType::Blocking, other_chunks };
 
-        auto result = ping_module.ping(other_chunks);
+        auto result = ping_module.ping(other_request);
         auto hops = result.get<std::vector<CthunClient::DataContainer>>(
                         "request_hops");
         REQUIRE(hops.empty());
@@ -119,8 +121,9 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
                 CthunClient::DataContainer(data_txt),
                 other_debug,
                 0 };
+        ActionRequest other_request { RequestType::Blocking, other_chunks };
 
-        auto result = ping_module.ping(other_chunks);
+        auto result = ping_module.ping(other_request);
         auto hops = result.get<std::vector<CthunClient::DataContainer>>(
                         "request_hops");
 
