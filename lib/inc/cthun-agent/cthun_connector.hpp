@@ -4,12 +4,15 @@
 #include <cthun-agent/action_request.hpp>
 
 #include <cthun-client/connector/connector.hpp>
-#include <cthun-client/data_container/data_container.hpp>
+
+#include <leatherman/json_container/json_container.hpp>
 
 #include <cassert>
 #include <memory>
 
 namespace CthunAgent {
+
+namespace LTH_JC = leatherman::json_container;
 
 class CthunConnector : public CthunClient::Connector {
   public:
@@ -27,10 +30,10 @@ class CthunConnector : public CthunClient::Connector {
                       const std::string& description);
 
     void sendBlockingResponse(const ActionRequest& request,
-                              const CthunClient::DataContainer& results);
+                              const LTH_JC::JsonContainer& results);
 
     void sendNonBlockingResponse(const ActionRequest& request,
-                                 const CthunClient::DataContainer& results,
+                                 const LTH_JC::JsonContainer& results,
                                  const std::string& job_id);
 
     void sendProvisionalResponse(const ActionRequest& request,

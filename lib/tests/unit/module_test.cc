@@ -3,13 +3,16 @@
 #include <cthun-agent/errors.hpp>
 #include <cthun-agent/modules/echo.hpp>
 
-#include <cthun-client/data_container/data_container.hpp>
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
+
+#include <leatherman/json_container/json_container.hpp>
 
 #include <string>
 #include <vector>
 
 namespace CthunAgent {
+
+namespace LTH_JC = leatherman::json_container;
 
 static const std::string echo_action { "echo" };
 static const std::string fake_action { "fake_action" };
@@ -21,11 +24,11 @@ static const std::string echo_data_txt {
     "}"
 };
 
-static const std::vector<CthunClient::DataContainer> no_debug {};
+static const std::vector<LTH_JC::JsonContainer> no_debug {};
 
 static const CthunClient::ParsedChunks parsed_chunks {
-                CthunClient::DataContainer(),
-                CthunClient::DataContainer(echo_data_txt),
+                LTH_JC::JsonContainer(),
+                LTH_JC::JsonContainer(echo_data_txt),
                 no_debug,
                 0 };
 
@@ -37,8 +40,8 @@ static const std::string bad_echo_data_txt {
 };
 
 static const CthunClient::ParsedChunks bad_parsed_chunks {
-                CthunClient::DataContainer(),
-                CthunClient::DataContainer(bad_echo_data_txt),
+                LTH_JC::JsonContainer(),
+                LTH_JC::JsonContainer(bad_echo_data_txt),
                 no_debug,
                 0 };
 

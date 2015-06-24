@@ -18,10 +18,10 @@ Echo::Echo() {
 
 ActionOutcome Echo::callAction(const ActionRequest& request) {
     auto params = request.params();
-    CthunClient::DataContainer results {};
+    LTH_JC::JsonContainer results {};
 
     if (params.includes("argument")
-        && params.type("argument") == CthunClient::DataType::String) {
+        && params.type("argument") == LTH_JC::DataType::String) {
         results.set<std::string>("outcome", params.get<std::string>("argument"));
     } else {
         throw request_processing_error { "bad argument type" };

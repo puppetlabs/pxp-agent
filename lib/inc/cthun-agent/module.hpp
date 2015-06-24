@@ -4,14 +4,17 @@
 #include <cthun-agent/action_outcome.hpp>
 #include <cthun-agent/action_request.hpp>
 
-#include <cthun-client/data_container/data_container.hpp>
 #include <cthun-client/protocol/chunks.hpp>      // ParsedChunks
 #include <cthun-client/validator/validator.hpp>  // Validator
+
+#include <leatherman/json_container/json_container.hpp>
 
 #include <vector>
 #include <string>
 
 namespace CthunAgent {
+
+namespace LTH_JC = leatherman::json_container;
 
 class Module {
   public:

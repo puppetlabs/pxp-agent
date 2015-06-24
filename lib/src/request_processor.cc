@@ -12,6 +12,8 @@
 #include <cthun-agent/modules/ping.hpp>
 #include <cthun-agent/modules/status.hpp>
 
+#include <leatherman/json_container/json_container.hpp>
+
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.action_executer"
 #include <leatherman/logging/logging.hpp>
 
@@ -25,6 +27,7 @@
 namespace CthunAgent {
 
 namespace fs = boost::filesystem;
+namespace LTH_JC = leatherman::json_container;
 
 //
 // Results Storage
@@ -71,7 +74,7 @@ class ResultsStorage {
     std::string out_path;
     std::string err_path;
     std::string status_path;
-    CthunClient::DataContainer action_status;
+    LTH_JC::JsonContainer action_status;
 
     void initialize(const ActionRequest& request, const std::string results_dir) {
         if (!fs::exists(results_dir)) {
@@ -233,14 +236,9 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
                   "by %4%, transaction %5%", request.module(), request.action(),
                   request.id(), request.sender(), request.transactionId());
 
-        // TODO(ale): try to make const the DataContainer argument of
-        // CthunClient::Validator::validate() to avoid copying
-
-        CthunClient::DataContainer input_params { request.params() };
-        auto& validator = modules_.at(request.module())->input_validator_;
-
         // NB: the registred schemas have the same name as the action
-        validator.validate(input_params, request.action());
+        auto& validator = modules_.at(request.module())->input_validator_;
+        validator.validate(request.params(), request.action());
     } catch (CthunClient::validation_error) {
         throw request_validation_error { "invalid input for '" + request.module()
                                          + " " + request.action() + "'" };

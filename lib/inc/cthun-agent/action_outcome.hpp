@@ -1,11 +1,13 @@
 #ifndef SRC_AGENT_ACTION_OUTCOME_HPP_
 #define SRC_AGENT_ACTION_OUTCOME_HPP_
 
-#include <cthun-client/data_container/data_container.hpp>
+#include <leatherman/json_container/json_container.hpp>
 
 #include <string>
 
 namespace CthunAgent {
+
+namespace LTH_JC = leatherman::json_container;
 
 struct ActionOutcome {
     enum class Type { Internal, External };
@@ -15,14 +17,14 @@ struct ActionOutcome {
     std::string stdout;
 
     // TODO(ale): use leatherman::json_container::JsonContainer
-    CthunClient::DataContainer results;
+    LTH_JC::JsonContainer results;
 
     ActionOutcome() {
     }
 
     ActionOutcome(std::string& stderr_,
                   std::string& stdout_,
-                  CthunClient::DataContainer& results_)
+                  LTH_JC::JsonContainer& results_)
             : type { Type::External },
               stderr { stderr_ },
               stdout { stdout_ },
@@ -31,19 +33,19 @@ struct ActionOutcome {
 
     ActionOutcome(std::string& stderr_,
                   std::string& stdout_,
-                  CthunClient::DataContainer&& results_)
+                  LTH_JC::JsonContainer&& results_)
             : type { Type::External },
               stderr { stderr_ },
               stdout { stdout_ },
               results { results_ } {
     }
 
-    ActionOutcome(CthunClient::DataContainer& results_)
+    ActionOutcome(LTH_JC::JsonContainer& results_)
             : type { Type::Internal },
               results { results_ } {
     }
 
-    ActionOutcome(CthunClient::DataContainer&& results_)
+    ActionOutcome(LTH_JC::JsonContainer&& results_)
             : type { Type::Internal },
               results { results_ } {
     }

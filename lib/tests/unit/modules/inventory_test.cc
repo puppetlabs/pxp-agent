@@ -3,8 +3,9 @@
 #include <cthun-agent/modules/inventory.hpp>
 #include <cthun-agent/errors.hpp>
 
-#include <cthun-client/data_container/data_container.hpp>
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
+
+#include <leatherman/json_container/json_container.hpp>
 
 #include <string>
 #include <vector>
@@ -14,6 +15,8 @@ extern std::string ROOT_PATH;
 
 namespace CthunAgent {
 
+namespace LTH_JC = leatherman::json_container;
+
 static const std::string inventory_action { "inventory" };
 static const std::string inventory_txt {
     "{  \"module\" : \"inventory\","
@@ -22,10 +25,10 @@ static const std::string inventory_txt {
     "}"
 };
 
-static const std::vector<CthunClient::DataContainer> no_debug {};
+static const std::vector<LTH_JC::JsonContainer> no_debug {};
 static const CthunClient::ParsedChunks parsed_chunks {
-                    CthunClient::DataContainer(),
-                    CthunClient::DataContainer(inventory_txt),
+                    LTH_JC::JsonContainer(),
+                    LTH_JC::JsonContainer(inventory_txt),
                     no_debug,
                     0 };
 

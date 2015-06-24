@@ -5,8 +5,9 @@
 #include <cthun-agent/uuid.hpp>
 #include <cthun-agent/file_utils.hpp>
 
-#include <cthun-client/data_container/data_container.hpp>
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
+
+#include <leatherman/json_container/json_container.hpp>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/format.hpp>
@@ -18,6 +19,8 @@
 extern std::string ROOT_PATH;
 
 namespace CthunAgent {
+
+namespace LTH_JC = leatherman::json_container;
 
 const std::string RESULTS_ROOT_DIR { "/tmp/cthun-agent" };
 const std::string STRING_ACTION { "string" };
@@ -33,11 +36,11 @@ const std::string reverse_txt { (data_format % "\"reverse\""
                                              % "\"string\""
                                              % "\"maradona\"").str() };
 
-static const std::vector<CthunClient::DataContainer> no_debug {};
+static const std::vector<LTH_JC::JsonContainer> no_debug {};
 
 static const CthunClient::ParsedChunks content {
-                    CthunClient::DataContainer(),             // envelope
-                    CthunClient::DataContainer(reverse_txt),  // data
+                    LTH_JC::JsonContainer(),             // envelope
+                    LTH_JC::JsonContainer(reverse_txt),  // data
                     no_debug,   // debug
                     0 };        // num invalid debug chunks
 
