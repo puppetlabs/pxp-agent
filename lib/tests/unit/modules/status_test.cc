@@ -1,12 +1,10 @@
-#include <cstdio>
-
-#include <catch.hpp>
-
 #include <cthun-agent/errors.hpp>
 #include <cthun-agent/uuid.hpp>
 #include <cthun-agent/file_utils.hpp>
 #include <cthun-agent/modules/status.hpp>
 #include <cthun-agent/configuration.hpp>
+
+#include "root_path.hpp"
 
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
 
@@ -16,7 +14,9 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
-extern std::string ROOT_PATH;
+#include <catch.hpp>
+
+#include <cstdio>
 
 namespace CthunAgent {
 
@@ -81,7 +81,8 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
     }
 
     SECTION("it correctly retrieves the file content of a known job") {
-        std::string result_path { ROOT_PATH + "/lib/tests/resources/delayed_result" };
+        std::string result_path { std::string { CTHUN_AGENT_ROOT_PATH }
+                                  + "/lib/tests/resources/delayed_result" };
         boost::filesystem::path to { result_path };
 
         auto symlink_name = UUID::getUUID();

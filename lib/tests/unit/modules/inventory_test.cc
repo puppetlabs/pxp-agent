@@ -1,5 +1,3 @@
-#include <catch.hpp>
-
 #include <cthun-agent/modules/inventory.hpp>
 #include <cthun-agent/errors.hpp>
 
@@ -7,11 +5,11 @@
 
 #include <leatherman/json_container/json_container.hpp>
 
+#include <catch.hpp>
+
 #include <string>
 #include <vector>
 #include <algorithm>
-
-extern std::string ROOT_PATH;
 
 namespace CthunAgent {
 

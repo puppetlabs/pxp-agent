@@ -1,6 +1,6 @@
-#include <catch.hpp>
-
 #include <cthun-agent/thread_container.hpp>
+
+#include <catch.hpp>
 
 #include <memory>
 #include <unistd.h>

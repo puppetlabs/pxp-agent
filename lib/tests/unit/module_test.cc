@@ -1,11 +1,11 @@
-#include <catch.hpp>
-
 #include <cthun-agent/errors.hpp>
 #include <cthun-agent/modules/echo.hpp>
 
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
 
 #include <leatherman/json_container/json_container.hpp>
+
+#include <catch.hpp>
 
 #include <string>
 #include <vector>

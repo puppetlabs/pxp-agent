@@ -1,10 +1,10 @@
-#include <catch.hpp>
-
 #include <cthun-agent/file_utils.hpp>
 #include <cthun-agent/uuid.hpp>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+
+#include <catch.hpp>
 
 #include <iostream>
 
