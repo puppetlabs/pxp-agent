@@ -2,7 +2,6 @@
 // for providing our own main function to Catch
 #define CATCH_CONFIG_RUNNER
 
-#include "test.hpp"
 #include <catch.hpp>
 
 #include <boost/filesystem/operations.hpp>

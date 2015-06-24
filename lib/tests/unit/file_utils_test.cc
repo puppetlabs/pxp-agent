@@ -1,4 +1,3 @@
-#include "test/test.hpp"
 #include <catch.hpp>
 
 #include <cthun-agent/file_utils.hpp>
