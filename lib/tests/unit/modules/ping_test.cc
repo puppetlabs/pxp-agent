@@ -1,20 +1,21 @@
-#include <catch.hpp>
-
 #include <cthun-agent/modules/ping.hpp>
 #include <cthun-agent/errors.hpp>
 
-#include <cthun-client/data_container/data_container.hpp>
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
+
+#include <leatherman/json_container/json_container.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/format.hpp>
 
+#include <catch.hpp>
+
 #include <vector>
 #include <algorithm>
 
-extern std::string ROOT_PATH;
-
 namespace CthunAgent {
+
+namespace LTH_JC = leatherman::json_container;
 
 static const std::string ping_action { "ping" };
 
@@ -25,13 +26,13 @@ static const std::string ping_data_txt {
     "}"
 };
 
-static const std::vector<CthunClient::DataContainer> debug {
-    CthunClient::DataContainer { "{\"hops\" : []}" }
+static const std::vector<LTH_JC::JsonContainer> debug {
+    LTH_JC::JsonContainer { "{\"hops\" : []}" }
 };
 
 static const CthunClient::ParsedChunks parsed_chunks {
-                    CthunClient::DataContainer(),
-                    CthunClient::DataContainer(ping_data_txt),
+                    LTH_JC::JsonContainer(),
+                    LTH_JC::JsonContainer(ping_data_txt),
                     debug,
                     0 };
 
@@ -72,24 +73,24 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
         "}"
     };
 
-    boost::format debug_format { "{ \"hops\" : %1% }" };  // vector<DataContainer>
+    boost::format debug_format { "{ \"hops\" : %1% }" };  // vector<JsonContainer>
 
     SECTION("it should copy an empty hops entry") {
         auto data_txt = (data_format % "").str();
         auto debug_txt = (debug_format % "[]").str();
-        std::vector<CthunClient::DataContainer> other_debug {
-            CthunClient::DataContainer { debug_txt }
+        std::vector<LTH_JC::JsonContainer> other_debug {
+            LTH_JC::JsonContainer { debug_txt }
         };
 
         CthunClient::ParsedChunks other_chunks {
-                    CthunClient::DataContainer(),
-                    CthunClient::DataContainer(ping_data_txt),
+                    LTH_JC::JsonContainer(),
+                    LTH_JC::JsonContainer(ping_data_txt),
                     other_debug,
                     0 };
         ActionRequest other_request { RequestType::Blocking, other_chunks };
 
         auto result = ping_module.ping(other_request);
-        auto hops = result.get<std::vector<CthunClient::DataContainer>>(
+        auto hops = result.get<std::vector<LTH_JC::JsonContainer>>(
                         "request_hops");
         REQUIRE(hops.empty());
     }
@@ -111,19 +112,19 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
     SECTION("it should copy the hops entry when msg passed through a single server") {
         auto data_txt = (data_format % "").str();
         auto debug_txt = (debug_format % hops_str).str();
-        std::vector<CthunClient::DataContainer> other_debug {
-            CthunClient::DataContainer { debug_txt }
+        std::vector<LTH_JC::JsonContainer> other_debug {
+            LTH_JC::JsonContainer { debug_txt }
         };
 
         CthunClient::ParsedChunks other_chunks {
-                CthunClient::DataContainer(),
-                CthunClient::DataContainer(data_txt),
+                LTH_JC::JsonContainer(),
+                LTH_JC::JsonContainer(data_txt),
                 other_debug,
                 0 };
         ActionRequest other_request { RequestType::Blocking, other_chunks };
 
         auto result = ping_module.ping(other_request);
-        auto hops = result.get<std::vector<CthunClient::DataContainer>>(
+        auto hops = result.get<std::vector<LTH_JC::JsonContainer>>(
                         "request_hops");
 
         REQUIRE(hops.size() == 4);

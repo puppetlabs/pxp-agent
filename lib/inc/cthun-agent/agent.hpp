@@ -37,7 +37,7 @@ class Agent {
     // Cthun connector
     std::shared_ptr<CthunConnector> connector_ptr_;
 
-    // Action Executer
+    // Request Processor
     RequestProcessor request_processor_;
 
     // Callback for CthunClient::Connector handling incoming RPC

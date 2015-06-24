@@ -1,21 +1,25 @@
-#include <catch.hpp>
+#include "certs.hpp"
+
+#include "root_path.hpp"
 
 #include <cthun-agent/configuration.hpp>
 #include <cthun-agent/errors.hpp>
 
 #include "horsewhisperer/horsewhisperer.h"
 
-extern std::string ROOT_PATH;
+#include <catch.hpp>
+
+#include <string>
 
 namespace CthunAgent {
 
-void configureTest() {
-    std::string server = "wss://test_server/";
-    std::string ca = ROOT_PATH + "/lib/tests/resources/config/ca_crt.pem";
-    std::string cert = ROOT_PATH +  "/lib/tests/resources/config/test_crt.pem";
-    std::string key = ROOT_PATH + "/lib/tests/resources/config/test_key.pem";
-    std::string module_dir = ROOT_PATH + "/modules";
+const std::string server = "wss://test_server/";
+const std::string ca = getCaPath();
+const std::string cert = getCertPath();
+const std::string key = getKeyPath();
+const std::string module_dir = std::string { CTHUN_AGENT_ROOT_PATH } + "/modules";
 
+void configureTest() {
     const char* argv[] = { "test-command",
                            "--server", server.data(),
                            "--ca", ca.data(),
@@ -32,12 +36,6 @@ void resetTest() {
 }
 
 TEST_CASE("Configuration::setStartFunction", "[configuration]") {
-    std::string server = "wss://test_server/";
-    std::string ca = ROOT_PATH + "/lib/tests/resources/config/ca_crt.pem";
-    std::string cert = ROOT_PATH +  "/lib/tests/resources/config/test_crt.pem";
-    std::string key = ROOT_PATH + "/lib/tests/resources/config/test_key.pem";
-    std::string module_dir = ROOT_PATH + "/modules";
-
     const char* argv[] = { "test-command",
                            "--server", server.data(),
                            "--ca", ca.data(),

@@ -24,7 +24,7 @@ Status::Status() {
 }
 
 ActionOutcome Status::callAction(const ActionRequest& request) {
-    CthunClient::DataContainer results {};
+    LTH_JC::JsonContainer results {};
     auto job_id = request.params().get<std::string>("job_id");
     auto results_dir = Configuration::Instance().get<std::string>("spool-dir")
                        + job_id;
@@ -34,7 +34,7 @@ ActionOutcome Status::callAction(const ActionRequest& request) {
         results.set<std::string>("status", "Unknown");
     } else {
         LOG_DEBUG("Retrieving results for job id %1% from %2%", job_id, results_dir);
-        CthunClient::DataContainer status {
+        LTH_JC::JsonContainer status {
             FileUtils::readFileAsString(results_dir + "/status") };
 
         auto status_txt = status.get<std::string>("status");

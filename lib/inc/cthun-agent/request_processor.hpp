@@ -6,8 +6,6 @@
 #include <cthun-agent/action_request.hpp>
 #include <cthun-agent/cthun_connector.hpp>
 
-#include <cthun-client/data_container/data_container.hpp>
-
 #include <boost/filesystem/path.hpp>
 
 #include <memory>

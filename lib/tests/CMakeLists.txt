@@ -14,6 +14,7 @@ include_directories(
 set(SOURCES
     main.cc
     unit/agent_test.cc
+    unit/certs.cc
     unit/configuration_test.cc
     unit/external_module_test.cc
     unit/file_utils_test.cc

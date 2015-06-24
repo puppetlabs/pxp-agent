@@ -17,6 +17,11 @@ set(APPLICATION_VERSION_STRING "0.0.1")
 configure_file(templates/version-inl.h ${CMAKE_BINARY_DIR}/generated/version-inl.h )
 include_directories( ${CMAKE_BINARY_DIR}/generated/ )
 
+# Set the root path macro and expand related template
+set(ROOT_PATH "${MAINFOLDER}")
+configure_file(templates/root_path.hpp ${CMAKE_BINARY_DIR}/generated/root_path.hpp)
+include_directories(${CMAKE_BINARY_DIR}/generated)
+
 # prefer openssl from ports
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /opt/local/lib)
@@ -38,6 +43,8 @@ set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS} ${CTHUN_AGENT_FLAGS}")
 set(LEATHERMAN_USE_LOCALE TRUE)
 set(LEATHERMAN_USE_NOWIDE TRUE)
 set(LEATHERMAN_USE_CATCH TRUE)
+set(LEATHERMAN_USE_RAPIDJSON TRUE)
+set(LEATHERMAN_USE_JSON_CONTAINER TRUE)
 set(LEATHERMAN_USE_LOGGING TRUE)
 leatherman_logging_line_numbers()
 add_subdirectory("vendor/leatherman")

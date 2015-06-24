@@ -26,7 +26,7 @@ Inventory::Inventory() {
 
 ActionOutcome Inventory::callAction(const ActionRequest& request) {
     std::ostringstream fact_stream;
-    CthunClient::DataContainer results {};
+    LTH_JC::JsonContainer results {};
 
     facter::facts::collection facts;
     facts.add_default_facts();
