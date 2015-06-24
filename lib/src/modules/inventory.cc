@@ -29,7 +29,7 @@ ActionOutcome Inventory::callAction(const ActionRequest& request) {
     CthunClient::DataContainer results {};
 
     facter::facts::collection facts;
-    facts.add_default_facts();
+    facts.add_default_facts(false);
     facts.write(fact_stream, facter::facts::format::json);
 
     LOG_TRACE("facts: %1%", fact_stream.str());
