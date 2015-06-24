@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(cthun-agent)
 
+if (NOT CMAKE_BUILD_TYPE)
+    message(STATUS "Defaulting to a release build.")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif()
+
+# define further options
+option(EXTERNAL_CTHUN_CLIENT "ON - use an installed version of cthun-client. OFF - use the git submodule" ON)
+
 # Project Output Paths
 
 set(MAINFOLDER ${PROJECT_SOURCE_DIR})
@@ -9,6 +17,8 @@ set(LIBRARY_OUTPUT_PATH "${MAINFOLDER}/bin")
 set(EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
 set(VENDOR_DIRECTORY "${PROJECT_SOURCE_DIR}/vendor")
 list(APPEND CMAKE_MODULE_PATH ${VENDOR_DIRECTORY})
+
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 # set a version
 set(APPLICATION_VERSION_STRING "0.0.1")
@@ -62,7 +72,12 @@ find_package(facter REQUIRED)
 include(${VENDOR_DIRECTORY}/boost-process.cmake)
 include(${VENDOR_DIRECTORY}/horsewhisperer.cmake)
 include(${VENDOR_DIRECTORY}/inih.cmake)
-include(${VENDOR_DIRECTORY}/cthun-client.cmake)
+
+if(EXTERNAL_CTHUN_CLIENT)
+    find_package(cthun-client REQUIRED)
+else()
+    include(${VENDOR_DIRECTORY}/cthun-client.cmake)
+endif()
 
 # Add the main binary
 
