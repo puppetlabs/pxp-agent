@@ -60,15 +60,17 @@ class Configuration {
     /// Parse the command line arguments and, if specified, the
     /// configuration file, in order to obtain the configuration
     /// values; validate and normalize them.
-    /// Return a numeric code indicating the parsing outcome (refer to
-    /// HorseWhisperer).
+    /// Return a HorseWhisperer::ParseResult value indicating the
+    /// parsing outcome (refer to HorseWhisperer).
+    /// Throw a HorseWhisperer::flag_validation_error in case such
+    /// exception is thrown by a flag validation callback.
     /// Throw a cli_parse_error in case it fails to parse the CLI
     /// arguments.
     /// Throw a required_not_set_error in case of a missing or invalid
     /// configuration value.
     /// Throw a configuration_entry_error if the specified config file
     /// does not exist.
-    int initialize(int argc, char *argv[]);
+    HW::ParseResult initialize(int argc, char *argv[]);
 
     /// Set the start function that will be executed when calling
     /// HorseWhisperer::Start().
