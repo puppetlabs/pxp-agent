@@ -1,6 +1,7 @@
 #include <cthun-agent/modules/inventory.hpp>
 #include <cthun-agent/errors.hpp>
 
+#include <facter/version.h>
 #include <facter/facts/collection.hpp>
 
 #include <sstream>
@@ -29,7 +30,11 @@ ActionOutcome Inventory::callAction(const ActionRequest& request) {
     LTH_JC::JsonContainer results {};
 
     facter::facts::collection facts;
+#if LIBFACTER_VERSION_MAJOR >= 3
+    facts.add_default_facts(false);
+#else
     facts.add_default_facts();
+#endif
     facts.write(fact_stream, facter::facts::format::json);
 
     LOG_TRACE("facts: %1%", fact_stream.str());
