@@ -16,7 +16,6 @@ struct ActionOutcome {
     std::string stderr;
     std::string stdout;
 
-    // TODO(ale): use leatherman::json_container::JsonContainer
     LTH_JC::JsonContainer results;
 
     ActionOutcome() {

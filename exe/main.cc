@@ -65,29 +65,34 @@ int startAgent(std::vector<std::string> arguments) {
 int main(int argc, char *argv[]) {
     Configuration::Instance().setStartFunction(startAgent);
 
-    int parse_result = HW::PARSE_HELP;
+    HW::ParseResult parse_result;
 
     try {
         parse_result = Configuration::Instance().initialize(argc, argv);
-    } catch(configuration_error e) {
-        std::cout << "An error occurred while parsing your configuration.\n";
-        std::cout << e.what() << std::endl;
+    } catch (HW::flag_validation_error& e) {
+        std::cout << "Invalid command line arguments:\n"
+                  << e.what() << std::endl;
+        return 1;
+    } catch(configuration_error& e) {
+        std::cout << "An error occurred while parsing your configuration.\n"
+                  << e.what() << std::endl;
         return 1;
     }
 
     switch (parse_result) {
-        case HW::PARSE_OK:
+        case HW::ParseResult::OK:
             return HW::Start();
-        case HW::PARSE_HELP:
+        case HW::ParseResult::HELP:
             HorseWhisperer::ShowHelp();
             return 0;
-        case HW::PARSE_VERSION:
+        case HW::ParseResult::VERSION:
             HorseWhisperer::ShowVersion();
             return 0;
         default:
             std::cout << "An unexpected code was returned when trying to parse"
-                      << "command line arguments - " << parse_result
-                      << ". Aborting" << std::endl;
+                      << "command line arguments - "
+                      << static_cast<int>(parse_result) << ". Aborting"
+                      << std::endl;
             return 1;
     }
 }

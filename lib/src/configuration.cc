@@ -113,10 +113,9 @@ void Configuration::setDefaultValues() {
                     Entry<int>* entry_ptr = (Entry<int>*) entry.second.get();
                     HW::DefineGlobalFlag<int>(flag_names, entry_ptr->help,
                                               entry_ptr->value,
-                                              [entry_ptr] (int v) -> bool{
-                        entry_ptr->configured = true;
-                        return true;
-                    });
+                                              [entry_ptr] (int v) {
+                                                  entry_ptr->configured = true;
+                                              });
                 }
                 break;
             case Bool:
@@ -124,10 +123,9 @@ void Configuration::setDefaultValues() {
                     Entry<bool>* entry_ptr = (Entry<bool>*) entry.second.get();
                     HW::DefineGlobalFlag<bool>(flag_names, entry_ptr->help,
                                                entry_ptr->value,
-                                               [entry_ptr] (bool v) -> bool{
-                        entry_ptr->configured = true;
-                        return true;
-                    });
+                                               [entry_ptr] (bool v) {
+                                                   entry_ptr->configured = true;
+                                               });
                 }
                 break;
             case Double:
@@ -135,10 +133,9 @@ void Configuration::setDefaultValues() {
                     Entry<double>* entry_ptr = (Entry<double>*) entry.second.get();
                     HW::DefineGlobalFlag<double>(flag_names, entry_ptr->help,
                                                  entry_ptr->value,
-                                                 [entry_ptr] (double v) -> bool{
-                        entry_ptr->configured = true;
-                        return true;
-                    });
+                                                 [entry_ptr] (double v) {
+                                                     entry_ptr->configured = true;
+                                                 });
                 }
                 break;
             default:
@@ -146,10 +143,9 @@ void Configuration::setDefaultValues() {
                     Entry<std::string>* entry_ptr = (Entry<std::string>*) entry.second.get();
                     HW::DefineGlobalFlag<std::string>(flag_names, entry_ptr->help,
                                                       entry_ptr->value,
-                                                      [entry_ptr] (std::string v) -> bool {
-                        entry_ptr->configured = true;
-                        return true;
-                    });
+                                                      [entry_ptr] (std::string v) {
+                                                          entry_ptr->configured = true;
+                                                      });
                 }
         }
     }
@@ -217,7 +213,7 @@ void Configuration::reset() {
     initialized_ = false;
 }
 
-int Configuration::initialize(int argc, char *argv[]) {
+HW::ParseResult Configuration::initialize(int argc, char *argv[]) {
     setDefaultValues();
 
     HW::DefineAction("start", 0, false, "Start the agent (Default)",
@@ -234,9 +230,10 @@ int Configuration::initialize(int argc, char *argv[]) {
     }
     modified_argv[modified_argc - 1] = action;
 
-    int parse_result { HW::Parse(modified_argc, modified_argv) };
+    auto parse_result = HW::Parse(modified_argc, modified_argv);
 
-    if (parse_result == HW::PARSE_ERROR || parse_result == HW::PARSE_INVALID_FLAG) {
+    if (parse_result == HW::ParseResult::ERROR
+        || parse_result == HW::ParseResult::INVALID_FLAG) {
         throw cli_parse_error { "An error occurred while parsing cli options"};
     }
 

@@ -13,6 +13,8 @@
 
 namespace CthunAgent {
 
+namespace HW = HorseWhisperer;
+
 const std::string server = "wss://test_server/";
 const std::string ca = getCaPath();
 const std::string cert = getCertPath();
@@ -52,7 +54,7 @@ TEST_CASE("Configuration::setStartFunction", "[configuration]") {
 
     Configuration::Instance().initialize(argc, const_cast<char**>(argv));
 
-    REQUIRE(HorseWhisperer::Start() == 1);
+    REQUIRE(HW::Start() == 1);
 }
 
 TEST_CASE("Configuration::set", "[configuration]") {
@@ -65,7 +67,7 @@ TEST_CASE("Configuration::set", "[configuration]") {
 
     SECTION("set a flag correctly") {
         Configuration::Instance().set<std::string>("ca", "value");
-        REQUIRE(HorseWhisperer::GetFlag<std::string>("ca") == "value");
+        REQUIRE(HW::GetFlag<std::string>("ca") == "value");
     }
 
     SECTION("throw when setting an unknown flag") {
@@ -75,10 +77,14 @@ TEST_CASE("Configuration::set", "[configuration]") {
     }
 
     SECTION("throw when setting a known flag to an invalid value") {
-        HorseWhisperer::DefineGlobalFlag<int>("num_tentacles",
-                                              "number of spawn tentacles",
-                                              8,
-                                              [](int v) -> bool{return v == 8;});
+        HW::DefineGlobalFlag<int>("num_tentacles",
+                                  "number of spawn tentacles",
+                                  8,
+                                  [](int v) {
+                                      if (v != 8) {
+                                          throw HW::flag_validation_error { "bad!" };
+                                      }
+                                  });
 
         // The only valid number of tentacles is 8
         REQUIRE_THROWS_AS(Configuration::Instance().set<int>("num_tentacles", 42),
