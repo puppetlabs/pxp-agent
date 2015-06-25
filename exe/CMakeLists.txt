@@ -10,16 +10,11 @@ include_directories(
     ${Boost_INCLUDE_DIRS}
     ${HORSEWHISPERER_INCLUDE_DIRS}
     ${INIH_INCLUDE_DIRS}
-    ${CTHUN_CLIENT_INCLUDE_DIRS}
+    ${cthun-client_INCLUDE_DIR}
 )
 
 set (CTHUN-AGENT_BIN_LIBS
-    ${Boost_LIBRARIES}
-    ${OPENSSL_SSL_LIBRARY}
-    ${OPENSSL_CRYPTO_LIBRARY}
-    ${PTHREADS}
-    ${facter_LIBRARY}
-    ${CTHUN_CLIENT_LIB}
+    ${CMAKE_THREAD_LIBS_INIT}
     libcthun-agent
 )
 

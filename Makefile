@@ -9,11 +9,9 @@ all: ./build/Makefile
 	@ $(MAKE) -C build
 	@ $(MAKE) test ARGS="-V"
 
-build:
-	@ mkdir build
-
-./build/Makefile: build
-	@ (cd build >/dev/null 2>&1 && cmake ..)
+./build/Makefile: Makefile CMakeLists.txt exe/CMakeLists.txt lib/CMakeLists.txt lib/tests/CMakeLists.txt
+	@ mkdir build || true
+	@ (cd build >/dev/null 2>&1 && cmake -DCMAKE_BUILD_TYPE=Debug -DEXTERNAL_CTHUN_CLIENT=OFF ..)
 
 distclean:
 	@- (cd build >/dev/null 2>&1 && cmake .. >/dev/null 2>&1)

@@ -8,7 +8,7 @@ include_directories(
     SYSTEM ${Boost_Process_INCLUDE_DIRS}
     SYSTEM ${HORSEWHISPERER_INCLUDE_DIRS}
     SYSTEM ${INIH_INCLUDE_DIRS}
-    SYSTEM ${CTHUN_CLIENT_INCLUDE_DIRS}
+    SYSTEM ${cthun-client_INCLUDE_DIR}
     SYSTEM ${LEATHERMAN_INCLUDE_DIRS}
     SYSTEM ${facter_INCLUDE_DIR}
 )
@@ -47,7 +47,7 @@ SET(LIBS
     ${OPENSSL_CRYPTO_LIBRARY}
     ${PTHREADS}
     ${facter_LIBRARY}
-    ${CTHUN_CLIENT_LIB}
+    ${cthun-client_LIBRARY}
 )
 
 add_library(libcthun-agent ${LIBRARY_SOURCES})
