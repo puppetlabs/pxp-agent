@@ -1,8 +1,9 @@
 #include <cthun-agent/cthun_connector.hpp>
 #include <cthun-agent/rpc_schemas.hpp>
-#include <cthun-agent/string_utils.hpp>
 
 #include <cthun-client/protocol/schemas.hpp>
+
+#include <leatherman/util/strings.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.cthun_connector"
 #include <leatherman/logging/logging.hpp>
@@ -10,6 +11,7 @@
 namespace CthunAgent {
 
 namespace LTH_JC = leatherman::json_container;
+namespace lth_util = leatherman::util;
 
 static const int DEFAULT_MSG_TIMEOUT_SEC { 2 };
 
@@ -19,7 +21,7 @@ std::vector<lth_jc::JsonContainer> wrapDebug(
     if (parsed_chunks.num_invalid_debug) {
         LOG_WARNING("Message %1% contained %2% bad debug chunk%3%",
                     request_id, parsed_chunks.num_invalid_debug,
-                    StringUtils::plural(parsed_chunks.num_invalid_debug));
+                    lth_util::plural(parsed_chunks.num_invalid_debug));
     }
     std::vector<lth_jc::JsonContainer> debug {};
     for (auto& debug_entry : parsed_chunks.debug) {

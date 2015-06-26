@@ -1,6 +1,5 @@
 #include <cthun-agent/external_module.hpp>
 #include <cthun-agent/errors.hpp>
-#include <cthun-agent/uuid.hpp>
 
 #include <leatherman/file_util/file.hpp>
 
