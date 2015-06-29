@@ -40,7 +40,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 ADD_CUSTOM_TARGET(check
-    "${MAINFOLDER}/bin/${test_BIN}"
+    "${EXECUTABLE_OUTPUT_PATH}/${test_BIN}"
     DEPENDS ${test_BIN}
     COMMENT "Executing unit tests..."
     VERBATIM

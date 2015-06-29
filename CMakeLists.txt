@@ -11,14 +11,11 @@ option(EXTERNAL_CTHUN_CLIENT "ON - use an installed version of cthun-client. OFF
 
 # Project Output Paths
 
-set(MAINFOLDER ${PROJECT_SOURCE_DIR})
-set(EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
-set(LIBRARY_OUTPUT_PATH "${MAINFOLDER}/bin")
-set(EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
-set(VENDOR_DIRECTORY "${PROJECT_SOURCE_DIR}/vendor")
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+set(VENDOR_DIRECTORY ${PROJECT_SOURCE_DIR}/vendor)
 list(APPEND CMAKE_MODULE_PATH ${VENDOR_DIRECTORY})
-
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # set a version
 set(APPLICATION_VERSION_STRING "0.0.1")
@@ -28,7 +25,7 @@ configure_file(templates/version-inl.h ${CMAKE_BINARY_DIR}/generated/version-inl
 include_directories( ${CMAKE_BINARY_DIR}/generated/ )
 
 # Set the root path macro and expand related template
-set(ROOT_PATH "${MAINFOLDER}")
+set(ROOT_PATH ${PROJECT_SOURCE_DIR})
 configure_file(templates/root_path.hpp ${CMAKE_BINARY_DIR}/generated/root_path.hpp)
 include_directories(${CMAKE_BINARY_DIR}/generated)
 
@@ -90,7 +87,7 @@ enable_testing()
 
 add_test(
     NAME "cthun-agent\\ library\\ tests"
-    COMMAND "${MAINFOLDER}/bin/cthun-agent-unittests"
+    COMMAND "${EXECUTABLE_OUTPUT_PATH}/cthun-agent-unittests"
 )
 
 # Add cpplint target
