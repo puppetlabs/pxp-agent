@@ -20,8 +20,9 @@ static std::map<RequestType, std::string> requestTypeNames {
 
 class ActionRequest {
   public:
-    /// Throw a request_format_error in case is not possible to
-    /// retrieve the data chunk.
+    /// Throw a request_format_error in case if possible to retrieve
+    /// the data chunk from the specified ParsedChunks or in case of
+    /// binary data (currently not supported).
     ActionRequest(RequestType type_,
                   const CthunClient::ParsedChunks& parsed_chunks_);
     ActionRequest(RequestType type_,
