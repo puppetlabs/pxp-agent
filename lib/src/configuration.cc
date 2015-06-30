@@ -283,6 +283,9 @@ void Configuration::validateAndNormalizeConfiguration() {
         if (spool_dir.back() != '/') {
             HW::SetFlag<std::string>("spool-dir", spool_dir + "/");
         }
+
+        // TODO(ale): ensure that spool_dir_ is a directory, once we
+        // have leatherman::file_util
     }
 }
 
