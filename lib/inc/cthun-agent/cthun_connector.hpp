@@ -22,23 +22,25 @@ class CthunConnector : public CthunClient::Connector {
                    const std::string& client_crt_path,
                    const std::string& client_key_path);
 
-    void sendCthunError(const std::string& request_id,
-                        const std::string& description,
-                        const std::vector<std::string>& endpoints);
+    // The following methods are virtual for testing purpose
 
-    void sendRPCError(const ActionRequest& request,
-                      const std::string& description);
+    virtual void sendCthunError(const std::string& request_id,
+                                const std::string& description,
+                                const std::vector<std::string>& endpoints);
 
-    void sendBlockingResponse(const ActionRequest& request,
-                              const LTH_JC::JsonContainer& results);
+    virtual void sendRPCError(const ActionRequest& request,
+                              const std::string& description);
 
-    void sendNonBlockingResponse(const ActionRequest& request,
-                                 const LTH_JC::JsonContainer& results,
-                                 const std::string& job_id);
+    virtual void sendBlockingResponse(const ActionRequest& request,
+                                      const LTH_JC::JsonContainer& results);
 
-    void sendProvisionalResponse(const ActionRequest& request,
-                                 const std::string& job_id,
-                                 const std::string& error);
+    virtual void sendNonBlockingResponse(const ActionRequest& request,
+                                         const LTH_JC::JsonContainer& results,
+                                         const std::string& job_id);
+
+    virtual void sendProvisionalResponse(const ActionRequest& request,
+                                         const std::string& job_id,
+                                         const std::string& error);
 };
 
 }  // namespace CthunAgent
