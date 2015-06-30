@@ -13,7 +13,7 @@ const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/cthun/" };
 const std::string BIN_PATH { std::string { CTHUN_AGENT_ROOT_PATH } + "/bin" };
 
 TEST_CASE("Agent::Agent", "[agent]") {
-    SECTION("does not throw if it fails to find the modules directory") {
+    SECTION("does not throw if it fails to find the external modules directory") {
         REQUIRE_NOTHROW(Agent(BIN_PATH + "/fake_dir", TEST_SERVER_URL,
                               getCaPath(), getCertPath(), getKeyPath()));
     }
