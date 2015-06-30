@@ -15,13 +15,13 @@ namespace CthunAgent {
 
 namespace HW = HorseWhisperer;
 
-const std::string server = "wss://test_server/";
+const std::string server = "wss:///test_server";
 const std::string ca = getCaPath();
 const std::string cert = getCertPath();
 const std::string key = getKeyPath();
 const std::string module_dir = std::string { CTHUN_AGENT_ROOT_PATH } + "/modules";
 
-void configureTest() {
+static void configureTest() {
     const char* argv[] = { "test-command",
                            "--server", server.data(),
                            "--ca", ca.data(),
@@ -33,7 +33,7 @@ void configureTest() {
     Configuration::Instance().initialize(argc, const_cast<char**>(argv));
 }
 
-void resetTest() {
+static void resetTest() {
     Configuration::Instance().reset();
 }
 
