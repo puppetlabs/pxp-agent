@@ -8,43 +8,22 @@ def action_metadata
       { :name => "string",
         :description => "reverses a string",
         :input => {
-          :type => "string",
-        },
-        :output => {
-          :type => "string",
-        },
-      },
-      { :name => "hash",
-        :description => "reverses an element of a hash",
-        :input => {
           :type => "object",
           :properties => {
-            :input => {
-              :type => 'string',
+            :argument => {
+              :type => "string",
             },
           },
-          :required => [ :input ],
+          :required => [ :argument ],
         },
         :output => {
           :type => "object",
           :properties => {
-            :input => {
-              :type => 'string',
-            },
             :output => {
-              :type => 'string',
+              :type => "string",
             },
           },
-          :required => [ :input, :output ],
-        },
-      },
-      { :name => "delayed_action",
-        :description => "echoes the input string asynchronously",
-        :input => {
-          :type => "string",
-        },
-        :output => {
-          :type => "string",
+          :required => [ :output ],
         },
       },
     ],
@@ -54,18 +33,9 @@ def action_metadata
 end
 
 def action_string
-  string = $stdin.read.chomp
-  puts string.reverse.to_json
-end
-
-def action_hash
-  hash = JSON.load($stdin)
-  hash['output'] = hash['input'].reverse
-  puts hash.to_json
-end
-
-def action_delayed_action
-  puts $stdin.read.chomp.to_json
+  params = JSON.load($stdin)
+  output = { :output => params['argument'].reverse }
+  puts output.to_json
 end
 
 action = ARGV.shift || 'metadata'

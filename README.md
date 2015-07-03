@@ -59,6 +59,11 @@ The location of the cthun-agent's private key, example /etc/puppet/ssl/certs/bob
 Location of the file where log output should be written to, example /var/log/cthun/agent.log.
 If logfile is not configured output will be logged to the console
 
+**spool-dir (optional)**
+
+The location where the outcome of non-blocking requests will be stored; the
+default location is /tmp/cthun-agent/
+
 ### Starting the agent
 
 The agent can be started by running

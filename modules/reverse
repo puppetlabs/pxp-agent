@@ -8,10 +8,22 @@ def action_metadata
       { :name => "string",
         :description => "reverses a string",
         :input => {
-          :type => "string",
+          :type => "object",
+          :properties => {
+            :argument => {
+              :type => "string",
+            },
+          },
+          :required => [ :argument ],
         },
         :output => {
-          :type => "string",
+          :type => "object",
+          :properties => {
+            :output => {
+              :type => "string",
+            },
+          },
+          :required => [ :output ],
         },
       },
       { :name => "hash",
@@ -45,8 +57,9 @@ def action_metadata
 end
 
 def action_string
-  string = $stdin.read.chomp
-  puts string.reverse.to_json
+  params = JSON.load($stdin)
+  output = { :output => params['argument'].reverse }
+  puts output.to_json
 end
 
 def action_hash

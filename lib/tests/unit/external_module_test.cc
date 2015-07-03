@@ -32,9 +32,10 @@ boost::format data_format {
     "}"
 };
 
-const std::string reverse_txt { (data_format % "\"reverse\""
-                                             % "\"string\""
-                                             % "\"maradona\"").str() };
+const std::string reverse_txt {
+    (data_format % "\"reverse\""
+                 % "\"string\""
+                 % "{\"argument\" : \"maradona\"}").str() };
 
 static const std::vector<LTH_JC::JsonContainer> no_debug {};
 
@@ -52,14 +53,14 @@ TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
 
     SECTION("all actions are successfully loaded from a valid external module") {
         ExternalModule mod { std::string { CTHUN_AGENT_ROOT_PATH }
-                             + "/lib/tests/resources/modules/reverse_valid" };
-        REQUIRE(mod.actions.size() == 3);
+                             + "/lib/tests/resources/modules/failures_test" };
+        REQUIRE(mod.actions.size() == 2);
     }
 
     SECTION("throw an error in case the module has an invalid metadata schema") {
         REQUIRE_THROWS_AS(
             ExternalModule(std::string { CTHUN_AGENT_ROOT_PATH }
-                           + "/lib/tests/resources/modules/reverse_broken"),
+                           + "/lib/tests/resources/broken_modules/reverse_broken"),
             module_error);
     }
 }

@@ -16,18 +16,24 @@ class Agent {
   public:
     Agent() = delete;
 
+    // Configure the cthun-agent run by:
+    //  - instantiating CthunConnector;
+    //  - instantiating a RequestProcessor.
+    //
+    // Throw a fatal_error in case it fails to determine the agent
+    // identity by inspecting the certificate.
     Agent(const std::string& modules_dir,
           const std::string& server_url,
           const std::string& ca_crt_path,
           const std::string& client_crt_path,
-          const std::string& client_key_path);
+          const std::string& client_key_path,
+          const std::string& spool_dir);
 
-    // Start the agent and loop indefinetely, by:
-    //  - loading the internal and external modules;
-    //  - retrieving the agent identity from the certificate file;
-    //  - establishing the underlying communications layer connection;
+    // Start the agent and loop indefinitely, by:
+    //  - registering message callbacks;
     //  - connecting to the Cthun server;
-    //  - setting the handlers to process incoming requests.
+    //  - monitoring the state of the connection;
+    //  - re-establishing the connection when requested.
     //
     // Throw a fatal_error in case of unexpected failures; errors
     // such as message sending failures are only logged.

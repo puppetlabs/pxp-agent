@@ -13,11 +13,13 @@ include_directories(
 
 set(SOURCES
     main.cc
+    unit/action_request_test.cc
     unit/agent_test.cc
     unit/certs.cc
     unit/configuration_test.cc
     unit/external_module_test.cc
     unit/file_utils_test.cc
+    unit/request_processor_test.cc
     unit/module_test.cc
     unit/thread_container_test.cc
     unit/modules/inventory_test.cc

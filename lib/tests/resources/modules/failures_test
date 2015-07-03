@@ -8,19 +8,43 @@ def action_metadata
       { :name => "get_an_invalid_result",
         :description => "sure this fails",
         :input => {
-          :type => "string",
+          :type => "object",
+          :properties => {
+            :argument => {
+              :type => "string",
+            },
+          },
+          :required => [ :argument ],
         },
         :output => {
-          :type => "string",
+          :type => "object",
+          :properties => {
+            :output => {
+              :type => "string",
+            },
+          },
+          :required => [ :output ],
         },
       },
       { :name => "broken_action",
         :description => "sure this fails",
         :input => {
-          :type => "string",
+          :type => "object",
+          :properties => {
+            :argument => {
+              :type => "string",
+            },
+          },
+          :required => [ :argument ],
         },
         :output => {
-          :type => "string",
+          :type => "object",
+          :properties => {
+            :output => {
+              :type => "string",
+            },
+          },
+          :required => [ :output ],
         },
       },
     ],
@@ -30,7 +54,7 @@ def action_metadata
 end
 
 def action_get_an_invalid_result
-  puts "this is not valid JSON stuff - it will not be parsed successfully!"
+  puts "not valid JSON - it will not be parsed successfully!"
 end
 
 def action_broken_action

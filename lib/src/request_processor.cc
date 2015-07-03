@@ -1,6 +1,5 @@
 #include <cthun-agent/request_processor.hpp>
 #include <cthun-agent/action_outcome.hpp>
-#include <cthun-agent/configuration.hpp>
 #include <cthun-agent/file_utils.hpp>
 #include <cthun-agent/string_utils.hpp>
 #include <cthun-agent/rpc_schemas.hpp>
@@ -143,10 +142,13 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 //
 
 RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
-                                   const std::string& modules_dir)
+                                   const std::string& modules_dir,
+                                   const std::string& spool_dir)
         : thread_container_ { "Action Executer" },
           connector_ptr_ { connector_ptr },
-          spool_dir_ { Configuration::Instance().get<std::string>("spool-dir") } {
+          spool_dir_ { spool_dir } {
+    assert(!spool_dir_.empty());
+
     if (!fs::exists(spool_dir_)) {
         LOG_INFO("Creating spool directory '%1%'", spool_dir_);
         if (!FileUtils::createDirectory(spool_dir_)) {
@@ -239,7 +241,9 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
         // NB: the registred schemas have the same name as the action
         auto& validator = modules_.at(request.module())->input_validator_;
         validator.validate(request.params(), request.action());
-    } catch (CthunClient::validation_error) {
+    } catch (CthunClient::validation_error& e) {
+        LOG_DEBUG("Invalid '%1% %2%' request %3%: %4%",request.module(),
+                  request.action(), request.id(), e.what());
         throw request_validation_error { "invalid input for '" + request.module()
                                          + " " + request.action() + "'" };
     }
