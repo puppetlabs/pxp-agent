@@ -242,7 +242,7 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
         auto& validator = modules_.at(request.module())->input_validator_;
         validator.validate(request.params(), request.action());
     } catch (CthunClient::validation_error& e) {
-        LOG_DEBUG("Invalid '%1% %2%' request %3%: %4%",request.module(),
+        LOG_DEBUG("Invalid '%1% %2%' request %3%: %4%", request.module(),
                   request.action(), request.id(), e.what());
         throw request_validation_error { "invalid input for '" + request.module()
                                          + " " + request.action() + "'" };
