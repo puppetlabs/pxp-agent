@@ -9,7 +9,9 @@
 
 namespace CthunAgent {
 
-static const int DEFAULT_MSG_TIMEOUT_SEC { 10 };
+namespace LTH_JC = leatherman::json_container;
+
+static const int DEFAULT_MSG_TIMEOUT_SEC { 2 };
 
 std::vector<LTH_JC::JsonContainer> wrapDebug(
                         const CthunClient::ParsedChunks& parsed_chunks) {
