@@ -15,46 +15,71 @@ namespace CthunAgent {
 
 namespace HW = HorseWhisperer;
 
-const std::string server = "wss:///test_server";
-const std::string ca = getCaPath();
-const std::string cert = getCertPath();
-const std::string key = getKeyPath();
-const std::string module_dir = std::string { CTHUN_AGENT_ROOT_PATH } + "/modules";
+const std::string SERVER = "wss:///test_server";
+const std::string CA = getCaPath();
+const std::string CERT = getCertPath();
+const std::string KEY = getKeyPath();
+const std::string MODULES_DIR = std::string { CTHUN_AGENT_ROOT_PATH } + "/test_modules";
+const std::string SPOOL_DIR = std::string { CTHUN_AGENT_ROOT_PATH } + "/test_spool/";
+
+const char* ARGV[] = { "test-command",
+                       "--server", SERVER.data(),
+                       "--ca", CA.data(),
+                       "--cert", CERT.data(),
+                       "--key", KEY.data(),
+                       "--modules-dir", MODULES_DIR.data(),
+                       "--spool-dir", SPOOL_DIR.data() };
+const int ARGC = 13;
 
 static void configureTest() {
-    const char* argv[] = { "test-command",
-                           "--server", server.data(),
-                           "--ca", ca.data(),
-                           "--cert", cert.data(),
-                           "--key", key.data(),
-                           "--modules-dir", module_dir.data() };
-    int argc= 9;
-
-    Configuration::Instance().initialize(argc, const_cast<char**>(argv));
+    Configuration::Instance().initialize(ARGC, const_cast<char**>(ARGV));
 }
 
 static void resetTest() {
     Configuration::Instance().reset();
 }
 
+TEST_CASE("Configuration - metatest", "[configuration]") {
+    resetTest();
+
+    SECTION("Metatest - can initialize Configuration") {
+        REQUIRE_NOTHROW(Configuration::Instance()
+                            .initialize(ARGC, const_cast<char**>(ARGV)));
+    }
+
+    configureTest();
+
+    SECTION("Metatest - we can inject CL options into HorseWhisperer") {
+        REQUIRE(HW::GetFlag<std::string>("ca") == CA);
+        REQUIRE(HW::GetFlag<std::string>("modules-dir") == MODULES_DIR);
+        REQUIRE(HW::GetFlag<std::string>("spool-dir") == SPOOL_DIR);
+    }
+
+    resetTest();
+}
+
 TEST_CASE("Configuration::setStartFunction", "[configuration]") {
-    const char* argv[] = { "test-command",
-                           "--server", server.data(),
-                           "--ca", ca.data(),
-                           "--cert", cert.data(),
-                           "--key", key.data(),
-                           "--modules-dir", module_dir.data() };
-    int argc= 9;
-    int test_val = 0;
+    resetTest();
 
-    Configuration::Instance().setStartFunction(
-        [&test_val] (std::vector<std::string> arg) -> int {
-            return 1;
-        });
+    // TODO(ale): uncomment the following test once we update HW
 
-    Configuration::Instance().initialize(argc, const_cast<char**>(argv));
+    // SECTION("Can't start without setting a function") {
+    //     configureTest();
 
-    REQUIRE(HW::Start() == 1);
+    //     REQUIRE(HW::Start() == 0);
+    // }
+
+    SECTION("It does start correctly") {
+        Configuration::Instance().setStartFunction(
+            [] (std::vector<std::string> arg) -> int {
+                return 1;
+            });
+        configureTest();
+
+        REQUIRE(HW::Start() == 1);
+    }
+
+    resetTest();
 }
 
 TEST_CASE("Configuration::set", "[configuration]") {
@@ -121,6 +146,10 @@ TEST_CASE("Configuration::get", "[configuration]") {
         }
 
         SECTION("return the default value if the flag was not set") {
+            resetTest();
+            // NB: ignoring --spool-dir in ARGV since argc is set to 9
+            Configuration::Instance().initialize(9, const_cast<char**>(ARGV));
+
             REQUIRE(Configuration::Instance().get<std::string>("spool-dir")
                     == DEFAULT_ACTION_RESULTS_DIR);
         }
@@ -192,6 +221,11 @@ TEST_CASE("Configuration::validateAndNormalizeConfiguration", "[configuration]")
                           configuration_entry_error);
     }
 
+    SECTION("it fails when spool-dir is empty") {
+        Configuration::Instance().set<std::string>("spool-dir", "");
+        REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
+                          required_not_set_error);
+    }
     resetTest();
 }
 
