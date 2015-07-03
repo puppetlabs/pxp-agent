@@ -147,6 +147,8 @@ RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr
         : thread_container_ { "Action Executer" },
           connector_ptr_ { connector_ptr },
           spool_dir_ { spool_dir } {
+    assert(!spool_dir_.empty());
+
     if (!fs::exists(spool_dir_)) {
         LOG_INFO("Creating spool directory '%1%'", spool_dir_);
         if (!FileUtils::createDirectory(spool_dir_)) {
