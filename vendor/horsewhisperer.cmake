@@ -4,8 +4,8 @@ include(ExternalProject)
 externalproject_add(
     horsewhisperer
     PREFIX "${PROJECT_BINARY_DIR}"
-    URL "file://${VENDOR_DIRECTORY}/horsewhisperer-0.9.0.zip"
-    URL_MD5 "ea180b31c26e396f9f828515f5306b3c"
+    URL "file://${VENDOR_DIRECTORY}/horsewhisperer-0.9.2.zip"
+    URL_MD5 "7b596e9e728b5d2dc8edde5da732b3a5"
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
     BUILD_IN_SOURCE 1
