@@ -1,7 +1,7 @@
 #include <cthun-agent/configuration.hpp>
 #include <cthun-agent/file_utils.hpp>
 
-#include "version-inl.h"
+#include "version-inl.hpp"
 
 #include <boost/filesystem/operations.hpp>
 
@@ -209,6 +209,7 @@ void Configuration::parseConfigFile() {
 //
 
 void Configuration::reset() {
+    HW::Reset();
     setDefaultValues();
     initialized_ = false;
 }
@@ -278,14 +279,22 @@ void Configuration::validateAndNormalizeConfiguration() {
         throw configuration_entry_error { "key file not found" };
     }
 
-    if (!HW::GetFlag<std::string>("spool-dir").empty()) {
+    for (const auto& flag_name : std::vector<std::string> { "ca", "cert", "key" }) {
+        const auto& path = HW::GetFlag<std::string>(flag_name);
+        HW::SetFlag<std::string>(flag_name, FileUtils::shellExpand(path));
+    }
+
+    if (HW::GetFlag<std::string>("spool-dir").empty())  {
+        // Unexpected, since we have a default value for spool-dir
+        throw required_not_set_error { "spool-dir must be defined" };
+    } else {
+        // TODO(ale): ensure that spool_dir_ is a directory, once we
+        // have leatherman::file_util
+
         std::string spool_dir = FileUtils::shellExpand(HW::GetFlag<std::string>("spool-dir"));
         if (spool_dir.back() != '/') {
             HW::SetFlag<std::string>("spool-dir", spool_dir + "/");
         }
-
-        // TODO(ale): ensure that spool_dir_ is a directory, once we
-        // have leatherman::file_util
     }
 }
 

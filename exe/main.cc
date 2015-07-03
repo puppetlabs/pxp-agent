@@ -41,11 +41,12 @@ int startAgent(std::vector<std::string> arguments) {
     }
 
     try {
-        Agent agent { HW::GetFlag<std::string>("modules-dir"),
-                      HW::GetFlag<std::string>("server"),
-                      FileUtils::shellExpand(HW::GetFlag<std::string>("ca")),
-                      FileUtils::shellExpand(HW::GetFlag<std::string>("cert")),
-                      FileUtils::shellExpand(HW::GetFlag<std::string>("key")) };
+        Agent agent { Configuration::Instance().get<std::string>("modules-dir"),
+                      Configuration::Instance().get<std::string>("server"),
+                      Configuration::Instance().get<std::string>("ca"),
+                      Configuration::Instance().get<std::string>("cert"),
+                      Configuration::Instance().get<std::string>("key"),
+                      Configuration::Instance().get<std::string>("spool-dir") };
 
         agent.start();
     } catch (fatal_error& e) {

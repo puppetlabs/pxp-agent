@@ -19,7 +19,8 @@ class RequestProcessor {
     RequestProcessor() = delete;
 
     RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
-                     const std::string& modules_dir);
+                     const std::string& modules_dir,
+                     const std::string& spool_dir);
 
     /// Execute the specified action.
     ///

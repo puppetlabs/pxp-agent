@@ -26,7 +26,8 @@ class Agent {
           const std::string& server_url,
           const std::string& ca_crt_path,
           const std::string& client_crt_path,
-          const std::string& client_key_path);
+          const std::string& client_key_path,
+          const std::string& spool_dir);
 
     // Start the agent and loop indefinitely, by:
     //  - registering message callbacks;

@@ -1,6 +1,5 @@
 #include <cthun-agent/request_processor.hpp>
 #include <cthun-agent/action_outcome.hpp>
-#include <cthun-agent/configuration.hpp>
 #include <cthun-agent/file_utils.hpp>
 #include <cthun-agent/string_utils.hpp>
 #include <cthun-agent/rpc_schemas.hpp>
@@ -143,10 +142,11 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 //
 
 RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
-                                   const std::string& modules_dir)
+                                   const std::string& modules_dir,
+                                   const std::string& spool_dir)
         : thread_container_ { "Action Executer" },
           connector_ptr_ { connector_ptr },
-          spool_dir_ { Configuration::Instance().get<std::string>("spool-dir") } {
+          spool_dir_ { spool_dir } {
     if (!fs::exists(spool_dir_)) {
         LOG_INFO("Creating spool directory '%1%'", spool_dir_);
         if (!FileUtils::createDirectory(spool_dir_)) {

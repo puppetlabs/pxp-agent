@@ -15,11 +15,12 @@ Agent::Agent(const std::string& modules_dir,
              const std::string& server_url,
              const std::string& ca,
              const std::string& crt,
-             const std::string& key)
+             const std::string& key,
+             const std::string& spool_dir)
         try
             : connector_ptr_ { new CthunConnector(server_url, AGENT_CLIENT_TYPE,
                                                   ca, crt, key) },
-              request_processor_ { connector_ptr_, modules_dir } {
+              request_processor_ { connector_ptr_, modules_dir, spool_dir } {
 } catch (CthunClient::connection_config_error& e) {
     throw fatal_error { std::string { "failed to configure: " } + e.what() };
 }
