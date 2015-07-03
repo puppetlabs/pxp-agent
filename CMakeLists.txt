@@ -17,16 +17,15 @@ set(VENDOR_DIRECTORY ${PROJECT_SOURCE_DIR}/vendor)
 list(APPEND CMAKE_MODULE_PATH ${VENDOR_DIRECTORY})
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-# set a version
+# set a version macro and expand related template
 set(APPLICATION_VERSION_STRING "0.0.1")
+configure_file(templates/version-inl.hpp ${CMAKE_BINARY_DIR}/generated/version-inl.hpp)
 
-# expand a version template
-configure_file(templates/version-inl.h ${CMAKE_BINARY_DIR}/generated/version-inl.h )
-include_directories( ${CMAKE_BINARY_DIR}/generated/ )
-
-# Set the root path macro and expand related template
+# set the root path macro and expand related template
 set(ROOT_PATH ${PROJECT_SOURCE_DIR})
 configure_file(templates/root_path.hpp ${CMAKE_BINARY_DIR}/generated/root_path.hpp)
+
+# include cmake binaries for templates
 include_directories(${CMAKE_BINARY_DIR}/generated)
 
 # prefer openssl from ports
