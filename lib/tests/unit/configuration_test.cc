@@ -61,13 +61,11 @@ TEST_CASE("Configuration - metatest", "[configuration]") {
 TEST_CASE("Configuration::setStartFunction", "[configuration]") {
     resetTest();
 
-    // TODO(ale): uncomment the following test once we update HW
+    SECTION("No error when starting without setting a function") {
+        configureTest();
 
-    // SECTION("Can't start without setting a function") {
-    //     configureTest();
-
-    //     REQUIRE(HW::Start() == 0);
-    // }
+        REQUIRE_NOTHROW(HW::Start());
+    }
 
     SECTION("It does start correctly") {
         Configuration::Instance().setStartFunction(
