@@ -8,6 +8,7 @@ endif()
 
 # define further options
 option(EXTERNAL_CTHUN_CLIENT "ON - use an installed version of cthun-client. OFF - use the git submodule" ON)
+option(TEST_VIRTUAL "ON - certain class member functions became virtual to enable mocking for unit tests" OFF)
 
 # Project Output Paths
 
@@ -81,6 +82,10 @@ add_subdirectory(lib)
 add_subdirectory(exe)
 
 # Add the test suite
+
+if(TEST_VIRTUAL)
+    add_definitions(-DTEST_VIRTUAL)
+endif()
 
 enable_testing()
 

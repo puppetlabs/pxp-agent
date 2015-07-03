@@ -22,9 +22,45 @@ namespace CthunAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-//
-// Mocking class
-//
+static const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/cthun/" };
+static const std::string CA { getCaPath() };
+static const std::string CERT { getCertPath() };
+static const std::string KEY { getKeyPath() };
+static const std::string MODULES { CTHUN_AGENT_ROOT_PATH
+                            + std::string { "/lib/tests/resources/modules" } };
+static const std::string SPOOL { CTHUN_AGENT_ROOT_PATH
+                          + std::string { "/lib/tests/resources/tmp/" } };
+
+TEST_CASE("RequestProcessor::RequestProcessor", "[agent]") {
+    auto c_ptr = std::make_shared<CthunConnector>(TEST_SERVER_URL, "test_agent",
+                                                  CA, CERT, KEY);
+
+    SECTION("successfully instantiates with valid arguments") {
+        auto m_path = CTHUN_AGENT_ROOT_PATH + std::string { "/fake_dir" };
+        REQUIRE_NOTHROW(RequestProcessor(c_ptr, m_path, SPOOL));
+    };
+
+    boost::filesystem::remove_all(SPOOL);
+}
+
+#ifdef TEST_VIRTUAL
+
+static std::string valid_envelope_txt {
+    " { \"id\" : \"123456\","
+    "   \"message_type\" : \"test_test_test\","
+    "   \"expires\" : \"2015-06-26T22:57:09Z\","
+    "   \"targets\" : [\"cth://agent/test_agent\"],"
+    "   \"sender\" : \"cth://controller/test_controller\","
+    "   \"destination_report\" : false"
+    " }" };
+
+static std::string rpc_data_txt {
+    " { \"transaction_id\" : \"42\","
+    "   \"module\" : \"test_module\","
+    "   \"action\" : \"test_action\","
+    "   \"params\" : { \"path\" : \"/tmp\","
+    "                  \"urgent\" : true }"
+    " }" };
 
 class TestConnector : public CthunConnector {
   public:
@@ -38,16 +74,10 @@ class TestConnector : public CthunConnector {
     std::atomic<bool> sent_provisional_response;
     std::atomic<bool> sent_non_blocking_response;
 
-
-    TestConnector(const std::string& server_url,
-                  const std::string& client_type,
-                  const std::string& ca_crt_path,
-                  const std::string& client_crt_path,
-                  const std::string& client_key_path)
-            : CthunConnector { server_url, client_type, ca_crt_path,
-                               client_crt_path, client_key_path },
+    TestConnector()
+            : CthunConnector { TEST_SERVER_URL, "cthun_agent", CA, CERT, KEY },
               sent_provisional_response { false },
-              sent_non_blocking_response {false} {
+              sent_non_blocking_response { false } {
     }
 
     void sendCthunError(const std::string&,
@@ -82,70 +112,9 @@ class TestConnector : public CthunConnector {
     }
 };
 
-//
-// Tests
-//
-
-static const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/cthun/" };
-static const std::string CA { getCaPath() };
-static const std::string CERT { getCertPath() };
-static const std::string KEY { getKeyPath() };
-static const std::string MODULES { CTHUN_AGENT_ROOT_PATH
-                            + std::string { "/lib/tests/resources/modules" } };
-static const std::string SPOOL { CTHUN_AGENT_ROOT_PATH
-                          + std::string { "/lib/tests/resources/tmp" } };
-
-TEST_CASE("RequestProcessor::RequestProcessor", "[agent]") {
-    auto c_ptr = std::make_shared<TestConnector>(TEST_SERVER_URL, "test_agent",
-                                                 CA, CERT, KEY);
-
-    SECTION("successfully instantiates with valid arguments") {
-        auto m_path = CTHUN_AGENT_ROOT_PATH + std::string { "/fake_dir" };
-        REQUIRE_NOTHROW(RequestProcessor(c_ptr, m_path));
-    };
-}
-
-static std::string valid_envelope_txt {
-    " { \"id\" : \"123456\","
-    "   \"message_type\" : \"test_test_test\","
-    "   \"expires\" : \"2015-06-26T22:57:09Z\","
-    "   \"targets\" : [\"cth://agent/test_agent\"],"
-    "   \"sender\" : \"cth://controller/test_controller\","
-    "   \"destination_report\" : false"
-    " }" };
-
-static std::string rpc_data_txt {
-    " { \"transaction_id\" : \"42\","
-    "   \"module\" : \"test_module\","
-    "   \"action\" : \"test_action\","
-    "   \"params\" : { \"path\" : \"/tmp\","
-    "                  \"urgent\" : true }"
-    " }" };
-
-static void configureTest() {
-    const char* argv[] { "test-command",
-                         "--server", TEST_SERVER_URL.data(),
-                         "--ca", CA.data(),
-                         "--cert", CERT.data(),
-                         "--key", KEY.data(),
-                         "--spool-dir", SPOOL.data() };
-    int argc { 9 };
-    Configuration::Instance().initialize(argc, const_cast<char**>(argv));
-}
-
-static void resetTest() {
-    Configuration::Instance().reset();
-}
-
 TEST_CASE("RequestProcessor::processRequest", "[agent]") {
-    resetTest();
-    configureTest();
-
-    auto c_ptr = std::make_shared<TestConnector>(TEST_SERVER_URL, "test_agent",
-                                                 getCaPath(), getCertPath(),
-                                                 getKeyPath());
-    RequestProcessor r_p { c_ptr, MODULES };
-
+    auto c_ptr = std::make_shared<TestConnector>();
+    RequestProcessor r_p { c_ptr, MODULES, SPOOL };
     lth_jc::JsonContainer envelope { valid_envelope_txt };
     std::vector<lth_jc::JsonContainer> debug {};
 
@@ -247,8 +216,9 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
         }
     }
 
-    resetTest();
     boost::filesystem::remove_all(SPOOL);
 }
+
+#endif  // TEST_VIRTUAL
 
 }  // namespace CthunAgent
