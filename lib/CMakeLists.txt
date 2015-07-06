@@ -42,12 +42,12 @@ add_custom_command(OUTPUT ${INIH_SOURCE_DIR}/cpp/INIReader.cpp
                    DEPENDS inih)
 
 SET(LIBS
+    ${cthun-client_LIBRARY}
     ${Boost_LIBRARIES}
     ${OPENSSL_SSL_LIBRARY}
     ${OPENSSL_CRYPTO_LIBRARY}
     ${PTHREADS}
     ${facter_LIBRARY}
-    ${cthun-client_LIBRARY}
 )
 
 add_library(libcthun-agent ${LIBRARY_SOURCES})
