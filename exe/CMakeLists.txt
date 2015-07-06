@@ -15,6 +15,7 @@ include_directories(
 
 set (CTHUN-AGENT_BIN_LIBS
     ${CMAKE_THREAD_LIBS_INIT}
+    ${cthun-client_LIBRARY}
     libcthun-agent
 )
 
