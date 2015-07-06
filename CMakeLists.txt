@@ -9,6 +9,7 @@ endif()
 # define further options
 option(EXTERNAL_CTHUN_CLIENT "ON - use an installed version of cthun-client. OFF - use the git submodule" ON)
 option(TEST_VIRTUAL "ON - certain class member functions became virtual to enable mocking for unit tests" OFF)
+option(LOG_COLOR "Enable colorization for logging" OFF)
 
 # Project Output Paths
 
@@ -55,6 +56,10 @@ set(LEATHERMAN_USE_JSON_CONTAINER TRUE)
 set(LEATHERMAN_USE_LOGGING TRUE)
 leatherman_logging_line_numbers()
 add_subdirectory("vendor/leatherman")
+
+if(LOG_COLOR)
+    add_definitions(-DLOG_COLOR)
+endif()
 
 # Find libraries
 
