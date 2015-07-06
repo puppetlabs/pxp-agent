@@ -85,6 +85,11 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
                                   + "/lib/tests/resources/delayed_result" };
         boost::filesystem::path to { result_path };
 
+        if (!FileUtils::fileExists(DEFAULT_ACTION_RESULTS_DIR)
+            && !FileUtils::createDirectory(DEFAULT_ACTION_RESULTS_DIR)) {
+            FAIL("Failed to create the results directory");
+        }
+
         auto symlink_name = UUID::getUUID();
         std::string symlink_path { DEFAULT_ACTION_RESULTS_DIR + symlink_name };
         boost::filesystem::path symlink { symlink_path };
