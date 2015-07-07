@@ -19,8 +19,11 @@ int startAgent(std::vector<std::string> arguments) {
     std::ofstream file_stream;
 
     if (!logfile.empty()) {
-        file_stream.open(logfile);
+        file_stream.open(logfile, std::ios_base::app);
         leatherman::logging::setup_logging(file_stream);
+#ifdef LOG_COLOR
+        leatherman::logging::set_colorization(true);
+#endif  // LOG_COLOR
     } else {
         leatherman::logging::setup_logging(std::cout);
         leatherman::logging::set_colorization(true);
