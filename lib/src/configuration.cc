@@ -300,7 +300,7 @@ void Configuration::validateAndNormalizeConfiguration() {
     }
 
     if (!HW::GetFlag<std::string>("logfile").empty())  {
-        auto path = FileUtils::shellExpand(HW::GetFlag<std::string>("logfile"));
+        auto path = lth_file::shell_quote(HW::GetFlag<std::string>("logfile"));
         HW::SetFlag<std::string>("logfile", path);
     }
 }
