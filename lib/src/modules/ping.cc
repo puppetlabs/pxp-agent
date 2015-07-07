@@ -29,8 +29,8 @@ Ping::Ping() {
     output_validator_.registerSchema(output_schema);
 }
 
-LTH_JC::JsonContainer Ping::ping(const ActionRequest& request) {
-    LTH_JC::JsonContainer data {};
+lth_jc::JsonContainer Ping::ping(const ActionRequest& request) {
+    lth_jc::JsonContainer data {};
 
     if (request.parsedChunks().debug.empty()) {
         LOG_ERROR("Found no debug entry in the request message");
@@ -40,10 +40,10 @@ LTH_JC::JsonContainer Ping::ping(const ActionRequest& request) {
     auto& debug_entry = request.parsedChunks().debug[0];
 
     try {
-        data.set<std::vector<LTH_JC::JsonContainer>>(
+        data.set<std::vector<lth_jc::JsonContainer>>(
                 "request_hops",
-                debug_entry.get<std::vector<LTH_JC::JsonContainer>>("hops"));
-    } catch (LTH_JC::data_parse_error& e) {
+                debug_entry.get<std::vector<lth_jc::JsonContainer>>("hops"));
+    } catch (lth_jc::data_parse_error& e) {
         LOG_ERROR("Failed to parse debug entry: %1%", e.what());
         LOG_DEBUG("Debug entry: %1%", debug_entry.toString());
         throw request_processing_error { "debug entry is not valid JSON" };

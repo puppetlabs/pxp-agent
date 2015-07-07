@@ -7,7 +7,7 @@
 
 namespace CthunAgent {
 
-namespace LTH_JC = leatherman::json_container;
+namespace lth_jc = leatherman::json_container;
 
 struct ActionOutcome {
     enum class Type { Internal, External };
@@ -16,14 +16,14 @@ struct ActionOutcome {
     std::string stderr;
     std::string stdout;
 
-    LTH_JC::JsonContainer results;
+    lth_jc::JsonContainer results;
 
     ActionOutcome() {
     }
 
     ActionOutcome(std::string& stderr_,
                   std::string& stdout_,
-                  LTH_JC::JsonContainer& results_)
+                  lth_jc::JsonContainer& results_)
             : type { Type::External },
               stderr { stderr_ },
               stdout { stdout_ },
@@ -32,19 +32,19 @@ struct ActionOutcome {
 
     ActionOutcome(std::string& stderr_,
                   std::string& stdout_,
-                  LTH_JC::JsonContainer&& results_)
+                  lth_jc::JsonContainer&& results_)
             : type { Type::External },
               stderr { stderr_ },
               stdout { stdout_ },
               results { results_ } {
     }
 
-    ActionOutcome(LTH_JC::JsonContainer& results_)
+    ActionOutcome(lth_jc::JsonContainer& results_)
             : type { Type::Internal },
               results { results_ } {
     }
 
-    ActionOutcome(LTH_JC::JsonContainer&& results_)
+    ActionOutcome(lth_jc::JsonContainer&& results_)
             : type { Type::Internal },
               results { results_ } {
     }

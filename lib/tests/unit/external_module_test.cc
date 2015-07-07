@@ -3,7 +3,6 @@
 #include <cthun-agent/errors.hpp>
 #include <cthun-agent/external_module.hpp>
 #include <cthun-agent/uuid.hpp>
-#include <cthun-agent/file_utils.hpp>
 
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
 
@@ -20,7 +19,7 @@
 
 namespace CthunAgent {
 
-namespace LTH_JC = leatherman::json_container;
+namespace lth_jc = leatherman::json_container;
 
 const std::string RESULTS_ROOT_DIR { "/tmp/cthun-agent" };
 const std::string STRING_ACTION { "string" };
@@ -37,11 +36,11 @@ const std::string reverse_txt {
                  % "\"string\""
                  % "{\"argument\" : \"maradona\"}").str() };
 
-static const std::vector<LTH_JC::JsonContainer> no_debug {};
+static const std::vector<lth_jc::JsonContainer> no_debug {};
 
 static const CthunClient::ParsedChunks content {
-                    LTH_JC::JsonContainer(),             // envelope
-                    LTH_JC::JsonContainer(reverse_txt),  // data
+                    lth_jc::JsonContainer(),             // envelope
+                    lth_jc::JsonContainer(reverse_txt),  // data
                     no_debug,   // debug
                     0 };        // num invalid debug chunks
 
@@ -102,8 +101,8 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
                                                    % "\"get_an_invalid_result\""
                                                    % "\"maradona\"").str() };
             CthunClient::ParsedChunks failure_content {
-                    LTH_JC::JsonContainer(),
-                    LTH_JC::JsonContainer(failure_txt),
+                    lth_jc::JsonContainer(),
+                    lth_jc::JsonContainer(failure_txt),
                     no_debug,
                     0 };
             ActionRequest request { RequestType::Blocking, failure_content };
@@ -118,8 +117,8 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
                                                    % "\"broken_action\""
                                                    % "\"maradona\"").str() };
             CthunClient::ParsedChunks failure_content {
-                    LTH_JC::JsonContainer(),
-                    LTH_JC::JsonContainer(failure_txt),
+                    lth_jc::JsonContainer(),
+                    lth_jc::JsonContainer(failure_txt),
                     no_debug,
                     0 };
             ActionRequest request { RequestType::Blocking, failure_content };

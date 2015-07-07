@@ -14,7 +14,7 @@
 
 namespace CthunAgent {
 
-namespace LTH_JC = leatherman::json_container;
+namespace lth_jc = leatherman::json_container;
 
 class Module {
   public:

@@ -1,5 +1,6 @@
 #include <cthun-agent/configuration.hpp>
-#include <cthun-agent/file_utils.hpp>
+
+#include <leatherman/file_util/file.hpp>
 
 #include "version-inl.hpp"
 
@@ -8,6 +9,7 @@
 namespace CthunAgent {
 
 namespace fs = boost::filesystem;
+namespace lth_file = leatherman::file_util;
 
 const std::string DEFAULT_MODULES_DIR { "/usr/share/cthun-agent/modules" };
 
@@ -29,10 +31,10 @@ void Configuration::defineDefaultValues() {
 
     // start setting the config file path to known existent locations;
     // HW will overwrite it with the one parsed from CLI, if specified
-    if (FileUtils::fileExists(FileUtils::shellExpand("~/.cthun-agent"))) {
-        config_file_ = FileUtils::shellExpand("~/.cthun-agent");
+    if (lth_file::file_readable(lth_file::tilde_expand("~/.cthun-agent"))) {
+        config_file_ = lth_file::tilde_expand("~/.cthun-agent");
     // TODO(ploubser): This will have to changed when the AIO agent is done
-    } else if (FileUtils::fileExists("/etc/puppetlabs/agent/cthun.cfg")) {
+    } else if (lth_file::file_readable("/etc/puppetlabs/agent/cthun.cfg")) {
         config_file_ = "/etc/puppetlabs/agent/cthun.cfg";
     }
 
@@ -152,7 +154,7 @@ void Configuration::setDefaultValues() {
 }
 
 void Configuration::parseConfigFile() {
-    if (!FileUtils::fileExists(config_file_)) {
+    if (!lth_file::file_readable(config_file_)) {
         throw configuration_entry_error { config_file_ + " does not exist" };
     }
 
@@ -263,25 +265,25 @@ void Configuration::validateAndNormalizeConfiguration() {
 
     if (HW::GetFlag<std::string>("ca").empty()) {
         throw required_not_set_error { "ca value must be defined" };
-    } else if (!FileUtils::fileExists(HW::GetFlag<std::string>("ca"))) {
+    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("ca"))) {
         throw configuration_entry_error { "ca file not found" };
     }
 
     if (HW::GetFlag<std::string>("cert").empty()) {
         throw required_not_set_error { "cert value must be defined" };
-    } else if (!FileUtils::fileExists(HW::GetFlag<std::string>("cert"))) {
+    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("cert"))) {
         throw configuration_entry_error { "cert file not found" };
     }
 
     if (HW::GetFlag<std::string>("key").empty()) {
         throw required_not_set_error { "key value must be defined" };
-    } else if (!FileUtils::fileExists(HW::GetFlag<std::string>("key"))) {
+    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("key"))) {
         throw configuration_entry_error { "key file not found" };
     }
 
     for (const auto& flag_name : std::vector<std::string> { "ca", "cert", "key" }) {
         const auto& path = HW::GetFlag<std::string>(flag_name);
-        HW::SetFlag<std::string>(flag_name, FileUtils::shellExpand(path));
+        HW::SetFlag<std::string>(flag_name, lth_file::tilde_expand(path));
     }
 
     if (HW::GetFlag<std::string>("spool-dir").empty())  {
@@ -291,7 +293,7 @@ void Configuration::validateAndNormalizeConfiguration() {
         // TODO(ale): ensure that spool_dir_ is a directory, once we
         // have leatherman::file_util
 
-        std::string spool_dir = FileUtils::shellExpand(HW::GetFlag<std::string>("spool-dir"));
+        std::string spool_dir = lth_file::tilde_expand(HW::GetFlag<std::string>("spool-dir"));
         if (spool_dir.back() != '/') {
             HW::SetFlag<std::string>("spool-dir", spool_dir + "/");
         }

@@ -1,6 +1,5 @@
 #include <cthun-agent/errors.hpp>
 #include <cthun-agent/uuid.hpp>
-#include <cthun-agent/file_utils.hpp>
 #include <cthun-agent/modules/status.hpp>
 #include <cthun-agent/configuration.hpp>
 
@@ -9,6 +8,7 @@
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
 
 #include <leatherman/json_container/json_container.hpp>
+#include <leatherman/file_util/file.hpp>
 
 #include <boost/format.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -20,7 +20,7 @@
 
 namespace CthunAgent {
 
-namespace LTH_JC = leatherman::json_container;
+namespace lth_jc = leatherman::json_container;
 
 static const std::string query_action { "query" };
 
@@ -33,11 +33,11 @@ boost::format status_format {
 
 static const std::string status_txt { (status_format % "the-uuid-string").str() };
 
-static const std::vector<LTH_JC::JsonContainer> no_debug {};
+static const std::vector<lth_jc::JsonContainer> no_debug {};
 
 static const CthunClient::ParsedChunks parsed_chunks {
-                    LTH_JC::JsonContainer(),
-                    LTH_JC::JsonContainer(status_txt),
+                    lth_jc::JsonContainer(),
+                    lth_jc::JsonContainer(status_txt),
                     no_debug,
                     0 };
 
@@ -64,8 +64,8 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
         auto job_id = UUID::getUUID();
         std::string other_status_txt { (status_format % job_id).str() };
         CthunClient::ParsedChunks other_chunks {
-                LTH_JC::JsonContainer(),
-                LTH_JC::JsonContainer(other_status_txt),
+                lth_jc::JsonContainer(),
+                lth_jc::JsonContainer(other_status_txt),
                 no_debug,
                 0 };
         ActionRequest request { RequestType::Blocking, other_chunks };
@@ -85,8 +85,8 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
                                   + "/lib/tests/resources/delayed_result" };
         boost::filesystem::path to { result_path };
 
-        if (!FileUtils::fileExists(DEFAULT_ACTION_RESULTS_DIR)
-            && !FileUtils::createDirectory(DEFAULT_ACTION_RESULTS_DIR)) {
+        if (!boost::filesystem::exists(DEFAULT_ACTION_RESULTS_DIR)
+            && !boost::filesystem::create_directory(DEFAULT_ACTION_RESULTS_DIR)) {
             FAIL("Failed to create the results directory");
         }
 
@@ -96,8 +96,8 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
 
         std::string other_status_txt { (status_format % symlink_name).str() };
         CthunClient::ParsedChunks other_chunks {
-                LTH_JC::JsonContainer(),
-                LTH_JC::JsonContainer(other_status_txt),
+                lth_jc::JsonContainer(),
+                lth_jc::JsonContainer(other_status_txt),
                 no_debug,
                 0 };
         ActionRequest request { RequestType::Blocking, other_chunks };
@@ -127,7 +127,7 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
             REQUIRE(outcome.results.get<std::string>("stderr") == "***ERROR\n");
         }
 
-        FileUtils::removeFile(symlink_path);
+        boost::filesystem::remove(symlink_path);
     }
 }
 

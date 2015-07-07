@@ -18,6 +18,8 @@
 
 namespace CthunAgent {
 
+namespace lth_jc = leatherman::json_container;
+
 class CthunConnector : public CthunClient::Connector {
   public:
     CthunConnector(const std::string& server_url,

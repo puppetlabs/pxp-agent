@@ -15,7 +15,7 @@
 
 namespace CthunAgent {
 
-namespace LTH_JC = leatherman::json_container;
+namespace lth_jc = leatherman::json_container;
 
 static const std::string ping_action { "ping" };
 
@@ -26,13 +26,13 @@ static const std::string ping_data_txt {
     "}"
 };
 
-static const std::vector<LTH_JC::JsonContainer> debug {
-    LTH_JC::JsonContainer { "{\"hops\" : []}" }
+static const std::vector<lth_jc::JsonContainer> debug {
+    lth_jc::JsonContainer { "{\"hops\" : []}" }
 };
 
 static const CthunClient::ParsedChunks parsed_chunks {
-                    LTH_JC::JsonContainer(),
-                    LTH_JC::JsonContainer(ping_data_txt),
+                    lth_jc::JsonContainer(),
+                    lth_jc::JsonContainer(ping_data_txt),
                     debug,
                     0 };
 
@@ -78,19 +78,19 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
     SECTION("it should copy an empty hops entry") {
         auto data_txt = (data_format % "").str();
         auto debug_txt = (debug_format % "[]").str();
-        std::vector<LTH_JC::JsonContainer> other_debug {
-            LTH_JC::JsonContainer { debug_txt }
+        std::vector<lth_jc::JsonContainer> other_debug {
+            lth_jc::JsonContainer { debug_txt }
         };
 
         CthunClient::ParsedChunks other_chunks {
-                    LTH_JC::JsonContainer(),
-                    LTH_JC::JsonContainer(ping_data_txt),
+                    lth_jc::JsonContainer(),
+                    lth_jc::JsonContainer(ping_data_txt),
                     other_debug,
                     0 };
         ActionRequest other_request { RequestType::Blocking, other_chunks };
 
         auto result = ping_module.ping(other_request);
-        auto hops = result.get<std::vector<LTH_JC::JsonContainer>>(
+        auto hops = result.get<std::vector<lth_jc::JsonContainer>>(
                         "request_hops");
         REQUIRE(hops.empty());
     }
@@ -112,19 +112,19 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
     SECTION("it should copy the hops entry when msg passed through a single server") {
         auto data_txt = (data_format % "").str();
         auto debug_txt = (debug_format % hops_str).str();
-        std::vector<LTH_JC::JsonContainer> other_debug {
-            LTH_JC::JsonContainer { debug_txt }
+        std::vector<lth_jc::JsonContainer> other_debug {
+            lth_jc::JsonContainer { debug_txt }
         };
 
         CthunClient::ParsedChunks other_chunks {
-                LTH_JC::JsonContainer(),
-                LTH_JC::JsonContainer(data_txt),
+                lth_jc::JsonContainer(),
+                lth_jc::JsonContainer(data_txt),
                 other_debug,
                 0 };
         ActionRequest other_request { RequestType::Blocking, other_chunks };
 
         auto result = ping_module.ping(other_request);
-        auto hops = result.get<std::vector<LTH_JC::JsonContainer>>(
+        auto hops = result.get<std::vector<lth_jc::JsonContainer>>(
                         "request_hops");
 
         REQUIRE(hops.size() == 4);

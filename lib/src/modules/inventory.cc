@@ -27,7 +27,7 @@ Inventory::Inventory() {
 
 ActionOutcome Inventory::callAction(const ActionRequest& request) {
     std::ostringstream fact_stream;
-    LTH_JC::JsonContainer results {};
+    lth_jc::JsonContainer results {};
 
     facter::facts::collection facts;
 #if LIBFACTER_VERSION_MAJOR >= 3
