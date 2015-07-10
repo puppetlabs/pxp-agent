@@ -10,7 +10,7 @@
 
 namespace CthunAgent {
 
-namespace LTH_JC = leatherman::json_container;
+namespace lth_jc = leatherman::json_container;
 namespace lth_util = leatherman::util;
 
 static const int DEFAULT_MSG_TIMEOUT_SEC { 2 };
