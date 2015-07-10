@@ -72,16 +72,20 @@ int main(int argc, char *argv[]) {
     Configuration::Instance().setStartFunction(startAgent);
 
     HW::ParseResult parse_result;
+    std::string err_msg {};
 
     try {
         parse_result = Configuration::Instance().initialize(argc, argv);
-    } catch (HW::flag_validation_error& e) {
-        std::cout << "Invalid command line arguments:\n"
-                  << e.what() << std::endl;
-        return 1;
+    } catch (HW::horsewhisperer_error& e) {
+        // Failed to validate action argument or flag
+        err_msg = e.what();
     } catch(configuration_error& e) {
-        std::cout << "An error occurred while parsing your configuration.\n"
-                  << e.what() << std::endl;
+        std::cout << "An unexpected error has occurred:\n";
+        err_msg = e.what();
+    }
+
+    if (!err_msg.empty()) {
+        std::cout << err_msg << "\nCannot start cthun-agent" << std::endl;
         return 1;
     }
 
