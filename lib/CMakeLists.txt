@@ -4,13 +4,13 @@ cmake_minimum_required(VERSION 2.8.12)
 
 include_directories(
     inc
-    SYSTEM ${Boost_INCLUDE_DIRS}
+    ${LEATHERMAN_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
     SYSTEM ${Boost_Process_INCLUDE_DIRS}
-    SYSTEM ${HORSEWHISPERER_INCLUDE_DIRS}
-    SYSTEM ${INIH_INCLUDE_DIRS}
-    SYSTEM ${cthun-client_INCLUDE_DIR}
-    SYSTEM ${LEATHERMAN_INCLUDE_DIRS}
-    SYSTEM ${facter_INCLUDE_DIR}
+    ${HORSEWHISPERER_INCLUDE_DIRS}
+    ${INIH_INCLUDE_DIRS}
+    ${cthun-client_INCLUDE_DIR}
+    ${facter_INCLUDE_DIR}
 )
 
 set(LIBRARY_SOURCES
