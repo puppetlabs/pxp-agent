@@ -26,7 +26,6 @@ set(LIBRARY_SOURCES
     src/modules/status.cc
     src/request_processor.cc
     src/rpc_schemas.cc
-    src/string_utils.cc
     src/thread_container.cc
 
     ${INIH_SOURCE_DIR}/ini.c

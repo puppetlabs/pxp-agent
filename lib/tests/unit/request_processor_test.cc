@@ -92,7 +92,7 @@ class TestConnector : public CthunConnector {
     }
 
     void sendBlockingResponse(const ActionRequest&,
-                              const LTH_JC::JsonContainer&) {
+                              const lth_jc::JsonContainer&) {
         throw blocking_response {};
     }
 
@@ -100,7 +100,7 @@ class TestConnector : public CthunConnector {
     // another thread
 
     virtual void sendNonBlockingResponse(const ActionRequest&,
-                                         const LTH_JC::JsonContainer&,
+                                         const lth_jc::JsonContainer&,
                                          const std::string&) {
         sent_non_blocking_response = true;
     }

@@ -1,6 +1,7 @@
 #include <cthun-agent/modules/status.hpp>
 #include <cthun-agent/configuration.hpp>
 #include <boost/filesystem.hpp>
+
 #include <leatherman/file_util/file.hpp>
 
 #include <fstream>

@@ -1,5 +1,4 @@
 #include <cthun-agent/errors.hpp>
-#include <cthun-agent/uuid.hpp>
 #include <cthun-agent/modules/status.hpp>
 #include <cthun-agent/configuration.hpp>
 
@@ -9,6 +8,7 @@
 
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/file_util/file.hpp>
+#include <leatherman/util/strings.hpp>
 
 #include <boost/format.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -21,6 +21,7 @@
 namespace CthunAgent {
 
 namespace lth_jc = leatherman::json_container;
+namespace lth_util = leatherman::util;
 
 static const std::string query_action { "query" };
 
@@ -61,7 +62,7 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
     }
 
     SECTION("it works properly when an unknown job id is provided") {
-        auto job_id = UUID::getUUID();
+        auto job_id = lth_util::get_UUID();
         std::string other_status_txt { (status_format % job_id).str() };
         CthunClient::ParsedChunks other_chunks {
                 lth_jc::JsonContainer(),
@@ -90,7 +91,7 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
             FAIL("Failed to create the results directory");
         }
 
-        auto symlink_name = UUID::getUUID();
+        auto symlink_name = lth_util::get_UUID();
         std::string symlink_path { DEFAULT_ACTION_RESULTS_DIR + symlink_name };
         boost::filesystem::path symlink { symlink_path };
 

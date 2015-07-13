@@ -1,17 +1,16 @@
 #include <cthun-agent/request_processor.hpp>
 #include <cthun-agent/action_outcome.hpp>
-#include <cthun-agent/string_utils.hpp>
 #include <cthun-agent/rpc_schemas.hpp>
-#include <cthun-agent/timer.hpp>
-#include <cthun-agent/uuid.hpp>
 #include <cthun-agent/external_module.hpp>
 #include <cthun-agent/modules/echo.hpp>
 #include <cthun-agent/modules/inventory.hpp>
 #include <cthun-agent/modules/ping.hpp>
 #include <cthun-agent/modules/status.hpp>
-#include <leatherman/json_container/json_container.hpp>
 
+#include <leatherman/json_container/json_container.hpp>
 #include <leatherman/file_util/file.hpp>
+#include <leatherman/util/strings.hpp>
+#include <leatherman/util/timer.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.action_executer"
 #include <leatherman/logging/logging.hpp>
@@ -28,7 +27,7 @@ namespace CthunAgent {
 namespace fs = boost::filesystem;
 namespace lth_jc = leatherman::json_container;
 namespace lth_file = leatherman::file_util;
-
+namespace lth_util = leatherman::util;
 //
 // Results Storage
 //
@@ -113,7 +112,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ResultsStorage results_storage,
                            std::shared_ptr<CthunConnector> connector_ptr,
                            std::shared_ptr<std::atomic<bool>> done) {
-    CthunAgent::Timer timer {};
+    lth_util::Timer timer {};
     std::string exec_error {};
     ActionOutcome outcome {};
 
@@ -130,7 +129,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     }
 
     // Store results on disk
-    auto duration = std::to_string(timer.elapsedSeconds()) + " s";
+    auto duration = std::to_string(timer.elapsed_seconds()) + " s";
     results_storage.write(outcome, exec_error, duration);
 
     // Flag end of processing
@@ -257,7 +256,7 @@ void RequestProcessor::processBlockingRequest(const ActionRequest& request) {
 }
 
 void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
-    auto job_id = UUID::getUUID();
+    auto job_id = lth_util::get_UUID();
 
     // HERE(ale): assuming spool_dir ends with '/' (up to Configuration)
     std::string results_dir { spool_dir_ + job_id };
@@ -348,7 +347,7 @@ void RequestProcessor::logLoadedModules() const {
             actions_list += action;
         }
 
-        auto txt_suffix = StringUtils::plural(module.second->actions.size());
+        auto txt_suffix = lth_util::plural(module.second->actions.size());
         LOG_INFO("Loaded '%1%' module - %2%%3%%4%",
                  module.first, txt, txt_suffix, actions_list);
     }
