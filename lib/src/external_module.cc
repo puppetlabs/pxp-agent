@@ -1,8 +1,6 @@
 #include <cthun-agent/external_module.hpp>
 #include <cthun-agent/errors.hpp>
 
-#include <leatherman/file_util/file.hpp>
-
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.external_module"
 #include <leatherman/logging/logging.hpp>
 
@@ -166,9 +164,10 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     auto& action_name = request.action();
 
     LOG_INFO("About to execute '%1% %2%' - request input: %3%",
-             module_name, action_name, request.paramsTxt());
+             module_name, action_name, request.requestTxt());
 
-    runCommand(path_, { path_, action_name }, request.paramsTxt(), stdout, stderr);
+    runCommand(path_, { path_, action_name }, request.requestTxt(),
+               stdout, stderr);
 
     if (stdout.empty()) {
         LOG_DEBUG("'%1% %2%' produced no output", module_name, action_name);

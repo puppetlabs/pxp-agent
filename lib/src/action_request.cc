@@ -1,5 +1,6 @@
 #include <cthun-agent/action_request.hpp>
 #include <cthun-agent/errors.hpp>
+#include <cthun-agent/configuration.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.action_request"
 #include <leatherman/logging/logging.hpp>
@@ -14,6 +15,8 @@ ActionRequest::ActionRequest(RequestType type,
           notify_outcome_ { true },
           parsed_chunks_ { parsed_chunks },
           params_ { "{}" },
+          config_ { "{}" },
+          request_txt_ { "" },
           params_txt_ { "" } {
     init();
 }
@@ -24,6 +27,8 @@ ActionRequest::ActionRequest(RequestType type,
           notify_outcome_ { true },
           parsed_chunks_ { parsed_chunks },
           params_ { "{}" },
+          config_ { "{}" },
+          request_txt_ { "" },
           params_txt_ { "" } {
     init();
 }
@@ -47,11 +52,28 @@ const lth_jc::JsonContainer& ActionRequest::params() const {
     return params_;
 }
 
+const lth_jc::JsonContainer& ActionRequest::config() const {
+    if (config_.empty()) {
+        config_ = Configuration::Instance().getModuleConfig(module_);
+    }
+    return config_;
+}
+
 const std::string& ActionRequest::paramsTxt() const {
     if (params_txt_.empty()) {
         params_txt_ = params().toString();
     }
     return params_txt_;
+}
+
+const std::string& ActionRequest::requestTxt() const {
+    if (request_txt_.empty()) {
+        lth_jc::JsonContainer tmp {};
+        tmp.set<lth_jc::JsonContainer>("params", params());
+        tmp.set<lth_jc::JsonContainer>("config", config());
+        request_txt_ = tmp.toString();
+    }
+    return request_txt_;
 }
 
 // Private interface
