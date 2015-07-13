@@ -1,10 +1,15 @@
 #include <cthun-agent/configuration.hpp>
 
 #include <leatherman/file_util/file.hpp>
+#include <leatherman/file_util/directory.hpp>
 
 #include "version-inl.hpp"
 
 #include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.configuration"
+#include <leatherman/logging/logging.hpp>
 
 namespace CthunAgent {
 
@@ -12,6 +17,8 @@ namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
 
 const std::string DEFAULT_MODULES_DIR { "/usr/share/cthun-agent/modules" };
+const std::string DEFAULT_MODULES_CONF_DIR { "/etc/puppetlabs/cthun-agent/modules.d" };
+
 
 //
 // Private
@@ -92,6 +99,13 @@ void Configuration::defineDefaultValues() {
                                "Specify directory to spool delayed results to",
                                Types::String,
                                DEFAULT_ACTION_RESULTS_DIR))));
+
+    defaults_.insert(std::pair<std::string, Base_ptr>("modules-config-dir", Base_ptr(
+        new Entry<std::string>("modules-config-dir",
+                               "",
+                               "Specify directory where module config files are stored",
+                               Types::String,
+                               DEFAULT_MODULES_CONF_DIR))));
 
     defaults_.insert(std::pair<std::string, Base_ptr>("modules-dir", Base_ptr(
         new Entry<std::string>("modules-dir",
@@ -246,6 +260,7 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[]) {
     }
 
     validateAndNormalizeConfiguration();
+    loadModuleConfiguration();
     initialized_ = true;
 
     return parse_result;
@@ -303,6 +318,39 @@ void Configuration::validateAndNormalizeConfiguration() {
         auto path = lth_file::shell_quote(HW::GetFlag<std::string>("logfile"));
         HW::SetFlag<std::string>("logfile", path);
     }
+}
+
+void Configuration::loadModuleConfiguration() {
+    std::string config_dir { HW::GetFlag<std::string>("modules-config-dir") };
+
+    if (!fs::is_directory(config_dir)) {
+        std::string message { "Directory '" + config_dir + "' specified by" +
+                              "modules-config-dir doesn't exist" };
+        LOG_WARNING(message);
+    } else {
+        lth_file::each_file(config_dir, [this](std::string const& s) -> bool {
+            try {
+                fs::path s_path { s };
+                module_config_[s_path.stem().string()] =
+                    lth_jc::JsonContainer(lth_file::read(s));
+            } catch (lth_jc::data_parse_error& e) {
+                std::string message { "Cannot load module config file '" + s + "'. " +
+                                      "File contains invalid json" };
+                LOG_WARNING(message);
+            }
+            return true;
+            // naming convention for config files are .cfg. Don't process files that
+            // don't end in this extension
+        }, "\\.cfg$");
+    }
+}
+
+const lth_jc::JsonContainer& Configuration::getModuleConfig(const std::string& module) {
+    if (module_config_.find(module) == module_config_.end()) {
+        module_config_[module] = lth_jc::JsonContainer { "{}" };
+    }
+
+    return module_config_[module];
 }
 
 }  // namespace CthunAgent

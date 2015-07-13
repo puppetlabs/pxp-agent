@@ -57,13 +57,13 @@ def action_metadata
 end
 
 def action_string
-  params = JSON.load($stdin)
+  params = JSON.load($stdin)["params"]
   output = { :output => params['argument'].reverse }
   puts output.to_json
 end
 
 def action_hash
-  hash = JSON.load($stdin)
+  hash = JSON.load($stdin)["params"]
   hash['output'] = hash['input'].reverse
   puts hash.to_json
 end

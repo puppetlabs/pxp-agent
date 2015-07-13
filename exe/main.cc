@@ -74,6 +74,12 @@ int main(int argc, char *argv[]) {
     HW::ParseResult parse_result;
     std::string err_msg {};
 
+    // Enable logging to stdout at info so that our config class can log
+    // if it needs to. This way we can make it very clear if something odd
+    // happens during startup.
+    leatherman::logging::setup_logging(std::cout);
+    leatherman::logging::set_level(leatherman::logging::log_level::info);
+
     try {
         parse_result = Configuration::Instance().initialize(argc, argv);
     } catch (HW::horsewhisperer_error& e) {

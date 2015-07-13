@@ -39,6 +39,8 @@ class ActionRequest {
 
     // The following accessors perform lazy initialization
     const lth_jc::JsonContainer& params() const;
+    const lth_jc::JsonContainer& config() const;
+    const std::string& requestTxt() const;
     const std::string& paramsTxt() const;
 
   private:
@@ -53,6 +55,8 @@ class ActionRequest {
 
     // Lazy initialized
     mutable lth_jc::JsonContainer params_;
+    mutable lth_jc::JsonContainer config_;
+    mutable std::string request_txt_;
     mutable std::string params_txt_;
 
     void init();

@@ -5,12 +5,14 @@
 
 #include <horsewhisperer/horsewhisperer.h>
 #include <INIReader.h>
+#include <leatherman/json_container/json_container.hpp>
 
 #include <map>
 
 namespace CthunAgent {
 
 namespace HW = HorseWhisperer;
+namespace lth_jc = leatherman::json_container;
 
 static const std::string DEFAULT_ACTION_RESULTS_DIR = "/tmp/cthun-agent/";
 
@@ -129,11 +131,18 @@ class Configuration {
     /// missing; a configuration_entry_error in case of invalid values.
     void validateAndNormalizeConfiguration();
 
+    /// Load and store all configuration options for individual modules
+    void loadModuleConfiguration();
+
+    /// Retrieve module specific config options
+    const lth_jc::JsonContainer& getModuleConfig(const std::string& module);
+
   private:
     bool initialized_;
     std::map<std::string, Base_ptr> defaults_;
     std::string config_file_;
     std::function<int(std::vector<std::string>)> start_function_;
+    std::map<std::string, lth_jc::JsonContainer> module_config_;
 
     Configuration();
     void parseConfigFile();
