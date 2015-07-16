@@ -36,7 +36,7 @@ Configuration::Configuration() : initialized_ { false },
 void Configuration::defineDefaultValues() {
     HW::SetAppName("cthun-agent");
     HW::SetHelpBanner("Usage: cthun-agent [options]");
-    HW::SetVersion(CTHUN_AGENT_VERSION);
+    HW::SetVersion(std::string { CTHUN_AGENT_VERSION } + "\n");
 
     // start setting the config file path to known existent locations;
     // HW will overwrite it with the one parsed from CLI, if specified
