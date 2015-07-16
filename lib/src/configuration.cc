@@ -22,7 +22,6 @@ namespace lth_jc = leatherman::json_container;
 const std::string DEFAULT_MODULES_DIR { "/usr/share/cthun-agent/modules" };
 const std::string DEFAULT_MODULES_CONF_DIR { "/etc/puppetlabs/cthun-agent/modules.d" };
 
-
 //
 // Private
 //
@@ -281,7 +280,8 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[]) {
     return parse_result;
 }
 
-void Configuration::setStartFunction(std::function<int(std::vector<std::string>)> start_function) {
+void Configuration::setStartFunction(
+        std::function<int(std::vector<std::string>)> start_function) {
     start_function_ = start_function;
 }
 
@@ -339,9 +339,8 @@ void Configuration::loadModuleConfiguration() {
     std::string config_dir { HW::GetFlag<std::string>("modules-config-dir") };
 
     if (!fs::is_directory(config_dir)) {
-        std::string message { "Directory '" + config_dir + "' specified by" +
-                              "modules-config-dir doesn't exist" };
-        LOG_WARNING(message);
+        LOG_WARNING("Directory '%1%' specified by modules-config-dir doesn't "
+                    "exist", config_dir);
     } else {
         lth_file::each_file(config_dir, [this](std::string const& s) -> bool {
             try {
@@ -349,13 +348,12 @@ void Configuration::loadModuleConfiguration() {
                 module_config_[s_path.stem().string()] =
                     lth_jc::JsonContainer(lth_file::read(s));
             } catch (lth_jc::data_parse_error& e) {
-                std::string message { "Cannot load module config file '" + s + "'. " +
-                                      "File contains invalid json" };
-                LOG_WARNING(message);
+                LOG_WARNING("Cannot load module config file '%1%'. File "
+                            "contains invalid json: %2%", s, e.what());
             }
             return true;
-            // naming convention for config files are .cfg. Don't process files that
-            // don't end in this extension
+            // naming convention for config files are .cfg. Don't
+            // process files that don't end in this extension
         }, "\\.cfg$");
     }
 }
