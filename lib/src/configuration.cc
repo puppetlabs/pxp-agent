@@ -320,10 +320,14 @@ void Configuration::validateAndNormalizeConfiguration() {
         // Unexpected, since we have a default value for spool-dir
         throw required_not_set_error { "spool-dir must be defined" };
     } else {
-        // TODO(ale): ensure that spool_dir_ is a directory, once we
-        // have leatherman::file_util
+        auto spool_dir = HW::GetFlag<std::string>("spool-dir");
+        spool_dir = lth_file::tilde_expand(spool_dir);
 
-        std::string spool_dir = lth_file::tilde_expand(HW::GetFlag<std::string>("spool-dir"));
+        if (fs::exists(spool_dir) && !fs::is_directory(spool_dir)) {
+            std::string err { "not a spool directory: " + spool_dir };
+            throw configuration_entry_error { err };
+        }
+
         if (spool_dir.back() != '/') {
             HW::SetFlag<std::string>("spool-dir", spool_dir + "/");
         }
