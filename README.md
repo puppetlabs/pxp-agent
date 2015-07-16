@@ -21,13 +21,16 @@ The cthun agent can be configured using a config file or supplying arguments on 
 The agent will first look in the user's home directory for *.cthun-agent* and then in
 */etc/cthun/agent.cfg. A different config file can be specified by passing the --config-file flag
 
-The config files use the INI format
+The config files use the JSON format. Options must be specified as entries of a
+single JSON object. Example:
 
 ```
-server=wss://127.0.0.1:8090/cthun/
-ca=/Users/psy/work/cthun-agent/test-resources/ssl/ca/ca_crt.pem
-cert=/Users/psy/work/cthun-agent/test-resources/ssl/certs/0005_agent_crt.pem
-key=/Users/psy/work/cthun-agent/test-resources/ssl/certs/0005_agent_key.pem
+{
+    "server" : "wss://127.0.0.1:8090/cthun/",
+    "ca" : "/Users/psy/work/cthun-agent/test-resources/ssl/ca/ca_crt.pem",
+    "cert" : "/Users/psy/work/cthun-agent/test-resources/ssl/certs/0005_agent_crt.pem",
+    "key" : "/Users/psy/work/cthun-agent/test-resources/ssl/certs/0005_agent_key.pem"
+}
 ```
 
 ## Config options
