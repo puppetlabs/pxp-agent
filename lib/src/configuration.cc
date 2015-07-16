@@ -268,13 +268,17 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[]) {
         throw cli_parse_error { "An error occurred while parsing cli options"};
     }
 
-    config_file_ = HW::GetFlag<std::string>("config-file");
-    if (!config_file_.empty()) {
-        parseConfigFile();
+    if (parse_result == HW::ParseResult::OK) {
+        // No further processing or user interaction are required if
+        // the parsing outcome is HW::ParseResult::HELP or VERSION
+        config_file_ = HW::GetFlag<std::string>("config-file");
+        if (!config_file_.empty()) {
+            parseConfigFile();
+        }
+        validateAndNormalizeConfiguration();
+        loadModuleConfiguration();
     }
 
-    validateAndNormalizeConfiguration();
-    loadModuleConfiguration();
     initialized_ = true;
 
     return parse_result;
