@@ -4,7 +4,6 @@
 #include <cthun-agent/errors.hpp>
 
 #include <horsewhisperer/horsewhisperer.h>
-#include <INIReader.h>
 #include <leatherman/json_container/json_container.hpp>
 
 #include <map>

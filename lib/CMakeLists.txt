@@ -27,17 +27,7 @@ set(LIBRARY_SOURCES
     src/request_processor.cc
     src/rpc_schemas.cc
     src/thread_container.cc
-
-    ${INIH_SOURCE_DIR}/ini.c
-    ${INIH_SOURCE_DIR}/cpp/INIReader.cpp
 )
-
-add_custom_command(OUTPUT ${INIH_SOURCE_DIR}/ini.c
-                   COMMAND ""
-                   DEPENDS inih)
-add_custom_command(OUTPUT ${INIH_SOURCE_DIR}/cpp/INIReader.cpp
-                   COMMAND ""
-                   DEPENDS inih)
 
 SET(LIBS
     ${cthun-client_LIBRARY}

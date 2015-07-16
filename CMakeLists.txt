@@ -75,7 +75,6 @@ find_package(facter REQUIRED)
 # Specify the .cmake files for vendored libraries
 include(${VENDOR_DIRECTORY}/boost-process.cmake)
 include(${VENDOR_DIRECTORY}/horsewhisperer.cmake)
-include(${VENDOR_DIRECTORY}/inih.cmake)
 
 if(EXTERNAL_CTHUN_CLIENT)
     find_package(cthun-client REQUIRED)
