@@ -35,8 +35,12 @@ namespace lth_util = leatherman::util;
 
 class ResultsStorage {
   public:
-    // Throw a file_error in case of failure while writing to any of
-    // result files
+    struct Error : public std::runtime_error {
+        explicit Error(std::string const& msg) : std::runtime_error(msg) {}
+    };
+
+    // Throw a ResultsStorage::Error in case of failure while writing
+    // to any of result files
     ResultsStorage(const ActionRequest& request, const std::string& results_dir)
             : module { request.module() },
               action { request.action() },
@@ -83,8 +87,7 @@ class ResultsStorage {
                        "%3%, in '%4%'", request.module(), request.action(),
                        request.transactionId(), results_dir);
             if (!fs::create_directory(results_dir)) {
-                throw file_error { "failed to create directory '"
-                                   + results_dir + "'" };
+                throw Error { "failed to create directory '" + results_dir + "'" };
             }
         }
 
@@ -282,7 +285,7 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
                                           connector_ptr_,
                                           done),
                               done);
-    } catch (file_error& e) {
+    } catch (ResultsStorage::Error& e) {
         // Failed to instantiate ResultsStorage
         LOG_ERROR("Failed to initialize the result files for '%1% %2%' action "
                   "job with ID %3%: %4%", request.module(), request.action(),

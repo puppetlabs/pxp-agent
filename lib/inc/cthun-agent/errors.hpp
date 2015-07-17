@@ -26,12 +26,6 @@ class module_error : public agent_error {
     explicit module_error(std::string const& msg) : agent_error(msg) {}
 };
 
-/// Generic file error class.
-class file_error : public agent_error {
-  public:
-    explicit file_error(std::string const& msg) : agent_error(msg) {}
-};
-
 //
 // RPC request errors
 //
