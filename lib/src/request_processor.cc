@@ -202,7 +202,7 @@ void RequestProcessor::processRequest(const RequestType& request_type,
                       request.sender(), request.transactionId(), e.what());
             connector_ptr_->sendRPCError(request, e.what());
         }
-    } catch (request_format_error& e) {
+    } catch (ActionRequest::Error& e) {
         // Failed to instantiate ActionRequest - bad message; send *Cthun error*
 
         auto id = parsed_chunks.envelope.get<std::string>("id");

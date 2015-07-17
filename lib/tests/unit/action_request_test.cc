@@ -35,25 +35,25 @@ TEST_CASE("ActionRequest::ActionRequest", "[request]") {
         REQUIRE_NOTHROW(ActionRequest(RequestType::Blocking, p_c));
     }
 
-    SECTION("throw a request_format_error if no data") {
+    SECTION("throw a ActionRequest::Error if no data") {
         const CthunClient::ParsedChunks p_c { envelope, debug, 0 };
 
         REQUIRE_THROWS_AS(ActionRequest(RequestType::Blocking, p_c),
-                          request_format_error);
+                          ActionRequest::Error);
     }
 
-    SECTION("throw a request_format_error if binary data") {
+    SECTION("throw a ActionRequest::Error if binary data") {
         const CthunClient::ParsedChunks p_c { envelope, "bin data", debug, 0 };
 
         REQUIRE_THROWS_AS(ActionRequest(RequestType::Blocking, p_c),
-                          request_format_error);
+                          ActionRequest::Error);
     }
 
-    SECTION("throw a request_format_error if invalid data") {
+    SECTION("throw a ActionRequest::Error if invalid data") {
         const CthunClient::ParsedChunks p_c { envelope, false, debug, 0 };
 
         REQUIRE_THROWS_AS(ActionRequest(RequestType::Blocking, p_c),
-                          request_format_error);
+                          ActionRequest::Error);
     }
 }
 

@@ -99,14 +99,14 @@ void ActionRequest::init() {
 
 void ActionRequest::validateFormat() {
     if (!parsed_chunks_.has_data) {
-        throw request_format_error { "no data" };
+        throw ActionRequest::Error { "no data" };
     }
     if (parsed_chunks_.invalid_data) {
-        throw request_format_error { "invalid data" };
+        throw ActionRequest::Error { "invalid data" };
     }
     // NOTE(ale): currently, we don't support ContentType::Binary
     if (parsed_chunks_.data_type != CthunClient::ContentType::Json) {
-        throw request_format_error { "data is not in JSON format" };
+        throw ActionRequest::Error { "data is not in JSON format" };
     }
 }
 
