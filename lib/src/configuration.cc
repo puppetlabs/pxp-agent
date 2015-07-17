@@ -175,13 +175,11 @@ void Configuration::parseConfigFile() {
     try {
         config_json = lth_jc::JsonContainer(lth_file::read(config_file_));
     } catch (lth_jc::data_parse_error& e) {
-        throw Configuration::ConfigfileError { "cannot parse config file; "
-                                               "invalid JSON" };
+        throw Configuration::Error { "cannot parse config file; invalid JSON" };
     }
 
     if (config_json.type() != lth_jc::DataType::Object) {
-        throw Configuration::ConfigfileError { "invalid config file content; "
-                                               "not a JSON object" };
+        throw Configuration::Error { "invalid config file content; not a JSON object" };
     }
 
     for (const auto& key : config_json.keys()) {
@@ -196,7 +194,7 @@ void Configuration::parseConfigFile() {
                         } else {
                             std::string err { "field '" + key + "' must be of "
                                               "type Integer" };
-                            throw Configuration::ConfigfileError { err };
+                            throw Configuration::Error { err };
                         }
                         break;
                     case Bool:
@@ -205,7 +203,7 @@ void Configuration::parseConfigFile() {
                         } else {
                             std::string err { "field '" + key + "' must be of "
                                               "type Bool" };
-                            throw Configuration::ConfigfileError { err };
+                            throw Configuration::Error { err };
                         }
                         break;
                     case Double:
@@ -214,7 +212,7 @@ void Configuration::parseConfigFile() {
                         } else {
                             std::string err { "field '" + key + "' must be of "
                                               "type Double" };
-                            throw Configuration::ConfigfileError { err };
+                            throw Configuration::Error { err };
                         }
                         break;
                     default:
@@ -224,14 +222,14 @@ void Configuration::parseConfigFile() {
                         } else {
                             std::string err { "field '" + key + "' must be of "
                                               "type String" };
-                            throw Configuration::ConfigfileError { err };
+                            throw Configuration::Error { err };
                         }
                 }
             }
         } catch (const std::out_of_range& e) {
             std::string err { "field '" + key + "' is not a valid "
                               "configuration variable" };
-            throw Configuration::ConfigfileError { err };
+            throw Configuration::Error { err };
         }
     }
 }
@@ -267,8 +265,7 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[]) {
 
     if (parse_result == HW::ParseResult::ERROR
         || parse_result == HW::ParseResult::INVALID_FLAG) {
-        throw Configuration::CLIParseError { "An error occurred while parsing "
-                                             "cli options"};
+        throw Configuration::Error { "An error occurred while parsing cli options"};
     }
 
     if (parse_result == HW::ParseResult::OK) {
@@ -295,28 +292,27 @@ void Configuration::setStartFunction(
 void Configuration::validateAndNormalizeConfiguration() {
     // determine which of your values must be initalised
     if (HW::GetFlag<std::string>("server").empty()) {
-        throw Configuration::RequiredNotSetError { "server value must be defined" };
+        throw Configuration::Error { "server value must be defined" };
     } else if (HW::GetFlag<std::string>("server").find("wss://") != 0) {
-        throw Configuration::ConfigurationEntryError { "server value must start "
-                                                       "with wss://" };
+        throw Configuration::Error { "server value must start with wss://" };
     }
 
     if (HW::GetFlag<std::string>("ca").empty()) {
-        throw Configuration::RequiredNotSetError { "ca value must be defined" };
+        throw Configuration::Error { "ca value must be defined" };
     } else if (!lth_file::file_readable(HW::GetFlag<std::string>("ca"))) {
-        throw Configuration::ConfigurationEntryError { "ca file not found" };
+        throw Configuration::Error { "ca file not found" };
     }
 
     if (HW::GetFlag<std::string>("cert").empty()) {
-        throw Configuration::RequiredNotSetError { "cert value must be defined" };
+        throw Configuration::Error { "cert value must be defined" };
     } else if (!lth_file::file_readable(HW::GetFlag<std::string>("cert"))) {
-        throw Configuration::ConfigurationEntryError { "cert file not found" };
+        throw Configuration::Error { "cert file not found" };
     }
 
     if (HW::GetFlag<std::string>("key").empty()) {
-        throw Configuration::RequiredNotSetError { "key value must be defined" };
+        throw Configuration::Error { "key value must be defined" };
     } else if (!lth_file::file_readable(HW::GetFlag<std::string>("key"))) {
-        throw Configuration::ConfigurationEntryError { "key file not found" };
+        throw Configuration::Error { "key file not found" };
     }
 
     for (const auto& flag_name : std::vector<std::string> { "ca", "cert", "key" }) {
@@ -326,7 +322,7 @@ void Configuration::validateAndNormalizeConfiguration() {
 
     if (HW::GetFlag<std::string>("spool-dir").empty())  {
         // Unexpected, since we have a default value for spool-dir
-        throw Configuration::RequiredNotSetError { "spool-dir must be defined" };
+        throw Configuration::Error { "spool-dir must be defined" };
     } else {
         auto spool_dir = HW::GetFlag<std::string>("spool-dir");
         spool_dir = lth_file::tilde_expand(spool_dir);
@@ -334,12 +330,11 @@ void Configuration::validateAndNormalizeConfiguration() {
         if (!fs::exists(spool_dir)) {
             LOG_INFO("Creating spool directory '%1%'", spool_dir);
             if (!fs::create_directory(spool_dir)) {
-                throw Configuration::ConfigurationEntryError {
-                    "failed to create the results directory '" + spool_dir + "'" };
+                throw Configuration::Error { "failed to create the results "
+                                             "directory '" + spool_dir + "'" };
             }
         } else if (!fs::is_directory(spool_dir)) {
-            std::string err { "not a spool directory: " + spool_dir };
-            throw Configuration::ConfigurationEntryError { err };
+            throw Configuration::Error { "not a spool directory: " + spool_dir };
         }
 
         if (spool_dir.back() != '/') {
