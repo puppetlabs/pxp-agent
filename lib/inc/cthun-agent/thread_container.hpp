@@ -1,13 +1,12 @@
 #ifndef SRC_THREAD_CONTAINER_H_
 #define SRC_THREAD_CONTAINER_H_
 
-#include <cthun-agent/errors.hpp>
-
 #include <thread>
 #include <vector>
 #include <memory>   // shared_ptr
 #include <atomic>
 #include <condition_variable>
+#include <string>
 
 namespace CthunAgent {
 

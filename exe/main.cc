@@ -1,5 +1,4 @@
 #include <cthun-agent/agent.hpp>
-#include <cthun-agent/errors.hpp>
 #include <cthun-agent/configuration.hpp>
 
 #include <leatherman/file_util/file.hpp>
@@ -54,7 +53,7 @@ int startAgent(std::vector<std::string> arguments) {
                       Configuration::Instance().get<std::string>("spool-dir") };
 
         agent.start();
-    } catch (fatal_error& e) {
+    } catch (Agent::Error& e) {
         LOG_ERROR("fatal error: %1%", e.what());
         return 1;
     } catch (std::exception& e) {
@@ -85,7 +84,7 @@ int main(int argc, char *argv[]) {
     } catch (HW::horsewhisperer_error& e) {
         // Failed to validate action argument or flag
         err_msg = e.what();
-    } catch(configuration_error& e) {
+    } catch(Configuration::Error& e) {
         std::cout << "An unexpected error has occurred:\n";
         err_msg = e.what();
     }

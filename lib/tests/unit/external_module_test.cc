@@ -1,6 +1,5 @@
 #include "root_path.hpp"
 
-#include <cthun-agent/errors.hpp>
 #include <cthun-agent/external_module.hpp>
 
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
@@ -55,11 +54,12 @@ TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
         REQUIRE(mod.actions.size() == 2);
     }
 
-    SECTION("throw an error in case the module has an invalid metadata schema") {
+    SECTION("throw a Module::LoadingError in case the module has an invalid "
+            "metadata schema") {
         REQUIRE_THROWS_AS(
             ExternalModule(std::string { CTHUN_AGENT_ROOT_PATH }
                            + "/lib/tests/resources/broken_modules/reverse_broken"),
-            module_error);
+            Module::LoadingError);
     }
 }
 
@@ -94,7 +94,7 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             std::string { CTHUN_AGENT_ROOT_PATH }
             + "/lib/tests/resources/modules/failures_test" };
 
-        SECTION("throw a request_processing_error if the module returns an "
+        SECTION("throw a Module::ProcessingError if the module returns an "
                 "invalid result") {
             std::string failure_txt { (data_format % "\"failures_test\""
                                                    % "\"get_an_invalid_result\""
@@ -107,10 +107,10 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             ActionRequest request { RequestType::Blocking, failure_content };
 
             REQUIRE_THROWS_AS(test_reverse_module.executeAction(request),
-                              request_processing_error);
+                              Module::ProcessingError);
         }
 
-        SECTION("throw a request_processing_error if a blocking action throws "
+        SECTION("throw a Module::ProcessingError if a blocking action throws "
                 "an exception") {
             std::string failure_txt { (data_format % "\"failures_test\""
                                                    % "\"broken_action\""
@@ -123,7 +123,7 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             ActionRequest request { RequestType::Blocking, failure_content };
 
             REQUIRE_THROWS_AS(test_reverse_module.executeAction(request),
-                              request_processing_error);
+                              Module::ProcessingError);
         }
     }
 }

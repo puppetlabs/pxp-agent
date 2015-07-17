@@ -20,7 +20,11 @@ static std::map<RequestType, std::string> requestTypeNames {
 
 class ActionRequest {
   public:
-    /// Throw a request_format_error in case if possible to retrieve
+    struct Error : public std::runtime_error {
+        explicit Error(std::string const& msg) : std::runtime_error(msg) {}
+    };
+
+    /// Throws an ActionRequest::Error in case it fails to retrieve
     /// the data chunk from the specified ParsedChunks or in case of
     /// binary data (currently not supported).
     ActionRequest(RequestType type_,

@@ -16,6 +16,10 @@ namespace CthunAgent {
 
 class RequestProcessor {
   public:
+    struct Error : public std::runtime_error {
+        explicit Error(std::string const& msg) : std::runtime_error(msg) {}
+    };
+
     RequestProcessor() = delete;
 
     RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
@@ -55,7 +59,7 @@ class RequestProcessor {
     // Modules
     std::map<std::string, std::shared_ptr<Module>> modules_;
 
-    /// Throw a request_validation_error in case of unknown module,
+    /// Throw a RequestProcessor::Error in case of unknown module,
     /// unknown action, or if the requested input parameters entry
     /// does not match the JSON schema defined for the relevant action
     void validateRequestContent(const ActionRequest& request);

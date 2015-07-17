@@ -35,8 +35,12 @@ namespace lth_util = leatherman::util;
 
 class ResultsStorage {
   public:
-    // Throw a file_error in case of failure while writing to any of
-    // result files
+    struct Error : public std::runtime_error {
+        explicit Error(std::string const& msg) : std::runtime_error(msg) {}
+    };
+
+    // Throw a ResultsStorage::Error in case of failure while writing
+    // to any of result files
     ResultsStorage(const ActionRequest& request, const std::string& results_dir)
             : module { request.module() },
               action { request.action() },
@@ -61,7 +65,8 @@ class ResultsStorage {
                 }
             } else {
                 // ActionOutcome::Type::Internal
-                lth_file::atomic_write_to_file(outcome.results.toString() + "\n", out_path);
+                lth_file::atomic_write_to_file(outcome.results.toString()
+                                               + "\n", out_path);
             }
         } else {
             lth_file::atomic_write_to_file(exec_error, err_path);
@@ -82,8 +87,7 @@ class ResultsStorage {
                        "%3%, in '%4%'", request.module(), request.action(),
                        request.transactionId(), results_dir);
             if (!fs::create_directory(results_dir)) {
-                throw file_error { "failed to create directory '"
-                                   + results_dir + "'" };
+                throw Error { "failed to create directory '" + results_dir + "'" };
             }
         }
 
@@ -123,10 +127,14 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
         if (request.parsedChunks().data.get<bool>("notify_outcome")) {
             connector_ptr->sendNonBlockingResponse(request, outcome.results, job_id);
         }
-    } catch (request_error& e) {
+    } catch (Module::ProcessingError& e) {
         connector_ptr->sendRPCError(request, e.what());
         exec_error = "Failed to execute '" + request.module() + " "
                      + request.action() + "': " + e.what() + "\n";
+    } catch (CthunClient::connection_error& e) {
+        exec_error = "Failed to send non blocking response for '"
+                     + request.module() + " " + request.action() + "': "
+                     + e.what() + "\n";
     }
 
     // Store results on disk
@@ -148,14 +156,6 @@ RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr
           connector_ptr_ { connector_ptr },
           spool_dir_ { spool_dir } {
     assert(!spool_dir_.empty());
-
-    if (!fs::exists(spool_dir_)) {
-        LOG_INFO("Creating spool directory '%1%'", spool_dir_);
-        if (!fs::create_directory(spool_dir_)) {
-            throw fatal_error { "failed to create the results directory '"
-                                + spool_dir_ + "'" };
-        }
-    }
 
     // NB: certificate paths are validated by HW
     loadInternalModules();
@@ -183,7 +183,7 @@ void RequestProcessor::processRequest(const RequestType& request_type,
         try {
             // We can access the request content; validate it
             validateRequestContent(request);
-        } catch (request_validation_error& e) {
+        } catch (RequestProcessor::Error& e) {
             // Invalid request; send *RPC error*
 
             LOG_ERROR("Invalid %1% request %2% by %3%, transaction %4%: %5%",
@@ -199,14 +199,14 @@ void RequestProcessor::processRequest(const RequestType& request_type,
             } else {
                 processNonBlockingRequest(request);
             }
-        } catch (request_error& e) {
+        } catch (std::exception& e) {
             // Process failure; send *RPC error*
             LOG_ERROR("Failed to process %1% request %2% by %3%, transaction %4%: "
                       "%5%", requestTypeNames[request.type()], request.id(),
                       request.sender(), request.transactionId(), e.what());
             connector_ptr_->sendRPCError(request, e.what());
         }
-    } catch (request_format_error& e) {
+    } catch (ActionRequest::Error& e) {
         // Failed to instantiate ActionRequest - bad message; send *Cthun error*
 
         auto id = parsed_chunks.envelope.get<std::string>("id");
@@ -225,11 +225,11 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
     // Validate requested module and action
     try {
         if (!modules_.at(request.module())->hasAction(request.action())) {
-            throw request_validation_error { "unknown action '" + request.action()
-                                             + "' for module " + request.module() };
+            throw RequestProcessor::Error { "unknown action '" + request.action()
+                                            + "' for module " + request.module() };
         }
     } catch (std::out_of_range& e) {
-        throw request_validation_error { "unknown module: " + request.module() };
+        throw RequestProcessor::Error { "unknown module: " + request.module() };
     }
 
     // Validate request input params
@@ -244,8 +244,8 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
     } catch (CthunClient::validation_error& e) {
         LOG_DEBUG("Invalid '%1% %2%' request %3%: %4%", request.module(),
                   request.action(), request.id(), e.what());
-        throw request_validation_error { "invalid input for '" + request.module()
-                                         + " " + request.action() + "'" };
+        throw RequestProcessor::Error { "invalid input for '" + request.module()
+                                        + " " + request.action() + "'" };
     }
 }
 
@@ -281,7 +281,7 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
                                           connector_ptr_,
                                           done),
                               done);
-    } catch (file_error& e) {
+    } catch (ResultsStorage::Error& e) {
         // Failed to instantiate ResultsStorage
         LOG_ERROR("Failed to initialize the result files for '%1% %2%' action "
                   "job with ID %3%: %4%", request.module(), request.action(),
@@ -317,7 +317,7 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
                 try {
                     ExternalModule* e_m = new ExternalModule(f_p);
                     modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
-                } catch (module_error& e) {
+                } catch (Module::LoadingError& e) {
                     LOG_ERROR("Failed to load %1%; %2%", f_p, e.what());
                 } catch (std::exception& e) {
                     LOG_ERROR("Unexpected error when loading %1%; %2%",

@@ -1,5 +1,4 @@
 #include <cthun-agent/external_module.hpp>
-#include <cthun-agent/errors.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.external_module"
 #include <leatherman/logging/logging.hpp>
@@ -116,7 +115,7 @@ const lth_jc::JsonContainer ExternalModule::getMetadata() {
     if (!error.empty()) {
         LOG_ERROR("Failed to load the external module metadata from %1%: %2%",
                   path_, error);
-        throw module_error { "failed to load external module metadata" };
+        throw Module::LoadingError { "failed to load external module metadata" };
     }
 
     lth_jc::JsonContainer metadata { metadata_txt };
@@ -125,8 +124,8 @@ const lth_jc::JsonContainer ExternalModule::getMetadata() {
         metadata_validator_.validate(metadata, METADATA_SCHEMA_NAME);
         LOG_INFO("External module %1%: metadata validation OK", module_name);
     } catch (CthunClient::validation_error& e) {
-        throw module_error { std::string("metadata validation failure: ")
-                             + e.what() };
+        throw Module::LoadingError { std::string { "metadata validation failure: " }
+                                     + e.what() };
     }
 
     return metadata;
@@ -153,8 +152,9 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
     } catch (CthunClient::schema_error& e) {
         LOG_ERROR("Failed to parse input/output schemas of action '%1% %2%': %3%",
                   module_name, action_name, e.what());
-        throw module_error { std::string("invalid schemas of '" + module_name
-                                         + " " + action_name + "'") };
+        std::string err { "invalid schemas of '" + module_name + " "
+                          + action_name + "'" };
+        throw Module::LoadingError { err };
     }
 }
 
@@ -189,7 +189,7 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
                   module_name, action_name, e.what());
         std::string err_msg { "'" + module_name + " " + action_name + "' "
                               "returned invalid JSON - stderr: " + stderr };
-        throw request_processing_error { err_msg };
+        throw Module::ProcessingError { err_msg };
     }
 
     return ActionOutcome { stderr, stdout, results };

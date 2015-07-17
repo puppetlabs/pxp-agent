@@ -1,5 +1,4 @@
 #include <cthun-agent/modules/echo.hpp>
-#include <cthun-agent/errors.hpp>
 
 namespace CthunAgent {
 namespace Modules {
@@ -24,7 +23,7 @@ ActionOutcome Echo::callAction(const ActionRequest& request) {
         && params.type("argument") == lth_jc::DataType::String) {
         results.set<std::string>("outcome", params.get<std::string>("argument"));
     } else {
-        throw request_processing_error { "bad argument type" };
+        throw Module::ProcessingError { "bad argument type" };
     }
 
     return ActionOutcome { results };

@@ -1,5 +1,4 @@
 #include <cthun-agent/module.hpp>
-#include <cthun-agent/errors.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -32,22 +31,22 @@ ActionOutcome Module::executeAction(const ActionRequest& request) {
         } catch (CthunClient::validation_error) {
             std::string err_msg { "'" + module_name + " " + request.action()
                                   + "' returned an invalid result - stderr: " };
-            throw request_processing_error { err_msg + outcome.stderr };
+            throw Module::ProcessingError { err_msg + outcome.stderr };
         }
 
         return outcome;
-    } catch (request_processing_error) {
+    } catch (Module::ProcessingError) {
         throw;
     } catch (std::exception& e) {
         LOG_ERROR("Faled to execute '%1% %2%': %3%",
                   module_name, request.action(), e.what());
-        throw request_processing_error { "failed to execute '" + module_name
-                                         + " " + request.action() + "'" };
+        throw Module::ProcessingError { "failed to execute '" + module_name
+                                        + " " + request.action() + "'" };
     } catch (...) {
         LOG_ERROR("Failed to execute '%1% %2%' - unexpected exception",
                   module_name, request.action());
-        throw request_processing_error { "failed to execute '" + module_name
-                                         + " " + request.action() + "'" };
+        throw Module::ProcessingError { "failed to execute '" + module_name
+                                        + " " + request.action() + "'" };
     }
 }
 

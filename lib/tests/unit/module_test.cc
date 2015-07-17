@@ -1,4 +1,3 @@
-#include <cthun-agent/errors.hpp>
 #include <cthun-agent/modules/echo.hpp>
 
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
