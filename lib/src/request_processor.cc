@@ -28,6 +28,7 @@ namespace fs = boost::filesystem;
 namespace lth_jc = leatherman::json_container;
 namespace lth_file = leatherman::file_util;
 namespace lth_util = leatherman::util;
+
 //
 // Results Storage
 //

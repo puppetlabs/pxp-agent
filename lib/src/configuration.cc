@@ -8,6 +8,8 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
+#include <leatherman/json_container/json_container.hpp>
+
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.configuration"
 #include <leatherman/logging/logging.hpp>
 
@@ -15,10 +17,10 @@ namespace CthunAgent {
 
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
+namespace lth_jc = leatherman::json_container;
 
 const std::string DEFAULT_MODULES_DIR { "/usr/share/cthun-agent/modules" };
 const std::string DEFAULT_MODULES_CONF_DIR { "/etc/puppetlabs/cthun-agent/modules.d" };
-
 
 //
 // Private
@@ -34,7 +36,7 @@ Configuration::Configuration() : initialized_ { false },
 void Configuration::defineDefaultValues() {
     HW::SetAppName("cthun-agent");
     HW::SetHelpBanner("Usage: cthun-agent [options]");
-    HW::SetVersion(CTHUN_AGENT_VERSION);
+    HW::SetVersion(std::string { CTHUN_AGENT_VERSION } + "\n");
 
     // start setting the config file path to known existent locations;
     // HW will overwrite it with the one parsed from CLI, if specified
@@ -168,54 +170,66 @@ void Configuration::setDefaultValues() {
 }
 
 void Configuration::parseConfigFile() {
-    if (!lth_file::file_readable(config_file_)) {
-        throw configuration_entry_error { config_file_ + " does not exist" };
+    lth_jc::JsonContainer config_json;
+
+    try {
+        config_json = lth_jc::JsonContainer(lth_file::read(config_file_));
+    } catch (lth_jc::data_parse_error& e) {
+        throw configuration_error { "cannot parse config file; invalid JSON" };
     }
 
-    INIReader reader { config_file_ };
+    if (config_json.type() != lth_jc::DataType::Object) {
+        throw configuration_error { "invalid config file content; not a JSON object" };
+    }
 
-    for (const auto& entry : defaults_) {
-        // skip config entry if flag was set
-        if (entry.second->configured) {
-            continue;
-        }
-        switch (entry.second->type) {
-            case Integer:
-                {
-                    Entry<int>* entry_ptr = (Entry<int>*) entry.second.get();
-                    HW::SetFlag<int>(entry_ptr->name,
-                                     reader.GetInteger("",
-                                                       entry_ptr->name,
-                                                       entry_ptr->value));
+    for (const auto& key : config_json.keys()) {
+        try {
+            const auto& entry = defaults_.at(key);
+
+            if (!entry->configured) {
+                switch (entry->type) {
+                    case Integer:
+                        if (config_json.type(key) == lth_jc::DataType::Int) {
+                            HW::SetFlag<int>(key, config_json.get<int>(key));
+                        } else {
+                            std::string err { "field '" + key + "' must be of "
+                                              "type Integer" };
+                            throw configuration_entry_error { err };
+                        }
+                        break;
+                    case Bool:
+                        if (config_json.type(key) == lth_jc::DataType::Bool) {
+                            HW::SetFlag<bool>(key, config_json.get<bool>(key));
+                        } else {
+                            std::string err { "field '" + key + "' must be of "
+                                              "type Bool" };
+                            throw configuration_entry_error { err };
+                        }
+                        break;
+                    case Double:
+                        if (config_json.type(key) == lth_jc::DataType::Double) {
+                            HW::SetFlag<double>(key, config_json.get<double>(key));
+                        } else {
+                            std::string err { "field '" + key + "' must be of "
+                                              "type Double" };
+                            throw configuration_entry_error { err };
+                        }
+                        break;
+                    default:
+                        if (config_json.type(key) == lth_jc::DataType::String) {
+                            auto val = config_json.get<std::string>(key);
+                            HW::SetFlag<std::string>(key, val);
+                        } else {
+                            std::string err { "field '" + key + "' must be of "
+                                              "type String" };
+                            throw configuration_entry_error { err };
+                        }
                 }
-                break;
-            case Bool:
-                {
-                    Entry<bool>* entry_ptr = (Entry<bool>*) entry.second.get();
-                    HW::SetFlag<bool>(entry_ptr->name,
-                                      reader.GetBoolean("",
-                                                        entry_ptr->name,
-                                                        entry_ptr->value));
-                }
-                break;
-            case Double:
-                {
-                    Entry<double>* entry_ptr = (Entry<double>*) entry.second.get();
-                    HW::SetFlag<double>(entry_ptr->name,
-                                        reader.GetReal("",
-                                                       entry_ptr->name,
-                                                       entry_ptr->value));
-                }
-                break;
-            default:
-                {
-                    Entry<std::string>* entry_ptr =
-                        (Entry<std::string>*) entry.second.get();
-                    HW::SetFlag<std::string>(entry_ptr->name,
-                                             reader.Get("",
-                                                        entry_ptr->name,
-                                                        entry_ptr->value));
-                }
+            }
+        } catch (const std::out_of_range& e) {
+            std::string err { "field '" + key + "' is not a valid "
+                              "configuration variable" };
+            throw configuration_entry_error { err };
         }
     }
 }
@@ -254,19 +268,24 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[]) {
         throw cli_parse_error { "An error occurred while parsing cli options"};
     }
 
-    config_file_ = HW::GetFlag<std::string>("config-file");
-    if (!config_file_.empty()) {
-        parseConfigFile();
+    if (parse_result == HW::ParseResult::OK) {
+        // No further processing or user interaction are required if
+        // the parsing outcome is HW::ParseResult::HELP or VERSION
+        config_file_ = HW::GetFlag<std::string>("config-file");
+        if (!config_file_.empty()) {
+            parseConfigFile();
+        }
+        validateAndNormalizeConfiguration();
+        loadModuleConfiguration();
     }
 
-    validateAndNormalizeConfiguration();
-    loadModuleConfiguration();
     initialized_ = true;
 
     return parse_result;
 }
 
-void Configuration::setStartFunction(std::function<int(std::vector<std::string>)> start_function) {
+void Configuration::setStartFunction(
+        std::function<int(std::vector<std::string>)> start_function) {
     start_function_ = start_function;
 }
 
@@ -305,10 +324,14 @@ void Configuration::validateAndNormalizeConfiguration() {
         // Unexpected, since we have a default value for spool-dir
         throw required_not_set_error { "spool-dir must be defined" };
     } else {
-        // TODO(ale): ensure that spool_dir_ is a directory, once we
-        // have leatherman::file_util
+        auto spool_dir = HW::GetFlag<std::string>("spool-dir");
+        spool_dir = lth_file::tilde_expand(spool_dir);
 
-        std::string spool_dir = lth_file::tilde_expand(HW::GetFlag<std::string>("spool-dir"));
+        if (fs::exists(spool_dir) && !fs::is_directory(spool_dir)) {
+            std::string err { "not a spool directory: " + spool_dir };
+            throw configuration_entry_error { err };
+        }
+
         if (spool_dir.back() != '/') {
             HW::SetFlag<std::string>("spool-dir", spool_dir + "/");
         }
@@ -324,9 +347,8 @@ void Configuration::loadModuleConfiguration() {
     std::string config_dir { HW::GetFlag<std::string>("modules-config-dir") };
 
     if (!fs::is_directory(config_dir)) {
-        std::string message { "Directory '" + config_dir + "' specified by" +
-                              "modules-config-dir doesn't exist" };
-        LOG_WARNING(message);
+        LOG_WARNING("Directory '%1%' specified by modules-config-dir doesn't "
+                    "exist", config_dir);
     } else {
         lth_file::each_file(config_dir, [this](std::string const& s) -> bool {
             try {
@@ -334,13 +356,12 @@ void Configuration::loadModuleConfiguration() {
                 module_config_[s_path.stem().string()] =
                     lth_jc::JsonContainer(lth_file::read(s));
             } catch (lth_jc::data_parse_error& e) {
-                std::string message { "Cannot load module config file '" + s + "'. " +
-                                      "File contains invalid json" };
-                LOG_WARNING(message);
+                LOG_WARNING("Cannot load module config file '%1%'. File "
+                            "contains invalid json: %2%", s, e.what());
             }
             return true;
-            // naming convention for config files are .cfg. Don't process files that
-            // don't end in this extension
+            // naming convention for config files are .cfg. Don't
+            // process files that don't end in this extension
         }, "\\.cfg$");
     }
 }
