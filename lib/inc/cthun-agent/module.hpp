@@ -42,7 +42,6 @@ class Module {
 
     /// Call the specified action.
     /// Return an ActionOutcome instance containing the action outcome.
-    /// Throw a request_validation_error in case of invalid input.
     /// Throw a Module::ProcessingError in case it fails to execute
     /// the action or if the action returns an invalid output.
     ActionOutcome executeAction(const ActionRequest& request);
