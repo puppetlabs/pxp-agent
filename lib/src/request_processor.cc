@@ -321,7 +321,7 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
                 try {
                     ExternalModule* e_m = new ExternalModule(f_p);
                     modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
-                } catch (module_error& e) {
+                } catch (Module::Error& e) {
                     LOG_ERROR("Failed to load %1%; %2%", f_p, e.what());
                 } catch (std::exception& e) {
                     LOG_ERROR("Unexpected error when loading %1%; %2%",

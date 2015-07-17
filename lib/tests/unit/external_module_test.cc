@@ -59,7 +59,7 @@ TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
         REQUIRE_THROWS_AS(
             ExternalModule(std::string { CTHUN_AGENT_ROOT_PATH }
                            + "/lib/tests/resources/broken_modules/reverse_broken"),
-            module_error);
+            Module::Error);
     }
 }
 

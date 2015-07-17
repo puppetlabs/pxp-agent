@@ -18,6 +18,10 @@ namespace lth_jc = leatherman::json_container;
 
 class Module {
   public:
+    struct Error : public std::runtime_error {
+        explicit Error(std::string const& msg) : std::runtime_error(msg) {}
+    };
+
     std::string module_name;
     std::vector<std::string> actions;
     CthunClient::Validator input_validator_;

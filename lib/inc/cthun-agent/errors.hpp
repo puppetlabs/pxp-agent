@@ -20,12 +20,6 @@ class fatal_error : public agent_error {
     explicit fatal_error(std::string const& msg) : agent_error(msg) {}
 };
 
-/// Error thrown when loading modules.
-class module_error : public agent_error {
-  public:
-    explicit module_error(std::string const& msg) : agent_error(msg) {}
-};
-
 //
 // RPC request errors
 //

@@ -27,7 +27,7 @@ class ExternalModule : public Module {
     /// action defined in it, ensure that the specified input and
     /// output schemas are valid JSON schemas
     ///
-    /// Throw a module_error if: if fails to load the external module
+    /// Throw a Module::Error if: if fails to load the external module
     /// metadata; if the metadata is invalid; in case of invalid input
     /// or output schemas.
     explicit ExternalModule(const std::string& exec_path);
