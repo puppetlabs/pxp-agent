@@ -127,10 +127,14 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
         if (request.parsedChunks().data.get<bool>("notify_outcome")) {
             connector_ptr->sendNonBlockingResponse(request, outcome.results, job_id);
         }
-    } catch (request_error& e) {
+    } catch (Module::ProcessingError& e) {
         connector_ptr->sendRPCError(request, e.what());
         exec_error = "Failed to execute '" + request.module() + " "
                      + request.action() + "': " + e.what() + "\n";
+    } catch (CthunClient::connection_error& e) {
+        exec_error = "Failed to send non blocking response for '"
+                     + request.module() + " " + request.action() + "': "
+                     + e.what() + "\n";
     }
 
     // Store results on disk
@@ -195,7 +199,7 @@ void RequestProcessor::processRequest(const RequestType& request_type,
             } else {
                 processNonBlockingRequest(request);
             }
-        } catch (request_error& e) {
+        } catch (std::exception& e) {
             // Process failure; send *RPC error*
             LOG_ERROR("Failed to process %1% request %2% by %3%, transaction %4%: "
                       "%5%", requestTypeNames[request.type()], request.id(),

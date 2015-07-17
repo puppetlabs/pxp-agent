@@ -14,15 +14,6 @@ class agent_error : public std::runtime_error {
     explicit agent_error(std::string const& msg) : std::runtime_error(msg) {}
 };
 
-//
-// RPC request errors
-//
-
-class request_error : public agent_error {
-  public:
-    explicit request_error(std::string const& msg) : agent_error(msg) {}
-};
-
 }  // namespace CthunAgent
 
 #endif  // SRC_ERRORS_H_
