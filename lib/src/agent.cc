@@ -1,5 +1,4 @@
 #include <cthun-agent/agent.hpp>
-#include <cthun-agent/errors.hpp>
 #include <cthun-agent/rpc_schemas.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.agent"
@@ -22,7 +21,7 @@ Agent::Agent(const std::string& modules_dir,
                                                   ca, crt, key) },
               request_processor_ { connector_ptr_, modules_dir, spool_dir } {
 } catch (CthunClient::connection_config_error& e) {
-    throw fatal_error { std::string { "failed to configure: " } + e.what() };
+    throw Agent::Error { std::string { "failed to configure: " } + e.what() };
 }
 
 void Agent::start() {
@@ -45,11 +44,11 @@ void Agent::start() {
     } catch (CthunClient::connection_config_error& e) {
         LOG_ERROR("Failed to configure the underlying communications layer: %1%",
                   e.what());
-        throw fatal_error { "failed to configure the underlying communications"
-                            "layer" };
+        throw Agent::Error { "failed to configure the underlying communications"
+                             "layer" };
     } catch (CthunClient::connection_fatal_error& e) {
         LOG_ERROR("Failed to connect: %1%", e.what());
-        throw fatal_error { "failed to connect" };
+        throw Agent::Error { "failed to connect" };
     }
 
     // The agent is now connected and the request handlers are set;
@@ -61,7 +60,7 @@ void Agent::start() {
     try {
         connector_ptr_->monitorConnection();
     } catch (CthunClient::connection_fatal_error) {
-        throw fatal_error { "failed to reconnect" };
+        throw Agent::Error { "failed to reconnect" };
     }
 }
 

@@ -23,10 +23,10 @@ TEST_CASE("Agent::Agent", "[agent]") {
                               getCaPath(), getCertPath(), getKeyPath(), SPOOL));
     }
 
-    SECTION("should throw a fatal_error if client cert path is invalid") {
+    SECTION("should throw an Agent::Error if client cert path is invalid") {
         REQUIRE_THROWS_AS(Agent(BIN_PATH, TEST_SERVER_URL, getCaPath(), "spam",
                                 getKeyPath(), SPOOL),
-                          fatal_error);
+                          Agent::Error);
     }
 
     SECTION("successfully instantiates with valid arguments") {

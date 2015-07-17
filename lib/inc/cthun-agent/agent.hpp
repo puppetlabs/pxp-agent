@@ -14,13 +14,17 @@ namespace CthunAgent {
 
 class Agent {
   public:
+    struct Error : public std::runtime_error {
+        explicit Error(std::string const& msg) : std::runtime_error(msg) {}
+    };
+
     Agent() = delete;
 
     // Configure the cthun-agent run by:
     //  - instantiating CthunConnector;
     //  - instantiating a RequestProcessor.
     //
-    // Throw a fatal_error in case it fails to determine the agent
+    // Throw an Agent::Error in case it fails to determine the agent
     // identity by inspecting the certificate.
     Agent(const std::string& modules_dir,
           const std::string& server_url,
@@ -35,7 +39,7 @@ class Agent {
     //  - monitoring the state of the connection;
     //  - re-establishing the connection when requested.
     //
-    // Throw a fatal_error in case of unexpected failures; errors
+    // Throw an Agent::Error in case of unexpected failures; errors
     // such as message sending failures are only logged.
     void start();
 
