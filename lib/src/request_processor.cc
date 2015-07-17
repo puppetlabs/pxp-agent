@@ -61,7 +61,8 @@ class ResultsStorage {
                 }
             } else {
                 // ActionOutcome::Type::Internal
-                lth_file::atomic_write_to_file(outcome.results.toString() + "\n", out_path);
+                lth_file::atomic_write_to_file(outcome.results.toString()
+                                               + "\n", out_path);
             }
         } else {
             lth_file::atomic_write_to_file(exec_error, err_path);
