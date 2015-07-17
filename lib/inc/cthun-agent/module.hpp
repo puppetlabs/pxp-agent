@@ -22,6 +22,10 @@ class Module {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
 
+    struct LoadingError : public Error {
+        explicit LoadingError(std::string const& msg) : Error(msg) {}
+    };
+
     std::string module_name;
     std::vector<std::string> actions;
     CthunClient::Validator input_validator_;

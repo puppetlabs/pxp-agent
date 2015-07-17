@@ -55,11 +55,12 @@ TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
         REQUIRE(mod.actions.size() == 2);
     }
 
-    SECTION("throw an error in case the module has an invalid metadata schema") {
+    SECTION("throw a Module::LoadingError in case the module has an invalid "
+            "metadata schema") {
         REQUIRE_THROWS_AS(
             ExternalModule(std::string { CTHUN_AGENT_ROOT_PATH }
                            + "/lib/tests/resources/broken_modules/reverse_broken"),
-            Module::Error);
+            Module::LoadingError);
     }
 }
 
