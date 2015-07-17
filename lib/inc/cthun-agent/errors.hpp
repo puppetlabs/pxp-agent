@@ -23,13 +23,6 @@ class request_error : public agent_error {
     explicit request_error(std::string const& msg) : agent_error(msg) {}
 };
 
-/// Error due to a request message with invalid content.
-class request_validation_error : public request_error {
-  public:
-    explicit request_validation_error(std::string const& msg)
-            : request_error(msg) {}
-};
-
 }  // namespace CthunAgent
 
 #endif  // SRC_ERRORS_H_

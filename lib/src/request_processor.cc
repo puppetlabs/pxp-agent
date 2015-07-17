@@ -179,7 +179,7 @@ void RequestProcessor::processRequest(const RequestType& request_type,
         try {
             // We can access the request content; validate it
             validateRequestContent(request);
-        } catch (request_validation_error& e) {
+        } catch (RequestProcessor::Error& e) {
             // Invalid request; send *RPC error*
 
             LOG_ERROR("Invalid %1% request %2% by %3%, transaction %4%: %5%",
@@ -221,11 +221,11 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
     // Validate requested module and action
     try {
         if (!modules_.at(request.module())->hasAction(request.action())) {
-            throw request_validation_error { "unknown action '" + request.action()
-                                             + "' for module " + request.module() };
+            throw RequestProcessor::Error { "unknown action '" + request.action()
+                                            + "' for module " + request.module() };
         }
     } catch (std::out_of_range& e) {
-        throw request_validation_error { "unknown module: " + request.module() };
+        throw RequestProcessor::Error { "unknown module: " + request.module() };
     }
 
     // Validate request input params
@@ -240,8 +240,8 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
     } catch (CthunClient::validation_error& e) {
         LOG_DEBUG("Invalid '%1% %2%' request %3%: %4%", request.module(),
                   request.action(), request.id(), e.what());
-        throw request_validation_error { "invalid input for '" + request.module()
-                                         + " " + request.action() + "'" };
+        throw RequestProcessor::Error { "invalid input for '" + request.module()
+                                        + " " + request.action() + "'" };
     }
 }
 
