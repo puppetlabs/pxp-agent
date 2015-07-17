@@ -331,7 +331,13 @@ void Configuration::validateAndNormalizeConfiguration() {
         auto spool_dir = HW::GetFlag<std::string>("spool-dir");
         spool_dir = lth_file::tilde_expand(spool_dir);
 
-        if (fs::exists(spool_dir) && !fs::is_directory(spool_dir)) {
+        if (!fs::exists(spool_dir)) {
+            LOG_INFO("Creating spool directory '%1%'", spool_dir);
+            if (!fs::create_directory(spool_dir)) {
+                throw Configuration::ConfigurationEntryError {
+                    "failed to create the results directory '" + spool_dir + "'" };
+            }
+        } else if (!fs::is_directory(spool_dir)) {
             std::string err { "not a spool directory: " + spool_dir };
             throw Configuration::ConfigurationEntryError { err };
         }

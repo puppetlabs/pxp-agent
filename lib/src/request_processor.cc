@@ -153,14 +153,6 @@ RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr
           spool_dir_ { spool_dir } {
     assert(!spool_dir_.empty());
 
-    if (!fs::exists(spool_dir_)) {
-        LOG_INFO("Creating spool directory '%1%'", spool_dir_);
-        if (!fs::create_directory(spool_dir_)) {
-            throw fatal_error { "failed to create the results directory '"
-                                + spool_dir_ + "'" };
-        }
-    }
-
     // NB: certificate paths are validated by HW
     loadInternalModules();
 
