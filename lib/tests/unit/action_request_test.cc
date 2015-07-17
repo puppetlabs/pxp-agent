@@ -1,5 +1,4 @@
 #include <cthun-agent/action_request.hpp>
-#include <cthun-agent/errors.hpp>
 
 #include <cthun-client/protocol/chunks.hpp>
 

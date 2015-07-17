@@ -1,5 +1,4 @@
 #include <cthun-agent/modules/ping.hpp>
-#include <cthun-agent/errors.hpp>
 
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
 

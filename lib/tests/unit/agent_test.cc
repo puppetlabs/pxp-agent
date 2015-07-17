@@ -3,7 +3,6 @@
 #include "root_path.hpp"
 
 #include <cthun-agent/agent.hpp>
-#include <cthun-agent/errors.hpp>
 
 #include <catch.hpp>
 

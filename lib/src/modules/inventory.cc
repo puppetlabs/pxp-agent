@@ -1,5 +1,4 @@
 #include <cthun-agent/modules/inventory.hpp>
-#include <cthun-agent/errors.hpp>
 
 #include <facter/version.h>
 #include <facter/facts/collection.hpp>

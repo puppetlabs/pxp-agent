@@ -1,8 +1,6 @@
 #ifndef SRC_CONFIGURATION_H_
 #define SRC_CONFIGURATION_H_
 
-#include <cthun-agent/errors.hpp>
-
 #include <horsewhisperer/horsewhisperer.h>
 #include <leatherman/json_container/json_container.hpp>
 

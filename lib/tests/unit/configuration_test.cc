@@ -3,7 +3,6 @@
 #include "root_path.hpp"
 
 #include <cthun-agent/configuration.hpp>
-#include <cthun-agent/errors.hpp>
 
 #include "horsewhisperer/horsewhisperer.h"
 

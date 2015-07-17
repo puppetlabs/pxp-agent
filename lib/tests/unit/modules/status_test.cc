@@ -1,4 +1,3 @@
-#include <cthun-agent/errors.hpp>
 #include <cthun-agent/modules/status.hpp>
 #include <cthun-agent/configuration.hpp>
 

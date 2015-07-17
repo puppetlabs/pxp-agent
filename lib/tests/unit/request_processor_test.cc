@@ -3,7 +3,6 @@
 #include "root_path.hpp"
 
 #include <cthun-agent/request_processor.hpp>
-#include <cthun-agent/errors.hpp>
 #include <cthun-agent/configuration.hpp>
 
 #include <leatherman/json_container/json_container.hpp>

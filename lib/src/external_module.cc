@@ -1,5 +1,4 @@
 #include <cthun-agent/external_module.hpp>
-#include <cthun-agent/errors.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.external_module"
 #include <leatherman/logging/logging.hpp>

@@ -1,5 +1,4 @@
 #include <cthun-agent/action_request.hpp>
-#include <cthun-agent/errors.hpp>
 #include <cthun-agent/configuration.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.action_request"
