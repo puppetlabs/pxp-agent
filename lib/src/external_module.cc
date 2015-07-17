@@ -190,7 +190,7 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
                   module_name, action_name, e.what());
         std::string err_msg { "'" + module_name + " " + action_name + "' "
                               "returned invalid JSON - stderr: " + stderr };
-        throw request_processing_error { err_msg };
+        throw Module::ProcessingError { err_msg };
     }
 
     return ActionOutcome { stderr, stdout, results };

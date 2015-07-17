@@ -30,13 +30,6 @@ class request_validation_error : public request_error {
             : request_error(msg) {}
 };
 
-/// Error due to a failure during the processing of a request message.
-class request_processing_error : public request_error {
-  public:
-    explicit request_processing_error(std::string const& msg)
-            : request_error(msg) {}
-};
-
 }  // namespace CthunAgent
 
 #endif  // SRC_ERRORS_H_

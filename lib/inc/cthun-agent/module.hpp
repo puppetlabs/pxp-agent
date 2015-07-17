@@ -26,6 +26,10 @@ class Module {
         explicit LoadingError(std::string const& msg) : Error(msg) {}
     };
 
+    struct ProcessingError : public Error {
+        explicit ProcessingError(std::string const& msg) : Error(msg) {}
+    };
+
     std::string module_name;
     std::vector<std::string> actions;
     CthunClient::Validator input_validator_;
@@ -39,7 +43,7 @@ class Module {
     /// Call the specified action.
     /// Return an ActionOutcome instance containing the action outcome.
     /// Throw a request_validation_error in case of invalid input.
-    /// Throw a request_processing_error in case it fails to execute
+    /// Throw a Module::ProcessingError in case it fails to execute
     /// the action or if the action returns an invalid output.
     ActionOutcome executeAction(const ActionRequest& request);
 
