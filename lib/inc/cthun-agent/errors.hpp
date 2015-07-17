@@ -51,54 +51,6 @@ class request_processing_error : public request_error {
             : request_error(msg) {}
 };
 
-//
-// Configuration container errors
-//
-
-class configuration_error : public agent_error {
-  public:
-    explicit configuration_error(std::string const& msg)
-            : agent_error(msg) {}
-};
-
-/// Error thrown when trying to set the configuration object before
-/// initializing it.
-class uninitialized_error : public configuration_error {
-  public:
-    explicit uninitialized_error(std::string const& msg)
-            : configuration_error(msg) {}
-};
-
-/// Error thrown when referring to an unknown configuration entry or
-/// trying to set an invalid value to a known entry.
-class configuration_entry_error : public configuration_error {
-  public:
-    explicit configuration_entry_error(std::string const& msg)
-            : configuration_error(msg) {}
-};
-
-/// Error thrown when config file doesn't exist.
-class no_configfile_error : public configuration_error {
-  public:
-    explicit no_configfile_error(std::string const& msg)
-            : configuration_error(msg) {}
-};
-
-/// Error thrown when required config variable isn't set.
-class required_not_set_error : public configuration_error {
-  public:
-    explicit required_not_set_error(std::string const& msg)
-        : configuration_error(msg) {}
-};
-
-/// Error thrown when cli parse error occurs.
-class cli_parse_error : public configuration_error {
-  public:
-    explicit cli_parse_error(std::string const& msg)
-            : configuration_error(msg) {}
-};
-
-
 }  // namespace CthunAgent
 
 #endif  // SRC_ERRORS_H_

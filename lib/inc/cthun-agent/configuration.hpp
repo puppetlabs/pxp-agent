@@ -47,6 +47,30 @@ using Base_ptr = std::unique_ptr<EntryBase>;
 
 class Configuration {
   public:
+    struct Error : public std::runtime_error {
+        explicit Error(std::string const& msg) : std::runtime_error(msg) {}
+    };
+
+    struct UninitializedError : public Error {
+        explicit UninitializedError(std::string const& msg) : Error(msg) {}
+    };
+
+    struct ConfigurationEntryError : public Error {
+        explicit ConfigurationEntryError(std::string const& msg) : Error(msg) {}
+    };
+
+    struct ConfigfileError : public Error {
+        explicit ConfigfileError(std::string const& msg) : Error(msg) {}
+    };
+
+    struct RequiredNotSetError : public Error {
+        explicit RequiredNotSetError(std::string const& msg) : Error(msg) {}
+    };
+
+    struct CLIParseError : public Error {
+        explicit CLIParseError(std::string const& msg) : Error(msg) {}
+    };
+
     static Configuration& Instance() {
         static Configuration instance {};
         return instance;
@@ -65,12 +89,12 @@ class Configuration {
     /// parsing outcome (refer to HorseWhisperer).
     /// Throw a HorseWhisperer::flag_validation_error in case such
     /// exception is thrown by a flag validation callback.
-    /// Throw a cli_parse_error in case it fails to parse the CLI
-    /// arguments.
-    /// Throw a required_not_set_error in case of a missing or invalid
-    /// configuration value.
-    /// Throw a configuration_entry_error if the specified config file
-    /// does not exist.
+    /// Throw a Configuration::CLIParseError in case it fails to parse
+    /// the CLI arguments.
+    /// Throw a Configuration::RequiredNotSetError in case of a
+    /// missing or invalid configuration value.
+    /// Throw a Configuration::ConfigfileError if the specified config
+    /// file cannot be parsed or has any invalid JSON entry.
     HW::ParseResult initialize(int argc, char *argv[]);
 
     /// Set the start function that will be executed when calling
@@ -79,24 +103,26 @@ class Configuration {
 
     /// If Configuration was already initialized, return the value
     /// set for the specified flag (NB: the value can be a default);
-    /// throw a configuration_entry_error such flag is unknown.
-    /// If Configuration was not initialized so far, but the requested
-    /// flag is known, return the default value; throw a
-    /// configuration_entry_error otherwise.
+    /// throw a Configuration::ConfigurationEntryError such flag is
+    /// unknown. If Configuration was not initialized so far, but the
+    /// requested flag is known, return the default value; throw a
+    /// Configuration::ConfigurationEntryError otherwise.
     template <typename T>
     T get(std::string flagname) {
         if (initialized_) {
             try {
                 return HW::GetFlag<T>(flagname);
             } catch (HW::undefined_flag_error& e) {
-                throw configuration_entry_error { std::string { e.what() } };
+                throw Configuration::ConfigurationEntryError {
+                    std::string { e.what() } };
             }
         }
 
         // Configuration instance not initialized; get default
         auto entry = defaults_.find(flagname);
         if (entry == defaults_.end()) {
-            throw configuration_entry_error { "no default value for " + flagname };
+            throw Configuration::ConfigurationEntryError { "no default value for "
+                                                           + flagname };
         } else {
             Entry<T>* entry_ptr = (Entry<T>*) entry->second.get();
             return entry_ptr->value;
@@ -104,30 +130,33 @@ class Configuration {
     }
 
     /// Set the specified value for a given configuration flag.
-    /// Throw an uninitialized_error in case the Configuration was not
-    /// initialized so far.
-    /// Throw a configuration_entry_error in case the specified flag
-    /// is unknown or the value is invalid.
+    /// Throw an Configuration::UninitializedError in case the
+    /// Configuration was not initialized so far.
+    /// Throw a Configuration::ConfigurationEntryError in case the
+    /// specified flag is unknown or the value is invalid.
     template<typename T>
     void set(std::string flagname, T value) {
         if (!initialized_) {
-            throw uninitialized_error { "cannot set configuration value until "
-                                        "initialized" };
+            throw Configuration::UninitializedError { "cannot set configuration "
+                                                      "value until initialized" };
         }
 
         try {
             HW::SetFlag<T>(flagname, value);
         } catch (HW::flag_validation_error) {
-            throw configuration_entry_error { "invalid value for " + flagname };
+            throw Configuration::ConfigurationEntryError { "invalid value for "
+                                                           + flagname };
         } catch (HW::undefined_flag_error) {
-            throw configuration_entry_error { "unknown flag name: " + flagname };
+            throw Configuration::ConfigurationEntryError { "unknown flag name: "
+                                                           + flagname };
         }
     }
 
     /// Ensure all required values are valid. If necessary, expand
     /// file paths to the expected format.
-    /// Throw a required_not_set_error if any required file path is
-    /// missing; a configuration_entry_error in case of invalid values.
+    /// Throw a Configuration::RequiredNotSetError if any required
+    /// file path is missing; a Configuration::ConfigurationEntryError
+    /// in case of invalid values.
     void validateAndNormalizeConfiguration();
 
     /// Load and store all configuration options for individual modules

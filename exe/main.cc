@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
     } catch (HW::horsewhisperer_error& e) {
         // Failed to validate action argument or flag
         err_msg = e.what();
-    } catch(configuration_error& e) {
+    } catch(Configuration::Error& e) {
         std::cout << "An unexpected error has occurred:\n";
         err_msg = e.what();
     }

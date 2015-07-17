@@ -96,7 +96,7 @@ TEST_CASE("Configuration::set", "[configuration]") {
     SECTION("throw when setting an unknown flag") {
         REQUIRE_THROWS_AS(Configuration::Instance()
                                 .set<int>("tentacle_spawning_interval_s", 45),
-                          configuration_entry_error);
+                          Configuration::ConfigurationEntryError);
     }
 
     SECTION("throw when setting a known flag to an invalid value") {
@@ -111,7 +111,7 @@ TEST_CASE("Configuration::set", "[configuration]") {
 
         // The only valid number of tentacles is 8
         REQUIRE_THROWS_AS(Configuration::Instance().set<int>("num_tentacles", 42),
-                          configuration_entry_error);
+                          Configuration::ConfigurationEntryError);
         REQUIRE_NOTHROW(Configuration::Instance().set<int>("num_tentacles", 8));
     }
 
@@ -129,10 +129,11 @@ TEST_CASE("Configuration::get", "[configuration]") {
                     == DEFAULT_ACTION_RESULTS_DIR);
         }
 
-        SECTION("throw a configuration_entry_error if the flag is unknown") {
+        SECTION("throw a Configuration::ConfigurationEntryError if the flag "
+                "is unknown") {
             REQUIRE_THROWS_AS(
                 Configuration::Instance().get<std::string>("dont_exist"),
-                configuration_entry_error);
+                Configuration::ConfigurationEntryError);
         }
     }
 
@@ -161,7 +162,7 @@ TEST_CASE("Configuration::get", "[configuration]") {
         SECTION("throw a configuration error if the flag is unknown") {
             REQUIRE_THROWS_AS(
                 Configuration::Instance().get<std::string>("still_dont_exist"),
-                configuration_entry_error);
+                Configuration::ConfigurationEntryError);
         }
 
         resetTest();
@@ -174,55 +175,55 @@ TEST_CASE("Configuration::validateAndNormalizeConfiguration", "[configuration]")
     SECTION("it fails when server is undefined") {
         Configuration::Instance().set<std::string>("server", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          required_not_set_error);
+                          Configuration::RequiredNotSetError);
     }
 
     SECTION("it fails when server is invlaid") {
         Configuration::Instance().set<std::string>("server", "ws://");
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          configuration_entry_error);
+                          Configuration::ConfigurationEntryError);
     }
 
     SECTION("it fails when ca is undefined") {
         Configuration::Instance().set<std::string>("ca", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          required_not_set_error);
+                          Configuration::RequiredNotSetError);
     }
 
     SECTION("it fails when ca file cannot be found") {
         Configuration::Instance().set<std::string>("ca", "/fake/file");
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          configuration_entry_error);
+                          Configuration::ConfigurationEntryError);
     }
 
     SECTION("it fails when cert is undefined") {
         Configuration::Instance().set<std::string>("cert", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          required_not_set_error);
+                          Configuration::RequiredNotSetError);
     }
 
     SECTION("it fails when cert file cannot be found") {
         Configuration::Instance().set<std::string>("cert", "/fake/file");
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          configuration_entry_error);
+                          Configuration::ConfigurationEntryError);
     }
 
     SECTION("it fails when key is undefined") {
         Configuration::Instance().set<std::string>("key", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          required_not_set_error);
+                          Configuration::RequiredNotSetError);
     }
 
     SECTION("it fails when key file cannot be found") {
         Configuration::Instance().set<std::string>("key", "/fake/file");
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          configuration_entry_error);
+                          Configuration::ConfigurationEntryError);
     }
 
     SECTION("it fails when spool-dir is empty") {
         Configuration::Instance().set<std::string>("spool-dir", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          required_not_set_error);
+                          Configuration::RequiredNotSetError);
     }
     resetTest();
 }
