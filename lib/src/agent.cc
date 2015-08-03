@@ -8,18 +8,10 @@
 
 namespace CthunAgent {
 
-static const std::string AGENT_CLIENT_TYPE { "agent" };
-
-Agent::Agent(const std::string& modules_dir,
-             const std::string& server_url,
-             const std::string& ca,
-             const std::string& crt,
-             const std::string& key,
-             const std::string& spool_dir)
+Agent::Agent(const AgentConfiguration& agent_configuration)
         try
-            : connector_ptr_ { new CthunConnector(server_url, AGENT_CLIENT_TYPE,
-                                                  ca, crt, key) },
-              request_processor_ { connector_ptr_, modules_dir, spool_dir } {
+            : connector_ptr_ { new CthunConnector(agent_configuration) },
+              request_processor_ { connector_ptr_, agent_configuration } {
 } catch (CthunClient::connection_config_error& e) {
     throw Agent::Error { std::string { "failed to configure: " } + e.what() };
 }

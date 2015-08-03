@@ -4,6 +4,7 @@
 
 #include <cthun-agent/request_processor.hpp>
 #include <cthun-agent/configuration.hpp>
+#include <cthun-agent/agent_configuration.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
 
@@ -30,13 +31,27 @@ static const std::string MODULES { CTHUN_AGENT_ROOT_PATH
 static const std::string SPOOL { CTHUN_AGENT_ROOT_PATH
                           + std::string { "/lib/tests/resources/tmp/" } };
 
+static const AgentConfiguration agent_configuration { MODULES,
+                                                      TEST_SERVER_URL,
+                                                      CA,
+                                                      CERT,
+                                                      KEY,
+                                                      SPOOL,
+                                                      "",  // modules config dir
+                                                      "test_agent" };
+
 TEST_CASE("RequestProcessor::RequestProcessor", "[agent]") {
-    auto c_ptr = std::make_shared<CthunConnector>(TEST_SERVER_URL, "test_agent",
-                                                  CA, CERT, KEY);
+    auto c_ptr = std::make_shared<CthunConnector>(agent_configuration);
 
     SECTION("successfully instantiates with valid arguments") {
-        auto m_path = CTHUN_AGENT_ROOT_PATH + std::string { "/fake_dir" };
-        REQUIRE_NOTHROW(RequestProcessor(c_ptr, m_path, SPOOL));
+        REQUIRE_NOTHROW(RequestProcessor(c_ptr, agent_configuration));
+    };
+
+    SECTION("instantiates if the specified modules directory does not exist") {
+        AgentConfiguration a_c  = agent_configuration;
+        a_c.modules_dir += "/fake_dir";
+
+        REQUIRE_NOTHROW(RequestProcessor(c_ptr, a_c));
     };
 
     boost::filesystem::remove_all(SPOOL);
@@ -74,7 +89,7 @@ class TestConnector : public CthunConnector {
     std::atomic<bool> sent_non_blocking_response;
 
     TestConnector()
-            : CthunConnector { TEST_SERVER_URL, "cthun_agent", CA, CERT, KEY },
+            : CthunConnector { agent_configuration },
               sent_provisional_response { false },
               sent_non_blocking_response { false } {
     }
@@ -112,6 +127,15 @@ class TestConnector : public CthunConnector {
 };
 
 TEST_CASE("RequestProcessor::processRequest", "[agent]") {
+    AgentConfiguration agent_configuration { BIN_PATH,
+                                             TEST_SERVER_URL,
+                                             getCaPath(),
+                                             getCertPath(),
+                                             getKeyPath(),
+                                             SPOOL,
+                                             "",  // modules config dir
+                                             "test_agent" };
+
     auto c_ptr = std::make_shared<TestConnector>();
     RequestProcessor r_p { c_ptr, MODULES, SPOOL };
     lth_jc::JsonContainer envelope { valid_envelope_txt };

@@ -5,6 +5,7 @@
 #include <cthun-agent/thread_container.hpp>
 #include <cthun-agent/action_request.hpp>
 #include <cthun-agent/cthun_connector.hpp>
+#include <cthun-agent/agent_configuration.hpp>
 
 #include <boost/filesystem/path.hpp>
 
@@ -23,8 +24,7 @@ class RequestProcessor {
     RequestProcessor() = delete;
 
     RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
-                     const std::string& modules_dir,
-                     const std::string& spool_dir);
+                     const AgentConfiguration& agent_configuration);
 
     /// Execute the specified action.
     ///
@@ -56,8 +56,14 @@ class RequestProcessor {
     /// be created
     const std::string spool_dir_;
 
-    // Modules
+    /// Modules
     std::map<std::string, std::shared_ptr<Module>> modules_;
+
+    /// Where the configuration files of modules are stored
+    const std::string modules_config_dir_;
+
+    /// Modules configuration
+    std::map<std::string, lth_jc::JsonContainer> modules_config_;
 
     /// Throw a RequestProcessor::Error in case of unknown module,
     /// unknown action, or if the requested input parameters entry

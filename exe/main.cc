@@ -14,15 +14,11 @@ namespace HW = HorseWhisperer;
 namespace lth_file = leatherman::file_util;
 
 int startAgent(std::vector<std::string> arguments) {
+    const auto& agent_configuration =
+        Configuration::Instance().getAgentConfiguration();
 
     try {
-        Agent agent { Configuration::Instance().get<std::string>("modules-dir"),
-                      Configuration::Instance().get<std::string>("server"),
-                      Configuration::Instance().get<std::string>("ca"),
-                      Configuration::Instance().get<std::string>("cert"),
-                      Configuration::Instance().get<std::string>("key"),
-                      Configuration::Instance().get<std::string>("spool-dir") };
-
+        Agent agent { agent_configuration };
         agent.start();
     } catch (Agent::Error& e) {
         LOG_ERROR("fatal error: %1%", e.what());

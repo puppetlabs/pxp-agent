@@ -111,6 +111,7 @@ class ResultsStorage {
 //
 // Non-blocking action task
 //
+
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ActionRequest&& request,
                            std::string job_id,
@@ -150,21 +151,23 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 //
 
 RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
-                                   const std::string& modules_dir,
-                                   const std::string& spool_dir)
+                                   const AgentConfiguration& agent_configuration)
         : thread_container_ { "Action Executer" },
           connector_ptr_ { connector_ptr },
-          spool_dir_ { spool_dir } {
+          spool_dir_ { agent_configuration.spool_dir },
+          modules_ {},
+          modules_config_dir_ { agent_configuration.modules_config_dir },
+          modules_config_ {} {
     assert(!spool_dir_.empty());
 
     // NB: certificate paths are validated by HW
     loadInternalModules();
 
-    if (!modules_dir.empty()) {
-        loadExternalModulesFrom(modules_dir);
+    if (!agent_configuration.modules_dir.empty()) {
+        loadExternalModulesFrom(agent_configuration.modules_dir);
     } else {
-        LOG_INFO("The modules directory was not provided; no external module "
-                 "will be loaded");
+        LOG_WARNING("The modules directory was not provided; no external "
+                    "module will be loaded");
     }
 
     logLoadedModules();
