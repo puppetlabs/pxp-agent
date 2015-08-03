@@ -63,6 +63,8 @@ class Configuration {
     /// Parse the command line arguments and, if specified, the
     /// configuration file, in order to obtain the configuration
     /// values; validate and normalize them.
+    /// Enable logging if flagged (flag useful for prevent logging
+    /// during testing).
     /// Return a HorseWhisperer::ParseResult value indicating the
     /// parsing outcome (refer to HorseWhisperer).
     /// Throw a HorseWhisperer::flag_validation_error in case such
@@ -71,7 +73,8 @@ class Configuration {
     /// arguments; in case of a missing or invalid configuration
     /// value; if the specified config file cannot be parsed or has
     /// any invalid JSON entry.
-    HW::ParseResult initialize(int argc, char *argv[]);
+    HW::ParseResult initialize(int argc, char *argv[],
+                               bool enable_logging = true);
 
     /// Set the start function that will be executed when calling
     /// HorseWhisperer::Start().
@@ -147,6 +150,7 @@ class Configuration {
     void parseConfigFile();
     void defineDefaultValues();
     void setDefaultValues();
+    void setupLogging();
 };
 
 }  // namespace CthunAgent

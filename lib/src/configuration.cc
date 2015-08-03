@@ -234,9 +234,43 @@ void Configuration::parseConfigFile() {
     }
 }
 
+void Configuration::setupLogging() {
+    auto logfile = HW::GetFlag<std::string>("logfile");
+    std::ofstream file_stream {};
+    namespace LL = leatherman::logging;
+
+    if (!logfile.empty()) {
+        file_stream.open(logfile, std::ios_base::app);
+        LL::setup_logging(file_stream);
+#ifdef LOG_COLOR
+        LL::set_colorization(true);
+#endif  // LOG_COLOR
+    } else {
+        // Log on stdout by default
+        LL::setup_logging(std::cout);
+        LL::set_colorization(true);
+    }
+
+    switch (HW::GetFlag<int>("vlevel")) {
+        case 0:
+            LL::set_level(LL::log_level::info);
+            break;
+        case 1:
+            LL::set_level(LL::log_level::debug);
+            break;
+        case 2:
+            LL::set_level(LL::log_level::trace);
+            break;
+        default:
+            LL::set_level(LL::log_level::trace);
+    }
+}
+
 //
 // Public interface
 //
+
+// TODO(ale): move the public interface above, for consistency
 
 void Configuration::reset() {
     HW::Reset();
@@ -244,7 +278,8 @@ void Configuration::reset() {
     initialized_ = false;
 }
 
-HW::ParseResult Configuration::initialize(int argc, char *argv[]) {
+HW::ParseResult Configuration::initialize(int argc, char *argv[],
+                                          bool enable_logging) {
     setDefaultValues();
 
     HW::DefineAction("start", 0, false, "Start the agent (Default)",
@@ -272,9 +307,15 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[]) {
         // No further processing or user interaction are required if
         // the parsing outcome is HW::ParseResult::HELP or VERSION
         config_file_ = HW::GetFlag<std::string>("config-file");
+
         if (!config_file_.empty()) {
             parseConfigFile();
         }
+
+        if (enable_logging) {
+            setupLogging();
+        }
+
         validateAndNormalizeConfiguration();
         loadModuleConfiguration();
     }
