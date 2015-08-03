@@ -13,6 +13,8 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.configuration"
 #include <leatherman/logging/logging.hpp>
 
+#include <fstream>
+
 namespace CthunAgent {
 
 namespace fs = boost::filesystem;
@@ -22,6 +24,8 @@ namespace lth_jc = leatherman::json_container;
 const std::string DEFAULT_MODULES_DIR { "/usr/share/cthun-agent/modules" };
 const std::string DEFAULT_MODULES_CONF_DIR { "/etc/puppetlabs/cthun-agent/modules.d" };
 
+const std::string AGENT_CLIENT_TYPE { "agent" };
+
 //
 // Private
 //
@@ -29,7 +33,8 @@ const std::string DEFAULT_MODULES_CONF_DIR { "/etc/puppetlabs/cthun-agent/module
 Configuration::Configuration() : initialized_ { false },
                                  defaults_ {},
                                  config_file_ { "" },
-                                 start_function_ {} {
+                                 start_function_ {},
+                                 agent_configuration_ {} {
     defineDefaultValues();
 }
 
@@ -266,6 +271,18 @@ void Configuration::setupLogging() {
     }
 }
 
+void Configuration::setAgentConfiguration() {
+    agent_configuration_ = AgentConfiguration {
+        HW::GetFlag<std::string>("modules-dir"),
+        HW::GetFlag<std::string>("server"),
+        HW::GetFlag<std::string>("ca"),
+        HW::GetFlag<std::string>("cert"),
+        HW::GetFlag<std::string>("key"),
+        HW::GetFlag<std::string>("spool-dir"),
+        HW::GetFlag<std::string>("modules-config-dir"),
+        AGENT_CLIENT_TYPE };
+}
+
 //
 // Public interface
 //
@@ -317,7 +334,7 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[],
         }
 
         validateAndNormalizeConfiguration();
-        loadModuleConfiguration();
+        setAgentConfiguration();
     }
 
     initialized_ = true;
@@ -418,6 +435,8 @@ const lth_jc::JsonContainer& Configuration::getModuleConfig(const std::string& m
     }
 
     return module_config_[module];
+const AgentConfiguration& Configuration::getAgentConfiguration() const {
+    return agent_configuration_;
 }
 
 }  // namespace CthunAgent

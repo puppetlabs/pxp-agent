@@ -1,6 +1,8 @@
 #ifndef SRC_CONFIGURATION_H_
 #define SRC_CONFIGURATION_H_
 
+#include <cthun-agent/agent_configuration.hpp>
+
 #include <horsewhisperer/horsewhisperer.h>
 #include <leatherman/json_container/json_container.hpp>
 
@@ -138,6 +140,8 @@ class Configuration {
 
     /// Retrieve module specific config options
     const lth_jc::JsonContainer& getModuleConfig(const std::string& module);
+    /// Return the whole agent configuration
+    const AgentConfiguration& getAgentConfiguration() const;
 
   private:
     bool initialized_;
@@ -145,12 +149,14 @@ class Configuration {
     std::string config_file_;
     std::function<int(std::vector<std::string>)> start_function_;
     std::map<std::string, lth_jc::JsonContainer> module_config_;
+    AgentConfiguration agent_configuration_;
 
     Configuration();
     void parseConfigFile();
     void defineDefaultValues();
     void setDefaultValues();
     void setupLogging();
+    void setAgentConfiguration();
 };
 
 }  // namespace CthunAgent
