@@ -9,6 +9,7 @@
 
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/file_util/file.hpp>
+#include <leatherman/file_util/directory.hpp>
 #include <leatherman/util/strings.hpp>
 #include <leatherman/util/timer.hpp>
 
@@ -111,6 +112,7 @@ class ResultsStorage {
 //
 // Non-blocking action task
 //
+
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ActionRequest&& request,
                            std::string job_id,
@@ -150,21 +152,25 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 //
 
 RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
-                                   const std::string& modules_dir,
-                                   const std::string& spool_dir)
+                                   const Configuration::Agent& agent_configuration)
         : thread_container_ { "Action Executer" },
           connector_ptr_ { connector_ptr },
-          spool_dir_ { spool_dir } {
+          spool_dir_ { agent_configuration.spool_dir },
+          modules_ {},
+          modules_config_dir_ { agent_configuration.modules_config_dir },
+          modules_config_ {} {
     assert(!spool_dir_.empty());
 
-    // NB: certificate paths are validated by HW
+    // NB: certificate paths have been validated by HW
+
+    loadModulesConfiguration();
     loadInternalModules();
 
-    if (!modules_dir.empty()) {
-        loadExternalModulesFrom(modules_dir);
+    if (!agent_configuration.modules_dir.empty()) {
+        loadExternalModulesFrom(agent_configuration.modules_dir);
     } else {
-        LOG_INFO("The modules directory was not provided; no external module "
-                 "will be loaded");
+        LOG_WARNING("The modules directory was not provided; no external "
+                    "module will be loaded");
     }
 
     logLoadedModules();
@@ -297,7 +303,35 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
     connector_ptr_->sendProvisionalResponse(request, job_id, err_msg);
 }
 
+void RequestProcessor::loadModulesConfiguration() {
+    LOG_INFO("Loading external modules configuration from %1%",
+             modules_config_dir_);
+
+    if (fs::is_directory(modules_config_dir_)) {
+        lth_file::each_file(
+            modules_config_dir_,
+            [this](std::string const& s) -> bool {
+                try {
+                    fs::path s_path { s };
+                    modules_config_[s_path.stem().string()] =
+                        lth_jc::JsonContainer(lth_file::read(s));
+                } catch (lth_jc::data_parse_error& e) {
+                    LOG_WARNING("Cannot load module config file '%1%'. File "
+                                "contains invalid json: %2%", s, e.what());
+                }
+                return true;
+                // naming convention for config files are .cfg. Don't
+                // process files that don't end in this extension
+            },
+            "\\.cfg$");
+    } else {
+        LOG_WARNING("Directory '%1%' specified by modules-config-dir doesn't "
+                    "exist", modules_config_dir_);
+    }
+}
+
 void RequestProcessor::loadInternalModules() {
+    // HERE(ale): no external configuration for internal modules
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
     modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
     modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
@@ -316,9 +350,17 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
 
                 try {
                     ExternalModule* e_m = new ExternalModule(f_p);
+                    auto config_itr = modules_config_.find(e_m->module_name);
+
+                    if (config_itr != modules_config_.end()) {
+                        e_m->validateAndSetConfiguration(config_itr->second);
+                    }
+
                     modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
                 } catch (Module::LoadingError& e) {
                     LOG_ERROR("Failed to load %1%; %2%", f_p, e.what());
+                } catch (CthunClient::validation_error& e) {
+                    LOG_ERROR("Failed to configure %1%; %2%", f_p, e.what());
                 } catch (std::exception& e) {
                     LOG_ERROR("Unexpected error when loading %1%; %2%",
                               f_p, e.what());

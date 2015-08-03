@@ -32,6 +32,7 @@ class Module {
 
     std::string module_name;
     std::vector<std::string> actions;
+    CthunClient::Validator config_validator_;
     CthunClient::Validator input_validator_;
     CthunClient::Validator output_validator_;
 

@@ -8,6 +8,7 @@
 #endif
 
 #include <cthun-agent/action_request.hpp>
+#include <cthun-agent/configuration.hpp>
 
 #include <cthun-client/connector/connector.hpp>
 
@@ -22,11 +23,7 @@ namespace lth_jc = leatherman::json_container;
 
 class CthunConnector : public CthunClient::Connector {
   public:
-    CthunConnector(const std::string& server_url,
-                   const std::string& client_type,
-                   const std::string& ca_crt_path,
-                   const std::string& client_crt_path,
-                   const std::string& client_key_path);
+    CthunConnector(const Configuration::Agent& agent_configuration);
 
     TEST_VIRTUAL_SPECIFIER void sendCthunError(
                     const std::string& request_id,

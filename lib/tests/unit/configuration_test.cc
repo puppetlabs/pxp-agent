@@ -31,7 +31,7 @@ const char* ARGV[] = { "test-command",
 const int ARGC = 13;
 
 static void configureTest() {
-    Configuration::Instance().initialize(ARGC, const_cast<char**>(ARGV));
+    Configuration::Instance().initialize(ARGC, const_cast<char**>(ARGV), false);
 }
 
 static void resetTest() {
@@ -43,7 +43,7 @@ TEST_CASE("Configuration - metatest", "[configuration]") {
 
     SECTION("Metatest - can initialize Configuration") {
         REQUIRE_NOTHROW(Configuration::Instance()
-                            .initialize(ARGC, const_cast<char**>(ARGV)));
+                            .initialize(ARGC, const_cast<char**>(ARGV), false));
     }
 
     configureTest();
@@ -145,7 +145,7 @@ TEST_CASE("Configuration::get", "[configuration]") {
         SECTION("return the default value if the flag was not set") {
             resetTest();
             // NB: ignoring --spool-dir in ARGV since argc is set to 9
-            Configuration::Instance().initialize(9, const_cast<char**>(ARGV));
+            Configuration::Instance().initialize(9, const_cast<char**>(ARGV), false);
 
             REQUIRE(Configuration::Instance().get<std::string>("spool-dir")
                     == DEFAULT_ACTION_RESULTS_DIR);

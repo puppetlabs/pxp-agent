@@ -2,14 +2,12 @@
 #define SRC_CONFIGURATION_H_
 
 #include <horsewhisperer/horsewhisperer.h>
-#include <leatherman/json_container/json_container.hpp>
 
 #include <map>
 
 namespace CthunAgent {
 
 namespace HW = HorseWhisperer;
-namespace lth_jc = leatherman::json_container;
 
 static const std::string DEFAULT_ACTION_RESULTS_DIR = "/tmp/cthun-agent/";
 
@@ -43,6 +41,9 @@ struct Entry : EntryBase {
 
 using Base_ptr = std::unique_ptr<EntryBase>;
 
+// TODO(ale): we may not need Configuration as a singleton; consider
+// changing that
+
 class Configuration {
   public:
     struct Error : public std::runtime_error {
@@ -54,6 +55,17 @@ class Configuration {
         return instance;
     }
 
+    struct Agent {
+        std::string modules_dir;
+        std::string server_url;
+        std::string ca;
+        std::string crt;
+        std::string key;
+        std::string spool_dir;
+        std::string modules_config_dir;
+        std::string client_type;
+    };
+
     /// Set the configuration entries to their default values.
     /// Unset the initialized_ flag.
     void reset();
@@ -63,6 +75,8 @@ class Configuration {
     /// Parse the command line arguments and, if specified, the
     /// configuration file, in order to obtain the configuration
     /// values; validate and normalize them.
+    /// Enable logging if flagged (flag useful for prevent logging
+    /// during testing).
     /// Return a HorseWhisperer::ParseResult value indicating the
     /// parsing outcome (refer to HorseWhisperer).
     /// Throw a HorseWhisperer::flag_validation_error in case such
@@ -71,7 +85,8 @@ class Configuration {
     /// arguments; in case of a missing or invalid configuration
     /// value; if the specified config file cannot be parsed or has
     /// any invalid JSON entry.
-    HW::ParseResult initialize(int argc, char *argv[]);
+    HW::ParseResult initialize(int argc, char *argv[],
+                               bool enable_logging = true);
 
     /// Set the start function that will be executed when calling
     /// HorseWhisperer::Start().
@@ -130,23 +145,22 @@ class Configuration {
     /// missing or in case of invalid values.
     void validateAndNormalizeConfiguration();
 
-    /// Load and store all configuration options for individual modules
-    void loadModuleConfiguration();
-
-    /// Retrieve module specific config options
-    const lth_jc::JsonContainer& getModuleConfig(const std::string& module);
+    /// Return the whole agent configuration
+    const Agent& getAgentConfiguration() const;
 
   private:
     bool initialized_;
     std::map<std::string, Base_ptr> defaults_;
     std::string config_file_;
     std::function<int(std::vector<std::string>)> start_function_;
-    std::map<std::string, lth_jc::JsonContainer> module_config_;
+    Agent agent_configuration_;
 
     Configuration();
-    void parseConfigFile();
     void defineDefaultValues();
     void setDefaultValues();
+    void parseConfigFile();
+    void setupLogging();
+    void setAgentConfiguration();
 };
 
 }  // namespace CthunAgent
