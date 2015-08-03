@@ -8,7 +8,7 @@
 
 namespace CthunAgent {
 
-Agent::Agent(const AgentConfiguration& agent_configuration)
+Agent::Agent(const Configuration::Agent& agent_configuration)
         try
             : connector_ptr_ { new CthunConnector(agent_configuration) },
               request_processor_ { connector_ptr_, agent_configuration } {

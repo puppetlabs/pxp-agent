@@ -5,7 +5,7 @@
 #include <cthun-agent/thread_container.hpp>
 #include <cthun-agent/action_request.hpp>
 #include <cthun-agent/cthun_connector.hpp>
-#include <cthun-agent/agent_configuration.hpp>
+#include <cthun-agent/configuration.hpp>
 
 #include <boost/filesystem/path.hpp>
 
@@ -24,7 +24,7 @@ class RequestProcessor {
     RequestProcessor() = delete;
 
     RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
-                     const AgentConfiguration& agent_configuration);
+                     const Configuration::Agent& agent_configuration);
 
     /// Execute the specified action.
     ///

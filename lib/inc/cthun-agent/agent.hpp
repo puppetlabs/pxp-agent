@@ -4,7 +4,7 @@
 #include <cthun-agent/request_processor.hpp>
 #include <cthun-agent/action_request.hpp>
 #include <cthun-agent/cthun_connector.hpp>
-#include <cthun-agent/agent_configuration.hpp>
+#include <cthun-agent/configuration.hpp>
 
 #include <cthun-client/protocol/chunks.hpp>      // ParsedChunk
 
@@ -27,7 +27,7 @@ class Agent {
     //
     // Throw an Agent::Error in case it fails to determine the agent
     // identity by inspecting the certificate.
-    Agent(const AgentConfiguration& agent_configuration);
+    Agent(const Configuration::Agent& agent_configuration);
 
     // Start the agent and loop indefinitely, by:
     //  - registering message callbacks;

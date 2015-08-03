@@ -270,7 +270,7 @@ void Configuration::setupLogging() {
 }
 
 void Configuration::setAgentConfiguration() {
-    agent_configuration_ = AgentConfiguration {
+    agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
         HW::GetFlag<std::string>("server"),
         HW::GetFlag<std::string>("ca"),
@@ -404,7 +404,7 @@ void Configuration::validateAndNormalizeConfiguration() {
     }
 }
 
-const AgentConfiguration& Configuration::getAgentConfiguration() const {
+const Configuration::Agent& Configuration::getAgentConfiguration() const {
     return agent_configuration_;
 }
 

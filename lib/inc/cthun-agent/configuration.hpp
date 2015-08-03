@@ -1,8 +1,6 @@
 #ifndef SRC_CONFIGURATION_H_
 #define SRC_CONFIGURATION_H_
 
-#include <cthun-agent/agent_configuration.hpp>
-
 #include <horsewhisperer/horsewhisperer.h>
 
 #include <map>
@@ -43,6 +41,9 @@ struct Entry : EntryBase {
 
 using Base_ptr = std::unique_ptr<EntryBase>;
 
+// TODO(ale): we may not need Configuration as a singleton; consider
+// changing that
+
 class Configuration {
   public:
     struct Error : public std::runtime_error {
@@ -53,6 +54,17 @@ class Configuration {
         static Configuration instance {};
         return instance;
     }
+
+    struct Agent {
+        std::string modules_dir;
+        std::string server_url;
+        std::string ca;
+        std::string crt;
+        std::string key;
+        std::string spool_dir;
+        std::string modules_config_dir;
+        std::string client_type;
+    };
 
     /// Set the configuration entries to their default values.
     /// Unset the initialized_ flag.
@@ -134,14 +146,14 @@ class Configuration {
     void validateAndNormalizeConfiguration();
 
     /// Return the whole agent configuration
-    const AgentConfiguration& getAgentConfiguration() const;
+    const Agent& getAgentConfiguration() const;
 
   private:
     bool initialized_;
     std::map<std::string, Base_ptr> defaults_;
     std::string config_file_;
     std::function<int(std::vector<std::string>)> start_function_;
-    AgentConfiguration agent_configuration_;
+    Agent agent_configuration_;
 
     Configuration();
     void defineDefaultValues();

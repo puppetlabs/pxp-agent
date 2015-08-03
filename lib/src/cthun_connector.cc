@@ -30,7 +30,7 @@ std::vector<lth_jc::JsonContainer> wrapDebug(
     return debug;
 }
 
-CthunConnector::CthunConnector(const AgentConfiguration& agent_configuration)
+CthunConnector::CthunConnector(const Configuration::Agent& agent_configuration)
         : CthunClient::Connector { agent_configuration.server_url,
                                    agent_configuration.client_type,
                                    agent_configuration.ca,

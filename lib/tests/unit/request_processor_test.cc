@@ -4,7 +4,6 @@
 
 #include <cthun-agent/request_processor.hpp>
 #include <cthun-agent/configuration.hpp>
-#include <cthun-agent/agent_configuration.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
 
@@ -31,14 +30,14 @@ static const std::string MODULES { CTHUN_AGENT_ROOT_PATH
 static const std::string SPOOL { CTHUN_AGENT_ROOT_PATH
                           + std::string { "/lib/tests/resources/tmp/" } };
 
-static const AgentConfiguration agent_configuration { MODULES,
-                                                      TEST_SERVER_URL,
-                                                      CA,
-                                                      CERT,
-                                                      KEY,
-                                                      SPOOL,
-                                                      "",  // modules config dir
-                                                      "test_agent" };
+static const Configuration::Agent agent_configuration { MODULES,
+                                                        TEST_SERVER_URL,
+                                                        CA,
+                                                        CERT,
+                                                        KEY,
+                                                        SPOOL,
+                                                        "",  // modules config dir
+                                                        "test_agent" };
 
 TEST_CASE("RequestProcessor::RequestProcessor", "[agent]") {
     auto c_ptr = std::make_shared<CthunConnector>(agent_configuration);
@@ -48,7 +47,7 @@ TEST_CASE("RequestProcessor::RequestProcessor", "[agent]") {
     };
 
     SECTION("instantiates if the specified modules directory does not exist") {
-        AgentConfiguration a_c  = agent_configuration;
+        Configuration::Agent a_c  = agent_configuration;
         a_c.modules_dir += "/fake_dir";
 
         REQUIRE_NOTHROW(RequestProcessor(c_ptr, a_c));

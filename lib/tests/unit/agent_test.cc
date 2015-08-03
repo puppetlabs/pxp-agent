@@ -3,7 +3,7 @@
 #include "root_path.hpp"
 
 #include <cthun-agent/agent.hpp>
-#include <cthun-agent/agent_configuration.hpp>
+#include <cthun-agent/configuration.hpp>
 
 #include <catch.hpp>
 
@@ -19,14 +19,14 @@ const std::string SPOOL { std::string { CTHUN_AGENT_ROOT_PATH }
                           + "/lib/tests/resources/tmp/" };
 
 TEST_CASE("Agent::Agent", "[agent]") {
-    AgentConfiguration agent_configuration { MODULES,
-                                             TEST_SERVER_URL,
-                                             getCaPath(),
-                                             getCertPath(),
-                                             getKeyPath(),
-                                             SPOOL,
-                                             "",  // modules config dir
-                                             "test_agent" };
+    Configuration::Agent agent_configuration { MODULES,
+                                               TEST_SERVER_URL,
+                                               getCaPath(),
+                                               getCertPath(),
+                                               getKeyPath(),
+                                               SPOOL,
+                                               "",  // modules config dir
+                                               "test_agent" };
 
     SECTION("does not throw if it fails to find the external modules directory") {
         agent_configuration.modules_dir = MODULES + "/fake_dir";

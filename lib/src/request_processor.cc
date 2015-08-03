@@ -152,7 +152,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 //
 
 RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
-                                   const AgentConfiguration& agent_configuration)
+                                   const Configuration::Agent& agent_configuration)
         : thread_container_ { "Action Executer" },
           connector_ptr_ { connector_ptr },
           spool_dir_ { agent_configuration.spool_dir },
