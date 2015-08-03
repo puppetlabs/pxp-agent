@@ -25,7 +25,132 @@ const std::string DEFAULT_MODULES_CONF_DIR { "/etc/puppetlabs/cthun-agent/module
 const std::string AGENT_CLIENT_TYPE { "agent" };
 
 //
-// Private
+// Public interface
+//
+
+void Configuration::reset() {
+    HW::Reset();
+    setDefaultValues();
+    initialized_ = false;
+}
+
+HW::ParseResult Configuration::initialize(int argc, char *argv[],
+                                          bool enable_logging) {
+    setDefaultValues();
+
+    HW::DefineAction("start", 0, false, "Start the agent (Default)",
+                     "Start the agent", start_function_);
+
+    // manipulate argc and v to make start the default action.
+    // TODO(ploubser): Add ability to specify default action to HorseWhisperer
+    int modified_argc = argc + 1;
+    char* modified_argv[modified_argc];
+    char action[] = "start";
+
+    for (int i = 0; i < argc; i++) {
+        modified_argv[i] = argv[i];
+    }
+    modified_argv[modified_argc - 1] = action;
+
+    auto parse_result = HW::Parse(modified_argc, modified_argv);
+
+    if (parse_result == HW::ParseResult::ERROR
+        || parse_result == HW::ParseResult::INVALID_FLAG) {
+        throw Configuration::Error { "An error occurred while parsing cli options"};
+    }
+
+    if (parse_result == HW::ParseResult::OK) {
+        // No further processing or user interaction are required if
+        // the parsing outcome is HW::ParseResult::HELP or VERSION
+        config_file_ = HW::GetFlag<std::string>("config-file");
+
+        if (!config_file_.empty()) {
+            parseConfigFile();
+        }
+
+        if (enable_logging) {
+            setupLogging();
+        }
+
+        validateAndNormalizeConfiguration();
+        setAgentConfiguration();
+    }
+
+    initialized_ = true;
+
+    return parse_result;
+}
+
+void Configuration::setStartFunction(
+        std::function<int(std::vector<std::string>)> start_function) {
+    start_function_ = start_function;
+}
+
+void Configuration::validateAndNormalizeConfiguration() {
+    // determine which of your values must be initalised
+    if (HW::GetFlag<std::string>("server").empty()) {
+        throw Configuration::Error { "server value must be defined" };
+    } else if (HW::GetFlag<std::string>("server").find("wss://") != 0) {
+        throw Configuration::Error { "server value must start with wss://" };
+    }
+
+    if (HW::GetFlag<std::string>("ca").empty()) {
+        throw Configuration::Error { "ca value must be defined" };
+    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("ca"))) {
+        throw Configuration::Error { "ca file not found" };
+    }
+
+    if (HW::GetFlag<std::string>("cert").empty()) {
+        throw Configuration::Error { "cert value must be defined" };
+    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("cert"))) {
+        throw Configuration::Error { "cert file not found" };
+    }
+
+    if (HW::GetFlag<std::string>("key").empty()) {
+        throw Configuration::Error { "key value must be defined" };
+    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("key"))) {
+        throw Configuration::Error { "key file not found" };
+    }
+
+    for (const auto& flag_name : std::vector<std::string> { "ca", "cert", "key" }) {
+        const auto& path = HW::GetFlag<std::string>(flag_name);
+        HW::SetFlag<std::string>(flag_name, lth_file::tilde_expand(path));
+    }
+
+    if (HW::GetFlag<std::string>("spool-dir").empty())  {
+        // Unexpected, since we have a default value for spool-dir
+        throw Configuration::Error { "spool-dir must be defined" };
+    } else {
+        auto spool_dir = HW::GetFlag<std::string>("spool-dir");
+        spool_dir = lth_file::tilde_expand(spool_dir);
+
+        if (!fs::exists(spool_dir)) {
+            LOG_INFO("Creating spool directory '%1%'", spool_dir);
+            if (!fs::create_directory(spool_dir)) {
+                throw Configuration::Error { "failed to create the results "
+                                             "directory '" + spool_dir + "'" };
+            }
+        } else if (!fs::is_directory(spool_dir)) {
+            throw Configuration::Error { "not a spool directory: " + spool_dir };
+        }
+
+        if (spool_dir.back() != '/') {
+            HW::SetFlag<std::string>("spool-dir", spool_dir + "/");
+        }
+    }
+
+    if (!HW::GetFlag<std::string>("logfile").empty())  {
+        auto path = lth_file::shell_quote(HW::GetFlag<std::string>("logfile"));
+        HW::SetFlag<std::string>("logfile", path);
+    }
+}
+
+const Configuration::Agent& Configuration::getAgentConfiguration() const {
+    return agent_configuration_;
+}
+
+//
+// Private interface
 //
 
 Configuration::Configuration() : initialized_ { false },
@@ -279,133 +404,6 @@ void Configuration::setAgentConfiguration() {
         HW::GetFlag<std::string>("spool-dir"),
         HW::GetFlag<std::string>("modules-config-dir"),
         AGENT_CLIENT_TYPE };
-}
-
-//
-// Public interface
-//
-
-// TODO(ale): move the public interface above, for consistency
-
-void Configuration::reset() {
-    HW::Reset();
-    setDefaultValues();
-    initialized_ = false;
-}
-
-HW::ParseResult Configuration::initialize(int argc, char *argv[],
-                                          bool enable_logging) {
-    setDefaultValues();
-
-    HW::DefineAction("start", 0, false, "Start the agent (Default)",
-                     "Start the agent", start_function_);
-
-    // manipulate argc and v to make start the default action.
-    // TODO(ploubser): Add ability to specify default action to HorseWhisperer
-    int modified_argc = argc + 1;
-    char* modified_argv[modified_argc];
-    char action[] = "start";
-
-    for (int i = 0; i < argc; i++) {
-        modified_argv[i] = argv[i];
-    }
-    modified_argv[modified_argc - 1] = action;
-
-    auto parse_result = HW::Parse(modified_argc, modified_argv);
-
-    if (parse_result == HW::ParseResult::ERROR
-        || parse_result == HW::ParseResult::INVALID_FLAG) {
-        throw Configuration::Error { "An error occurred while parsing cli options"};
-    }
-
-    if (parse_result == HW::ParseResult::OK) {
-        // No further processing or user interaction are required if
-        // the parsing outcome is HW::ParseResult::HELP or VERSION
-        config_file_ = HW::GetFlag<std::string>("config-file");
-
-        if (!config_file_.empty()) {
-            parseConfigFile();
-        }
-
-        if (enable_logging) {
-            setupLogging();
-        }
-
-        validateAndNormalizeConfiguration();
-        setAgentConfiguration();
-    }
-
-    initialized_ = true;
-
-    return parse_result;
-}
-
-void Configuration::setStartFunction(
-        std::function<int(std::vector<std::string>)> start_function) {
-    start_function_ = start_function;
-}
-
-void Configuration::validateAndNormalizeConfiguration() {
-    // determine which of your values must be initalised
-    if (HW::GetFlag<std::string>("server").empty()) {
-        throw Configuration::Error { "server value must be defined" };
-    } else if (HW::GetFlag<std::string>("server").find("wss://") != 0) {
-        throw Configuration::Error { "server value must start with wss://" };
-    }
-
-    if (HW::GetFlag<std::string>("ca").empty()) {
-        throw Configuration::Error { "ca value must be defined" };
-    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("ca"))) {
-        throw Configuration::Error { "ca file not found" };
-    }
-
-    if (HW::GetFlag<std::string>("cert").empty()) {
-        throw Configuration::Error { "cert value must be defined" };
-    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("cert"))) {
-        throw Configuration::Error { "cert file not found" };
-    }
-
-    if (HW::GetFlag<std::string>("key").empty()) {
-        throw Configuration::Error { "key value must be defined" };
-    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("key"))) {
-        throw Configuration::Error { "key file not found" };
-    }
-
-    for (const auto& flag_name : std::vector<std::string> { "ca", "cert", "key" }) {
-        const auto& path = HW::GetFlag<std::string>(flag_name);
-        HW::SetFlag<std::string>(flag_name, lth_file::tilde_expand(path));
-    }
-
-    if (HW::GetFlag<std::string>("spool-dir").empty())  {
-        // Unexpected, since we have a default value for spool-dir
-        throw Configuration::Error { "spool-dir must be defined" };
-    } else {
-        auto spool_dir = HW::GetFlag<std::string>("spool-dir");
-        spool_dir = lth_file::tilde_expand(spool_dir);
-
-        if (!fs::exists(spool_dir)) {
-            LOG_INFO("Creating spool directory '%1%'", spool_dir);
-            if (!fs::create_directory(spool_dir)) {
-                throw Configuration::Error { "failed to create the results "
-                                             "directory '" + spool_dir + "'" };
-            }
-        } else if (!fs::is_directory(spool_dir)) {
-            throw Configuration::Error { "not a spool directory: " + spool_dir };
-        }
-
-        if (spool_dir.back() != '/') {
-            HW::SetFlag<std::string>("spool-dir", spool_dir + "/");
-        }
-    }
-
-    if (!HW::GetFlag<std::string>("logfile").empty())  {
-        auto path = lth_file::shell_quote(HW::GetFlag<std::string>("logfile"));
-        HW::SetFlag<std::string>("logfile", path);
-    }
-}
-
-const Configuration::Agent& Configuration::getAgentConfiguration() const {
-    return agent_configuration_;
 }
 
 }  // namespace CthunAgent
