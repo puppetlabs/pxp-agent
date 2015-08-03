@@ -74,6 +74,9 @@ class RequestProcessor {
 
     void processNonBlockingRequest(const ActionRequest& request);
 
+    /// Load the modules configuration files
+    void loadModulesConfiguration();
+
     /// Load the modules from the src/modules directory
     void loadInternalModules();
 

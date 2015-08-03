@@ -21,6 +21,10 @@ namespace CthunAgent {
 static const std::string METADATA_SCHEMA_NAME { "external_module_metadata" };
 static const std::string ACTION_SCHEMA_NAME { "action_metadata" };
 
+// TODO(ale): move this to the RPC (or CNC) library
+static const std::string METADATA_CONFIGURATION_ENTRY { "configuration" };
+static const std::string METADATA_ACTIONS_ENTRY { "actions" };
+
 //
 // Free functions
 //
@@ -57,7 +61,7 @@ void runCommand(const std::string& exec,
     child.wait();
 }
 
-// Provides the metadata validator
+// Provides the module metadata validator
 CthunClient::Validator getMetadataValidator() {
     // Metadata schema
     CthunClient::Schema metadata_schema { METADATA_SCHEMA_NAME,
@@ -85,15 +89,42 @@ CthunClient::Validator getMetadataValidator() {
 // Public interface
 //
 
-ExternalModule::ExternalModule(const std::string& path) : path_ { path } {
+ExternalModule::ExternalModule(const std::string& path)
+        : path_ { path },
+          config_ { "{}" } {
     boost::filesystem::path module_path { path };
     module_name = module_path.filename().string();
     auto metadata = getMetadata();
 
-    for (auto& action_metadata :
-            metadata.get<std::vector<lth_jc::JsonContainer>>("actions")) {
-        registerAction(action_metadata);
+    try {
+        if (metadata.includes(METADATA_CONFIGURATION_ENTRY)) {
+            registerConfiguration(
+                metadata.get<lth_jc::JsonContainer>(METADATA_CONFIGURATION_ENTRY));
+        } else {
+            LOG_DEBUG("Found no configuration schema for module '%1%'", module_name);
+        }
+
+        if (metadata.includes(METADATA_ACTIONS_ENTRY)) {
+            for (auto& action : metadata.get<std::vector<lth_jc::JsonContainer>>(
+                                            METADATA_ACTIONS_ENTRY)) {
+                registerAction(action);
+            }
+        } else {
+            LOG_WARNING("Found no action in module '%1%' metadata", module_name);
+        }
+    } catch (lth_jc::data_key_error& e) {
+        // TODO(ale): catch parent data_error once lth is updgraded
+
+        LOG_ERROR("Failed to retrieve metadata of module %1%: %2%",
+                  module_name, e.what());
+        std::string err { "invalid metadata of module " + module_name };
+        throw Module::LoadingError { err };
     }
+}
+
+void ExternalModule::validateAndSetConfiguration(const lth_jc::JsonContainer& config) {
+    config_validator_.validate(config, module_name);
+    config_ = config;
 }
 
 //
@@ -131,9 +162,25 @@ const lth_jc::JsonContainer ExternalModule::getMetadata() {
     return metadata;
 }
 
+void ExternalModule::registerConfiguration(const lth_jc::JsonContainer& config_metadata) {
+    try {
+        CthunClient::Schema configuration_schema { module_name, config_metadata };
+        config_validator_.registerSchema(configuration_schema);
+    } catch (CthunClient::schema_error& e) {
+        LOG_ERROR("Failed to parse the configuration schema of module '%1%': %2%",
+                  module_name, e.what());
+        std::string err { "invalid configuration schema of module " + module_name };
+        throw Module::LoadingError { err };
+    }
+}
+
 // Register the specified action after ensuring that the input and
 // output schemas are valid JSON (i.e. we can instantiate Schema).
 void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
+    // TODO(ale): use '<module>_<action>' instead of just 'action' as
+    // the schema name, to allow the same action name in different
+    // modules, otherwise Validator::registerSchema() will error
+
     auto action_name = action.get<std::string>("name");
     LOG_INFO("Validating action '%1% %2%'", module_name, action_name);
 
@@ -144,30 +191,43 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
         auto output_schema_json = action.get<lth_jc::JsonContainer>("output");
         CthunClient::Schema output_schema { action_name, output_schema_json };
 
-        // Input & output schemas are valid JSON; store metadata
+        // Metadata schemas are valid JSON; store metadata
         LOG_INFO("Action '%1% %2%' has been validated", module_name, action_name);
         actions.push_back(action_name);
         input_validator_.registerSchema(input_schema);
         output_validator_.registerSchema(output_schema);
     } catch (CthunClient::schema_error& e) {
-        LOG_ERROR("Failed to parse input/output schemas of action '%1% %2%': %3%",
+        LOG_ERROR("Failed to parse metadata schemas of action '%1% %2%': %3%",
                   module_name, action_name, e.what());
         std::string err { "invalid schemas of '" + module_name + " "
                           + action_name + "'" };
         throw Module::LoadingError { err };
+    } catch (lth_jc::data_key_error& e) {
+        // TODO(ale): catch parent data_error once lth is upgraded
+
+        LOG_ERROR("Failed to retrieve metadata schemas of action '%1% %2%': %3%",
+                  module_name, action_name, e.what());
+        std::string err { "invalid metadata of '" + module_name + " "
+                          + action_name + "'" };
+        throw Module::LoadingError { err };
     }
 }
+
 
 ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     std::string stdout {};
     std::string stderr {};
     auto& action_name = request.action();
 
-    LOG_INFO("About to execute '%1% %2%' - request input: %3%",
-             module_name, action_name, request.requestTxt());
+    lth_jc::JsonContainer request_input {};
+    request_input.set<lth_jc::JsonContainer>("params", request.params());
+    request_input.set<lth_jc::JsonContainer>("config", config_);
+    auto request_input_txt = request_input.toString();
 
-    runCommand(path_, { path_, action_name }, request.requestTxt(),
-               stdout, stderr);
+    LOG_INFO("About to execute '%1% %2%' - request input: %3%",
+             module_name, action_name, request_input_txt);
+
+    runCommand(path_, { path_, action_name }, request_input_txt, stdout, stderr);
 
     if (stdout.empty()) {
         LOG_DEBUG("'%1% %2%' produced no output", module_name, action_name);

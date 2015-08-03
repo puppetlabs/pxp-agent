@@ -2,7 +2,6 @@
 #define SRC_EXTERNAL_MODULE_H_
 
 #include <cthun-agent/module.hpp>
-#include <cthun-agent/configuration.hpp>
 #include <cthun-agent/thread_container.hpp>
 
 #include <map>
@@ -32,14 +31,25 @@ class ExternalModule : public Module {
     /// invalid input or output schemas.
     explicit ExternalModule(const std::string& exec_path);
 
+    /// In case a configuration schema has been registered fot this
+    /// module, validate and set the passed configuration data.
+    /// Throw a validation_error in case the configuration schema was
+    /// not registered or in case of an invalid configuration data.
+    void validateAndSetConfiguration(const lth_jc::JsonContainer& config);
+
   private:
     /// The path of the module file
     const std::string path_;
 
-    /// Validator
+    /// Module configuration data
+    lth_jc::JsonContainer config_;
+
+    /// Metadata validator
     static const CthunClient::Validator metadata_validator_;
 
     const lth_jc::JsonContainer getMetadata();
+
+    void registerConfiguration(const lth_jc::JsonContainer& config);
 
     void registerAction(const lth_jc::JsonContainer& action);
 

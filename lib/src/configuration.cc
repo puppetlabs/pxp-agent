@@ -1,12 +1,10 @@
 #include <cthun-agent/configuration.hpp>
 
-#include <leatherman/file_util/file.hpp>
-#include <leatherman/file_util/directory.hpp>
-
 #include "version-inl.hpp"
 
 #include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
+
+#include <leatherman/file_util/file.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
 
@@ -406,35 +404,6 @@ void Configuration::validateAndNormalizeConfiguration() {
     }
 }
 
-void Configuration::loadModuleConfiguration() {
-    std::string config_dir { HW::GetFlag<std::string>("modules-config-dir") };
-
-    if (!fs::is_directory(config_dir)) {
-        LOG_WARNING("Directory '%1%' specified by modules-config-dir doesn't "
-                    "exist", config_dir);
-    } else {
-        lth_file::each_file(config_dir, [this](std::string const& s) -> bool {
-            try {
-                fs::path s_path { s };
-                module_config_[s_path.stem().string()] =
-                    lth_jc::JsonContainer(lth_file::read(s));
-            } catch (lth_jc::data_parse_error& e) {
-                LOG_WARNING("Cannot load module config file '%1%'. File "
-                            "contains invalid json: %2%", s, e.what());
-            }
-            return true;
-            // naming convention for config files are .cfg. Don't
-            // process files that don't end in this extension
-        }, "\\.cfg$");
-    }
-}
-
-const lth_jc::JsonContainer& Configuration::getModuleConfig(const std::string& module) {
-    if (module_config_.find(module) == module_config_.end()) {
-        module_config_[module] = lth_jc::JsonContainer { "{}" };
-    }
-
-    return module_config_[module];
 const AgentConfiguration& Configuration::getAgentConfiguration() const {
     return agent_configuration_;
 }
