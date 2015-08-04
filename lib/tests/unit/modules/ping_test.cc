@@ -1,3 +1,5 @@
+#include "../content_format.hpp"
+
 #include <cthun-agent/modules/ping.hpp>
 
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
@@ -5,7 +7,6 @@
 #include <leatherman/json_container/json_container.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/format.hpp>
 
 #include <catch.hpp>
 
@@ -16,28 +17,27 @@ namespace CthunAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-static const std::string ping_action { "ping" };
+static const std::string PING_ACTION { "ping" };
 
-static const std::string ping_data_txt {
-    "{  \"module\" : \"ping\","
-    "   \"action\" : \"ping\","
-    "   \"params\" : {}"
-    "}"
-};
+static const std::string PING_TXT {
+    (DATA_FORMAT % "\"0563\""
+                 % "\"ping\""
+                 % "\"ping\""
+                 % "{}").str() };
 
-static const std::vector<lth_jc::JsonContainer> debug {
+static const std::vector<lth_jc::JsonContainer> DEBUG {
     lth_jc::JsonContainer { "{\"hops\" : []}" }
 };
 
-static const CthunClient::ParsedChunks parsed_chunks {
-                    lth_jc::JsonContainer(),
-                    lth_jc::JsonContainer(ping_data_txt),
-                    debug,
+static const CthunClient::ParsedChunks PARSED_CHUNKS {
+                    lth_jc::JsonContainer(ENVELOPE_TXT),
+                    lth_jc::JsonContainer(PING_TXT),
+                    DEBUG,
                     0 };
 
 TEST_CASE("Modules::Ping::executeAction", "[modules]") {
     Modules::Ping ping_module {};
-    ActionRequest request { RequestType::Blocking, parsed_chunks };
+    ActionRequest request { RequestType::Blocking, PARSED_CHUNKS };
 
     SECTION("the ping module is correctly named") {
         REQUIRE(ping_module.module_name == "ping");
@@ -64,7 +64,8 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
     Modules::Ping ping_module {};
 
     boost::format data_format {
-        "{  \"module\" : \"ping\","
+        "{  \"transaction_id\" : \"1234123412\","
+        "   \"module\" : \"ping\","
         "   \"action\" : \"ping\","
         "   \"params\" : {"
         "       \"sender_timestamp\" : \"%1%\""  // string
@@ -82,8 +83,8 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
         };
 
         CthunClient::ParsedChunks other_chunks {
-                    lth_jc::JsonContainer(),
-                    lth_jc::JsonContainer(ping_data_txt),
+                    lth_jc::JsonContainer(ENVELOPE_TXT),
+                    lth_jc::JsonContainer(PING_TXT),
                     other_debug,
                     0 };
         ActionRequest other_request { RequestType::Blocking, other_chunks };
@@ -116,7 +117,7 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
         };
 
         CthunClient::ParsedChunks other_chunks {
-                lth_jc::JsonContainer(),
+                lth_jc::JsonContainer(ENVELOPE_TXT),
                 lth_jc::JsonContainer(data_txt),
                 other_debug,
                 0 };

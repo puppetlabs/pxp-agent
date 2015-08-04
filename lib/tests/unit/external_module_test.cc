@@ -1,4 +1,5 @@
 #include "root_path.hpp"
+#include "content_format.hpp"
 
 #include <cthun-agent/external_module.hpp>
 
@@ -7,7 +8,6 @@
 #include <leatherman/json_container/json_container.hpp>
 
 #include <boost/filesystem/operations.hpp>
-#include <boost/format.hpp>
 
 #include <catch.hpp>
 
@@ -22,24 +22,18 @@ namespace lth_jc = leatherman::json_container;
 const std::string RESULTS_ROOT_DIR { "/tmp/cthun-agent" };
 const std::string STRING_ACTION { "string" };
 
-boost::format data_format {
-    "{  \"module\" : %1%,"
-    "   \"action\" : %2%,"
-    "   \"params\" : %3%"
-    "}"
-};
-
-const std::string reverse_txt {
-    (data_format % "\"reverse\""
+static const std::string REVERSE_TXT {
+    (DATA_FORMAT % "\"0987\""
+                 % "\"reverse\""
                  % "\"string\""
                  % "{\"argument\" : \"maradona\"}").str() };
 
-static const std::vector<lth_jc::JsonContainer> no_debug {};
+static const std::vector<lth_jc::JsonContainer> NO_DEBUG {};
 
-static const CthunClient::ParsedChunks content {
-                    lth_jc::JsonContainer(),             // envelope
-                    lth_jc::JsonContainer(reverse_txt),  // data
-                    no_debug,   // debug
+static const CthunClient::ParsedChunks CONTENT {
+                    lth_jc::JsonContainer(ENVELOPE_TXT),  // envelope
+                    lth_jc::JsonContainer(REVERSE_TXT),   // data
+                    NO_DEBUG,   // debug
                     0 };        // num invalid debug chunks
 
 TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
@@ -82,7 +76,7 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
                                         + "/modules/reverse" };
 
         SECTION("correctly call the shipped reverse module") {
-            ActionRequest request { RequestType::Blocking, content };
+            ActionRequest request { RequestType::Blocking, CONTENT };
             auto outcome = reverse_module.executeAction(request);
 
             REQUIRE(outcome.stdout.find("anodaram") != std::string::npos);
@@ -96,13 +90,14 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
 
         SECTION("throw a Module::ProcessingError if the module returns an "
                 "invalid result") {
-            std::string failure_txt { (data_format % "\"failures_test\""
+            std::string failure_txt { (DATA_FORMAT % "\"1234987\""
+                                                   % "\"failures_test\""
                                                    % "\"get_an_invalid_result\""
                                                    % "\"maradona\"").str() };
             CthunClient::ParsedChunks failure_content {
-                    lth_jc::JsonContainer(),
+                    lth_jc::JsonContainer(ENVELOPE_TXT),
                     lth_jc::JsonContainer(failure_txt),
-                    no_debug,
+                    NO_DEBUG,
                     0 };
             ActionRequest request { RequestType::Blocking, failure_content };
 
@@ -112,13 +107,14 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
 
         SECTION("throw a Module::ProcessingError if a blocking action throws "
                 "an exception") {
-            std::string failure_txt { (data_format % "\"failures_test\""
+            std::string failure_txt { (DATA_FORMAT % "\"43217890\""
+                                                   % "\"failures_test\""
                                                    % "\"broken_action\""
                                                    % "\"maradona\"").str() };
             CthunClient::ParsedChunks failure_content {
-                    lth_jc::JsonContainer(),
+                    lth_jc::JsonContainer(ENVELOPE_TXT),
                     lth_jc::JsonContainer(failure_txt),
-                    no_debug,
+                    NO_DEBUG,
                     0 };
             ActionRequest request { RequestType::Blocking, failure_content };
 

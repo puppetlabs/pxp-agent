@@ -1,3 +1,5 @@
+#include "content_format.hpp"
+
 #include <cthun-agent/modules/echo.hpp>
 
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
@@ -13,35 +15,21 @@ namespace CthunAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-static const std::string echo_action { "echo" };
-static const std::string fake_action { "fake_action" };
+static const std::string ECHO_ACTION { "echo" };
+static const std::string FAKE_ACTION { "FAKE_ACTION" };
 
-static const std::string echo_data_txt {
-    "{  \"module\" : \"echo\","
-    "   \"action\" : \"echo\","
-    "   \"params\" : { \"argument\" : \"maradona\" }"
-    "}"
-};
+static const std::vector<lth_jc::JsonContainer> NO_DEBUG {};
 
-static const std::vector<lth_jc::JsonContainer> no_debug {};
+static const std::string ECHO_TXT {
+    (DATA_FORMAT % "\"0987\""
+                 % "\"echo\""
+                 % "\"echo\""
+                 % "{ \"argument\" : \"maradona\" }").str() };
 
-static const CthunClient::ParsedChunks parsed_chunks {
-                lth_jc::JsonContainer(),
-                lth_jc::JsonContainer(echo_data_txt),
-                no_debug,
-                0 };
-
-static const std::string bad_echo_data_txt {
-    "{  \"module\" : \"echo\","
-    "   \"action\" : \"echo\","
-    "   \"params\" : [1, 2, 3, 4 ,5]"
-    "}"
-};
-
-static const CthunClient::ParsedChunks bad_parsed_chunks {
-                lth_jc::JsonContainer(),
-                lth_jc::JsonContainer(bad_echo_data_txt),
-                no_debug,
+static const CthunClient::ParsedChunks PARSED_CHUNKS {
+                lth_jc::JsonContainer(ENVELOPE_TXT),
+                lth_jc::JsonContainer(ECHO_TXT),
+                NO_DEBUG,
                 0 };
 
 TEST_CASE("Module::hasAction", "[modules]") {
@@ -52,7 +40,7 @@ TEST_CASE("Module::hasAction", "[modules]") {
     }
 
     SECTION("correctly reports true") {
-        REQUIRE(echo_module.hasAction(echo_action));
+        REQUIRE(echo_module.hasAction(ECHO_ACTION));
     }
 }
 
@@ -60,7 +48,7 @@ TEST_CASE("Module::executeAction", "[modules]") {
     Modules::Echo echo_module {};
 
     SECTION("it should correctly call echo") {
-        ActionRequest request { RequestType::Blocking, parsed_chunks };
+        ActionRequest request { RequestType::Blocking, PARSED_CHUNKS };
         auto outcome = echo_module.executeAction(request);
         auto txt = outcome.results.get<std::string>("outcome");
         REQUIRE(txt == "maradona");

@@ -1,3 +1,5 @@
+#include "content_format.hpp"
+
 #include <cthun-agent/action_request.hpp>
 
 #include <cthun-client/protocol/chunks.hpp>
@@ -12,20 +14,15 @@ namespace CthunAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-static std::string valid_envelope_txt {
-    " { \"id\" : \"123456\","
-    "   \"message_type\" : \"test_test_test\","
-    "   \"expires\" : \"2015-06-26T22:57:09Z\","
-    "   \"targets\" : [\"cth://agent/test_agent\"],"
-    "   \"sender\" : \"cth://controller/test_controller\","
-    "   \"destination_report\" : false"
-    " }" };
-
-static std::string valid_data_txt { "{ \"outcome\" : \"response string\" }" };
+static const std::string DATA_TXT {
+    (DATA_FORMAT % "\"04352987\""
+                 % "\"module name\""
+                 % "\"action name\""
+                 % "{ \"some key\" : \"some value\" }").str() };
 
 TEST_CASE("ActionRequest::ActionRequest", "[request]") {
-    lth_jc::JsonContainer envelope { valid_envelope_txt };
-    lth_jc::JsonContainer data { valid_data_txt };
+    lth_jc::JsonContainer envelope { ENVELOPE_TXT };
+    lth_jc::JsonContainer data { DATA_TXT };
     std::vector<lth_jc::JsonContainer> debug {};
 
     SECTION("successfully instantiates with valid arguments") {
@@ -65,7 +62,7 @@ static std::string rpc_data_txt {
     " }" };
 
 TEST_CASE("ActionRequest getters", "[request]") {
-    lth_jc::JsonContainer envelope { valid_envelope_txt };
+    lth_jc::JsonContainer envelope { ENVELOPE_TXT };
     lth_jc::JsonContainer data { rpc_data_txt };
     std::vector<lth_jc::JsonContainer> debug {};
 
