@@ -179,6 +179,7 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
     // the schema name, to allow the same action name in different
     // modules, otherwise Validator::registerSchema() will error
 
+    // NOTE(ale): name, input, and output are required action entries
     auto action_name = action.get<std::string>("name");
     LOG_INFO("Validating action '%1% %2%'", module_name, action_name);
 

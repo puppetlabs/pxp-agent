@@ -40,7 +40,7 @@ const CthunClient::ParsedChunks& ActionRequest::parsedChunks() const {
 }
 
 const lth_jc::JsonContainer& ActionRequest::params() const {
-    if (params_.empty()) {
+    if (params_.empty() && parsed_chunks_.data.includes("params")) {
         params_ = parsed_chunks_.data.get<lth_jc::JsonContainer>("params");
     }
     return params_;
