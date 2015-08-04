@@ -20,6 +20,9 @@ Status::Status() {
     module_name = "status";
     actions.push_back(QUERY);
     CthunClient::Schema input_schema { QUERY };
+    input_schema.addConstraint("job_id", CthunClient::TypeConstraint::String,
+                               true);
+
     CthunClient::Schema output_schema { QUERY };
 
     input_validator_.registerSchema(input_schema);

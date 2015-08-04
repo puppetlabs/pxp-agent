@@ -29,7 +29,7 @@ static const std::string METADATA_ACTIONS_ENTRY { "actions" };
 // Free functions
 //
 
-// TODO(ale): move this to leatherman
+// TODO(ale): use leatherman's execution
 // Execute binaries and get output and errors
 void runCommand(const std::string& exec,
                 std::vector<std::string> args,
@@ -68,7 +68,8 @@ CthunClient::Validator getMetadataValidator() {
                                           CthunClient::ContentType::Json };
     using T_C = CthunClient::TypeConstraint;
     metadata_schema.addConstraint("description", T_C::String, true);
-    metadata_schema.addConstraint("actions", T_C::Array, true);
+    metadata_schema.addConstraint(METADATA_CONFIGURATION_ENTRY, T_C::Array, false);
+    metadata_schema.addConstraint(METADATA_ACTIONS_ENTRY, T_C::Array, true);
 
     // 'actions' is an array of actions; define the action sub_schema
     CthunClient::Schema action_schema { ACTION_SCHEMA_NAME,
@@ -78,7 +79,7 @@ CthunClient::Validator getMetadataValidator() {
     action_schema.addConstraint("input", T_C::Object, true);
     action_schema.addConstraint("output", T_C::Object, true);
 
-    metadata_schema.addConstraint("actions", action_schema, false);
+    metadata_schema.addConstraint(METADATA_ACTIONS_ENTRY, action_schema, false);
 
     CthunClient::Validator validator {};
     validator.registerSchema(metadata_schema);
@@ -104,13 +105,9 @@ ExternalModule::ExternalModule(const std::string& path)
             LOG_DEBUG("Found no configuration schema for module '%1%'", module_name);
         }
 
-        if (metadata.includes(METADATA_ACTIONS_ENTRY)) {
-            for (auto& action : metadata.get<std::vector<lth_jc::JsonContainer>>(
-                                            METADATA_ACTIONS_ENTRY)) {
-                registerAction(action);
-            }
-        } else {
-            LOG_WARNING("Found no action in module '%1%' metadata", module_name);
+        for (auto& action : metadata.get<std::vector<lth_jc::JsonContainer>>(
+                                        METADATA_ACTIONS_ENTRY)) {
+            registerAction(action);
         }
     } catch (lth_jc::data_error& e) {
         LOG_ERROR("Failed to retrieve metadata of module %1%: %2%",
