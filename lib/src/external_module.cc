@@ -112,9 +112,7 @@ ExternalModule::ExternalModule(const std::string& path)
         } else {
             LOG_WARNING("Found no action in module '%1%' metadata", module_name);
         }
-    } catch (lth_jc::data_key_error& e) {
-        // TODO(ale): catch parent data_error once lth is updgraded
-
+    } catch (lth_jc::data_error& e) {
         LOG_ERROR("Failed to retrieve metadata of module %1%: %2%",
                   module_name, e.what());
         std::string err { "invalid metadata of module " + module_name };
@@ -202,9 +200,7 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
         std::string err { "invalid schemas of '" + module_name + " "
                           + action_name + "'" };
         throw Module::LoadingError { err };
-    } catch (lth_jc::data_key_error& e) {
-        // TODO(ale): catch parent data_error once lth is upgraded
-
+    } catch (lth_jc::data_error& e) {
         LOG_ERROR("Failed to retrieve metadata schemas of action '%1% %2%': %3%",
                   module_name, action_name, e.what());
         std::string err { "invalid metadata of '" + module_name + " "
