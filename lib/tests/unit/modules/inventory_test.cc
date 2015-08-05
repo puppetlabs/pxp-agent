@@ -1,3 +1,5 @@
+#include "../content_format.hpp"
+
 #include <cthun-agent/modules/inventory.hpp>
 
 #include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
@@ -14,24 +16,24 @@ namespace CthunAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-static const std::string inventory_action { "inventory" };
-static const std::string inventory_txt {
-    "{  \"module\" : \"inventory\","
-    "   \"action\" : \"inventory\","
-    "   \"params\" : {}"
-    "}"
-};
+static const std::string INVENTORY_ACTION { "inventory" };
 
-static const std::vector<lth_jc::JsonContainer> no_debug {};
-static const CthunClient::ParsedChunks parsed_chunks {
-                    lth_jc::JsonContainer(),
-                    lth_jc::JsonContainer(inventory_txt),
-                    no_debug,
+static const std::string INVENTORY_TXT {
+    (DATA_FORMAT % "\"0367\""
+                 % "\"inventory\""
+                 % "\"inventory\""
+                 % "{}").str() };
+
+static const std::vector<lth_jc::JsonContainer> NO_DEBUG {};
+static const CthunClient::ParsedChunks PARSED_CHUNKS {
+                    lth_jc::JsonContainer(ENVELOPE_TXT),
+                    lth_jc::JsonContainer(INVENTORY_TXT),
+                    NO_DEBUG,
                     0 };
 
 TEST_CASE("Modules::Inventory::callAction", "[modules]") {
     Modules::Inventory inventory_module {};
-    ActionRequest request { RequestType::Blocking, parsed_chunks };
+    ActionRequest request { RequestType::Blocking, PARSED_CHUNKS };
 
     SECTION("the inventory module is correctly named") {
         REQUIRE(inventory_module.module_name == "inventory");
@@ -40,7 +42,7 @@ TEST_CASE("Modules::Inventory::callAction", "[modules]") {
     SECTION("the inventory module has the inventory action") {
         auto found = std::find(inventory_module.actions.begin(),
                                inventory_module.actions.end(),
-                               inventory_action);
+                               INVENTORY_ACTION);
         REQUIRE(found != inventory_module.actions.end());
     }
 

@@ -41,9 +41,6 @@ struct Entry : EntryBase {
 
 using Base_ptr = std::unique_ptr<EntryBase>;
 
-// TODO(ale): we may not need Configuration as a singleton; consider
-// changing that
-
 class Configuration {
   public:
     struct Error : public std::runtime_error {

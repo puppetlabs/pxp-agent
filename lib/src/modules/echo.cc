@@ -9,6 +9,8 @@ Echo::Echo() {
     module_name = ECHO;
     actions.push_back(ECHO);
     CthunClient::Schema input_schema { ECHO };
+    input_schema.addConstraint("argument", CthunClient::TypeConstraint::String,
+                               true);
     CthunClient::Schema output_schema { ECHO };
 
     input_validator_.registerSchema(input_schema);
@@ -17,14 +19,12 @@ Echo::Echo() {
 
 ActionOutcome Echo::callAction(const ActionRequest& request) {
     auto params = request.params();
-    lth_jc::JsonContainer results {};
 
-    if (params.includes("argument")
-        && params.type("argument") == lth_jc::DataType::String) {
-        results.set<std::string>("outcome", params.get<std::string>("argument"));
-    } else {
-        throw Module::ProcessingError { "bad argument type" };
-    }
+    assert(params.includes("argument")
+           && params.type("argument") == lth_jc::DataType::String);
+
+    lth_jc::JsonContainer results {};
+    results.set<std::string>("outcome", params.get<std::string>("argument"));
 
     return ActionOutcome { results };
 }

@@ -42,6 +42,8 @@ class ActionRequest {
     const CthunClient::ParsedChunks& parsedChunks() const;
 
     // The following accessors perform lazy initialization
+    // The params entry is not required; in case it's not included
+    // in the request, an empty JsonContainer object is returned
     const lth_jc::JsonContainer& params() const;
     const std::string& paramsTxt() const;
 
