@@ -21,7 +21,6 @@ set(SOURCES
     unit/request_processor_test.cc
     unit/module_test.cc
     unit/thread_container_test.cc
-    unit/modules/inventory_test.cc
     unit/modules/ping_test.cc
     unit/modules/status_test.cc
 )

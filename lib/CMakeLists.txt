@@ -21,7 +21,6 @@ set(LIBRARY_SOURCES
     src/external_module.cc
     src/module.cc
     src/modules/echo.cc
-    src/modules/inventory.cc
     src/modules/ping.cc
     src/modules/status.cc
     src/request_processor.cc

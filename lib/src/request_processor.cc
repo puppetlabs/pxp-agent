@@ -3,7 +3,6 @@
 #include <cthun-agent/rpc_schemas.hpp>
 #include <cthun-agent/external_module.hpp>
 #include <cthun-agent/modules/echo.hpp>
-#include <cthun-agent/modules/inventory.hpp>
 #include <cthun-agent/modules/ping.hpp>
 #include <cthun-agent/modules/status.hpp>
 
@@ -333,7 +332,6 @@ void RequestProcessor::loadModulesConfiguration() {
 void RequestProcessor::loadInternalModules() {
     // HERE(ale): no external configuration for internal modules
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
-    modules_["inventory"] = std::shared_ptr<Module>(new Modules::Inventory);
     modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
     modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
 }
