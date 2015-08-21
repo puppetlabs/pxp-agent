@@ -9,7 +9,6 @@ This is the experimental agent for the Cthun command and control framework.
  - gnumake
  - cmake
  - boost
- - cfacter (0.2.0 after commit 3e948eb)
  - ruby (2.0 and newer)
 
 Build with make and make install
