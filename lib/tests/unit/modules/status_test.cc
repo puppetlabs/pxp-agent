@@ -49,7 +49,7 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
         REQUIRE(status_module.module_name == "status");
     }
 
-    SECTION("the inventory module has the 'query' action") {
+    SECTION("the status module has the 'query' action") {
         auto found = std::find(status_module.actions.begin(),
                                status_module.actions.end(),
                                QUERY_ACTION);
