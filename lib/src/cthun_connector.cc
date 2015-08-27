@@ -128,17 +128,10 @@ void CthunConnector::sendNonBlockingResponse(
     }
 }
 
-void CthunConnector::sendProvisionalResponse(const ActionRequest& request,
-                                             const std::string& job_id,
-                                             const std::string& error) {
+void CthunConnector::sendProvisionalResponse(const ActionRequest& request) {
     auto debug = wrapDebug(request.parsedChunks());
     lth_jc::JsonContainer provisional_data {};
     provisional_data.set<std::string>("transaction_id", request.transactionId());
-    provisional_data.set<bool>("success", error.empty());
-    provisional_data.set<std::string>("job_id", job_id);
-    if (!error.empty()) {
-        provisional_data.set<std::string>("error", error);
-    }
 
     try {
         send(std::vector<std::string> { request.sender() },

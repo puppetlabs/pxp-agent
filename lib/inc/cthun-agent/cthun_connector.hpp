@@ -44,9 +44,7 @@ class CthunConnector : public CthunClient::Connector {
                     const std::string& job_id);
 
     TEST_VIRTUAL_SPECIFIER void sendProvisionalResponse(
-                    const ActionRequest& request,
-                    const std::string& job_id,
-                    const std::string& error);
+                    const ActionRequest& request);
 };
 
 }  // namespace CthunAgent
