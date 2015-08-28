@@ -5,7 +5,7 @@ set(PXP-AGENT_SOURCES
 )
 
 include_directories(
-    ../lib/inc # the libcthun-agent headers
+    ../lib/inc # the libpxp-agent headers
     ${LEATHERMAN_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${HORSEWHISPERER_INCLUDE_DIRS}
@@ -14,6 +14,7 @@ include_directories(
 )
 
 set (PXP-AGENT_BIN_LIBS
+    ${CPP_PCP_CLIENT_LIB}
     ${CMAKE_THREAD_LIBS_INIT}
     libpxp-agent
 )
