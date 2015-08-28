@@ -1,10 +1,10 @@
-#include <cthun-agent/request_processor.hpp>
-#include <cthun-agent/action_outcome.hpp>
-#include <cthun-agent/rpc_schemas.hpp>
-#include <cthun-agent/external_module.hpp>
-#include <cthun-agent/modules/echo.hpp>
-#include <cthun-agent/modules/ping.hpp>
-#include <cthun-agent/modules/status.hpp>
+#include <pxp-agent/request_processor.hpp>
+#include <pxp-agent/action_outcome.hpp>
+#include <pxp-agent/rpc_schemas.hpp>
+#include <pxp-agent/external_module.hpp>
+#include <pxp-agent/modules/echo.hpp>
+#include <pxp-agent/modules/ping.hpp>
+#include <pxp-agent/modules/status.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/file_util/file.hpp>
@@ -22,7 +22,7 @@
 #include <functional>
 #include <stdexcept>  // out_of_range
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace fs = boost::filesystem;
 namespace lth_jc = leatherman::json_container;
@@ -116,7 +116,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ActionRequest&& request,
                            std::string job_id,
                            ResultsStorage results_storage,
-                           std::shared_ptr<CthunConnector> connector_ptr,
+                           std::shared_ptr<PXPConnector> connector_ptr,
                            std::shared_ptr<std::atomic<bool>> done) {
     lth_util::Timer timer {};
     std::string exec_error {};
@@ -132,7 +132,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
         connector_ptr->sendRPCError(request, e.what());
         exec_error = "Failed to execute '" + request.module() + " "
                      + request.action() + "': " + e.what() + "\n";
-    } catch (CthunClient::connection_error& e) {
+    } catch (PCPClient::connection_error& e) {
         exec_error = "Failed to send non blocking response for '"
                      + request.module() + " " + request.action() + "': "
                      + e.what() + "\n";
@@ -150,7 +150,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 // Public interface
 //
 
-RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
+RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
                                    const Configuration::Agent& agent_configuration)
         : thread_container_ { "Action Executer" },
           connector_ptr_ { connector_ptr },
@@ -176,7 +176,7 @@ RequestProcessor::RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr
 }
 
 void RequestProcessor::processRequest(const RequestType& request_type,
-                                      const CthunClient::ParsedChunks& parsed_chunks) {
+                                      const PCPClient::ParsedChunks& parsed_chunks) {
     try {
         // Inspect and validate the request message format
         ActionRequest request { request_type, parsed_chunks };
@@ -246,7 +246,7 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
         // NB: the registred schemas have the same name as the action
         auto& validator = modules_.at(request.module())->input_validator_;
         validator.validate(request.params(), request.action());
-    } catch (CthunClient::validation_error& e) {
+    } catch (PCPClient::validation_error& e) {
         LOG_DEBUG("Invalid '%1% %2%' request %3%: %4%", request.module(),
                   request.action(), request.id(), e.what());
         throw RequestProcessor::Error { "invalid input for '" + request.module()
@@ -357,7 +357,7 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
                     modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
                 } catch (Module::LoadingError& e) {
                     LOG_ERROR("Failed to load %1%; %2%", f_p, e.what());
-                } catch (CthunClient::validation_error& e) {
+                } catch (PCPClient::validation_error& e) {
                     LOG_ERROR("Failed to configure %1%; %2%", f_p, e.what());
                 } catch (std::exception& e) {
                     LOG_ERROR("Unexpected error when loading %1%; %2%",
@@ -394,4 +394,4 @@ void RequestProcessor::logLoadedModules() const {
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

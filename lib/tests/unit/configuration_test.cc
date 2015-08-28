@@ -2,7 +2,7 @@
 
 #include "root_path.hpp"
 
-#include <cthun-agent/configuration.hpp>
+#include <pxp-agent/configuration.hpp>
 
 #include "horsewhisperer/horsewhisperer.h"
 
@@ -10,7 +10,7 @@
 
 #include <string>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace HW = HorseWhisperer;
 
@@ -18,8 +18,8 @@ const std::string SERVER = "wss:///test_server";
 const std::string CA = getCaPath();
 const std::string CERT = getCertPath();
 const std::string KEY = getKeyPath();
-const std::string MODULES_DIR = std::string { CTHUN_AGENT_ROOT_PATH } + "/test_modules";
-const std::string SPOOL_DIR = std::string { CTHUN_AGENT_ROOT_PATH } + "/test_spool/";
+const std::string MODULES_DIR = std::string { PXP_AGENT_ROOT_PATH } + "/test_modules";
+const std::string SPOOL_DIR = std::string { PXP_AGENT_ROOT_PATH } + "/test_spool/";
 
 const char* ARGV[] = { "test-command",
                        "--server", SERVER.data(),
@@ -226,4 +226,4 @@ TEST_CASE("Configuration::validateAndNormalizeConfiguration", "[configuration]")
     resetTest();
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

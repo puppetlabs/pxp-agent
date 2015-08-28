@@ -1,18 +1,18 @@
-#include <cthun-agent/rpc_schemas.hpp>
+#include <pxp-agent/rpc_schemas.hpp>
 
-#include <cthun-client/protocol/schemas.hpp>
+#include <cpp-pcp-client/protocol/schemas.hpp>
 
-namespace CthunAgent {
+namespace PXPAgent {
 namespace RPCSchemas {
 
 // HERE(ale): this must be kept up to date with
 // https://github.com/puppetlabs/cthun-specifications
 
-using C_Type = CthunClient::ContentType;
-using T_Constraint = CthunClient::TypeConstraint;
+using C_Type = PCPClient::ContentType;
+using T_Constraint = PCPClient::TypeConstraint;
 
-CthunClient::Schema BlockingRequestSchema() {
-    CthunClient::Schema schema { BLOCKING_REQUEST_TYPE, C_Type::Json };
+PCPClient::Schema BlockingRequestSchema() {
+    PCPClient::Schema schema { BLOCKING_REQUEST_TYPE, C_Type::Json };
     // NB: additionalProperties = false
     schema.addConstraint("transaction_id", T_Constraint::String, true);
     schema.addConstraint("module", T_Constraint::String, true);
@@ -21,16 +21,16 @@ CthunClient::Schema BlockingRequestSchema() {
     return schema;
 }
 
-CthunClient::Schema BlockingResponseSchema() {
-    CthunClient::Schema schema { BLOCKING_RESPONSE_TYPE, C_Type::Json };
+PCPClient::Schema BlockingResponseSchema() {
+    PCPClient::Schema schema { BLOCKING_RESPONSE_TYPE, C_Type::Json };
     // NB: additionalProperties = false
     schema.addConstraint("transaction_id", T_Constraint::String, true);
     schema.addConstraint("results", T_Constraint::Object, true);
     return schema;
 }
 
-CthunClient::Schema NonBlockingRequestSchema() {
-    CthunClient::Schema schema { NON_BLOCKING_REQUEST_TYPE, C_Type::Json };
+PCPClient::Schema NonBlockingRequestSchema() {
+    PCPClient::Schema schema { NON_BLOCKING_REQUEST_TYPE, C_Type::Json };
     // NB: additionalProperties = false
     schema.addConstraint("transaction_id", T_Constraint::String, true);
     schema.addConstraint("notify_outcome", T_Constraint::Bool, true);
@@ -40,8 +40,8 @@ CthunClient::Schema NonBlockingRequestSchema() {
     return schema;
 }
 
-CthunClient::Schema NonBlockingResponseSchema() {
-    CthunClient::Schema schema { NON_BLOCKING_RESPONSE_TYPE, C_Type::Json };
+PCPClient::Schema NonBlockingResponseSchema() {
+    PCPClient::Schema schema { NON_BLOCKING_RESPONSE_TYPE, C_Type::Json };
     // NB: additionalProperties = false
     schema.addConstraint("transaction_id", T_Constraint::String, true);
     schema.addConstraint("job_id", T_Constraint::String, true);
@@ -49,15 +49,15 @@ CthunClient::Schema NonBlockingResponseSchema() {
     return schema;
 }
 
-CthunClient::Schema ProvisionalResponseSchema() {
-    CthunClient::Schema schema { PROVISIONAL_RESPONSE_TYPE, C_Type::Json };
+PCPClient::Schema ProvisionalResponseSchema() {
+    PCPClient::Schema schema { PROVISIONAL_RESPONSE_TYPE, C_Type::Json };
     // NB: additionalProperties = false
     schema.addConstraint("transaction_id", T_Constraint::String, true);
     return schema;
 }
 
-CthunClient::Schema RPCErrorSchema() {
-    CthunClient::Schema schema { RPC_ERROR_MSG_TYPE, C_Type::Json };
+PCPClient::Schema RPCErrorSchema() {
+    PCPClient::Schema schema { RPC_ERROR_MSG_TYPE, C_Type::Json };
     // NB: additionalProperties = false
     schema.addConstraint("transaction_id", T_Constraint::String, true);
     schema.addConstraint("id", T_Constraint::String, true);
@@ -65,5 +65,5 @@ CthunClient::Schema RPCErrorSchema() {
     return schema;
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 }  // namespace RPCSchemas

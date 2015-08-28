@@ -1,12 +1,12 @@
 #ifndef SRC_MODULES_STATUS_H_
 #define SRC_MODULES_STATUS_H_
 
-#include <cthun-agent/module.hpp>
+#include <pxp-agent/module.hpp>
 
-namespace CthunAgent {
+namespace PXPAgent {
 namespace Modules {
 
-class Status : public CthunAgent::Module {
+class Status : public PXPAgent::Module {
   public:
     Status();
   private:
@@ -14,6 +14,6 @@ class Status : public CthunAgent::Module {
 };
 
 }  // namespace Modules
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
 #endif  // SRC_MODULES_STATUS_H_

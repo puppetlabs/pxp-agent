@@ -1,11 +1,11 @@
 #ifndef SRC_AGENT_REQUEST_PROCESSOR_HPP_
 #define SRC_AGENT_REQUEST_PROCESSOR_HPP_
 
-#include <cthun-agent/module.hpp>
-#include <cthun-agent/thread_container.hpp>
-#include <cthun-agent/action_request.hpp>
-#include <cthun-agent/cthun_connector.hpp>
-#include <cthun-agent/configuration.hpp>
+#include <pxp-agent/module.hpp>
+#include <pxp-agent/thread_container.hpp>
+#include <pxp-agent/action_request.hpp>
+#include <pxp-agent/pxp_connector.hpp>
+#include <pxp-agent/configuration.hpp>
 
 #include <boost/filesystem/path.hpp>
 
@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 class RequestProcessor {
   public:
@@ -23,7 +23,7 @@ class RequestProcessor {
 
     RequestProcessor() = delete;
 
-    RequestProcessor(std::shared_ptr<CthunConnector> connector_ptr,
+    RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
                      const Configuration::Agent& agent_configuration);
 
     /// Execute the specified action.
@@ -43,14 +43,14 @@ class RequestProcessor {
     /// task will also write the action outcome and request metadata
     /// to disk.
     void processRequest(const RequestType& request_type,
-                        const CthunClient::ParsedChunks& parsed_chunks);
+                        const PCPClient::ParsedChunks& parsed_chunks);
 
   private:
     /// Manages the lifecycle of non-blocking action jobs
     ThreadContainer thread_container_;
 
     /// Cthun Connector pointer
-    std::shared_ptr<CthunConnector> connector_ptr_;
+    std::shared_ptr<PXPConnector> connector_ptr_;
 
     /// Where the directories for non-blocking actions results will
     /// be created
@@ -87,6 +87,6 @@ class RequestProcessor {
     void logLoadedModules() const;
 };
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
 #endif  // SRC_AGENT_REQUEST_PROCESSOR_HPP_

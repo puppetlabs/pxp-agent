@@ -1,12 +1,12 @@
 #ifndef SRC_MODULES_ECHO_H_
 #define SRC_MODULES_ECHO_H_
 
-#include <cthun-agent/module.hpp>
+#include <pxp-agent/module.hpp>
 
-namespace CthunAgent {
+namespace PXPAgent {
 namespace Modules {
 
-class Echo : public CthunAgent::Module {
+class Echo : public PXPAgent::Module {
   public:
     Echo();
 
@@ -15,6 +15,6 @@ class Echo : public CthunAgent::Module {
 };
 
 }  // namespace Modules
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
 #endif  // SRC_MODULES_ECHO_H_

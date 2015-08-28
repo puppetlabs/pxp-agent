@@ -5,11 +5,11 @@
 
 #include <map>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace HW = HorseWhisperer;
 
-static const std::string DEFAULT_ACTION_RESULTS_DIR = "/tmp/cthun-agent/";
+static const std::string DEFAULT_ACTION_RESULTS_DIR = "/tmp/pxp-agent/";
 
 enum Types { Integer, String, Bool, Double };
 
@@ -160,6 +160,6 @@ class Configuration {
     void setAgentConfiguration();
 };
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
 #endif  // SRC_CONFIGURATION_H_

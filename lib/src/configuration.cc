@@ -1,4 +1,4 @@
-#include <cthun-agent/configuration.hpp>
+#include <pxp-agent/configuration.hpp>
 
 #include "version-inl.hpp"
 
@@ -13,14 +13,14 @@
 
 #include <fstream>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
 namespace lth_jc = leatherman::json_container;
 
-const std::string DEFAULT_MODULES_DIR { "/usr/share/cthun-agent/modules" };
-const std::string DEFAULT_MODULES_CONF_DIR { "/etc/puppetlabs/cthun-agent/modules.d" };
+const std::string DEFAULT_MODULES_DIR { "/usr/share/pxp-agent/modules" };
+const std::string DEFAULT_MODULES_CONF_DIR { "/etc/puppetlabs/pxp-agent/modules.d" };
 
 const std::string AGENT_CLIENT_TYPE { "agent" };
 
@@ -164,7 +164,7 @@ Configuration::Configuration() : initialized_ { false },
 void Configuration::defineDefaultValues() {
     HW::SetAppName("cthun-agent");
     HW::SetHelpBanner("Usage: cthun-agent [options]");
-    HW::SetVersion(std::string { CTHUN_AGENT_VERSION } + "\n");
+    HW::SetVersion(std::string { PXP_AGENT_VERSION } + "\n");
 
     // start setting the config file path to known existent locations;
     // HW will overwrite it with the one parsed from CLI, if specified
@@ -406,4 +406,4 @@ void Configuration::setAgentConfiguration() {
         AGENT_CLIENT_TYPE };
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

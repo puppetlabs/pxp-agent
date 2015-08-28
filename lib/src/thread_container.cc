@@ -1,4 +1,4 @@
-#include <cthun-agent/thread_container.hpp>
+#include <pxp-agent/thread_container.hpp>
 
 #include <chrono>
 #include <algorithm>  // remove_if
@@ -7,7 +7,7 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.thread_container"
 #include <leatherman/logging/logging.hpp>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 // Check if the thread has completed; if so, and if it's joinable,
 // detach it. Return true if completed, false otherwise.
@@ -178,4 +178,4 @@ void ThreadContainer::monitoringTask_() {
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

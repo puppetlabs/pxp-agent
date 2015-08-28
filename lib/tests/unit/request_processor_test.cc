@@ -2,8 +2,8 @@
 
 #include "root_path.hpp"
 
-#include <cthun-agent/request_processor.hpp>
-#include <cthun-agent/configuration.hpp>
+#include <pxp-agent/request_processor.hpp>
+#include <pxp-agent/configuration.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
 
@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <atomic>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
@@ -25,9 +25,9 @@ static const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/cthun/" };
 static const std::string CA { getCaPath() };
 static const std::string CERT { getCertPath() };
 static const std::string KEY { getKeyPath() };
-static const std::string MODULES { CTHUN_AGENT_ROOT_PATH
+static const std::string MODULES { PXP_AGENT_ROOT_PATH
                             + std::string { "/lib/tests/resources/modules" } };
-static const std::string SPOOL { CTHUN_AGENT_ROOT_PATH
+static const std::string SPOOL { PXP_AGENT_ROOT_PATH
                           + std::string { "/lib/tests/resources/tmp/" } };
 
 static const Configuration::Agent agent_configuration { MODULES,
@@ -40,7 +40,7 @@ static const Configuration::Agent agent_configuration { MODULES,
                                                         "test_agent" };
 
 TEST_CASE("RequestProcessor::RequestProcessor", "[agent]") {
-    auto c_ptr = std::make_shared<CthunConnector>(agent_configuration);
+    auto c_ptr = std::make_shared<PXPConnector>(agent_configuration);
 
     SECTION("successfully instantiates with valid arguments") {
         REQUIRE_NOTHROW(RequestProcessor(c_ptr, agent_configuration));
@@ -75,7 +75,7 @@ static std::string rpc_data_txt {
     "                  \"urgent\" : true }"
     " }" };
 
-class TestConnector : public CthunConnector {
+class TestConnector : public PXPConnector {
   public:
     struct cthunError_msg : public std::exception {
         const char* what() const noexcept { return "cthun error"; } };
@@ -88,7 +88,7 @@ class TestConnector : public CthunConnector {
     std::atomic<bool> sent_non_blocking_response;
 
     TestConnector()
-            : CthunConnector { agent_configuration },
+            : PXPConnector { agent_configuration },
               sent_provisional_response { false },
               sent_non_blocking_response { false } {
     }
@@ -141,7 +141,7 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
     std::vector<lth_jc::JsonContainer> debug {};
 
     SECTION("reply with a Cthun error if request has bad format") {
-        const CthunClient::ParsedChunks p_c { envelope, false, debug, 0 };
+        const PCPClient::ParsedChunks p_c { envelope, false, debug, 0 };
 
         REQUIRE_THROWS_AS(r_p.processRequest(RequestType::Blocking, p_c),
                           TestConnector::cthunError_msg);
@@ -154,7 +154,7 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
         SECTION("uknown module") {
             data.set<std::string>("module", "foo");
             data.set<std::string>("action", "bar");
-            const CthunClient::ParsedChunks p_c { envelope, data, debug, 0 };
+            const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
             REQUIRE_THROWS_AS(r_p.processRequest(RequestType::Blocking, p_c),
                               TestConnector::rpcError_msg);
@@ -163,7 +163,7 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
         SECTION("uknown action") {
             data.set<std::string>("module", "reverse");
             data.set<std::string>("module", "bar");
-            const CthunClient::ParsedChunks p_c { envelope, data, debug, 0 };
+            const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
             REQUIRE_THROWS_AS(r_p.processRequest(RequestType::Blocking, p_c),
                               TestConnector::rpcError_msg);
@@ -177,7 +177,7 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
             lth_jc::JsonContainer params {};
             params.set<std::string>("argument", "was");
             data.set<lth_jc::JsonContainer>("params", params);
-            const CthunClient::ParsedChunks p_c { envelope, data, debug, 0 };
+            const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
             REQUIRE_THROWS_AS(r_p.processRequest(RequestType::Blocking, p_c),
                               TestConnector::blocking_response);
@@ -189,7 +189,7 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
             lth_jc::JsonContainer params {};
             params.set<std::string>("argument", "bikini");
             data.set<lth_jc::JsonContainer>("params", params);
-            const CthunClient::ParsedChunks p_c { envelope, data, debug, 0 };
+            const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
             REQUIRE_THROWS_AS(r_p.processRequest(RequestType::Blocking, p_c),
                               TestConnector::rpcError_msg);
@@ -206,7 +206,7 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
             lth_jc::JsonContainer params {};
             params.set<std::string>("argument", "lemon");
             data.set<lth_jc::JsonContainer>("params", params);
-            const CthunClient::ParsedChunks p_c { envelope, data, debug, 0 };
+            const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
             REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
 
@@ -226,7 +226,7 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
             lth_jc::JsonContainer params {};
             params.set<std::string>("argument", "kondgbia");
             data.set<lth_jc::JsonContainer>("params", params);
-            const CthunClient::ParsedChunks p_c { envelope, data, debug, 0 };
+            const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
             REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
 
@@ -243,4 +243,4 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
 
 #endif  // TEST_VIRTUAL
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

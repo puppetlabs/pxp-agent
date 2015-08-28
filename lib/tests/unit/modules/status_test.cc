@@ -1,10 +1,10 @@
 #include "root_path.hpp"
 #include "../content_format.hpp"
 
-#include <cthun-agent/modules/status.hpp>
-#include <cthun-agent/configuration.hpp>
+#include <pxp-agent/modules/status.hpp>
+#include <pxp-agent/configuration.hpp>
 
-#include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
+#include <cpp-pcp-client/protocol/chunks.hpp>       // ParsedChunks
 
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/file_util/file.hpp>
@@ -17,7 +17,7 @@
 
 #include <cstdio>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 namespace lth_util = leatherman::util;
@@ -36,7 +36,7 @@ static const std::string STATUS_TXT { (STATUS_FORMAT % "the-uuid-string").str() 
 
 static const std::vector<lth_jc::JsonContainer> NO_DEBUG {};
 
-static const CthunClient::ParsedChunks PARSED_CHUNKS {
+static const PCPClient::ParsedChunks PARSED_CHUNKS {
                     lth_jc::JsonContainer(ENVELOPE_TXT),
                     lth_jc::JsonContainer(STATUS_TXT),
                     NO_DEBUG,
@@ -64,7 +64,7 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
     SECTION("it works properly when an unknown job id is provided") {
         auto job_id = lth_util::get_UUID();
         std::string other_status_txt { (STATUS_FORMAT % job_id).str() };
-        CthunClient::ParsedChunks other_chunks {
+        PCPClient::ParsedChunks other_chunks {
                 lth_jc::JsonContainer(ENVELOPE_TXT),
                 lth_jc::JsonContainer(other_status_txt),
                 NO_DEBUG,
@@ -82,7 +82,7 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
     }
 
     SECTION("it correctly retrieves the file content of a known job") {
-        std::string result_path { std::string { CTHUN_AGENT_ROOT_PATH }
+        std::string result_path { std::string { PXP_AGENT_ROOT_PATH }
                                   + "/lib/tests/resources/delayed_result" };
         boost::filesystem::path to { result_path };
 
@@ -96,7 +96,7 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
         boost::filesystem::path symlink { symlink_path };
 
         std::string other_status_txt { (STATUS_FORMAT % symlink_name).str() };
-        CthunClient::ParsedChunks other_chunks {
+        PCPClient::ParsedChunks other_chunks {
                 lth_jc::JsonContainer(ENVELOPE_TXT),
                 lth_jc::JsonContainer(other_status_txt),
                 NO_DEBUG,
@@ -132,4 +132,4 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

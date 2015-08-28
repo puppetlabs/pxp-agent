@@ -5,7 +5,7 @@
 
 #include <string>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
@@ -50,6 +50,6 @@ struct ActionOutcome {
     }
 };
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
 #endif  // SRC_AGENT_ACTION_OUTCOME_HPP_
