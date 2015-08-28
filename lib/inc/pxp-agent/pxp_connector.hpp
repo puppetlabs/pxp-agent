@@ -1,5 +1,5 @@
-#ifndef SRC_AGENT_CTHUN_CONNECTOR_H_
-#define SRC_AGENT_CTHUN_CONNECTOR_H_
+#ifndef SRC_AGENT_PXP_CONNECTOR_HPP_
+#define SRC_AGENT_PXP_CONNECTOR_HPP_
 
 #ifdef TEST_VIRTUAL
 #define TEST_VIRTUAL_SPECIFIER virtual
@@ -7,23 +7,23 @@
 #define TEST_VIRTUAL_SPECIFIER
 #endif
 
-#include <cthun-agent/action_request.hpp>
-#include <cthun-agent/configuration.hpp>
+#include <pxp-agent/action_request.hpp>
+#include <pxp-agent/configuration.hpp>
 
-#include <cthun-client/connector/connector.hpp>
+#include <cpp-pcp-client/connector/connector.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
 
 #include <cassert>
 #include <memory>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-class CthunConnector : public CthunClient::Connector {
+class PXPConnector : public PCPClient::Connector {
   public:
-    CthunConnector(const Configuration::Agent& agent_configuration);
+    PXPConnector(const Configuration::Agent& agent_configuration);
 
     TEST_VIRTUAL_SPECIFIER void sendCthunError(
                     const std::string& request_id,
@@ -47,6 +47,6 @@ class CthunConnector : public CthunClient::Connector {
                     const ActionRequest& request);
 };
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
-#endif  // SRC_AGENT_CTHUN_CONNECTOR_H_
+#endif  // SRC_AGENT_PXP_CONNECTOR_HPP_
