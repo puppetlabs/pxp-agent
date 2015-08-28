@@ -15,4 +15,4 @@ externalproject_add(
 )
 externalproject_get_property(cpp-pcp-client SOURCE_DIR)
 set(CPP_PCP_CLIENT_INCLUDE_DIRS "${SOURCE_DIR}/src")
-set(CPP_PCP_CLIENT_LIB "${SOURCE_DIR}/lib/libcpp-pcp-client.so")
+set(CPP_PCP_CLIENT_LIB "${SOURCE_DIR}/build/lib/libcpp-pcp-client.so")
