@@ -53,9 +53,6 @@ CthunClient::Schema ProvisionalResponseSchema() {
     CthunClient::Schema schema { PROVISIONAL_RESPONSE_TYPE, C_Type::Json };
     // NB: additionalProperties = false
     schema.addConstraint("transaction_id", T_Constraint::String, true);
-    schema.addConstraint("success", T_Constraint::Bool, true);
-    schema.addConstraint("job_id", T_Constraint::String, false);
-    schema.addConstraint("error", T_Constraint::String, false);
     return schema;
 }
 

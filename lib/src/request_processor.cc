@@ -262,17 +262,13 @@ void RequestProcessor::processBlockingRequest(const ActionRequest& request) {
 }
 
 void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
-    auto job_id = lth_util::get_UUID();
-
     // HERE(ale): assuming spool_dir ends with '/' (up to Configuration)
-    std::string results_dir { spool_dir_ + job_id };
+    std::string results_dir { spool_dir_ + request.transactionId() };
+    std::string err_msg {};
 
     LOG_DEBUG("Starting '%1% %2%' job with ID %3% for non-blocking request %4% "
-              "by %5%, transaction %6%", request.module(), request.action(),
-              job_id, request.id(), request.sender(), request.transactionId());
-
-    // To keep track of errors and write them on file
-    std::string err_msg {};
+              "by %5%", request.module(), request.action(),
+              request.transactionId(), request.id(), request.sender());
 
     try {
         // Flag to enable signaling from task to thread_container
@@ -281,7 +277,7 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
         thread_container_.add(std::thread(&nonBlockingActionTask,
                                           modules_[request.module()],
                                           request,
-                                          job_id,
+                                          request.transactionId(),
                                           ResultsStorage { request, results_dir },
                                           connector_ptr_,
                                           done),
@@ -290,16 +286,20 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
         // Failed to instantiate ResultsStorage
         LOG_ERROR("Failed to initialize the result files for '%1% %2%' action "
                   "job with ID %3%: %4%", request.module(), request.action(),
-                  job_id, e.what());
+                  request.transactionId(), e.what());
         err_msg = std::string { "failed to initialize result files: " } + e.what();
     } catch (std::exception& e) {
         LOG_ERROR("Failed to spawn '%1% %2%' action job with ID %3%: %4%",
-                  request.module(), request.action(), job_id, e.what());
+                  request.module(), request.action(), request.transactionId(),
+                  e.what());
         err_msg = std::string { "failed to start action task: " } + e.what();
     }
 
-    // Send back provisional data
-    connector_ptr_->sendProvisionalResponse(request, job_id, err_msg);
+    if (err_msg.empty()) {
+        connector_ptr_->sendProvisionalResponse(request);
+    } else {
+        connector_ptr_->sendRPCError(request, err_msg);
+    }
 }
 
 void RequestProcessor::loadModulesConfiguration() {
