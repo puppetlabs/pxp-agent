@@ -6,7 +6,7 @@ include_directories(
     SYSTEM ${Boost_Process_INCLUDE_DIRS}
     SYSTEM ${HORSEWHISPERER_INCLUDE_DIRS}
     SYSTEM ${INIH_INCLUDE_DIRS}
-    SYSTEM ${CTHUN_CLIENT_INCLUDE_DIRS}
+    SYSTEM ${CPP_PCP_CLIENT_INCLUDE_DIRS}
     SYSTEM ${LEATHERMAN_CATCH_INCLUDE}
     SYSTEM ${CATCH_DIRECTORY}
 )
@@ -25,15 +25,15 @@ set(SOURCES
     unit/modules/status_test.cc
 )
 
-set(test_BIN cthun-agent-unittests)
+set(test_BIN pxp-agent-unittests)
 
-set (CTHUN-AGENT_TEST_LIBS
-    ${CTHUN_CLIENT_LIB}
-    libcthun-agent
+set (PXP-AGENT_TEST_LIBS
+    ${CPP_PCP_CLIENT_LIB}
+    libpxp-agent
 )
 
 add_executable(${test_BIN} ${SOURCES})
-target_link_libraries(${test_BIN} ${CTHUN-AGENT_TEST_LIBS})
+target_link_libraries(${test_BIN} ${PXP-AGENT_TEST_LIBS})
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lpthread -pthread")

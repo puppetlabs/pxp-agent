@@ -9,7 +9,7 @@ include_directories(
     SYSTEM ${Boost_Process_INCLUDE_DIRS}
     ${HORSEWHISPERER_INCLUDE_DIRS}
     ${INIH_INCLUDE_DIRS}
-    ${cthun-client_INCLUDE_DIR}
+    ${cpp-pcp-client_INCLUDE_DIR}
     ${facter_INCLUDE_DIR}
 )
 
@@ -29,7 +29,7 @@ set(LIBRARY_SOURCES
 )
 
 SET(LIBS
-    ${cthun-client_LIBRARY}
+    ${cpp-pcp-client_LIBRARY}
     ${Boost_LIBRARIES}
     ${OPENSSL_SSL_LIBRARY}
     ${OPENSSL_CRYPTO_LIBRARY}
@@ -38,7 +38,7 @@ SET(LIBS
     ${LEATHERMAN_LIBRARIES}
 )
 
-add_library(libcthun-agent ${LIBRARY_SOURCES})
-target_link_libraries(libcthun-agent ${LIBS})
+add_library(libpxp-agent ${LIBRARY_SOURCES})
+target_link_libraries(libpxp-agent ${LIBS})
 
 add_subdirectory(tests)
