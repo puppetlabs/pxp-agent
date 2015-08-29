@@ -1,6 +1,6 @@
 #include <pxp-agent/request_processor.hpp>
 #include <pxp-agent/action_outcome.hpp>
-#include <pxp-agent/rpc_schemas.hpp>
+#include <pxp-agent/pxp_schemas.hpp>
 #include <pxp-agent/external_module.hpp>
 #include <pxp-agent/modules/echo.hpp>
 #include <pxp-agent/modules/ping.hpp>

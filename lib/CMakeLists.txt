@@ -24,7 +24,7 @@ set(LIBRARY_SOURCES
     src/modules/ping.cc
     src/modules/status.cc
     src/request_processor.cc
-    src/rpc_schemas.cc
+    src/pxp_schemas.cc
     src/thread_container.cc
 )
 

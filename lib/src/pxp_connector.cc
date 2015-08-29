@@ -1,5 +1,5 @@
 #include <pxp-agent/pxp_connector.hpp>
-#include <pxp-agent/rpc_schemas.hpp>
+#include <pxp-agent/pxp_schemas.hpp>
 
 #include <cpp-pcp-client/protocol/schemas.hpp>
 
