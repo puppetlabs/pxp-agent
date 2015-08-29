@@ -1,4 +1,4 @@
-#include <cthun-agent/modules/ping.hpp>
+#include <pxp-agent/modules/ping.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -9,7 +9,7 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.modules.ping"
 #include <leatherman/logging/logging.hpp>
 
-namespace CthunAgent {
+namespace PXPAgent {
 namespace Modules {
 
 namespace V_C = valijson::constraints;
@@ -19,10 +19,10 @@ static const std::string PING { "ping" };
 Ping::Ping() {
     module_name = PING;
     actions.push_back(PING);
-    CthunClient::Schema input_schema { PING };
+    PCPClient::Schema input_schema { PING };
     input_schema.addConstraint("sender_timestamp",
-                               CthunClient::TypeConstraint::String);
-    CthunClient::Schema output_schema { PING };
+                               PCPClient::TypeConstraint::String);
+    PCPClient::Schema output_schema { PING };
 
     input_validator_.registerSchema(input_schema);
     output_validator_.registerSchema(output_schema);
@@ -55,4 +55,4 @@ ActionOutcome Ping::callAction(const ActionRequest& request) {
 }
 
 }  // namespace Modules
-}  // namespace CthunAgent
+}  // namespace PXPAgent

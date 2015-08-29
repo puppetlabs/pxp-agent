@@ -1,17 +1,17 @@
 #ifndef SRC_AGENT_ENDPOINT_H_
 #define SRC_AGENT_ENDPOINT_H_
 
-#include <cthun-agent/request_processor.hpp>
-#include <cthun-agent/action_request.hpp>
-#include <cthun-agent/cthun_connector.hpp>
-#include <cthun-agent/configuration.hpp>
+#include <pxp-agent/request_processor.hpp>
+#include <pxp-agent/action_request.hpp>
+#include <pxp-agent/pxp_connector.hpp>
+#include <pxp-agent/configuration.hpp>
 
-#include <cthun-client/protocol/chunks.hpp>      // ParsedChunk
+#include <cpp-pcp-client/protocol/chunks.hpp>      // ParsedChunk
 
 #include <memory>
 #include <string>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 class Agent {
   public:
@@ -22,7 +22,7 @@ class Agent {
     Agent() = delete;
 
     // Configure the cthun-agent run by:
-    //  - instantiating CthunConnector;
+    //  - instantiating PXPConnector;
     //  - instantiating a RequestProcessor.
     //
     // Throw an Agent::Error in case it fails to determine the agent
@@ -41,27 +41,27 @@ class Agent {
 
   private:
     // Cthun connector
-    std::shared_ptr<CthunConnector> connector_ptr_;
+    std::shared_ptr<PXPConnector> connector_ptr_;
 
     // Request Processor
     RequestProcessor request_processor_;
 
-    // Callback for CthunClient::Connector handling incoming RPC
+    // Callback for PCPClient::Connector handling incoming RPC
     // blocking requests; it will execute the requested action and,
     // once finished, reply to the sender with an RPC blocking
     // response containing the action outcome.
-    void blockingRequestCallback(const CthunClient::ParsedChunks& parsed_chunks);
+    void blockingRequestCallback(const PCPClient::ParsedChunks& parsed_chunks);
 
-    // Callback for CthunClient::Connector handling incoming RPC
+    // Callback for PCPClient::Connector handling incoming RPC
     // non-blocking requests; it will start a job for the requested
     // action and reply with a provisional response containing the job
     // id. The reults will be stored in files in spool-dir.
     // In case the request has the notify_outcome field flagged, it
     // will send an RPC non-blocking response containing the action
     // outcome when finished.
-    void nonBlockingRequestCallback(const CthunClient::ParsedChunks& parsed_chunks);
+    void nonBlockingRequestCallback(const PCPClient::ParsedChunks& parsed_chunks);
 };
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
 #endif  // SRC_AGENT_ENDPOINT_H_

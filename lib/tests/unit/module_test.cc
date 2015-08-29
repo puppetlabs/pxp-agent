@@ -1,8 +1,8 @@
 #include "content_format.hpp"
 
-#include <cthun-agent/modules/echo.hpp>
+#include <pxp-agent/modules/echo.hpp>
 
-#include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
+#include <cpp-pcp-client/protocol/chunks.hpp>       // ParsedChunks
 
 #include <leatherman/json_container/json_container.hpp>
 
@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
@@ -26,7 +26,7 @@ static const std::string ECHO_TXT {
                  % "\"echo\""
                  % "{ \"argument\" : \"maradona\" }").str() };
 
-static const CthunClient::ParsedChunks PARSED_CHUNKS {
+static const PCPClient::ParsedChunks PARSED_CHUNKS {
                 lth_jc::JsonContainer(ENVELOPE_TXT),
                 lth_jc::JsonContainer(ECHO_TXT),
                 NO_DEBUG,
@@ -55,4 +55,4 @@ TEST_CASE("Module::executeAction", "[modules]") {
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

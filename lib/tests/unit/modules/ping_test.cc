@@ -1,8 +1,8 @@
 #include "../content_format.hpp"
 
-#include <cthun-agent/modules/ping.hpp>
+#include <pxp-agent/modules/ping.hpp>
 
-#include <cthun-client/protocol/chunks.hpp>       // ParsedChunks
+#include <cpp-pcp-client/protocol/chunks.hpp>       // ParsedChunks
 
 #include <leatherman/json_container/json_container.hpp>
 
@@ -13,7 +13,7 @@
 #include <vector>
 #include <algorithm>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
@@ -29,7 +29,7 @@ static const std::vector<lth_jc::JsonContainer> DEBUG {
     lth_jc::JsonContainer { "{\"hops\" : []}" }
 };
 
-static const CthunClient::ParsedChunks PARSED_CHUNKS {
+static const PCPClient::ParsedChunks PARSED_CHUNKS {
                     lth_jc::JsonContainer(ENVELOPE_TXT),
                     lth_jc::JsonContainer(PING_TXT),
                     DEBUG,
@@ -82,7 +82,7 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
             lth_jc::JsonContainer { debug_txt }
         };
 
-        CthunClient::ParsedChunks other_chunks {
+        PCPClient::ParsedChunks other_chunks {
                     lth_jc::JsonContainer(ENVELOPE_TXT),
                     lth_jc::JsonContainer(PING_TXT),
                     other_debug,
@@ -116,7 +116,7 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
             lth_jc::JsonContainer { debug_txt }
         };
 
-        CthunClient::ParsedChunks other_chunks {
+        PCPClient::ParsedChunks other_chunks {
                 lth_jc::JsonContainer(ENVELOPE_TXT),
                 lth_jc::JsonContainer(data_txt),
                 other_debug,
@@ -132,4 +132,4 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

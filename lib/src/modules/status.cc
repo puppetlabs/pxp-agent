@@ -1,5 +1,5 @@
-#include <cthun-agent/modules/status.hpp>
-#include <cthun-agent/configuration.hpp>
+#include <pxp-agent/modules/status.hpp>
+#include <pxp-agent/configuration.hpp>
 #include <boost/filesystem.hpp>
 
 #include <leatherman/file_util/file.hpp>
@@ -9,7 +9,7 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.modules.status"
 #include <leatherman/logging/logging.hpp>
 
-namespace CthunAgent {
+namespace PXPAgent {
 namespace Modules {
 
 namespace lth_file = leatherman::file_util;
@@ -19,11 +19,11 @@ static const std::string QUERY { "query" };
 Status::Status() {
     module_name = "status";
     actions.push_back(QUERY);
-    CthunClient::Schema input_schema { QUERY };
-    input_schema.addConstraint("job_id", CthunClient::TypeConstraint::String,
+    PCPClient::Schema input_schema { QUERY };
+    input_schema.addConstraint("job_id", PCPClient::TypeConstraint::String,
                                true);
 
-    CthunClient::Schema output_schema { QUERY };
+    PCPClient::Schema output_schema { QUERY };
 
     input_validator_.registerSchema(input_schema);
     output_validator_.registerSchema(output_schema);
@@ -62,4 +62,4 @@ ActionOutcome Status::callAction(const ActionRequest& request) {
 }
 
 }  // namespace Modules
-}  // namespace CthunAgent
+}  // namespace PXPAgent

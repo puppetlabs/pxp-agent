@@ -1,4 +1,4 @@
-#include <cthun-agent/external_module.hpp>
+#include <pxp-agent/external_module.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.external_module"
 #include <leatherman/logging/logging.hpp>
@@ -16,7 +16,7 @@
 // #define NDEBUG
 #include <cassert>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 static const std::string METADATA_SCHEMA_NAME { "external_module_metadata" };
 static const std::string ACTION_SCHEMA_NAME { "action_metadata" };
@@ -62,18 +62,18 @@ void runCommand(const std::string& exec,
 }
 
 // Provides the module metadata validator
-CthunClient::Validator getMetadataValidator() {
+PCPClient::Validator getMetadataValidator() {
     // Metadata schema
-    CthunClient::Schema metadata_schema { METADATA_SCHEMA_NAME,
-                                          CthunClient::ContentType::Json };
-    using T_C = CthunClient::TypeConstraint;
+    PCPClient::Schema metadata_schema { METADATA_SCHEMA_NAME,
+                                          PCPClient::ContentType::Json };
+    using T_C = PCPClient::TypeConstraint;
     metadata_schema.addConstraint("description", T_C::String, true);
     metadata_schema.addConstraint(METADATA_CONFIGURATION_ENTRY, T_C::Array, false);
     metadata_schema.addConstraint(METADATA_ACTIONS_ENTRY, T_C::Array, true);
 
     // 'actions' is an array of actions; define the action sub_schema
-    CthunClient::Schema action_schema { ACTION_SCHEMA_NAME,
-                                        CthunClient::ContentType::Json };
+    PCPClient::Schema action_schema { ACTION_SCHEMA_NAME,
+                                        PCPClient::ContentType::Json };
     action_schema.addConstraint("description", T_C::String, false);
     action_schema.addConstraint("name", T_C::String, true);
     action_schema.addConstraint("input", T_C::Object, true);
@@ -81,7 +81,7 @@ CthunClient::Validator getMetadataValidator() {
 
     metadata_schema.addConstraint(METADATA_ACTIONS_ENTRY, action_schema, false);
 
-    CthunClient::Validator validator {};
+    PCPClient::Validator validator {};
     validator.registerSchema(metadata_schema);
     return validator;
 }
@@ -127,7 +127,7 @@ void ExternalModule::validateAndSetConfiguration(const lth_jc::JsonContainer& co
 //
 
 // Metadata validator (static member)
-const CthunClient::Validator ExternalModule::metadata_validator_ {
+const PCPClient::Validator ExternalModule::metadata_validator_ {
         getMetadataValidator() };
 
 
@@ -149,7 +149,7 @@ const lth_jc::JsonContainer ExternalModule::getMetadata() {
     try {
         metadata_validator_.validate(metadata, METADATA_SCHEMA_NAME);
         LOG_INFO("External module %1%: metadata validation OK", module_name);
-    } catch (CthunClient::validation_error& e) {
+    } catch (PCPClient::validation_error& e) {
         throw Module::LoadingError { std::string { "metadata validation failure: " }
                                      + e.what() };
     }
@@ -159,9 +159,9 @@ const lth_jc::JsonContainer ExternalModule::getMetadata() {
 
 void ExternalModule::registerConfiguration(const lth_jc::JsonContainer& config_metadata) {
     try {
-        CthunClient::Schema configuration_schema { module_name, config_metadata };
+        PCPClient::Schema configuration_schema { module_name, config_metadata };
         config_validator_.registerSchema(configuration_schema);
-    } catch (CthunClient::schema_error& e) {
+    } catch (PCPClient::schema_error& e) {
         LOG_ERROR("Failed to parse the configuration schema of module '%1%': %2%",
                   module_name, e.what());
         std::string err { "invalid configuration schema of module " + module_name };
@@ -182,17 +182,17 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
 
     try {
         auto input_schema_json = action.get<lth_jc::JsonContainer>("input");
-        CthunClient::Schema input_schema { action_name, input_schema_json };
+        PCPClient::Schema input_schema { action_name, input_schema_json };
 
         auto output_schema_json = action.get<lth_jc::JsonContainer>("output");
-        CthunClient::Schema output_schema { action_name, output_schema_json };
+        PCPClient::Schema output_schema { action_name, output_schema_json };
 
         // Metadata schemas are valid JSON; store metadata
         LOG_INFO("Action '%1% %2%' has been validated", module_name, action_name);
         actions.push_back(action_name);
         input_validator_.registerSchema(input_schema);
         output_validator_.registerSchema(output_schema);
-    } catch (CthunClient::schema_error& e) {
+    } catch (PCPClient::schema_error& e) {
         LOG_ERROR("Failed to parse metadata schemas of action '%1% %2%': %3%",
                   module_name, action_name, e.what());
         std::string err { "invalid schemas of '" + module_name + " "
@@ -249,4 +249,4 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     return ActionOutcome { stderr, stdout, results };
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

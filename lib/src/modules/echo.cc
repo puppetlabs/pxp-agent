@@ -1,6 +1,6 @@
-#include <cthun-agent/modules/echo.hpp>
+#include <pxp-agent/modules/echo.hpp>
 
-namespace CthunAgent {
+namespace PXPAgent {
 namespace Modules {
 
 static const std::string ECHO { "echo" };
@@ -8,10 +8,10 @@ static const std::string ECHO { "echo" };
 Echo::Echo() {
     module_name = ECHO;
     actions.push_back(ECHO);
-    CthunClient::Schema input_schema { ECHO };
-    input_schema.addConstraint("argument", CthunClient::TypeConstraint::String,
+    PCPClient::Schema input_schema { ECHO };
+    input_schema.addConstraint("argument", PCPClient::TypeConstraint::String,
                                true);
-    CthunClient::Schema output_schema { ECHO };
+    PCPClient::Schema output_schema { ECHO };
 
     input_validator_.registerSchema(input_schema);
     output_validator_.registerSchema(output_schema);
@@ -30,4 +30,4 @@ ActionOutcome Echo::callAction(const ActionRequest& request) {
 }
 
 }  // namespace Modules
-}  // namespace CthunAgent
+}  // namespace PXPAgent

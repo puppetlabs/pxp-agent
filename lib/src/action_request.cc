@@ -1,14 +1,14 @@
-#include <cthun-agent/action_request.hpp>
+#include <pxp-agent/action_request.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.action_request"
 #include <leatherman/logging/logging.hpp>
 
 #include <cassert>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 ActionRequest::ActionRequest(RequestType type,
-                             const CthunClient::ParsedChunks& parsed_chunks)
+                             const PCPClient::ParsedChunks& parsed_chunks)
         : type_ { type },
           notify_outcome_ { true },
           parsed_chunks_ { parsed_chunks },
@@ -18,7 +18,7 @@ ActionRequest::ActionRequest(RequestType type,
 }
 
 ActionRequest::ActionRequest(RequestType type,
-                             CthunClient::ParsedChunks&& parsed_chunks)
+                             PCPClient::ParsedChunks&& parsed_chunks)
         : type_ { type },
           notify_outcome_ { true },
           parsed_chunks_ { parsed_chunks },
@@ -35,7 +35,7 @@ const std::string& ActionRequest::module() const { return module_; }
 const std::string& ActionRequest::action() const { return action_; }
 const bool& ActionRequest::notifyOutcome() const { return notify_outcome_; }
 
-const CthunClient::ParsedChunks& ActionRequest::parsedChunks() const {
+const PCPClient::ParsedChunks& ActionRequest::parsedChunks() const {
     return parsed_chunks_;
 }
 
@@ -82,9 +82,9 @@ void ActionRequest::validateFormat() {
         throw ActionRequest::Error { "invalid data" };
     }
     // NOTE(ale): currently, we don't support ContentType::Binary
-    if (parsed_chunks_.data_type != CthunClient::ContentType::Json) {
+    if (parsed_chunks_.data_type != PCPClient::ContentType::Json) {
         throw ActionRequest::Error { "data is not in JSON format" };
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

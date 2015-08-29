@@ -1,4 +1,4 @@
-#include <cthun-agent/thread_container.hpp>
+#include <pxp-agent/thread_container.hpp>
 
 #include <catch.hpp>
 
@@ -7,7 +7,7 @@
 #include <exception>  // set_terminate
 #include <vector>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 TEST_CASE("ThreadContainer::ThreadContainer", "[utils]") {
     SECTION("can successfully instantiate a container") {
@@ -141,4 +141,4 @@ TEST_CASE("ThreadContainer::monitoringTask", "[async]") {
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

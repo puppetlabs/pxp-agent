@@ -1,8 +1,8 @@
 #include "content_format.hpp"
 
-#include <cthun-agent/action_request.hpp>
+#include <pxp-agent/action_request.hpp>
 
-#include <cthun-client/protocol/chunks.hpp>
+#include <cpp-pcp-client/protocol/chunks.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
 
@@ -10,7 +10,7 @@
 
 #include <vector>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
@@ -26,27 +26,27 @@ TEST_CASE("ActionRequest::ActionRequest", "[request]") {
     std::vector<lth_jc::JsonContainer> debug {};
 
     SECTION("successfully instantiates with valid arguments") {
-        const CthunClient::ParsedChunks p_c { envelope, data, debug, 0 };
+        const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
         REQUIRE_NOTHROW(ActionRequest(RequestType::Blocking, p_c));
     }
 
     SECTION("throw a ActionRequest::Error if no data") {
-        const CthunClient::ParsedChunks p_c { envelope, debug, 0 };
+        const PCPClient::ParsedChunks p_c { envelope, debug, 0 };
 
         REQUIRE_THROWS_AS(ActionRequest(RequestType::Blocking, p_c),
                           ActionRequest::Error);
     }
 
     SECTION("throw a ActionRequest::Error if binary data") {
-        const CthunClient::ParsedChunks p_c { envelope, "bin data", debug, 0 };
+        const PCPClient::ParsedChunks p_c { envelope, "bin data", debug, 0 };
 
         REQUIRE_THROWS_AS(ActionRequest(RequestType::Blocking, p_c),
                           ActionRequest::Error);
     }
 
     SECTION("throw a ActionRequest::Error if invalid data") {
-        const CthunClient::ParsedChunks p_c { envelope, false, debug, 0 };
+        const PCPClient::ParsedChunks p_c { envelope, false, debug, 0 };
 
         REQUIRE_THROWS_AS(ActionRequest(RequestType::Blocking, p_c),
                           ActionRequest::Error);
@@ -67,7 +67,7 @@ TEST_CASE("ActionRequest getters", "[request]") {
     std::vector<lth_jc::JsonContainer> debug {};
 
     SECTION("successfully get values") {
-        const CthunClient::ParsedChunks p_c { envelope, data, debug, 0 };
+        const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
         ActionRequest a_r { RequestType::Blocking, p_c };
 
         SECTION("parsedChunks") {
@@ -115,4 +115,4 @@ TEST_CASE("ActionRequest getters", "[request]") {
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

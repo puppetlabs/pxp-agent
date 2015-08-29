@@ -1,7 +1,7 @@
 #ifndef SRC_AGENT_ACTION_REQUEST_HPP_
 #define SRC_AGENT_ACTION_REQUEST_HPP_
 
-#include <cthun-client/protocol/chunks.hpp>      // ParsedChunk
+#include <cpp-pcp-client/protocol/chunks.hpp>      // ParsedChunk
 
 #include <leatherman/json_container/json_container.hpp>
 
@@ -9,7 +9,7 @@
 #include <string>
 #include <map>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
@@ -28,9 +28,9 @@ class ActionRequest {
     /// the data chunk from the specified ParsedChunks or in case of
     /// binary data (currently not supported).
     ActionRequest(RequestType type_,
-                  const CthunClient::ParsedChunks& parsed_chunks_);
+                  const PCPClient::ParsedChunks& parsed_chunks_);
     ActionRequest(RequestType type_,
-                  CthunClient::ParsedChunks&& parsed_chunks_);
+                  PCPClient::ParsedChunks&& parsed_chunks_);
 
     const RequestType& type() const;
     const std::string& id() const;
@@ -39,7 +39,7 @@ class ActionRequest {
     const std::string& module() const;
     const std::string& action() const;
     const bool& notifyOutcome() const;
-    const CthunClient::ParsedChunks& parsedChunks() const;
+    const PCPClient::ParsedChunks& parsedChunks() const;
 
     // The following accessors perform lazy initialization
     // The params entry is not required; in case it's not included
@@ -55,7 +55,7 @@ class ActionRequest {
     std::string module_;
     std::string action_;
     bool notify_outcome_;
-    CthunClient::ParsedChunks parsed_chunks_;
+    PCPClient::ParsedChunks parsed_chunks_;
 
     // Lazy initialized
     mutable lth_jc::JsonContainer params_;
@@ -65,6 +65,6 @@ class ActionRequest {
     void validateFormat();
 };
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
 #endif  // SRC_AGENT_ACTION_REQUEST_HPP_

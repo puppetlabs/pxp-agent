@@ -1,4 +1,4 @@
-#include <cthun-agent/module.hpp>
+#include <pxp-agent/module.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -6,7 +6,7 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.module"
 #include <leatherman/logging/logging.hpp>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 Module::Module()
         : input_validator_ {},
@@ -28,7 +28,7 @@ ActionOutcome Module::executeAction(const ActionRequest& request) {
                   module_name, request.action());
         try {
             output_validator_.validate(outcome.results, request.action());
-        } catch (CthunClient::validation_error) {
+        } catch (PCPClient::validation_error) {
             std::string err_msg { "'" + module_name + " " + request.action()
                                   + "' returned an invalid result - stderr: " };
             throw Module::ProcessingError { err_msg + outcome.stderr };
@@ -50,4 +50,4 @@ ActionOutcome Module::executeAction(const ActionRequest& request) {
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

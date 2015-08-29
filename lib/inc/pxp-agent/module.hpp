@@ -1,18 +1,18 @@
 #ifndef SRC_MODULE_H_
 #define SRC_MODULE_H_
 
-#include <cthun-agent/action_outcome.hpp>
-#include <cthun-agent/action_request.hpp>
+#include <pxp-agent/action_outcome.hpp>
+#include <pxp-agent/action_request.hpp>
 
-#include <cthun-client/protocol/chunks.hpp>      // ParsedChunks
-#include <cthun-client/validator/validator.hpp>  // Validator
+#include <cpp-pcp-client/protocol/chunks.hpp>      // ParsedChunks
+#include <cpp-pcp-client/validator/validator.hpp>  // Validator
 
 #include <leatherman/json_container/json_container.hpp>
 
 #include <vector>
 #include <string>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
@@ -32,9 +32,9 @@ class Module {
 
     std::string module_name;
     std::vector<std::string> actions;
-    CthunClient::Validator config_validator_;
-    CthunClient::Validator input_validator_;
-    CthunClient::Validator output_validator_;
+    PCPClient::Validator config_validator_;
+    PCPClient::Validator input_validator_;
+    PCPClient::Validator output_validator_;
 
     Module();
 
@@ -51,6 +51,6 @@ class Module {
     virtual ActionOutcome callAction(const ActionRequest& request) = 0;
 };
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
 #endif  // SRC_MODULE_H_

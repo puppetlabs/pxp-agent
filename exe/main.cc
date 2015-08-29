@@ -1,5 +1,5 @@
-#include <cthun-agent/agent.hpp>
-#include <cthun-agent/configuration.hpp>
+#include <pxp-agent/agent.hpp>
+#include <pxp-agent/configuration.hpp>
 
 #include <leatherman/file_util/file.hpp>
 
@@ -8,7 +8,7 @@
 
 #include <horsewhisperer/horsewhisperer.h>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 namespace HW = HorseWhisperer;
 namespace lth_file = leatherman::file_util;
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!err_msg.empty()) {
-        std::cout << err_msg << "\nCannot start cthun-agent" << std::endl;
+        std::cout << err_msg << "\nCannot start pxp-agent" << std::endl;
         return 1;
     }
 
@@ -73,8 +73,8 @@ int main(int argc, char *argv[]) {
     }
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
 int main(int argc, char** argv) {
-    return CthunAgent::main(argc, argv);
+    return PXPAgent::main(argc, argv);
 }

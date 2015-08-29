@@ -1,5 +1,5 @@
 
-# Cthun agent architecture
+# PXP agent architecture
 
 map of name:module, possibly factory style from peg
 

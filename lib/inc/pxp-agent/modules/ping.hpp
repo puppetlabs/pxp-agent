@@ -1,12 +1,12 @@
 #ifndef SRC_MODULES_PING_H_
 #define SRC_MODULES_PING_H_
 
-#include <cthun-agent/module.hpp>
+#include <pxp-agent/module.hpp>
 
-namespace CthunAgent {
+namespace PXPAgent {
 namespace Modules {
 
-class Ping : public CthunAgent::Module {
+class Ping : public PXPAgent::Module {
   public:
     Ping();
 
@@ -21,6 +21,6 @@ class Ping : public CthunAgent::Module {
 };
 
 }  // namespace Modules
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
 #endif  // SRC_MODULES_PING_H_

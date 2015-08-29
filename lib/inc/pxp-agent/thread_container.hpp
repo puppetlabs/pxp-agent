@@ -8,7 +8,7 @@
 #include <condition_variable>
 #include <string>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 static const uint32_t THREADS_MONITORING_INTERVAL_MS { 500 };  // [ms]
 
@@ -72,6 +72,6 @@ class ThreadContainer {
     void monitoringTask_();
 };
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
 #endif  // SRC_THREAD_CONTAINER_H_

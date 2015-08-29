@@ -2,20 +2,20 @@
 
 #include "root_path.hpp"
 
-#include <cthun-agent/agent.hpp>
-#include <cthun-agent/configuration.hpp>
+#include <pxp-agent/agent.hpp>
+#include <pxp-agent/configuration.hpp>
 
 #include <catch.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/operations.hpp>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/cthun/" };
-static const std::string MODULES { std::string { CTHUN_AGENT_ROOT_PATH }
+static const std::string MODULES { std::string { PXP_AGENT_ROOT_PATH }
                                    + "/lib/tests/resources/modules" };
-const std::string SPOOL { std::string { CTHUN_AGENT_ROOT_PATH }
+const std::string SPOOL { std::string { PXP_AGENT_ROOT_PATH }
                           + "/lib/tests/resources/tmp/" };
 
 TEST_CASE("Agent::Agent", "[agent]") {
@@ -47,4 +47,4 @@ TEST_CASE("Agent::Agent", "[agent]") {
     boost::filesystem::remove_all(SPOOL);
 }
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent

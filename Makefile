@@ -32,8 +32,8 @@ distclean:
 	@- $(RM) ./docs/*.php
 	@- $(RM) ./docs/search
 	@- $(RM) ./docs/installdox
-	@- $(RM) ./vendor/cthun-client/build
-	@- $(RM) ./vendor/cthun-client/lib
+	@- $(RM) ./vendor/cpp-pcp-client/build
+	@- $(RM) ./vendor/cpp-pcp-client/lib
 
 ifeq (,$(findstring distclean,$(MAKECMDGOALS)))
     # delegate to ./build/Makefile if not distclean

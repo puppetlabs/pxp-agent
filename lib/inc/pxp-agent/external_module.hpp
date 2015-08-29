@@ -1,15 +1,15 @@
 #ifndef SRC_EXTERNAL_MODULE_H_
 #define SRC_EXTERNAL_MODULE_H_
 
-#include <cthun-agent/module.hpp>
-#include <cthun-agent/thread_container.hpp>
+#include <pxp-agent/module.hpp>
+#include <pxp-agent/thread_container.hpp>
 
 #include <map>
 #include <string>
 #include <vector>
 #include <thread>
 
-namespace CthunAgent {
+namespace PXPAgent {
 
 class ExternalModule : public Module {
   public:
@@ -45,7 +45,7 @@ class ExternalModule : public Module {
     lth_jc::JsonContainer config_;
 
     /// Metadata validator
-    static const CthunClient::Validator metadata_validator_;
+    static const PCPClient::Validator metadata_validator_;
 
     const lth_jc::JsonContainer getMetadata();
 
@@ -56,6 +56,6 @@ class ExternalModule : public Module {
     ActionOutcome callAction(const ActionRequest& reqeust);
 };
 
-}  // namespace CthunAgent
+}  // namespace PXPAgent
 
 #endif  // SRC_EXTERNAL_MODULE_H_

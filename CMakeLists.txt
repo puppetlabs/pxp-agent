@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.12)
-project(cthun-agent)
+project(pxp-agent)
 
 if (NOT CMAKE_BUILD_TYPE)
     message(STATUS "Defaulting to a release build.")
@@ -7,7 +7,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 # define further options
-option(EXTERNAL_CTHUN_CLIENT "ON - use an installed version of cthun-client. OFF - use the git submodule" ON)
+option(EXTERNAL_CPP_PCP_CLIENT "ON - use an installed version of cpp-pcp-client. OFF - use the git submodule" ON)
 option(TEST_VIRTUAL "ON - certain class member functions became virtual to enable mocking for unit tests" OFF)
 option(LOG_COLOR "Enable colorization for logging" OFF)
 
@@ -37,7 +37,7 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
 endif()
 
 # Set the client library's logging prefix
-set(CTHUN_CLIENT_LOGGING_PREFIX "puppetlabs.cthun_agent")
+set(CPP_PCP_CLIENT_LOGGING_PREFIX "puppetlabs.pxp_agent")
 
 # Leatherman it up
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/vendor/leatherman/cmake")
@@ -45,8 +45,8 @@ include(options)
 
 # Set compiler flags
 include(cflags) # Leatherman
-set(CTHUN_AGENT_FLAGS "")
-set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS} ${CTHUN_AGENT_FLAGS}")
+set(PXP_AGENT_FLAGS "")
+set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS} ${PXP_AGENT_FLAGS}")
 
 set(LEATHERMAN_USE_LOCALE TRUE)
 set(LEATHERMAN_USE_NOWIDE TRUE)
@@ -74,10 +74,10 @@ find_package(OpenSSL REQUIRED)
 include(${VENDOR_DIRECTORY}/boost-process.cmake)
 include(${VENDOR_DIRECTORY}/horsewhisperer.cmake)
 
-if(EXTERNAL_CTHUN_CLIENT)
-    find_package(cthun-client REQUIRED)
+if(EXTERNAL_CPP_PCP_CLIENT)
+    find_package(cpp-pcp-client REQUIRED)
 else()
-    include(${VENDOR_DIRECTORY}/cthun-client.cmake)
+    include(${VENDOR_DIRECTORY}/cpp-pcp-client.cmake)
 endif()
 
 # Add the main binary
@@ -94,8 +94,8 @@ endif()
 enable_testing()
 
 add_test(
-    NAME "cthun-agent\\ library\\ tests"
-    COMMAND "${EXECUTABLE_OUTPUT_PATH}/cthun-agent-unittests"
+    NAME "pxp-agent\\ library\\ tests"
+    COMMAND "${EXECUTABLE_OUTPUT_PATH}/pxp-agent-unittests"
 )
 
 # Add cpplint target
