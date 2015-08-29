@@ -49,7 +49,7 @@ class RequestProcessor {
     /// Manages the lifecycle of non-blocking action jobs
     ThreadContainer thread_container_;
 
-    /// Cthun Connector pointer
+    /// PXP Connector pointer
     std::shared_ptr<PXPConnector> connector_ptr_;
 
     /// Where the directories for non-blocking actions results will

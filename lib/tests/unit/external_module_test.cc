@@ -19,7 +19,7 @@ namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-const std::string RESULTS_ROOT_DIR { "/tmp/cthun-agent" };
+const std::string RESULTS_ROOT_DIR { "/tmp/pxp-agent" };
 const std::string STRING_ACTION { "string" };
 
 static const std::string REVERSE_TXT {

@@ -3,7 +3,7 @@
 
 #include <leatherman/file_util/file.hpp>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.main"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.main"
 #include <leatherman/logging/logging.hpp>
 
 #include <horsewhisperer/horsewhisperer.h>

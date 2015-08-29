@@ -25,12 +25,12 @@ class PXPConnector : public PCPClient::Connector {
   public:
     PXPConnector(const Configuration::Agent& agent_configuration);
 
-    TEST_VIRTUAL_SPECIFIER void sendCthunError(
+    TEST_VIRTUAL_SPECIFIER void sendPCPError(
                     const std::string& request_id,
                     const std::string& description,
                     const std::vector<std::string>& endpoints);
 
-    TEST_VIRTUAL_SPECIFIER void sendRPCError(
+    TEST_VIRTUAL_SPECIFIER void sendPXPError(
                     const ActionRequest& request,
                     const std::string& description);
 

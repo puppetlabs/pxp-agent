@@ -1,9 +1,11 @@
-#include <pxp-agent/rpc_schemas.hpp>
+#include <pxp-agent/pxp_schemas.hpp>
 
 #include <cpp-pcp-client/protocol/schemas.hpp>
 
 namespace PXPAgent {
-namespace RPCSchemas {
+namespace PXPSchemas {
+
+// TODO(ale): update url
 
 // HERE(ale): this must be kept up to date with
 // https://github.com/puppetlabs/cthun-specifications
@@ -56,8 +58,8 @@ PCPClient::Schema ProvisionalResponseSchema() {
     return schema;
 }
 
-PCPClient::Schema RPCErrorSchema() {
-    PCPClient::Schema schema { RPC_ERROR_MSG_TYPE, C_Type::Json };
+PCPClient::Schema PXPErrorSchema() {
+    PCPClient::Schema schema { PXP_ERROR_MSG_TYPE, C_Type::Json };
     // NB: additionalProperties = false
     schema.addConstraint("transaction_id", T_Constraint::String, true);
     schema.addConstraint("id", T_Constraint::String, true);
@@ -66,4 +68,4 @@ PCPClient::Schema RPCErrorSchema() {
 }
 
 }  // namespace PXPAgent
-}  // namespace RPCSchemas
+}  // namespace PXPSchemas

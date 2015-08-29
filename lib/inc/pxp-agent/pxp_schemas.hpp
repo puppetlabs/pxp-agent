@@ -1,14 +1,14 @@
-#ifndef SRC_AGENT_RPC_SCHEMAS_H_
-#define SRC_AGENT_RPC_SCHEMAS_H_
+#ifndef SRC_AGENT_PXP_SCHEMAS_HPP_
+#define SRC_AGENT_PXP_SCHEMAS_HPP_
 
 #include <cpp-pcp-client/validator/schema.hpp>
 
-// TODO(ale): move this to separate cthun-rpc library
+// TODO(ale): move this to separate cpp-pxp-client library
 
 namespace PXPAgent {
-namespace RPCSchemas {
+namespace PXPSchemas {
 
-// RPC blocking transaction
+// PXP blocking transaction
 static const std::string BLOCKING_REQUEST_TYPE  {
     "http://puppetlabs.com/rpc_blocking_request" };
 static const std::string BLOCKING_RESPONSE_TYPE {
@@ -16,7 +16,7 @@ static const std::string BLOCKING_RESPONSE_TYPE {
 PCPClient::Schema BlockingRequestSchema();
 PCPClient::Schema BlockingResponseSchema();
 
-// RPC non blocking transaction
+// PXP non blocking transaction
 static const std::string NON_BLOCKING_REQUEST_TYPE  {
     "http://puppetlabs.com/rpc_non_blocking_request" };
 static const std::string NON_BLOCKING_RESPONSE_TYPE {
@@ -27,12 +27,12 @@ PCPClient::Schema NonBlockingRequestSchema();
 PCPClient::Schema NonBlockingResponseSchema();
 PCPClient::Schema ProvisionalResponseSchema();
 
-// RPC error
-static const std::string RPC_ERROR_MSG_TYPE {
+// PXP error
+static const std::string PXP_ERROR_MSG_TYPE {
     "http://puppetlabs.com/rpc_error_message" };
-PCPClient::Schema RPCErrorSchema();
+PCPClient::Schema PXPErrorSchema();
 
-}  // namespace RPCSchemas
+}  // namespace PXPSchemas
 }  // namespace PXPAgent
 
-#endif  // SRC_AGENT_RPC_SCHEMAS_H_
+#endif  // SRC_AGENT_PXP_SCHEMAS_HPP_

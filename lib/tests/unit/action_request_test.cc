@@ -53,7 +53,7 @@ TEST_CASE("ActionRequest::ActionRequest", "[request]") {
     }
 }
 
-static std::string rpc_data_txt {
+static std::string pxp_data_txt {
     " { \"transaction_id\" : \"42\","
     "   \"module\" : \"test_module\","
     "   \"action\" : \"test_action\","
@@ -63,7 +63,7 @@ static std::string rpc_data_txt {
 
 TEST_CASE("ActionRequest getters", "[request]") {
     lth_jc::JsonContainer envelope { ENVELOPE_TXT };
-    lth_jc::JsonContainer data { rpc_data_txt };
+    lth_jc::JsonContainer data { pxp_data_txt };
     std::vector<lth_jc::JsonContainer> debug {};
 
     SECTION("successfully get values") {

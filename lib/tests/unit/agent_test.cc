@@ -12,7 +12,7 @@
 
 namespace PXPAgent {
 
-const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/cthun/" };
+const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/pxp/" };
 static const std::string MODULES { std::string { PXP_AGENT_ROOT_PATH }
                                    + "/lib/tests/resources/modules" };
 const std::string SPOOL { std::string { PXP_AGENT_ROOT_PATH }

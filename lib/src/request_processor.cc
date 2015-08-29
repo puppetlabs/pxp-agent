@@ -1,6 +1,6 @@
 #include <pxp-agent/request_processor.hpp>
 #include <pxp-agent/action_outcome.hpp>
-#include <pxp-agent/rpc_schemas.hpp>
+#include <pxp-agent/pxp_schemas.hpp>
 #include <pxp-agent/external_module.hpp>
 #include <pxp-agent/modules/echo.hpp>
 #include <pxp-agent/modules/ping.hpp>
@@ -12,7 +12,7 @@
 #include <leatherman/util/strings.hpp>
 #include <leatherman/util/timer.hpp>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.action_executer"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.action_executer"
 #include <leatherman/logging/logging.hpp>
 
 #include <boost/filesystem/operations.hpp>
@@ -129,7 +129,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
             connector_ptr->sendNonBlockingResponse(request, outcome.results, job_id);
         }
     } catch (Module::ProcessingError& e) {
-        connector_ptr->sendRPCError(request, e.what());
+        connector_ptr->sendPXPError(request, e.what());
         exec_error = "Failed to execute '" + request.module() + " "
                      + request.action() + "': " + e.what() + "\n";
     } catch (PCPClient::connection_error& e) {
@@ -189,12 +189,12 @@ void RequestProcessor::processRequest(const RequestType& request_type,
             // We can access the request content; validate it
             validateRequestContent(request);
         } catch (RequestProcessor::Error& e) {
-            // Invalid request; send *RPC error*
+            // Invalid request; send *PXP error*
 
             LOG_ERROR("Invalid %1% request %2% by %3%, transaction %4%: %5%",
                       requestTypeNames[request_type], request.id(),
                       request.sender(), request.transactionId(), e.what());
-            connector_ptr_->sendRPCError(request, e.what());
+            connector_ptr_->sendPXPError(request, e.what());
             return;
         }
 
@@ -205,20 +205,20 @@ void RequestProcessor::processRequest(const RequestType& request_type,
                 processNonBlockingRequest(request);
             }
         } catch (std::exception& e) {
-            // Process failure; send *RPC error*
+            // Process failure; send *PXP error*
             LOG_ERROR("Failed to process %1% request %2% by %3%, transaction %4%: "
                       "%5%", requestTypeNames[request.type()], request.id(),
                       request.sender(), request.transactionId(), e.what());
-            connector_ptr_->sendRPCError(request, e.what());
+            connector_ptr_->sendPXPError(request, e.what());
         }
     } catch (ActionRequest::Error& e) {
-        // Failed to instantiate ActionRequest - bad message; send *Cthun error*
+        // Failed to instantiate ActionRequest - bad message; send *PCP error*
 
         auto id = parsed_chunks.envelope.get<std::string>("id");
         auto sender = parsed_chunks.envelope.get<std::string>("sender");
         std::vector<std::string> endpoints { sender };
         LOG_ERROR("Invalid %1% request by %2%: %3%", id, sender, e.what());
-        connector_ptr_->sendCthunError(id, e.what(), endpoints);
+        connector_ptr_->sendPCPError(id, e.what(), endpoints);
     }
 }
 
@@ -298,7 +298,7 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
     if (err_msg.empty()) {
         connector_ptr_->sendProvisionalResponse(request);
     } else {
-        connector_ptr_->sendRPCError(request, err_msg);
+        connector_ptr_->sendPXPError(request, err_msg);
     }
 }
 

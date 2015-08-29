@@ -4,7 +4,7 @@
 #include <algorithm>  // remove_if
 #include <iterator>   // distance
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.thread_container"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.thread_container"
 #include <leatherman/logging/logging.hpp>
 
 namespace PXPAgent {
@@ -72,7 +72,7 @@ ThreadContainer::~ThreadContainer() {
     if (!all_detached) {
         // NB: std::terminate will be invoked
         LOG_WARNING("Not all threads stored by the '%1%' ThreadContainer have "
-                    "completed; cthun-agent will not terminate gracefully", name_);
+                    "completed; pxp-agent will not terminate gracefully", name_);
     }
 }
 

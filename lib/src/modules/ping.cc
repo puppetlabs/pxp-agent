@@ -6,7 +6,7 @@
 #include <string>
 #include <sstream>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.modules.ping"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.modules.ping"
 #include <leatherman/logging/logging.hpp>
 
 namespace PXPAgent {

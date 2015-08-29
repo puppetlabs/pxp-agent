@@ -1,7 +1,7 @@
 #include <pxp-agent/agent.hpp>
-#include <pxp-agent/rpc_schemas.hpp>
+#include <pxp-agent/pxp_schemas.hpp>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.agent"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.agent"
 #include <leatherman/logging/logging.hpp>
 
 #include <vector>
@@ -20,13 +20,13 @@ void Agent::start() {
     // TODO(ale): add associate response callback
 
     connector_ptr_->registerMessageCallback(
-        RPCSchemas::BlockingRequestSchema(),
+        PXPSchemas::BlockingRequestSchema(),
         [this](const PCPClient::ParsedChunks& parsed_chunks) {
             blockingRequestCallback(parsed_chunks);
         });
 
     connector_ptr_->registerMessageCallback(
-        RPCSchemas::NonBlockingRequestSchema(),
+        PXPSchemas::NonBlockingRequestSchema(),
         [this](const PCPClient::ParsedChunks& parsed_chunks) {
             nonBlockingRequestCallback(parsed_chunks);
         });
