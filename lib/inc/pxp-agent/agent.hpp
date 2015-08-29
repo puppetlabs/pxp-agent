@@ -21,7 +21,7 @@ class Agent {
 
     Agent() = delete;
 
-    // Configure the cthun-agent run by:
+    // Configure the pxp-agent run by:
     //  - instantiating PXPConnector;
     //  - instantiating a RequestProcessor.
     //
@@ -31,7 +31,7 @@ class Agent {
 
     // Start the agent and loop indefinitely, by:
     //  - registering message callbacks;
-    //  - connecting to the Cthun server;
+    //  - connecting to the PCP server;
     //  - monitoring the state of the connection;
     //  - re-establishing the connection when requested.
     //
@@ -40,24 +40,24 @@ class Agent {
     void start();
 
   private:
-    // Cthun connector
+    // PXP connector
     std::shared_ptr<PXPConnector> connector_ptr_;
 
     // Request Processor
     RequestProcessor request_processor_;
 
-    // Callback for PCPClient::Connector handling incoming RPC
+    // Callback for PCPClient::Connector handling incoming PXP
     // blocking requests; it will execute the requested action and,
-    // once finished, reply to the sender with an RPC blocking
+    // once finished, reply to the sender with an PXP blocking
     // response containing the action outcome.
     void blockingRequestCallback(const PCPClient::ParsedChunks& parsed_chunks);
 
-    // Callback for PCPClient::Connector handling incoming RPC
+    // Callback for PCPClient::Connector handling incoming PXP
     // non-blocking requests; it will start a job for the requested
     // action and reply with a provisional response containing the job
     // id. The reults will be stored in files in spool-dir.
     // In case the request has the notify_outcome field flagged, it
-    // will send an RPC non-blocking response containing the action
+    // will send a PXP non-blocking response containing the action
     // outcome when finished.
     void nonBlockingRequestCallback(const PCPClient::ParsedChunks& parsed_chunks);
 };

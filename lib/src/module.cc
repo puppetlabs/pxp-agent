@@ -3,7 +3,7 @@
 #include <iostream>
 #include <algorithm>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.module"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.module"
 #include <leatherman/logging/logging.hpp>
 
 namespace PXPAgent {

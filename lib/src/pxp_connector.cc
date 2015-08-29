@@ -38,7 +38,7 @@ PXPConnector::PXPConnector(const Configuration::Agent& agent_configuration)
                                  agent_configuration.key } {
 }
 
-void PXPConnector::sendCthunError(const std::string& request_id,
+void PXPConnector::sendPCPError(const std::string& request_id,
                                   const std::string& description,
                                   const std::vector<std::string>& endpoints) {
     lth_jc::JsonContainer pcp_error_data {};
@@ -58,7 +58,7 @@ void PXPConnector::sendCthunError(const std::string& request_id,
     }
 }
 
-void PXPConnector::sendRPCError(const ActionRequest& request,
+void PXPConnector::sendPXPError(const ActionRequest& request,
                                 const std::string& description) {
     lth_jc::JsonContainer pxp_error_data {};
     pxp_error_data.set<std::string>("transaction_id", request.transactionId());
@@ -67,7 +67,7 @@ void PXPConnector::sendRPCError(const ActionRequest& request,
 
     try {
         send(std::vector<std::string> { request.sender() },
-             RPCSchemas::RPC_ERROR_MSG_TYPE,
+             PXPSchemas::PXP_ERROR_MSG_TYPE,
              DEFAULT_MSG_TIMEOUT_SEC,
              pxp_error_data);
         LOG_INFO("Replied to %1% request %2% by %3%, transaction %4%, with "
@@ -90,7 +90,7 @@ void PXPConnector::sendBlockingResponse(const ActionRequest& request,
 
     try {
         send(std::vector<std::string> { request.sender() },
-             RPCSchemas::BLOCKING_RESPONSE_TYPE,
+             PXPSchemas::BLOCKING_RESPONSE_TYPE,
              DEFAULT_MSG_TIMEOUT_SEC,
              response_data,
              debug);
@@ -112,7 +112,7 @@ void PXPConnector::sendNonBlockingResponse(const ActionRequest& request,
     try {
         // NOTE(ale): assuming debug was sent in provisional response
         send(std::vector<std::string> { request.sender() },
-             RPCSchemas::NON_BLOCKING_RESPONSE_TYPE,
+             PXPSchemas::NON_BLOCKING_RESPONSE_TYPE,
              DEFAULT_MSG_TIMEOUT_SEC,
              response_data);
         LOG_INFO("Sent response for non-blocking request %1% by %2%, "
@@ -133,7 +133,7 @@ void PXPConnector::sendProvisionalResponse(const ActionRequest& request) {
 
     try {
         send(std::vector<std::string> { request.sender() },
-             RPCSchemas::PROVISIONAL_RESPONSE_TYPE,
+             PXPSchemas::PROVISIONAL_RESPONSE_TYPE,
              DEFAULT_MSG_TIMEOUT_SEC,
              provisional_data,
              debug);

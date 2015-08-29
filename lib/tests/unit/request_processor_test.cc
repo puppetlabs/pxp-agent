@@ -21,7 +21,7 @@ namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-static const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/cthun/" };
+static const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/pxp/" };
 static const std::string CA { getCaPath() };
 static const std::string CERT { getCertPath() };
 static const std::string KEY { getKeyPath() };
@@ -67,7 +67,7 @@ static std::string valid_envelope_txt {
     "   \"destination_report\" : false"
     " }" };
 
-static std::string rpc_data_txt {
+static std::string pxp_data_txt {
     " { \"transaction_id\" : \"42\","
     "   \"module\" : \"test_module\","
     "   \"action\" : \"test_action\","
@@ -77,10 +77,10 @@ static std::string rpc_data_txt {
 
 class TestConnector : public PXPConnector {
   public:
-    struct cthunError_msg : public std::exception {
-        const char* what() const noexcept { return "cthun error"; } };
-    struct rpcError_msg : public std::exception {
-        const char* what() const noexcept { return "rpc error"; } };
+    struct pcpError_msg : public std::exception {
+        const char* what() const noexcept { return "PCP error"; } };
+    struct pxpError_msg : public std::exception {
+        const char* what() const noexcept { return "PXP error"; } };
     struct blocking_response : public std::exception {
         const char* what() const noexcept { return "blocking response"; } };
 
@@ -93,15 +93,15 @@ class TestConnector : public PXPConnector {
               sent_non_blocking_response { false } {
     }
 
-    void sendCthunError(const std::string&,
+    void sendPCPError(const std::string&,
                         const std::string&,
                         const std::vector<std::string>&) {
-        throw cthunError_msg {};
+        throw pcpError_msg {};
     }
 
-    void sendRPCError(const ActionRequest&,
+    void sendPXPError(const ActionRequest&,
                       const std::string&) {
-        throw rpcError_msg {};
+        throw pxpError_msg {};
     }
 
     void sendBlockingResponse(const ActionRequest&,
@@ -140,24 +140,24 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
     lth_jc::JsonContainer envelope { valid_envelope_txt };
     std::vector<lth_jc::JsonContainer> debug {};
 
-    SECTION("reply with a Cthun error if request has bad format") {
+    SECTION("reply with a PCP error if request has bad format") {
         const PCPClient::ParsedChunks p_c { envelope, false, debug, 0 };
 
         REQUIRE_THROWS_AS(r_p.processRequest(RequestType::Blocking, p_c),
-                          TestConnector::cthunError_msg);
+                          TestConnector::pcpError_msg);
     }
 
     lth_jc::JsonContainer data {};
     data.set<std::string>("transaction_id", "42");
 
-    SECTION("reply with an RPC error if request has invalid content") {
+    SECTION("reply with a PXP error if request has invalid content") {
         SECTION("uknown module") {
             data.set<std::string>("module", "foo");
             data.set<std::string>("action", "bar");
             const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
             REQUIRE_THROWS_AS(r_p.processRequest(RequestType::Blocking, p_c),
-                              TestConnector::rpcError_msg);
+                              TestConnector::pxpError_msg);
         }
 
         SECTION("uknown action") {
@@ -166,7 +166,7 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
             const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
             REQUIRE_THROWS_AS(r_p.processRequest(RequestType::Blocking, p_c),
-                              TestConnector::rpcError_msg);
+                              TestConnector::pxpError_msg);
         }
     }
 
@@ -183,7 +183,7 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
                               TestConnector::blocking_response);
         }
 
-        SECTION("send an RPC error in case of action failure") {
+        SECTION("send a PXP error in case of action failure") {
             data.set<std::string>("module", "failures_test");
             data.set<std::string>("action", "broken_action");
             lth_jc::JsonContainer params {};
@@ -192,7 +192,7 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
             const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
             REQUIRE_THROWS_AS(r_p.processRequest(RequestType::Blocking, p_c),
-                              TestConnector::rpcError_msg);
+                              TestConnector::pxpError_msg);
         }
     }
 

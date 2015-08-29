@@ -8,7 +8,7 @@
 
 #include <leatherman/json_container/json_container.hpp>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.configuration"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.configuration"
 #include <leatherman/logging/logging.hpp>
 
 #include <fstream>
@@ -162,17 +162,17 @@ Configuration::Configuration() : initialized_ { false },
 }
 
 void Configuration::defineDefaultValues() {
-    HW::SetAppName("cthun-agent");
-    HW::SetHelpBanner("Usage: cthun-agent [options]");
+    HW::SetAppName("pxp-agent");
+    HW::SetHelpBanner("Usage: pxp-agent [options]");
     HW::SetVersion(std::string { PXP_AGENT_VERSION } + "\n");
 
     // start setting the config file path to known existent locations;
     // HW will overwrite it with the one parsed from CLI, if specified
-    if (lth_file::file_readable(lth_file::tilde_expand("~/.cthun-agent"))) {
-        config_file_ = lth_file::tilde_expand("~/.cthun-agent");
+    if (lth_file::file_readable(lth_file::tilde_expand("~/.pxp-agent"))) {
+        config_file_ = lth_file::tilde_expand("~/.pxp-agent");
     // TODO(ploubser): This will have to changed when the AIO agent is done
-    } else if (lth_file::file_readable("/etc/puppetlabs/agent/cthun.cfg")) {
-        config_file_ = "/etc/puppetlabs/agent/cthun.cfg";
+    } else if (lth_file::file_readable("/etc/puppetlabs/agent/pxp.cfg")) {
+        config_file_ = "/etc/puppetlabs/agent/pxp.cfg";
     }
 
     std::string modules_dir { "" };
@@ -184,7 +184,7 @@ void Configuration::defineDefaultValues() {
     defaults_.insert(std::pair<std::string, Base_ptr>("server", Base_ptr(
         new Entry<std::string>("server",
                                "s",
-                               "Cthun server URL",
+                               "PCP server URL",
                                Types::String,
                                ""))));
 
@@ -198,14 +198,14 @@ void Configuration::defineDefaultValues() {
     defaults_.insert(std::pair<std::string, Base_ptr>("cert", Base_ptr(
         new Entry<std::string>("cert",
                                "",
-                               "cthun-agent certificate",
+                               "pxp-agent certificate",
                                Types::String,
                                ""))));
 
     defaults_.insert(std::pair<std::string, Base_ptr>("key", Base_ptr(
         new Entry<std::string>("key",
                                "",
-                               "cthun-agent private key",
+                               "pxp-agent private key",
                                Types::String,
                                ""))));
 

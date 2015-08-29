@@ -1,6 +1,6 @@
 #include <pxp-agent/action_request.hpp>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.action_request"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.action_request"
 #include <leatherman/logging/logging.hpp>
 
 #include <cassert>

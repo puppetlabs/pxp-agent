@@ -1,6 +1,6 @@
 #include <pxp-agent/external_module.hpp>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cthun_agent.external_module"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.external_module"
 #include <leatherman/logging/logging.hpp>
 
 #include <boost/filesystem/operations.hpp>
@@ -21,7 +21,7 @@ namespace PXPAgent {
 static const std::string METADATA_SCHEMA_NAME { "external_module_metadata" };
 static const std::string ACTION_SCHEMA_NAME { "action_metadata" };
 
-// TODO(ale): move this to the RPC (or CNC) library
+// TODO(ale): move this to cpp_pxp_client lib
 static const std::string METADATA_CONFIGURATION_ENTRY { "configuration" };
 static const std::string METADATA_ACTIONS_ENTRY { "actions" };
 
