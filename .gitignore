@@ -1,5 +1,6 @@
 /bin/
 /build/
-/test-resources/
+/dev-resources/
+/lib/tests/resources/test_spool/
 .idea/
 .DS_Store

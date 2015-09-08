@@ -139,7 +139,7 @@ void Configuration::validateAndNormalizeConfiguration() {
         }
     }
 
-    if (!HW::GetFlag<std::string>("logfile").empty())  {
+    if (!HW::GetFlag<std::string>("logfile").empty()) {
         auto path = lth_file::shell_quote(HW::GetFlag<std::string>("logfile"));
         HW::SetFlag<std::string>("logfile", path);
     }
@@ -362,13 +362,35 @@ void Configuration::parseConfigFile() {
     }
 }
 
+static void validateLogFile(std::string log_file) {
+    log_file = lth_file::tilde_expand(log_file);
+    boost::filesystem::path log_path { log_file };
+
+    if (boost::filesystem::exists(log_path)) {
+        // Check existent file
+        if (!boost::filesystem::is_regular_file(log_path)) {
+            throw Configuration::Error { "log file is not a regular file" };
+        }
+    } else {
+        // Check parent directory
+        auto log_dir = log_path.parent_path();
+        if (!boost::filesystem::exists(log_dir)) {
+            throw Configuration::Error { "invalid log file path; parent "
+                                         "directory does not exist" };
+        }
+    }
+}
+
 void Configuration::setupLogging() {
     auto logfile = HW::GetFlag<std::string>("logfile");
-    std::ofstream file_stream {};
     namespace LL = leatherman::logging;
 
     if (!logfile.empty()) {
-        file_stream.open(logfile, std::ios_base::app);
+        // NOTE(ale): we must validate the logifle path since we set
+        // up logging before calling validateAndNormalizeConfiguration
+        validateLogFile(logfile);
+        static std::ofstream file_stream {};
+        file_stream.open(lth_file::tilde_expand(logfile), std::ios_base::app);
         LL::setup_logging(file_stream);
 #ifdef LOG_COLOR
         LL::set_colorization(true);
