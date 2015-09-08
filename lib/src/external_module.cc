@@ -160,6 +160,7 @@ const lth_jc::JsonContainer ExternalModule::getMetadata() {
 void ExternalModule::registerConfiguration(const lth_jc::JsonContainer& config_metadata) {
     try {
         PCPClient::Schema configuration_schema { module_name, config_metadata };
+        LOG_DEBUG("Registering module config schema for '%1%'", module_name);
         config_validator_.registerSchema(configuration_schema);
     } catch (PCPClient::schema_error& e) {
         LOG_ERROR("Failed to parse the configuration schema of module '%1%': %2%",

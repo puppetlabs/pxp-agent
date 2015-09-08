@@ -318,6 +318,8 @@ void RequestProcessor::loadModulesConfiguration() {
                     auto module_name = file_name.substr(0, pos_suffix);
                     modules_config_[module_name] =
                         lth_jc::JsonContainer(lth_file::read(s));
+                    LOG_DEBUG("Loaded module config for module '%1%' from %2%",
+                              module_name, s);
                 } catch (lth_jc::data_parse_error& e) {
                     LOG_WARNING("Cannot load module config file '%1%'. File "
                                 "contains invalid json: %2%", s, e.what());
