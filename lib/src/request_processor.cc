@@ -12,7 +12,7 @@
 #include <leatherman/util/strings.hpp>
 #include <leatherman/util/timer.hpp>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.action_executer"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.request_processor"
 #include <leatherman/logging/logging.hpp>
 
 #include <boost/filesystem/operations.hpp>
