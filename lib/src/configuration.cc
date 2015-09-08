@@ -364,11 +364,11 @@ void Configuration::parseConfigFile() {
 
 void Configuration::setupLogging() {
     auto logfile = HW::GetFlag<std::string>("logfile");
-    std::ofstream file_stream {};
     namespace LL = leatherman::logging;
 
     if (!logfile.empty()) {
         file_stream.open(logfile, std::ios_base::app);
+        static std::ofstream file_stream {};
         LL::setup_logging(file_stream);
 #ifdef LOG_COLOR
         LL::set_colorization(true);
