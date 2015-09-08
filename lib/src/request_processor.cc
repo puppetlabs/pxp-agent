@@ -312,7 +312,11 @@ void RequestProcessor::loadModulesConfiguration() {
             [this](std::string const& s) -> bool {
                 try {
                     fs::path s_path { s };
-                    modules_config_[s_path.stem().string()] =
+                    auto file_name = s_path.stem().string();
+                    // NB: cfg suffix guaranteed by each_file()
+                    auto pos_suffix = file_name.find(".cfg");
+                    auto module_name = file_name.substr(0, pos_suffix);
+                    modules_config_[module_name] =
                         lth_jc::JsonContainer(lth_file::read(s));
                 } catch (lth_jc::data_parse_error& e) {
                     LOG_WARNING("Cannot load module config file '%1%'. File "
