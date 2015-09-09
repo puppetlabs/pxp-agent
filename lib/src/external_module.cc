@@ -118,8 +118,13 @@ ExternalModule::ExternalModule(const std::string& path)
 }
 
 void ExternalModule::validateAndSetConfiguration(const lth_jc::JsonContainer& config) {
-    config_validator_.validate(config, module_name);
-    config_ = config;
+    if (config_validator_.includesSchema(module_name)) {
+        config_validator_.validate(config, module_name);
+        config_ = config;
+    } else {
+        LOG_DEBUG("The '%1%' configuration will not be validated; no JSON "
+                  "schema is available");
+    }
 }
 
 //
