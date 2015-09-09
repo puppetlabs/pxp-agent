@@ -12,7 +12,7 @@
 #include <leatherman/util/strings.hpp>
 #include <leatherman/util/timer.hpp>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.action_executer"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.request_processor"
 #include <leatherman/logging/logging.hpp>
 
 #include <boost/filesystem/operations.hpp>
@@ -312,8 +312,14 @@ void RequestProcessor::loadModulesConfiguration() {
             [this](std::string const& s) -> bool {
                 try {
                     fs::path s_path { s };
-                    modules_config_[s_path.stem().string()] =
+                    auto file_name = s_path.stem().string();
+                    // NB: cfg suffix guaranteed by each_file()
+                    auto pos_suffix = file_name.find(".cfg");
+                    auto module_name = file_name.substr(0, pos_suffix);
+                    modules_config_[module_name] =
                         lth_jc::JsonContainer(lth_file::read(s));
+                    LOG_DEBUG("Loaded module configuration for module '%1%' "
+                              "from %2%", module_name, s);
                 } catch (lth_jc::data_parse_error& e) {
                     LOG_WARNING("Cannot load module config file '%1%'. File "
                                 "contains invalid json: %2%", s, e.what());
@@ -352,6 +358,9 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
 
                     if (config_itr != modules_config_.end()) {
                         e_m->validateAndSetConfiguration(config_itr->second);
+                        LOG_DEBUG("The '%1%' module configuration has been "
+                                  "validated: %2%", e_m->module_name,
+                                  config_itr->second.toString());
                     }
 
                     modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);

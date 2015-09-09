@@ -68,12 +68,12 @@ PCPClient::Validator getMetadataValidator() {
                                           PCPClient::ContentType::Json };
     using T_C = PCPClient::TypeConstraint;
     metadata_schema.addConstraint("description", T_C::String, true);
-    metadata_schema.addConstraint(METADATA_CONFIGURATION_ENTRY, T_C::Array, false);
+    metadata_schema.addConstraint(METADATA_CONFIGURATION_ENTRY, T_C::Object, false);
     metadata_schema.addConstraint(METADATA_ACTIONS_ENTRY, T_C::Array, true);
 
     // 'actions' is an array of actions; define the action sub_schema
     PCPClient::Schema action_schema { ACTION_SCHEMA_NAME,
-                                        PCPClient::ContentType::Json };
+                                      PCPClient::ContentType::Json };
     action_schema.addConstraint("description", T_C::String, false);
     action_schema.addConstraint("name", T_C::String, true);
     action_schema.addConstraint("input", T_C::Object, true);
@@ -118,8 +118,13 @@ ExternalModule::ExternalModule(const std::string& path)
 }
 
 void ExternalModule::validateAndSetConfiguration(const lth_jc::JsonContainer& config) {
-    config_validator_.validate(config, module_name);
-    config_ = config;
+    if (config_validator_.includesSchema(module_name)) {
+        config_validator_.validate(config, module_name);
+        config_ = config;
+    } else {
+        LOG_DEBUG("The '%1%' configuration will not be validated; no JSON "
+                  "schema is available");
+    }
 }
 
 //
@@ -160,6 +165,7 @@ const lth_jc::JsonContainer ExternalModule::getMetadata() {
 void ExternalModule::registerConfiguration(const lth_jc::JsonContainer& config_metadata) {
     try {
         PCPClient::Schema configuration_schema { module_name, config_metadata };
+        LOG_DEBUG("Registering module config schema for '%1%'", module_name);
         config_validator_.registerSchema(configuration_schema);
     } catch (PCPClient::schema_error& e) {
         LOG_ERROR("Failed to parse the configuration schema of module '%1%': %2%",
