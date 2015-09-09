@@ -5,10 +5,8 @@
 namespace PXPAgent {
 namespace PXPSchemas {
 
-// TODO(ale): update url
-
 // HERE(ale): this must be kept up to date with
-// https://github.com/puppetlabs/cthun-specifications
+// https://github.com/puppetlabs/pcp-specifications
 
 using C_Type = PCPClient::ContentType;
 using T_Constraint = PCPClient::TypeConstraint;
