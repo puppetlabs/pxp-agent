@@ -166,15 +166,6 @@ void Configuration::defineDefaultValues() {
     HW::SetHelpBanner("Usage: pxp-agent [options]");
     HW::SetVersion(std::string { PXP_AGENT_VERSION } + "\n");
 
-    // start setting the config file path to known existent locations;
-    // HW will overwrite it with the one parsed from CLI, if specified
-    if (lth_file::file_readable(lth_file::tilde_expand("~/.pxp-agent"))) {
-        config_file_ = lth_file::tilde_expand("~/.pxp-agent");
-    // TODO(ploubser): This will have to changed when the AIO agent is done
-    } else if (lth_file::file_readable("/etc/puppetlabs/agent/pxp.cfg")) {
-        config_file_ = "/etc/puppetlabs/agent/pxp.cfg";
-    }
-
     std::string modules_dir { "" };
 
     if (fs::is_directory(DEFAULT_MODULES_DIR)) {
@@ -221,7 +212,7 @@ void Configuration::defineDefaultValues() {
                                "",
                                "Specify a non default config file to use",
                                Types::String,
-                               config_file_))));
+                               "/etc/puppetlabs/pxp-agent/pxp-agent.cfg"))));
 
     defaults_.insert(std::pair<std::string, Base_ptr>("spool-dir", Base_ptr(
         new Entry<std::string>("spool-dir",
@@ -299,6 +290,10 @@ void Configuration::setDefaultValues() {
 
 void Configuration::parseConfigFile() {
     lth_jc::JsonContainer config_json;
+
+    if(!lth_file::file_readable(config_file_)) {
+        throw Configuration::Error { "Config file '" + config_file_ + "' doesn't exist" };
+    }
 
     try {
         config_json = lth_jc::JsonContainer(lth_file::read(config_file_));
