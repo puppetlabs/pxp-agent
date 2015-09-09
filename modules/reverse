@@ -4,6 +4,22 @@ require 'json'
 def action_metadata
    metadata = {
     :description => "schema test",
+    :configuration => {
+      :type => "object",
+      :properties => {
+        :spam_dir => {
+          :type => "string"
+        },
+        :eggs_dir => {
+          :type => "string"
+        },
+        :beans_file => {
+          :type => "string"
+        }
+      },
+      :required => [:spam_dir, :eggs_dir, :beans_file],
+      :additionalProperties => false,
+    },
     :actions => [
       { :name => "string",
         :description => "reverses a string",
