@@ -318,8 +318,8 @@ void RequestProcessor::loadModulesConfiguration() {
                     auto module_name = file_name.substr(0, pos_suffix);
                     modules_config_[module_name] =
                         lth_jc::JsonContainer(lth_file::read(s));
-                    LOG_DEBUG("Loaded module config for module '%1%' from %2%",
-                              module_name, s);
+                    LOG_DEBUG("Loaded module configuration for module '%1%' "
+                              "from %2%", module_name, s);
                 } catch (lth_jc::data_parse_error& e) {
                     LOG_WARNING("Cannot load module config file '%1%'. File "
                                 "contains invalid json: %2%", s, e.what());
@@ -358,6 +358,9 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
 
                     if (config_itr != modules_config_.end()) {
                         e_m->validateAndSetConfiguration(config_itr->second);
+                        LOG_DEBUG("The '%1%' module configuration has been "
+                                  "validated: %2%", e_m->module_name,
+                                  config_itr->second.toString());
                     }
 
                     modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
