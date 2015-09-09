@@ -16,10 +16,11 @@ Build with make and make install
 
 ## Configuring the agent
 
-The PXP agent can be configured using a config file or supplying arguments on the command line.
+The PXP agent is configured with a config file. The values in the config file can be
+overridden by supplying arguments on the command line.
 
-The agent will first look in the user's home directory for *.pxp-agent* and then in
-*/etc/pxp/agent.cfg. A different config file can be specified by passing the --config-file flag
+The agent will look for the default config file */etc/puppetlabs/pxp-agent/pxp-agent.cfg*
+A different config file can be specified by passing the --config-file flag
 
 The config files use the JSON format. Options must be specified as entries of a
 single JSON object. Example:
