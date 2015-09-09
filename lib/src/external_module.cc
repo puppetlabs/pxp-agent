@@ -73,7 +73,7 @@ PCPClient::Validator getMetadataValidator() {
 
     // 'actions' is an array of actions; define the action sub_schema
     PCPClient::Schema action_schema { ACTION_SCHEMA_NAME,
-                                        PCPClient::ContentType::Json };
+                                      PCPClient::ContentType::Json };
     action_schema.addConstraint("description", T_C::String, false);
     action_schema.addConstraint("name", T_C::String, true);
     action_schema.addConstraint("input", T_C::Object, true);
