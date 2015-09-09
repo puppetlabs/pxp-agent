@@ -68,7 +68,7 @@ PCPClient::Validator getMetadataValidator() {
                                           PCPClient::ContentType::Json };
     using T_C = PCPClient::TypeConstraint;
     metadata_schema.addConstraint("description", T_C::String, true);
-    metadata_schema.addConstraint(METADATA_CONFIGURATION_ENTRY, T_C::Array, false);
+    metadata_schema.addConstraint(METADATA_CONFIGURATION_ENTRY, T_C::Object, false);
     metadata_schema.addConstraint(METADATA_ACTIONS_ENTRY, T_C::Array, true);
 
     // 'actions' is an array of actions; define the action sub_schema
