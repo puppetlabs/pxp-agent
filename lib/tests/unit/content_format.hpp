@@ -24,4 +24,4 @@ static const std::string ENVELOPE_TXT {
     (ENVELOPE_FORMAT % "\"123456\""
                      % "\"test_message\""
                      % "\"2015-06-26T22:57:09Z\""
-                     % "\"cth://controller/test_controller\"").str() };
+                     % "\"pcp://controller/test_controller\"").str() };

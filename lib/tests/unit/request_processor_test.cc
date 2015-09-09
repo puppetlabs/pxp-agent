@@ -62,8 +62,8 @@ static std::string valid_envelope_txt {
     " { \"id\" : \"123456\","
     "   \"message_type\" : \"test_test_test\","
     "   \"expires\" : \"2015-06-26T22:57:09Z\","
-    "   \"targets\" : [\"cth://agent/test_agent\"],"
-    "   \"sender\" : \"cth://controller/test_controller\","
+    "   \"targets\" : [\"pcp://agent/test_agent\"],"
+    "   \"sender\" : \"pcp://controller/test_controller\","
     "   \"destination_report\" : false"
     " }" };
 

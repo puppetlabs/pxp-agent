@@ -87,7 +87,7 @@ TEST_CASE("ActionRequest getters", "[request]") {
         }
 
         SECTION("sender") {
-            REQUIRE(a_r.sender() == "cth://controller/test_controller");
+            REQUIRE(a_r.sender() == "pcp://controller/test_controller");
         }
 
         SECTION("transactionId") {
