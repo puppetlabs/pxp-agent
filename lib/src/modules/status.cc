@@ -20,7 +20,7 @@ Status::Status() {
     module_name = "status";
     actions.push_back(QUERY);
     PCPClient::Schema input_schema { QUERY };
-    input_schema.addConstraint("job_id", PCPClient::TypeConstraint::String,
+    input_schema.addConstraint("transaction_id", PCPClient::TypeConstraint::String,
                                true);
 
     PCPClient::Schema output_schema { QUERY };
@@ -31,34 +31,36 @@ Status::Status() {
 
 ActionOutcome Status::callAction(const ActionRequest& request) {
     lth_jc::JsonContainer results {};
-    auto job_id = request.params().get<std::string>("job_id");
-    auto results_dir = Configuration::Instance().get<std::string>("spool-dir")
-                       + job_id;
+    auto t_id = request.params().get<std::string>("transaction_id");
+    auto results_dir = Configuration::Instance().get<std::string>("spool-dir") + t_id;
 
     if (!boost::filesystem::exists(results_dir)) {
-        LOG_ERROR("Found no results for job id %1%", job_id);
+        LOG_ERROR("Found no results for job %1%", t_id);
         results.set<std::string>("status", "Unknown");
     } else {
-        LOG_DEBUG("Retrieving results for job id %1% from %2%", job_id, results_dir);
-        lth_jc::JsonContainer status {
-                lth_file::read(results_dir + "/status") };
+        LOG_DEBUG("Retrieving results for job %1% from %2%", t_id, results_dir);
+        lth_jc::JsonContainer status_data { lth_file::read(results_dir + "/status") };
 
-        auto status_txt = status.get<std::string>("status");
+        auto status_txt = status_data.get<std::string>("status");
+        auto exitcode = status_data.get<int>("exitcode");;
+
         if (status_txt == "running") {
-            results.set<std::string>("status", "Running");
+            results.set<std::string>("status", "running");
         } else if (status_txt == "completed") {
-            results.set<std::string>("status", "Completed");
-            results.set<std::string>("stdout",
-                                     lth_file::read(results_dir + "/stdout"));
-            results.set<std::string>("stderr",
-                                     lth_file::read(results_dir + "/stderr"));
+            std::string status { (exitcode == EXIT_SUCCESS ? "success" : "failure") };
+            auto err = lth_file::read(results_dir + "/stderr");
+            auto out = lth_file::read(results_dir + "/stdout");
+
+            results.set<std::string>("status", status);
+            results.set<int>("exitcode", exitcode);
+            results.set<std::string>("stdout", out);
+            results.set<std::string>("stderr", err);
         } else {
-            std::string tmp { "Job '" + job_id + "' is in unknown state: " };
-            results.set<std::string>("status", tmp + status_txt);
+            results.set<std::string>("status", "unknown");
         }
     }
 
-    return ActionOutcome { results };
+    return ActionOutcome { EXIT_SUCCESS, results };
 }
 
 }  // namespace Modules

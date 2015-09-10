@@ -51,7 +51,7 @@ lth_jc::JsonContainer Ping::ping(const ActionRequest& request) {
 }
 
 ActionOutcome Ping::callAction(const ActionRequest& request) {
-   return ActionOutcome { ping(request) };
+   return ActionOutcome { EXIT_SUCCESS, ping(request) };
 }
 
 }  // namespace Modules

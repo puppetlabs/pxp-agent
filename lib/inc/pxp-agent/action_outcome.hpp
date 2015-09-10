@@ -13,39 +13,47 @@ struct ActionOutcome {
     enum class Type { Internal, External };
 
     Type type;
+    int exitcode;
     std::string stderr;
     std::string stdout;
-
     lth_jc::JsonContainer results;
 
     ActionOutcome() {
     }
 
-    ActionOutcome(std::string& stderr_,
+    ActionOutcome(int exitcode_,
+                  std::string& stderr_,
                   std::string& stdout_,
                   lth_jc::JsonContainer& results_)
             : type { Type::External },
+              exitcode { exitcode_ },
               stderr { stderr_ },
               stdout { stdout_ },
               results { results_ } {
     }
 
-    ActionOutcome(std::string& stderr_,
+    ActionOutcome(int exitcode_,
+                  std::string& stderr_,
                   std::string& stdout_,
                   lth_jc::JsonContainer&& results_)
             : type { Type::External },
+              exitcode { exitcode_ },
               stderr { stderr_ },
               stdout { stdout_ },
               results { results_ } {
     }
 
-    ActionOutcome(lth_jc::JsonContainer& results_)
+    ActionOutcome(int exitcode_,
+                  lth_jc::JsonContainer& results_)
             : type { Type::Internal },
+              exitcode { exitcode_ },
               results { results_ } {
     }
 
-    ActionOutcome(lth_jc::JsonContainer&& results_)
+    ActionOutcome(int exitcode_,
+                  lth_jc::JsonContainer&& results_)
             : type { Type::Internal },
+              exitcode { exitcode_ },
               results { results_ } {
     }
 };

@@ -26,7 +26,7 @@ ActionOutcome Echo::callAction(const ActionRequest& request) {
     lth_jc::JsonContainer results {};
     results.set<std::string>("outcome", params.get<std::string>("argument"));
 
-    return ActionOutcome { results };
+    return ActionOutcome { EXIT_SUCCESS, results };
 }
 
 }  // namespace Modules
