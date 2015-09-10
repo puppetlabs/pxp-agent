@@ -55,6 +55,7 @@ class ResultsStorage {
                const std::string& duration) {
         action_status.set<std::string>("status", "completed");
         action_status.set<std::string>("duration", duration);
+        action_status.set<int>("exitcode", outcome.exitcode);
         lth_file::atomic_write_to_file(action_status.toString() + "\n", status_path);
 
         if (exec_error.empty()) {
@@ -95,6 +96,7 @@ class ResultsStorage {
         action_status.set<std::string>("action", action);
         action_status.set<std::string>("status", "running");
         action_status.set<std::string>("duration", "0 s");
+        action_status.set<int>("exitcode", EXIT_SUCCESS);
 
         if (!request.paramsTxt().empty()) {
             action_status.set<std::string>("input", request.paramsTxt());

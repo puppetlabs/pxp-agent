@@ -1,8 +1,8 @@
 #include "root_path.hpp"
-#include "../content_format.hpp"
+#include "../content_format.hpp"                    // ENVELOPE_TXT
 
 #include <pxp-agent/modules/status.hpp>
-#include <pxp-agent/configuration.hpp>
+#include <pxp-agent/configuration.hpp>              // DEFAULT_ACTION_RESULTS_DIR
 
 #include <cpp-pcp-client/protocol/chunks.hpp>       // ParsedChunks
 
@@ -28,7 +28,7 @@ boost::format STATUS_FORMAT {
     "{  \"transaction_id\" : \"2345236346\","
     "    \"module\" : \"status\","
     "    \"action\" : \"query\","
-    "    \"params\" : {\"job_id\" : \"%1%\"}"
+    "    \"params\" : {\"transaction_id\" : \"%1%\"}"
     "}"
 };
 
@@ -81,54 +81,76 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
         }
     }
 
-    SECTION("it correctly retrieves the file content of a known job") {
-        std::string result_path { std::string { PXP_AGENT_ROOT_PATH }
-                                  + "/lib/tests/resources/delayed_result" };
-        boost::filesystem::path to { result_path };
+    auto testResultFiles =
+        [&] (bool success, std::string result_path) {
+            boost::filesystem::path to { result_path };
 
-        if (!boost::filesystem::exists(DEFAULT_ACTION_RESULTS_DIR)
-            && !boost::filesystem::create_directory(DEFAULT_ACTION_RESULTS_DIR)) {
-            FAIL("Failed to create the results directory");
+            if (!boost::filesystem::exists(DEFAULT_ACTION_RESULTS_DIR)
+                && !boost::filesystem::create_directory(DEFAULT_ACTION_RESULTS_DIR)) {
+                FAIL("Failed to create the results directory");
+            }
+
+            auto symlink_name = lth_util::get_UUID();
+            std::string symlink_path { DEFAULT_ACTION_RESULTS_DIR + symlink_name };
+            boost::filesystem::path symlink { symlink_path };
+
+            std::string other_status_txt { (STATUS_FORMAT % symlink_name).str() };
+            PCPClient::ParsedChunks other_chunks {
+                    lth_jc::JsonContainer(ENVELOPE_TXT),
+                    lth_jc::JsonContainer(other_status_txt),
+                    NO_DEBUG,
+                    0 };
+            ActionRequest request { RequestType::Blocking, other_chunks };
+
+            try {
+                boost::filesystem::create_symlink(to, symlink);
+            } catch (boost::filesystem::filesystem_error) {
+                FAIL("Failed to create the symlink");
+            }
+
+            SECTION("it doesn't throw") {
+                REQUIRE_NOTHROW(status_module.executeAction(request));
+            }
+
+            SECTION("it returns the action status") {
+                auto outcome = status_module.executeAction(request);
+                std::string status { (success ? "success" : "failure") };
+                REQUIRE(outcome.results.get<std::string>("status") == status);
+            }
+
+            SECTION("it returns the action exitcode") {
+                auto outcome = status_module.executeAction(request);
+                int exitcode { (success ? 0 : 4) };
+                REQUIRE(outcome.results.get<int>("exitcode") == exitcode);
+            }
+
+            SECTION("it returns the action output") {
+                auto outcome = status_module.executeAction(request);
+                std::string out { (success ? "***OUTPUT\n" : "") };
+                REQUIRE(outcome.results.get<std::string>("stdout") == out);
+            }
+
+            SECTION("it returns the action error string") {
+                auto outcome = status_module.executeAction(request);
+                std::string err { (success ? "" : "***ERROR\n") };
+                REQUIRE(outcome.results.get<std::string>("stderr") == err);
+            }
+
+            boost::filesystem::remove(symlink_path);
+        };
+
+    SECTION("it correctly retrieves the results of a known job") {
+        std::string result_path { PXP_AGENT_ROOT_PATH };
+
+        SECTION("success") {
+            result_path += "/lib/tests/resources/delayed_result_success";
+            testResultFiles(true, result_path);
         }
 
-        auto symlink_name = lth_util::get_UUID();
-        std::string symlink_path { DEFAULT_ACTION_RESULTS_DIR + symlink_name };
-        boost::filesystem::path symlink { symlink_path };
-
-        std::string other_status_txt { (STATUS_FORMAT % symlink_name).str() };
-        PCPClient::ParsedChunks other_chunks {
-                lth_jc::JsonContainer(ENVELOPE_TXT),
-                lth_jc::JsonContainer(other_status_txt),
-                NO_DEBUG,
-                0 };
-        ActionRequest request { RequestType::Blocking, other_chunks };
-
-        try {
-            boost::filesystem::create_symlink(to, symlink);
-        } catch (boost::filesystem::filesystem_error) {
-            FAIL("Failed to create the symlink");
+        SECTION("failure") {
+            result_path += "/lib/tests/resources/delayed_result_failure";
+            testResultFiles(false, result_path);
         }
-
-        SECTION("it doesn't throw") {
-            REQUIRE_NOTHROW(status_module.executeAction(request));
-        }
-
-        SECTION("it returns the action status") {
-            auto outcome = status_module.executeAction(request);
-            REQUIRE(outcome.results.get<std::string>("status") == "Completed");
-        }
-
-        SECTION("it returns the action output") {
-            auto outcome = status_module.executeAction(request);
-            REQUIRE(outcome.results.get<std::string>("stdout") == "***OUTPUT\n");
-        }
-
-        SECTION("it returns the action error string") {
-            auto outcome = status_module.executeAction(request);
-            REQUIRE(outcome.results.get<std::string>("stderr") == "***ERROR\n");
-        }
-
-        boost::filesystem::remove(symlink_path);
     }
 }
 

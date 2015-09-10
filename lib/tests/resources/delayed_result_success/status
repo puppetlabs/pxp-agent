@@ -2,4 +2,5 @@
  "action":"eggs",
  "input":"{42}",
  "status":"completed",
+ "exitcode":0,
  "duration":"2.158332s"}

@@ -34,8 +34,9 @@ static const std::string METADATA_ACTIONS_ENTRY { "actions" };
 void runCommand(const std::string& exec,
                 std::vector<std::string> args,
                 std::string stdin,
-                std::string &stdout,
-                std::string &stderr) {
+                std::string& stdout,
+                std::string& stderr,
+                int& exitcode) {
     boost::process::context context;
     context.stdin_behavior = boost::process::capture_stream();
     context.stdout_behavior = boost::process::capture_stream();
@@ -58,7 +59,8 @@ void runCommand(const std::string& exec,
         stderr += line;
     }
 
-    child.wait();
+    auto status = child.wait();
+    exitcode = (status.exited() ? status.exit_status() : EXIT_FAILURE);
 }
 
 // Provides the module metadata validator
@@ -138,10 +140,11 @@ const PCPClient::Validator ExternalModule::metadata_validator_ {
 
 // Retrieve and validate the module metadata
 const lth_jc::JsonContainer ExternalModule::getMetadata() {
-    std::string metadata_txt;
-    std::string error;
+    std::string metadata_txt {};
+    std::string error {};
+    int exitcode {};
 
-    runCommand(path_, { path_, "metadata" }, "", metadata_txt, error);
+    runCommand(path_, { path_, "metadata" }, "", metadata_txt, error, exitcode);
 
     if (!error.empty()) {
         LOG_ERROR("Failed to load the external module metadata from %1%: %2%",
@@ -217,6 +220,7 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
 ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     std::string stdout {};
     std::string stderr {};
+    int exitcode {};
     auto& action_name = request.action();
 
     lth_jc::JsonContainer request_input {};
@@ -227,7 +231,8 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     LOG_INFO("About to execute '%1% %2%' - request input: %3%",
              module_name, action_name, request_input_txt);
 
-    runCommand(path_, { path_, action_name }, request_input_txt, stdout, stderr);
+    runCommand(path_, { path_, action_name }, request_input_txt, stdout, stderr,
+               exitcode);
 
     if (stdout.empty()) {
         LOG_DEBUG("'%1% %2%' produced no output", module_name, action_name);
@@ -235,8 +240,16 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
         LOG_DEBUG("'%1% %2%' output: %3%", module_name, action_name, stdout);
     }
 
-    if (!stderr.empty()) {
-        LOG_ERROR("'%1% %2%' error: %3%", module_name, action_name, stderr);
+    if (exitcode) {
+        if (!stderr.empty()) {
+            LOG_ERROR("'%1% %2%' failure, returned %3%; error: %4%",
+                      module_name, action_name, exitcode, stderr);
+        } else {
+            LOG_ERROR("'%1% %2%' failure, returned %3%",
+                      module_name, action_name, exitcode);
+        }
+    } else if (!stderr.empty()) {
+        LOG_WARNING("'%1% %2%' error: %3%", module_name, action_name, stderr);
     }
 
     // Ensure output format is valid JSON by instantiating JsonContainer
@@ -252,7 +265,7 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
         throw Module::ProcessingError { err_msg };
     }
 
-    return ActionOutcome { stderr, stdout, results };
+    return ActionOutcome { exitcode, stderr, stdout, results };
 }
 
 }  // namespace PXPAgent
