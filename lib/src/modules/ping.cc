@@ -12,8 +12,6 @@
 namespace PXPAgent {
 namespace Modules {
 
-namespace V_C = valijson::constraints;
-
 static const std::string PING { "ping" };
 
 Ping::Ping() {
