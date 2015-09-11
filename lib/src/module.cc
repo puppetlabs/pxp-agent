@@ -31,7 +31,7 @@ ActionOutcome Module::executeAction(const ActionRequest& request) {
         } catch (PCPClient::validation_error) {
             std::string err_msg { "'" + module_name + " " + request.action()
                                   + "' returned an invalid result - stderr: " };
-            throw Module::ProcessingError { err_msg + outcome.stderr };
+            throw Module::ProcessingError { err_msg + outcome.std_err };
         }
 
         return outcome;

@@ -14,8 +14,8 @@ struct ActionOutcome {
 
     Type type;
     int exitcode;
-    std::string stderr;
-    std::string stdout;
+    std::string std_err;
+    std::string std_out;
     lth_jc::JsonContainer results;
 
     ActionOutcome() {
@@ -27,8 +27,8 @@ struct ActionOutcome {
                   lth_jc::JsonContainer& results_)
             : type { Type::External },
               exitcode { exitcode_ },
-              stderr { stderr_ },
-              stdout { stdout_ },
+              std_err { stderr_ },
+              std_out { stdout_ },
               results { results_ } {
     }
 
@@ -38,8 +38,8 @@ struct ActionOutcome {
                   lth_jc::JsonContainer&& results_)
             : type { Type::External },
               exitcode { exitcode_ },
-              stderr { stderr_ },
-              stdout { stdout_ },
+              std_err { stderr_ },
+              std_out { stdout_ },
               results { results_ } {
     }
 

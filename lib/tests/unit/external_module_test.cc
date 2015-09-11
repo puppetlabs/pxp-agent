@@ -79,7 +79,7 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             ActionRequest request { RequestType::Blocking, CONTENT };
             auto outcome = reverse_module.executeAction(request);
 
-            REQUIRE(outcome.stdout.find("anodaram") != std::string::npos);
+            REQUIRE(outcome.std_out.find("anodaram") != std::string::npos);
         }
     }
 
