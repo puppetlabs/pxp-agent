@@ -45,8 +45,9 @@ function(find_dependency)
         get_filename_component(${FIND_DEPENDENCY_NAME}_LIBRARY_DIRS ${${FIND_DEPENDENCY_NAME}_LIBRARY} PATH)
         set(${FIND_DEPENDENCY_NAME_LIBRARY} ${${FIND_DEPENDENCY_NAME_LIBRARY}} PARENT_SCOPE)
 
-        # Add a define for the found package
-        add_definitions(-DUSE_${FIND_DEPENDENCY_NAME})
+        # Add a define for the found package; ensure it's a valid C identifier
+        string(MAKE_C_IDENTIFIER ${FIND_DEPENDENCY_NAME} DEPENDENCY_NAME_ID)
+        add_definitions(-DUSE_${DEPENDENCY_NAME_ID})
     endif()
 
     # Advanced options for not cluttering the cmake UIs
