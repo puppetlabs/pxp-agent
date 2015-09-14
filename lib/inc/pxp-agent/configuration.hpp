@@ -9,7 +9,7 @@ namespace PXPAgent {
 
 namespace HW = HorseWhisperer;
 
-static const std::string DEFAULT_ACTION_RESULTS_DIR = "/tmp/pxp-agent/";
+extern const std::string DEFAULT_ACTION_RESULTS_DIR;
 
 enum Types { Integer, String, Bool, Double };
 
