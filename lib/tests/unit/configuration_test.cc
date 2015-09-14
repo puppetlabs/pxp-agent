@@ -14,23 +14,26 @@ namespace PXPAgent {
 
 namespace HW = HorseWhisperer;
 
-const std::string SERVER = "wss:///test_server";
-const std::string CA = getCaPath();
-const std::string CERT = getCertPath();
-const std::string KEY = getKeyPath();
-const std::string MODULES_DIR = std::string { PXP_AGENT_ROOT_PATH }
-                                + "/lib/tests/resources/test_modules/";
-const std::string SPOOL_DIR = std::string { PXP_AGENT_ROOT_PATH }
-                                + "/lib/tests/resources/test_spool/";
+const std::string CONFIG { std::string { PXP_AGENT_ROOT_PATH }
+                           + "/lib/tests/resources/config/empty-pxp-agent.cfg" };
+const std::string SERVER { "wss:///test_server" };
+const std::string CA { getCaPath() };
+const std::string CERT { getCertPath() };
+const std::string KEY { getKeyPath() };
+const std::string MODULES_DIR { std::string { PXP_AGENT_ROOT_PATH }
+                                + "/lib/tests/resources/test_modules/" };
+const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
+                              + "/lib/tests/resources/test_spool/" };
 
 const char* ARGV[] = { "test-command",
+                       "--config-file", CONFIG.data(),
                        "--server", SERVER.data(),
                        "--ca", CA.data(),
                        "--cert", CERT.data(),
                        "--key", KEY.data(),
                        "--modules-dir", MODULES_DIR.data(),
                        "--spool-dir", SPOOL_DIR.data() };
-const int ARGC = 13;
+const int ARGC = 15;
 
 static void configureTest() {
     Configuration::Instance().initialize(ARGC, const_cast<char**>(ARGV), false);
@@ -146,8 +149,8 @@ TEST_CASE("Configuration::get", "[configuration]") {
 
         SECTION("return the default value if the flag was not set") {
             resetTest();
-            // NB: ignoring --spool-dir in ARGV since argc is set to 9
-            Configuration::Instance().initialize(9, const_cast<char**>(ARGV), false);
+            // NB: ignoring --spool-dir in ARGV since argc is set to 11
+            Configuration::Instance().initialize(11, const_cast<char**>(ARGV), false);
 
             REQUIRE(Configuration::Instance().get<std::string>("spool-dir")
                     == DEFAULT_ACTION_RESULTS_DIR);
