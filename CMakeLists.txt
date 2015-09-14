@@ -64,6 +64,8 @@ if(LOG_COLOR)
 endif()
 
 # Find libraries
+SET(CMAKE_FIND_LIBRARY_PREFIXES "" "lib")
+SET(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".a" ".lib" ".dll")
 
 find_package(Boost 1.54 REQUIRED
   COMPONENTS filesystem system date_time thread log regex random)
