@@ -36,7 +36,7 @@ namespace lth_jc = leatherman::json_container;
             throw std::runtime_error((boost::format("failure getting Windows TEMP directory: %1%") % lth_w::system_error()).str());
         }
         fs::path p = fs::path(buf) / "pxp-agent";
-        return p.string();
+        return p.string() + "/";
     }();
 
     static const fs::path DEFAULT_SHARE_DIR { "TBD" };
