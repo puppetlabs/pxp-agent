@@ -34,7 +34,9 @@ namespace lth_log = leatherman::logging;
         wchar_t buf[MAX_PATH+1];
         auto num = GetTempPathW(MAX_PATH+1, buf);
         if (num <= 0 || num > MAX_PATH) {
-            throw std::runtime_error((boost::format("failure getting Windows TEMP directory: %1%") % lth_w::system_error()).str());
+            throw std::runtime_error(
+                (boost::format("failure getting Windows TEMP directory: %1%")
+                    % lth_w::system_error()).str());
         }
         fs::path p = fs::path(buf) / "pxp-agent";
         return p.string() + "/";
@@ -45,7 +47,9 @@ namespace lth_log = leatherman::logging;
     static const fs::path DEFAULT_CONF_DIR = []() {
         wchar_t szPath[MAX_PATH+1];
         if (FAILED(SHGetFolderPathW(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szPath))) {
-            throw std::runtime_error((boost::format("failure getting Windows AppData directory: %1%") % lth_w::system_error()).str());
+            throw std::runtime_error(
+                (boost::format("failure getting Windows AppData directory: %1%")
+                    % lth_w::system_error()).str());
         }
         return fs::path(szPath) / "PuppetLabs" / "pxp-agent";
     }();
