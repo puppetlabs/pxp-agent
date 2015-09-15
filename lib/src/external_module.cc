@@ -33,9 +33,9 @@ static const std::string METADATA_ACTIONS_ENTRY { "actions" };
 // Execute binaries and get output and errors
 void runCommand(const std::string& exec,
                 std::vector<std::string> args,
-                std::string stdin,
-                std::string& stdout,
-                std::string& stderr,
+                std::string std_in,
+                std::string& std_out,
+                std::string& std_err,
                 int& exitcode) {
     boost::process::context context;
     context.stdin_behavior = boost::process::capture_stream();
@@ -45,18 +45,18 @@ void runCommand(const std::string& exec,
     boost::process::child child = boost::process::launch(exec, args, context);
 
     boost::process::postream &in = child.get_stdin();
-    in << stdin;
+    in << std_in;
     in.close();
 
     boost::process::pistream &out = child.get_stdout();
     std::string line;
     while (std::getline(out, line)) {
-        stdout += line;
+        std_out += line;
     }
 
     boost::process::pistream &err = child.get_stderr();
     while (std::getline(err, line)) {
-        stderr += line;
+        std_err += line;
     }
 
     auto status = child.wait();
@@ -218,8 +218,8 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
 
 
 ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
-    std::string stdout {};
-    std::string stderr {};
+    std::string std_out {};
+    std::string std_err {};
     int exitcode {};
     auto& action_name = request.action();
 
@@ -231,41 +231,41 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     LOG_INFO("About to execute '%1% %2%' - request input: %3%",
              module_name, action_name, request_input_txt);
 
-    runCommand(path_, { path_, action_name }, request_input_txt, stdout, stderr,
+    runCommand(path_, { path_, action_name }, request_input_txt, std_out, std_err,
                exitcode);
 
-    if (stdout.empty()) {
+    if (std_out.empty()) {
         LOG_DEBUG("'%1% %2%' produced no output", module_name, action_name);
     } else {
-        LOG_DEBUG("'%1% %2%' output: %3%", module_name, action_name, stdout);
+        LOG_DEBUG("'%1% %2%' output: %3%", module_name, action_name, std_out);
     }
 
     if (exitcode) {
-        if (!stderr.empty()) {
+        if (!std_err.empty()) {
             LOG_ERROR("'%1% %2%' failure, returned %3%; error: %4%",
-                      module_name, action_name, exitcode, stderr);
+                      module_name, action_name, exitcode, std_err);
         } else {
             LOG_ERROR("'%1% %2%' failure, returned %3%",
                       module_name, action_name, exitcode);
         }
-    } else if (!stderr.empty()) {
-        LOG_WARNING("'%1% %2%' error: %3%", module_name, action_name, stderr);
+    } else if (!std_err.empty()) {
+        LOG_WARNING("'%1% %2%' error: %3%", module_name, action_name, std_err);
     }
 
     // Ensure output format is valid JSON by instantiating JsonContainer
     lth_jc::JsonContainer results {};
 
     try {
-        results = lth_jc::JsonContainer { stdout };
+        results = lth_jc::JsonContainer { std_out };
     } catch (lth_jc::data_parse_error& e) {
         LOG_ERROR("'%1% %2%' output is not valid JSON: %3%",
                   module_name, action_name, e.what());
         std::string err_msg { "'" + module_name + " " + action_name + "' "
-                              "returned invalid JSON - stderr: " + stderr };
+                              "returned invalid JSON - stderr: " + std_err };
         throw Module::ProcessingError { err_msg };
     }
 
-    return ActionOutcome { exitcode, stderr, stdout, results };
+    return ActionOutcome { exitcode, std_err, std_out, results };
 }
 
 }  // namespace PXPAgent

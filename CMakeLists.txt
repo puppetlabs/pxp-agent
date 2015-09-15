@@ -56,6 +56,7 @@ set(LEATHERMAN_USE_JSON_CONTAINER TRUE)
 set(LEATHERMAN_USE_LOGGING TRUE)
 set(LEATHERMAN_USE_FILE_UTIL TRUE)
 set(LEATHERMAN_USE_UTIL TRUE)
+set(LEATHERMAN_USE_WINDOWS TRUE)
 leatherman_logging_line_numbers()
 add_subdirectory("vendor/leatherman")
 
@@ -64,6 +65,8 @@ if(LOG_COLOR)
 endif()
 
 # Find libraries
+SET(CMAKE_FIND_LIBRARY_PREFIXES "" "lib")
+SET(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".a" ".lib" ".dll")
 
 find_package(Boost 1.54 REQUIRED
   COMPONENTS filesystem system date_time thread log regex random)

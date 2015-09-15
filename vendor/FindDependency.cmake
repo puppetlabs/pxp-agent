@@ -16,12 +16,12 @@ function(find_dependency)
     if (${FIND_DEPENDENCY_NAME}_LIBRARYDIR)
         set(LIBRARY_HINTS "${${FIND_DEPENDENCY_NAME}_LIBRARYDIR}")
     elseif (${FIND_DEPENDENCY_NAME}_ROOT)
-        set(LIBRARY_HINTS "${${FIND_DEPENDENCY_NAME}_ROOT}/lib")
+        set(LIBRARY_HINTS "${${FIND_DEPENDENCY_NAME}_ROOT}")
     endif()
 
     # Find headers and libraries
-    find_path(${FIND_DEPENDENCY_NAME}_INCLUDE_DIR NAMES ${FIND_DEPENDENCY_HEADERS} HINTS ${INCLUDE_HINTS})
-    find_library(${FIND_DEPENDENCY_NAME}_LIBRARY NAMES ${FIND_DEPENDENCY_LIBRARIES} HINTS ${LIBRARY_HINTS})
+    find_path(${FIND_DEPENDENCY_NAME}_INCLUDE_DIR NAMES ${FIND_DEPENDENCY_HEADERS} HINTS ${INCLUDE_HINTS} PATH_SUFFIXES include)
+    find_library(${FIND_DEPENDENCY_NAME}_LIBRARY NAMES ${FIND_DEPENDENCY_LIBRARIES} HINTS ${LIBRARY_HINTS} PATH_SUFFIXES bin lib)
 
     # Handle the find_package arguments
     include(FindPackageHandleStandardArgs)
@@ -45,8 +45,9 @@ function(find_dependency)
         get_filename_component(${FIND_DEPENDENCY_NAME}_LIBRARY_DIRS ${${FIND_DEPENDENCY_NAME}_LIBRARY} PATH)
         set(${FIND_DEPENDENCY_NAME_LIBRARY} ${${FIND_DEPENDENCY_NAME_LIBRARY}} PARENT_SCOPE)
 
-        # Add a define for the found package
-        add_definitions(-DUSE_${FIND_DEPENDENCY_NAME})
+        # Add a define for the found package; ensure it's a valid C identifier
+        string(MAKE_C_IDENTIFIER ${FIND_DEPENDENCY_NAME} DEPENDENCY_NAME_ID)
+        add_definitions(-DUSE_${DEPENDENCY_NAME_ID})
     endif()
 
     # Advanced options for not cluttering the cmake UIs

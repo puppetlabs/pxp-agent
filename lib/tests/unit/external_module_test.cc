@@ -19,9 +19,6 @@ namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-const std::string RESULTS_ROOT_DIR { "/tmp/pxp-agent" };
-const std::string STRING_ACTION { "string" };
-
 static const std::string REVERSE_TXT {
     (DATA_FORMAT % "\"0987\""
                  % "\"reverse\""
@@ -79,7 +76,7 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             ActionRequest request { RequestType::Blocking, CONTENT };
             auto outcome = reverse_module.executeAction(request);
 
-            REQUIRE(outcome.stdout.find("anodaram") != std::string::npos);
+            REQUIRE(outcome.std_out.find("anodaram") != std::string::npos);
         }
     }
 

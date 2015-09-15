@@ -60,9 +60,9 @@ class ResultsStorage {
 
         if (exec_error.empty()) {
             if (outcome.type == ActionOutcome::Type::External) {
-                lth_file::atomic_write_to_file(outcome.stdout + "\n", out_path);
-                if (!outcome.stderr.empty()) {
-                    lth_file::atomic_write_to_file(outcome.stderr + "\n", err_path);
+                lth_file::atomic_write_to_file(outcome.std_out + "\n", out_path);
+                if (!outcome.std_err.empty()) {
+                    lth_file::atomic_write_to_file(outcome.std_err + "\n", err_path);
                 }
             } else {
                 // ActionOutcome::Type::Internal
