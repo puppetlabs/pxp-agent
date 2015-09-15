@@ -38,7 +38,16 @@ SET(LIBS
     ${LEATHERMAN_LIBRARIES}
 )
 
+if (WIN32)
+    set(LIBPXP_AGENT_INSTALL_DESTINATION bin)
+else()
+    set(LIBPXP_AGENT_INSTALL_DESTINATION lib)
+endif()
+
 add_library(libpxp-agent ${LIBRARY_SOURCES})
 target_link_libraries(libpxp-agent ${LIBS})
+set_target_properties(libpxp-agent PROPERTIES PREFIX "" SUFFIX ".so" IMPORT_PREFIX "" IMPORT_SUFFIX ".so.a")
+
+install(TARGETS libpxp-agent DESTINATION "${LIBPXP_AGENT_INSTALL_DESTINATION}")
 
 add_subdirectory(tests)
