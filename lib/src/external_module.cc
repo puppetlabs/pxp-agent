@@ -92,7 +92,7 @@ void ExternalModule::validateAndSetConfiguration(const lth_jc::JsonContainer& co
         config_ = config;
     } else {
         LOG_DEBUG("The '%1%' configuration will not be validated; no JSON "
-                  "schema is available");
+                  "schema is available", module_name);
     }
 }
 
