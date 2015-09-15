@@ -223,20 +223,20 @@ describe "pxp-module-puppet" do
 
   describe "run" do
     it "fails when puppet_bin isn't set" do
-        expect(run({"configuration" => {}, "params" => default_params})["error"]).to be ==
+        expect(run({"config" => {}, "params" => default_params})["error"]).to be ==
           "puppet_bin configuration value not set"
     end
 
     it "fails when puppet_bin doesn't exist" do
       allow(File).to receive(:exist?).and_return(false)
-        expect(run({"configuration" => default_config, "params" => default_params})["error"]).to be ==
+        expect(run({"config" => default_config, "params" => default_params})["error"]).to be ==
           "Puppet executable 'puppet' does not exist"
     end
 
     it "fails if puppet is already running" do
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(true)
-      expect(run({"configuration" => default_config, "params" => default_params})["error"]).to be ==
+      expect(run({"config" => default_config, "params" => default_params})["error"]).to be ==
           "Puppet is already running"
     end
 
@@ -244,7 +244,7 @@ describe "pxp-module-puppet" do
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(true)
-      expect(run({"configuration" => default_config, "params" => default_params})["error"]).to be ==
+      expect(run({"config" => default_config, "params" => default_params})["error"]).to be ==
           "Puppet is disabled"
     end
 
@@ -253,7 +253,7 @@ describe "pxp-module-puppet" do
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
       expect_any_instance_of(Object).to receive(:start_run)
-      run({"configuration" => default_config, "params" => default_params})
+      run({"config" => default_config, "params" => default_params})
     end
   end
 end
