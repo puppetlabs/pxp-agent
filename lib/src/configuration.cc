@@ -91,7 +91,7 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[],
 
     auto parse_result = HW::Parse(modified_argc, modified_argv);
 
-    if (parse_result == HW::ParseResult::ERROR
+    if (parse_result == HW::ParseResult::FAILURE
         || parse_result == HW::ParseResult::INVALID_FLAG) {
         throw Configuration::Error { "An error occurred while parsing cli options"};
     }
