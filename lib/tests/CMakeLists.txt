@@ -11,7 +11,7 @@ include_directories(
     SYSTEM ${CATCH_DIRECTORY}
 )
 
-set(SOURCES
+set(COMMON_TEST_SOURCES
     main.cc
     unit/action_request_test.cc
     unit/agent_test.cc
@@ -25,6 +25,11 @@ set(SOURCES
     unit/modules/status_test.cc
 )
 
+if (UNIX)
+    set(STANDARD_TEST_SOURCES
+        unit/util/posix/pid_file_test.cc)
+endif()
+
 set(test_BIN pxp-agent-unittests)
 
 set (PXP-AGENT_TEST_LIBS
@@ -32,7 +37,7 @@ set (PXP-AGENT_TEST_LIBS
     libpxp-agent
 )
 
-add_executable(${test_BIN} ${SOURCES})
+add_executable(${test_BIN} ${COMMON_TEST_SOURCES} ${STANDARD_TEST_SOURCES})
 target_link_libraries(${test_BIN} ${PXP-AGENT_TEST_LIBS})
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")

@@ -116,6 +116,7 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[],
 
         validateAndNormalizeConfiguration();
         setAgentConfiguration();
+        setNonExposedOptions();
     }
 
     initialized_ = true;
@@ -184,6 +185,24 @@ void Configuration::validateAndNormalizeConfiguration() {
     if (!HW::GetFlag<std::string>("logfile").empty()) {
         auto path = lth_file::shell_quote(HW::GetFlag<std::string>("logfile"));
         HW::SetFlag<std::string>("logfile", path);
+    }
+
+    if (HW::GetFlag<bool>("daemonize")) {
+        if (HW::GetFlag<std::string>("logfile").empty()) {
+            throw Configuration::Error { "must specify a logfile to run as a daemon" };
+        }
+
+        auto pid_dir = DEFAULT_CONF_DIR.string();
+
+        if (!fs::exists(pid_dir)) {
+            LOG_INFO("Creating PID directory '%1%'", pid_dir);
+            if (!fs::create_directory(pid_dir)) {
+                throw Configuration::Error { "failed to create the PID "
+                                             "directory '" + pid_dir + "'" };
+            }
+        } else if (!fs::is_directory(pid_dir)) {
+            throw Configuration::Error { "not a directory: " + pid_dir };
+        }
     }
 }
 
@@ -283,6 +302,13 @@ void Configuration::defineDefaultValues() {
                                "Specify directory containing external modules",
                                Types::String,
                                modules_dir))));
+
+    defaults_.insert(std::pair<std::string, Base_ptr>("daemonize", Base_ptr(
+        new Entry<bool>("daemonize",
+                        "",
+                        "Execute as a daemon",
+                        Types::Bool,
+                        true))));
 }
 
 void Configuration::setDefaultValues() {
@@ -340,7 +366,7 @@ void Configuration::setDefaultValues() {
 void Configuration::parseConfigFile() {
     lth_jc::JsonContainer config_json;
 
-    if(!lth_file::file_readable(config_file_)) {
+    if (!lth_file::file_readable(config_file_)) {
         throw Configuration::Error { "Config file '" + config_file_ + "' doesn't exist" };
     }
 
@@ -473,6 +499,13 @@ void Configuration::setAgentConfiguration() {
         HW::GetFlag<std::string>("spool-dir"),
         HW::GetFlag<std::string>("modules-config-dir"),
         AGENT_CLIENT_TYPE };
+}
+
+void Configuration::setNonExposedOptions() {
+    HW::DefineGlobalFlag<std::string>("pid-dir",
+                                      "",
+                                      DEFAULT_CONF_DIR.string(),
+                                      nullptr);
 }
 
 }  // namespace PXPAgent

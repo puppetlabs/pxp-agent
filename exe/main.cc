@@ -1,12 +1,19 @@
 #include <pxp-agent/agent.hpp>
 #include <pxp-agent/configuration.hpp>
 
+#ifndef _WIN32
+#include <pxp-agent/util/posix/pid_file.hpp>
+#include <pxp-agent/util/posix/daemonize.hpp>
+#endif
+
 #include <leatherman/file_util/file.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.main"
 #include <leatherman/logging/logging.hpp>
 
 #include <horsewhisperer/horsewhisperer.h>
+
+#include <memory>
 
 namespace PXPAgent {
 
@@ -17,21 +24,30 @@ int startAgent(std::vector<std::string> arguments) {
     const auto& agent_configuration =
         Configuration::Instance().getAgentConfiguration();
 
+#ifndef _WIN32
+    std::unique_ptr<Util::PIDFile> pidf_ptr;
+
+    if (Configuration::Instance().get<bool>("daemonize")) {
+        // Store it for RAII
+        pidf_ptr = Util::daemonize();
+    }
+#endif
+
+    bool success { false };
+
     try {
         Agent agent { agent_configuration };
         agent.start();
+        success = true;
     } catch (Agent::Error& e) {
         LOG_ERROR("fatal error: %1%", e.what());
-        return 1;
     } catch (std::exception& e) {
         LOG_ERROR("unexpected error: %1%", e.what());
-        return 1;
     } catch (...) {
         LOG_ERROR("unexpected error");
-        return 1;
     }
 
-    return 0;
+    return (success ? 0 : 1);
 }
 
 int main(int argc, char *argv[]) {
