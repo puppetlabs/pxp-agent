@@ -164,7 +164,7 @@ end
 
 def run(params_and_config)
   params = params_and_config["params"]
-  config = params_and_config["configuration"]
+  config = params_and_config["config"]
 
   if config["puppet_bin"].nil? || config["puppet_bin"].empty?
     return get_result_from_report(DEFAULT_ERROR_CODE, config,
