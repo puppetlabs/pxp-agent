@@ -2,13 +2,10 @@
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.external_module"
 #include <leatherman/logging/logging.hpp>
+#include <leatherman/execution/execution.hpp>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
-
-#ifndef _WIN32
-#include <boost/process.hpp>
-#endif
 
 #include <atomic>
 #include <memory>  // shared_ptr
@@ -27,48 +24,11 @@ static const std::string ACTION_SCHEMA_NAME { "action_metadata" };
 static const std::string METADATA_CONFIGURATION_ENTRY { "configuration" };
 static const std::string METADATA_ACTIONS_ENTRY { "actions" };
 
+namespace lth_exec = leatherman::execution;
+
 //
 // Free functions
 //
-
-// TODO(ale): use leatherman's execution
-// Execute binaries and get output and errors
-void runCommand(const std::string& exec,
-                std::vector<std::string> args,
-                std::string std_in,
-                std::string& std_out,
-                std::string& std_err,
-                int& exitcode) {
-#ifdef _WIN32
-    std_out = "N/A";
-    exitcode = EXIT_FAILURE;
-#else
-    boost::process::context context;
-    context.stdin_behavior = boost::process::capture_stream();
-    context.stdout_behavior = boost::process::capture_stream();
-    context.stderr_behavior = boost::process::capture_stream();
-    context.environment = boost::process::self::get_environment();
-    boost::process::child child = boost::process::launch(exec, args, context);
-
-    boost::process::postream &in = child.get_stdin();
-    in << std_in;
-    in.close();
-
-    boost::process::pistream &out = child.get_stdout();
-    std::string line;
-    while (std::getline(out, line)) {
-        std_out += line;
-    }
-
-    boost::process::pistream &err = child.get_stderr();
-    while (std::getline(err, line)) {
-        std_err += line;
-    }
-
-    auto status = child.wait();
-    exitcode = (status.exited() ? status.exit_status() : EXIT_FAILURE);
-#endif
-}
 
 // Provides the module metadata validator
 PCPClient::Validator getMetadataValidator() {
@@ -147,19 +107,21 @@ const PCPClient::Validator ExternalModule::metadata_validator_ {
 
 // Retrieve and validate the module metadata
 const lth_jc::JsonContainer ExternalModule::getMetadata() {
-    std::string metadata_txt {};
-    std::string error {};
-    int exitcode {};
+    auto exec =
+#ifdef _WIN32
+        lth_exec::execute("cmd.exe", { "/c", path_, "metadata" },
+#else
+        lth_exec::execute(path_, { "metadata" },
+#endif
+         0, {lth_exec::execution_options::merge_environment});
 
-    runCommand(path_, { path_, "metadata" }, "", metadata_txt, error, exitcode);
-
-    if (!error.empty()) {
+    if (!exec.error.empty()) {
         LOG_ERROR("Failed to load the external module metadata from %1%: %2%",
-                  path_, error);
+                  path_, exec.error);
         throw Module::LoadingError { "failed to load external module metadata" };
     }
 
-    lth_jc::JsonContainer metadata { metadata_txt };
+    lth_jc::JsonContainer metadata { exec.output };
 
     try {
         metadata_validator_.validate(metadata, METADATA_SCHEMA_NAME);
@@ -225,9 +187,6 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
 
 
 ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
-    std::string std_out {};
-    std::string std_err {};
-    int exitcode {};
     auto& action_name = request.action();
 
     lth_jc::JsonContainer request_input {};
@@ -238,41 +197,46 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     LOG_INFO("About to execute '%1% %2%' - request input: %3%",
              module_name, action_name, request_input_txt);
 
-    runCommand(path_, { path_, action_name }, request_input_txt, std_out, std_err,
-               exitcode);
+    auto exec =
+#ifdef _WIN32
+        lth_exec::execute("cmd.exe", { "/c", path_, action_name },
+#else
+        lth_exec::execute(path_, { action_name },
+#endif
+        request_input_txt, 0, {lth_exec::execution_options::merge_environment});
 
-    if (std_out.empty()) {
+    if (exec.output.empty()) {
         LOG_DEBUG("'%1% %2%' produced no output", module_name, action_name);
     } else {
-        LOG_DEBUG("'%1% %2%' output: %3%", module_name, action_name, std_out);
+        LOG_DEBUG("'%1% %2%' output: %3%", module_name, action_name, exec.output);
     }
 
-    if (exitcode) {
-        if (!std_err.empty()) {
+    if (exec.exit_code) {
+        if (!exec.error.empty()) {
             LOG_ERROR("'%1% %2%' failure, returned %3%; error: %4%",
-                      module_name, action_name, exitcode, std_err);
+                      module_name, action_name, exec.exit_code, exec.error);
         } else {
             LOG_ERROR("'%1% %2%' failure, returned %3%",
-                      module_name, action_name, exitcode);
+                      module_name, action_name, exec.exit_code);
         }
-    } else if (!std_err.empty()) {
-        LOG_WARNING("'%1% %2%' error: %3%", module_name, action_name, std_err);
+    } else if (!exec.error.empty()) {
+        LOG_WARNING("'%1% %2%' error: %3%", module_name, action_name, exec.error);
     }
 
     // Ensure output format is valid JSON by instantiating JsonContainer
     lth_jc::JsonContainer results {};
 
     try {
-        results = lth_jc::JsonContainer { std_out };
+        results = lth_jc::JsonContainer { exec.output };
     } catch (lth_jc::data_parse_error& e) {
         LOG_ERROR("'%1% %2%' output is not valid JSON: %3%",
                   module_name, action_name, e.what());
         std::string err_msg { "'" + module_name + " " + action_name + "' "
-                              "returned invalid JSON - stderr: " + std_err };
+                              "returned invalid JSON - stderr: " + exec.error };
         throw Module::ProcessingError { err_msg };
     }
 
-    return ActionOutcome { exitcode, std_err, std_out, results };
+    return ActionOutcome { exec.exit_code, exec.error, exec.output, results };
 }
 
 }  // namespace PXPAgent

@@ -1,0 +1,1 @@
+@ruby.exe %~dp0reverse_valid %*

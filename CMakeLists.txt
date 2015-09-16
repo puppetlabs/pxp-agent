@@ -55,6 +55,7 @@ set(LEATHERMAN_USE_RAPIDJSON TRUE)
 set(LEATHERMAN_USE_JSON_CONTAINER TRUE)
 set(LEATHERMAN_USE_LOGGING TRUE)
 set(LEATHERMAN_USE_FILE_UTIL TRUE)
+set(LEATHERMAN_USE_EXECUTION TRUE)
 set(LEATHERMAN_USE_UTIL TRUE)
 set(LEATHERMAN_USE_WINDOWS TRUE)
 leatherman_logging_line_numbers()
@@ -74,9 +75,6 @@ find_package(Boost 1.54 REQUIRED
 find_package(OpenSSL REQUIRED)
 
 # Specify the .cmake files for vendored libraries
-if(NOT WIN32)
-    include(${VENDOR_DIRECTORY}/boost-process.cmake)
-endif()
 include(${VENDOR_DIRECTORY}/horsewhisperer.cmake)
 
 if(EXTERNAL_CPP_PCP_CLIENT)
