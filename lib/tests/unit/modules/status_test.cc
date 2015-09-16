@@ -12,6 +12,7 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/regex.hpp>
 
 #include <catch.hpp>
 
@@ -83,17 +84,12 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
 
     auto testResultFiles =
         [&] (bool success, std::string result_path) {
-            boost::filesystem::path to { result_path };
-
             if (!boost::filesystem::exists(DEFAULT_ACTION_RESULTS_DIR)
                 && !boost::filesystem::create_directory(DEFAULT_ACTION_RESULTS_DIR)) {
                 FAIL("Failed to create the results directory");
             }
 
             auto symlink_name = lth_util::get_UUID();
-            std::string symlink_path { DEFAULT_ACTION_RESULTS_DIR + symlink_name };
-            boost::filesystem::path symlink { symlink_path };
-
             std::string other_status_txt { (STATUS_FORMAT % symlink_name).str() };
             PCPClient::ParsedChunks other_chunks {
                     lth_jc::JsonContainer(ENVELOPE_TXT),
@@ -102,10 +98,18 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
                     0 };
             ActionRequest request { RequestType::Blocking, other_chunks };
 
+            boost::filesystem::path dest { DEFAULT_ACTION_RESULTS_DIR };
+            dest /= symlink_name;
+            if (!boost::filesystem::exists(dest) && !boost::filesystem::create_directory(dest)) {
+                FAIL("Failed to create test directory");
+            }
+
             try {
-                boost::filesystem::create_symlink(to, symlink);
-            } catch (boost::filesystem::filesystem_error) {
-                FAIL("Failed to create the symlink");
+                std::for_each(boost::filesystem::directory_iterator(result_path),
+                    boost::filesystem::directory_iterator(),
+                    [&](boost::filesystem::directory_entry &d) { boost::filesystem::copy(d.path(), dest / d.path().filename()); });
+            } catch (boost::filesystem::filesystem_error &e) {
+                FAIL((boost::format("Failed to copy files: %1%") % e.what()).str());
             }
 
             SECTION("it doesn't throw") {
@@ -125,18 +129,20 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
             }
 
             SECTION("it returns the action output") {
+                // On Windows the line-ending of the test file will depend on your git configuration,
+                // so allow for \r\n or just \n.
                 auto outcome = status_module.executeAction(request);
-                std::string out { (success ? "***OUTPUT\n" : "") };
-                REQUIRE(outcome.results.get<std::string>("stdout") == out);
+                boost::regex out { (success ? "\\*\\*\\*OUTPUT\\r?\\n" : "") };
+                REQUIRE(boost::regex_match(outcome.results.get<std::string>("stdout"), out));
             }
 
             SECTION("it returns the action error string") {
                 auto outcome = status_module.executeAction(request);
-                std::string err { (success ? "" : "***ERROR\n") };
-                REQUIRE(outcome.results.get<std::string>("stderr") == err);
+                boost::regex err { (success ? "" : "\\*\\*\\*ERROR\\r?\\n") };
+                REQUIRE(boost::regex_match(outcome.results.get<std::string>("stderr"), err));
             }
 
-            boost::filesystem::remove(symlink_path);
+            boost::filesystem::remove_all(dest);
         };
 
     SECTION("it correctly retrieves the results of a known job") {

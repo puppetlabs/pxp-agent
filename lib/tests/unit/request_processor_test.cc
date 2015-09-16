@@ -211,7 +211,7 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
             REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
 
             // Wait a bit to let the execution thread finish
-            usleep(100000);  // 100 ms
+            std::this_thread::sleep_for(std::chrono::microseconds(100000));
 
             REQUIRE(c_ptr->sent_provisional_response);
         }
@@ -231,7 +231,7 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
             REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
 
             // Wait a bit to let the execution thread finish
-            usleep(100000);  // 100 ms
+            std::this_thread::sleep_for(std::chrono::microseconds(100000));
 
             REQUIRE(c_ptr->sent_provisional_response);
             REQUIRE(c_ptr->sent_non_blocking_response);

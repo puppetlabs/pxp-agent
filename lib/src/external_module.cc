@@ -6,7 +6,9 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
+#ifndef _WIN32
 #include <boost/process.hpp>
+#endif
 
 #include <atomic>
 #include <memory>  // shared_ptr
@@ -37,6 +39,10 @@ void runCommand(const std::string& exec,
                 std::string& std_out,
                 std::string& std_err,
                 int& exitcode) {
+#ifdef _WIN32
+    std_out = "N/A";
+    exitcode = EXIT_FAILURE;
+#else
     boost::process::context context;
     context.stdin_behavior = boost::process::capture_stream();
     context.stdout_behavior = boost::process::capture_stream();
@@ -61,6 +67,7 @@ void runCommand(const std::string& exec,
 
     auto status = child.wait();
     exitcode = (status.exited() ? status.exit_status() : EXIT_FAILURE);
+#endif
 }
 
 // Provides the module metadata validator

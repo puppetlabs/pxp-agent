@@ -74,7 +74,9 @@ find_package(Boost 1.54 REQUIRED
 find_package(OpenSSL REQUIRED)
 
 # Specify the .cmake files for vendored libraries
-include(${VENDOR_DIRECTORY}/boost-process.cmake)
+if(NOT WIN32)
+    include(${VENDOR_DIRECTORY}/boost-process.cmake)
+endif()
 include(${VENDOR_DIRECTORY}/horsewhisperer.cmake)
 
 if(EXTERNAL_CPP_PCP_CLIENT)
