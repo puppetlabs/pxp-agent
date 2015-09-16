@@ -2,10 +2,13 @@
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.external_module"
 #include <leatherman/logging/logging.hpp>
-#include <leatherman/execution/execution.hpp>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+
+#ifndef _WIN32
+#include <boost/process.hpp>
+#endif
 
 #include <atomic>
 #include <memory>  // shared_ptr
@@ -24,11 +27,48 @@ static const std::string ACTION_SCHEMA_NAME { "action_metadata" };
 static const std::string METADATA_CONFIGURATION_ENTRY { "configuration" };
 static const std::string METADATA_ACTIONS_ENTRY { "actions" };
 
-namespace lth_exec = leatherman::execution;
-
 //
 // Free functions
 //
+
+// TODO(ale): use leatherman's execution
+// Execute binaries and get output and errors
+void runCommand(const std::string& exec,
+                std::vector<std::string> args,
+                std::string std_in,
+                std::string& std_out,
+                std::string& std_err,
+                int& exitcode) {
+#ifdef _WIN32
+    std_out = "N/A";
+    exitcode = EXIT_FAILURE;
+#else
+    boost::process::context context;
+    context.stdin_behavior = boost::process::capture_stream();
+    context.stdout_behavior = boost::process::capture_stream();
+    context.stderr_behavior = boost::process::capture_stream();
+    context.environment = boost::process::self::get_environment();
+    boost::process::child child = boost::process::launch(exec, args, context);
+
+    boost::process::postream &in = child.get_stdin();
+    in << std_in;
+    in.close();
+
+    boost::process::pistream &out = child.get_stdout();
+    std::string line;
+    while (std::getline(out, line)) {
+        std_out += line;
+    }
+
+    boost::process::pistream &err = child.get_stderr();
+    while (std::getline(err, line)) {
+        std_err += line;
+    }
+
+    auto status = child.wait();
+    exitcode = (status.exited() ? status.exit_status() : EXIT_FAILURE);
+#endif
+}
 
 // Provides the module metadata validator
 PCPClient::Validator getMetadataValidator() {
@@ -110,15 +150,8 @@ const lth_jc::JsonContainer ExternalModule::getMetadata() {
     std::string metadata_txt {};
     std::string error {};
     int exitcode {};
-    bool success {};
 
-    std::tie(success, metadata_txt, error, exitcode) =
-#ifdef _WIN32
-        lth_exec::execute("cmd.exe", { "/c", path_, "metadata" },
-#else
-        lth_exec::execute(path_, { "metadata" },
-#endif
-         0, {lth_exec::execution_options::merge_environment});
+    runCommand(path_, { path_, "metadata" }, "", metadata_txt, error, exitcode);
 
     if (!error.empty()) {
         LOG_ERROR("Failed to load the external module metadata from %1%: %2%",
@@ -195,7 +228,6 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     std::string std_out {};
     std::string std_err {};
     int exitcode {};
-    bool success {};
     auto& action_name = request.action();
 
     lth_jc::JsonContainer request_input {};
@@ -206,13 +238,8 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     LOG_INFO("About to execute '%1% %2%' - request input: %3%",
              module_name, action_name, request_input_txt);
 
-    std::tie(success, std_out, std_err, exitcode) =
-#ifdef _WIN32
-        lth_exec::execute("cmd.exe", { "/c", path_, action_name },
-#else
-        lth_exec::execute(path_, { action_name },
-#endif
-        request_input_txt, 0, {lth_exec::execution_options::merge_environment});
+    runCommand(path_, { path_, action_name }, request_input_txt, std_out, std_err,
+               exitcode);
 
     if (std_out.empty()) {
         LOG_DEBUG("'%1% %2%' produced no output", module_name, action_name);

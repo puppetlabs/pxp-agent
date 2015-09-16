@@ -1,1 +1,0 @@
-@ruby.exe %~dp0failures_test %*

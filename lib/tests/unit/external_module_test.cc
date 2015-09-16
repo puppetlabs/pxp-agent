@@ -15,12 +15,6 @@
 #include <vector>
 #include <unistd.h>
 
-#ifdef _WIN32
-#define EXTENSION ".bat"
-#else
-#define EXTENSION ""
-#endif
-
 namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
@@ -41,24 +35,28 @@ static const PCPClient::ParsedChunks CONTENT {
 
 TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
     SECTION("can successfully instantiate from a valid external module") {
-        REQUIRE_NOTHROW(ExternalModule(PXP_AGENT_ROOT_PATH "/lib/tests/resources/modules/reverse_valid" EXTENSION));
+        REQUIRE_NOTHROW(ExternalModule(std::string { PXP_AGENT_ROOT_PATH }
+            + "/lib/tests/resources/modules/reverse_valid"));
     }
 
     SECTION("all actions are successfully loaded from a valid external module") {
-        ExternalModule mod { PXP_AGENT_ROOT_PATH "/lib/tests/resources/modules/failures_test" EXTENSION };
+        ExternalModule mod { std::string { PXP_AGENT_ROOT_PATH }
+                             + "/lib/tests/resources/modules/failures_test" };
         REQUIRE(mod.actions.size() == 2);
     }
 
     SECTION("throw a Module::LoadingError in case the module has an invalid "
             "metadata schema") {
         REQUIRE_THROWS_AS(
-            ExternalModule(PXP_AGENT_ROOT_PATH "/lib/tests/resources/broken_modules/reverse_broken" EXTENSION),
+            ExternalModule(std::string { PXP_AGENT_ROOT_PATH }
+                           + "/lib/tests/resources/broken_modules/reverse_broken"),
             Module::LoadingError);
     }
 }
 
 TEST_CASE("ExternalModule::hasAction", "[modules]") {
-    ExternalModule mod { PXP_AGENT_ROOT_PATH "/lib/tests/resources/modules/reverse_valid" EXTENSION };
+    ExternalModule mod { std::string { PXP_AGENT_ROOT_PATH }
+                         + "/lib/tests/resources/modules/reverse_valid" };
 
     SECTION("correctly reports false") {
         REQUIRE(!mod.hasAction("foo"));
@@ -71,7 +69,8 @@ TEST_CASE("ExternalModule::hasAction", "[modules]") {
 
 TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
     SECTION("the shipped 'reverse' module works correctly") {
-        ExternalModule reverse_module { PXP_AGENT_ROOT_PATH "/modules/reverse" EXTENSION };
+        ExternalModule reverse_module { std::string { PXP_AGENT_ROOT_PATH }
+                                        + "/modules/reverse" };
 
         SECTION("correctly call the shipped reverse module") {
             ActionRequest request { RequestType::Blocking, CONTENT };
@@ -82,7 +81,9 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
     }
 
     SECTION("it should handle module failures") {
-        ExternalModule test_reverse_module { PXP_AGENT_ROOT_PATH "/lib/tests/resources/modules/failures_test" EXTENSION };
+        ExternalModule test_reverse_module {
+            std::string { PXP_AGENT_ROOT_PATH }
+            + "/lib/tests/resources/modules/failures_test" };
 
         SECTION("throw a Module::ProcessingError if the module returns an "
                 "invalid result") {
