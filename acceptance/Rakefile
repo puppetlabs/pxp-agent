@@ -1,0 +1,8 @@
+namespace :ci do
+
+  namespace :test do
+    task :packages do
+    end
+  end
+
+end
