@@ -45,7 +45,7 @@ You can test the module without running a pxp-agent. Make sure the module is
 executable and you can run it like:
 
 ```
-$ sudo echo "{\"params\":{\"env\":[],\"flags\":[\"--noop\"]}, \"configuration\" : {\"puppet_bin\" : \"/opt/puppetlabs/bin/puppet\"}}" | puppet run
+$ sudo echo "{\"params\":{\"env\":[],\"flags\":[\"--noop\"]}, \"config\" : {\"puppet_bin\" : \"/opt/puppetlabs/bin/puppet\"}}" | puppet run
 ```
 
 ### NOTE
