@@ -27,10 +27,10 @@ single JSON object. Example:
 
 ```
 {
-    "server" : "wss://127.0.0.1:8090/pxp/",
-    "ca" : "/Users/psy/work/pxp-agent/test-resources/ssl/ca/ca_crt.pem",
-    "cert" : "/Users/psy/work/pxp-agent/test-resources/ssl/certs/0005_agent_crt.pem",
-    "key" : "/Users/psy/work/pxp-agent/test-resources/ssl/certs/0005_agent_key.pem"
+    "server" : "wss://127.0.0.1:8090/pcp/",
+    "key" : "/etc/puppetlabs/puppet/ssl/private_keys/myhost.net.pem",
+    "ca" : "/etc/puppetlabs/puppet/ssl/certs/ca.pem",
+    "cert" : "/etc/puppetlabs/puppet/ssl/certs/myhost.net.pem"
 }
 ```
 
