@@ -63,6 +63,11 @@ The location of the pxp-agent's private key, example /etc/puppet/ssl/certs/bob_k
 Location of the file where log output should be written to, example /var/log/pxp/agent.log.
 If logfile is not configured output will be logged to the console
 
+**loglevel (optional)**
+
+Specify one of the following logging levels: *none*, *trace*, *debug*, *info*,
+*warning*, *error*, or *fatal*; the default one is *info*
+
 **spool-dir (optional)**
 
 The location where the outcome of non-blocking requests will be stored; the
