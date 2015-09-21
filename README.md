@@ -71,7 +71,15 @@ Specify one of the following logging levels: *none*, *trace*, *debug*, *info*,
 **spool-dir (optional)**
 
 The location where the outcome of non-blocking requests will be stored; the
-default location is /tmp/pxp-agent/
+default location is */tmp/pxp-agent/*
+
+**modules-dir (optional)**
+
+Specify the directory where modules are stored
+
+**modules-config-dir (optional)**
+
+Specify the directory containing the configuration files of modules
 
 ### Starting the agent
 
