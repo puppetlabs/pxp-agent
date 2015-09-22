@@ -26,6 +26,7 @@ namespace PXPAgent {
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
 namespace lth_jc = leatherman::json_container;
+namespace lth_log = leatherman::logging;
 
 #ifdef _WIN32
     namespace lth_w = leatherman::windows;
@@ -244,6 +245,13 @@ void Configuration::defineDefaultValues() {
                                Types::String,
                                ""))));
 
+    defaults_.insert(std::pair<std::string, Base_ptr>("loglevel", Base_ptr(
+        new Entry<std::string>("loglevel",
+                               "",
+                               "Log level; defaults to 'info'",
+                               Types::String,
+                               "info"))));
+
     defaults_.insert(std::pair<std::string, Base_ptr>("config-file", Base_ptr(
         new Entry<std::string>("config-file",
                                "",
@@ -415,7 +423,7 @@ static void validateLogFile(std::string log_file) {
 
 void Configuration::setupLogging() {
     auto logfile = HW::GetFlag<std::string>("logfile");
-    namespace LL = leatherman::logging;
+    auto loglevel = HW::GetFlag<std::string>("loglevel");
 
     if (!logfile.empty()) {
         // NOTE(ale): we must validate the logifle path since we set
@@ -423,28 +431,31 @@ void Configuration::setupLogging() {
         validateLogFile(logfile);
         static std::ofstream file_stream {};
         file_stream.open(lth_file::tilde_expand(logfile), std::ios_base::app);
-        LL::setup_logging(file_stream);
+        lth_log::setup_logging(file_stream);
 #ifdef LOG_COLOR
-        LL::set_colorization(true);
+        lth_log::set_colorization(true);
 #endif  // LOG_COLOR
     } else {
         // Log on stdout by default
-        LL::setup_logging(std::cout);
-        LL::set_colorization(true);
+        lth_log::setup_logging(std::cout);
+        lth_log::set_colorization(true);
     }
 
-    switch (HW::GetFlag<int>("vlevel")) {
-        case 0:
-            LL::set_level(LL::log_level::info);
-            break;
-        case 1:
-            LL::set_level(LL::log_level::debug);
-            break;
-        case 2:
-            LL::set_level(LL::log_level::trace);
-            break;
-        default:
-            LL::set_level(LL::log_level::trace);
+    try {
+        // NOTE(ale): ignoring HorseWhisperer's vlevel ("-v" flag)
+        const std::map<std::string, lth_log::log_level> option_to_log_level {
+            { "none", lth_log::log_level::none },
+            { "trace", lth_log::log_level::trace },
+            { "debug", lth_log::log_level::debug },
+            { "info", lth_log::log_level::info },
+            { "warning", lth_log::log_level::warning },
+            { "error", lth_log::log_level::error },
+            { "fatal", lth_log::log_level::fatal }
+        };
+
+        lth_log::set_level(option_to_log_level.at(loglevel));
+    } catch (const std::out_of_range& e) {
+        throw Configuration::Error { "invalid log level: '" + loglevel + "'" };
     }
 }
 
