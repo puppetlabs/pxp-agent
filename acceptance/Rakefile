@@ -2,6 +2,7 @@ namespace :ci do
 
   namespace :test do
     task :packages do
+      sh('beaker --tests tests')
     end
   end
 

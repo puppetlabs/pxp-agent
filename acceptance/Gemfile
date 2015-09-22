@@ -3,3 +3,4 @@
 source ENV['GEM_SOURCE'] || 'http://rubygems.delivery.puppetlabs.net'
 
 gem 'rake'
+gem 'beaker'
