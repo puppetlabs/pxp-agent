@@ -25,6 +25,10 @@ AGENT_PACKAGES = {
     'inetutils-syslogd',
     'git',
   ],
+  :windows => [
+    'git',
+    'ruby',
+  ]
 }
 
 step 'Install dependencies on agents'

@@ -13,19 +13,7 @@ step 'Install puppet-agent' do
   end
 end
 
-AGENT_PACKAGES = {
-  :redhat => [
-    'puppet-agent',
-  ],
-  :debian => [
-    'puppet-agent',
-  ],
-}
-
-
-# For now, install puppet on everything
-# TODO (JS) - install Puppet server on master
-install_packages_on(hosts, AGENT_PACKAGES)
+install_puppet_agent_on(hosts, {:default_action => 'gem_install'})
 
 step 'Install pxp-module-puppet on all hosts'
 repositories = [
