@@ -156,7 +156,7 @@ void Configuration::validateAndNormalizeConfiguration() {
 
         if (!fs::exists(spool_dir)) {
             LOG_INFO("Creating spool directory '%1%'", spool_dir);
-            if (!fs::create_directory(spool_dir)) {
+            if (!fs::create_directories(spool_dir)) {
                 throw Configuration::Error { "failed to create the results "
                                              "directory '" + spool_dir + "'" };
             }
