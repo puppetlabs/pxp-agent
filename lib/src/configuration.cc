@@ -46,11 +46,11 @@ namespace lth_log = leatherman::logging;
     static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
 #endif
 
-static const std::string DEFAULT_MODULES_DIR = (DEFAULT_SHARE_DIR / "modules").string();
-static const std::string DEFAULT_MODULES_CONF_DIR = (DEFAULT_CONF_DIR / "modules.d").string();
-static const std::string DEFAULT_CONFIG_FILE = (DEFAULT_CONF_DIR / "pxp-agent.cfg").string();
 const std::string DEFAULT_ACTION_RESULTS_DIR { (DEFAULT_SHARE_DIR / "spool").string() };
 
+static const std::string DEFAULT_MODULES_DIR { (DEFAULT_CONF_DIR / "modules").string() };
+static const std::string DEFAULT_MODULES_CONF_DIR { (DEFAULT_CONF_DIR / "modules.d").string() };
+static const std::string DEFAULT_CONFIG_FILE { (DEFAULT_CONF_DIR / "pxp-agent.cfg").string() };
 
 static const std::string AGENT_CLIENT_TYPE { "agent" };
 
