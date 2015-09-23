@@ -29,16 +29,6 @@ namespace lth_jc = leatherman::json_container;
 namespace lth_log = leatherman::logging;
 
 #ifdef _WIN32
-    namespace lth_w = leatherman::windows;
-    const std::string DEFAULT_ACTION_RESULTS_DIR = []() {
-        wchar_t buf[MAX_PATH+1];
-        auto num = GetTempPathW(MAX_PATH+1, buf);
-        if (num <= 0 || num > MAX_PATH) {
-            throw std::runtime_error((boost::format("failure getting Windows TEMP directory: %1%") % lth_w::system_error()).str());
-        }
-        fs::path p = fs::path(buf) / "pxp-agent";
-        return p.string() + "/";
-    }();
     static const fs::path DATA_DIR = []() {
         wchar_t szPath[MAX_PATH+1];
         if (FAILED(SHGetFolderPathW(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szPath))) {
@@ -52,8 +42,6 @@ namespace lth_log = leatherman::logging;
     static const fs::path DEFAULT_SHARE_DIR { DATA_DIR / "var" };
     static const fs::path DEFAULT_CONF_DIR { DATA_DIR / "etc" }
 #else
-    const std::string DEFAULT_ACTION_RESULTS_DIR = "/tmp/pxp-agent/";
-
     static const fs::path DEFAULT_SHARE_DIR { "/opt/puppetlabs/pxp-agent" };
     static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
 #endif
@@ -61,6 +49,8 @@ namespace lth_log = leatherman::logging;
 static const std::string DEFAULT_MODULES_DIR = (DEFAULT_SHARE_DIR / "modules").string();
 static const std::string DEFAULT_MODULES_CONF_DIR = (DEFAULT_CONF_DIR / "modules.d").string();
 static const std::string DEFAULT_CONFIG_FILE = (DEFAULT_CONF_DIR / "pxp-agent.cfg").string();
+const std::string DEFAULT_ACTION_RESULTS_DIR { (DEFAULT_SHARE_DIR / "spool").string() };
+
 
 static const std::string AGENT_CLIENT_TYPE { "agent" };
 
