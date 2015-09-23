@@ -163,10 +163,6 @@ void Configuration::validateAndNormalizeConfiguration() {
         } else if (!fs::is_directory(spool_dir)) {
             throw Configuration::Error { "not a spool directory: " + spool_dir };
         }
-
-        if (spool_dir.back() != '/') {
-            HW::SetFlag<std::string>("spool-dir", spool_dir + "/");
-        }
     }
 
     if (!HW::GetFlag<std::string>("logfile").empty()) {
