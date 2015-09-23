@@ -39,10 +39,7 @@ namespace lth_log = leatherman::logging;
         fs::path p = fs::path(buf) / "pxp-agent";
         return p.string() + "/";
     }();
-
-    static const fs::path DEFAULT_SHARE_DIR { "TBD" };
-
-    static const fs::path DEFAULT_CONF_DIR = []() {
+    static const fs::path DATA_DIR = []() {
         wchar_t szPath[MAX_PATH+1];
         if (FAILED(SHGetFolderPathW(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szPath))) {
             throw std::runtime_error((boost::format(
@@ -51,6 +48,9 @@ namespace lth_log = leatherman::logging;
         }
         return fs::path(szPath) / "PuppetLabs" / "pxp-agent";
     }();
+
+    static const fs::path DEFAULT_SHARE_DIR { DATA_DIR / "var" };
+    static const fs::path DEFAULT_CONF_DIR { DATA_DIR / "etc" }
 #else
     const std::string DEFAULT_ACTION_RESULTS_DIR = "/tmp/pxp-agent/";
 
