@@ -39,7 +39,7 @@ on(agent1, "echo '#{params_and_config.to_json}' | #{run_command}", :acceptable_e
     fail("Failed to parse stdout response from puppet run command as JSON. Exception as string is: '#{e.to_s}'")
   end
   assert(resultJson['exitcode'] == -1, "exitcode in result JSON was not -1")
-  assert(resultJson['error'] == 'Puppet is already running', "error in result JSON was not the expected error 'Puppet is already running'")
+  assert(resultJson['error'] == 'Puppet agent is already performing a run', "error in result JSON was not the expected error 'Puppet agent is already performing a run'")
   assert("unknown" == resultJson['status'], 'run status was not "unknown" (should be unknown due to no report yaml generated)')
 end
 

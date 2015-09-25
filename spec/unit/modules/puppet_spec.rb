@@ -148,14 +148,14 @@ describe "pxp-module-puppet" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(1)
       allow_any_instance_of(Object).to receive(:get_result_from_report).with(1, default_config,
-                                                                        "Puppet exited with a non 0 exitcode")
+                                                                        "Puppet agent exited with a non 0 exitcode")
       start_run(default_config, default_params)
     end
 
     it "populates output when it couldn't start" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(nil)
       allow_any_instance_of(Object).to receive(:get_result_from_report).with(-1, default_config,
-                                                                        "Failed to start Puppet")
+                                                                        "Failed to start Puppet agent")
       start_run(default_config, default_params)
     end
   end
@@ -237,7 +237,7 @@ describe "pxp-module-puppet" do
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(true)
       expect(run({"config" => default_config, "params" => default_params})["error"]).to be ==
-          "Puppet is already running"
+          "Puppet agent is already performing a run"
     end
 
     it "fails if puppet is disabled" do
@@ -245,7 +245,7 @@ describe "pxp-module-puppet" do
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(true)
       expect(run({"config" => default_config, "params" => default_params})["error"]).to be ==
-          "Puppet is disabled"
+          "Puppet agent is disabled"
     end
 
     it "starts the run" do
