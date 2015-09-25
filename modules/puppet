@@ -91,7 +91,7 @@ def start_run(config, params)
   run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false})
 
   if !run_result
-     return get_result_from_report(exitcode, config, "Failed to start Puppet")
+     return get_result_from_report(exitcode, config, "Failed to start Puppet agent")
   end
 
   exitcode = run_result.exitstatus
@@ -99,7 +99,7 @@ def start_run(config, params)
   if exitcode == 0
     return get_result_from_report(exitcode, config)
   else
-    return get_result_from_report(exitcode, config, "Puppet exited with a non 0 exitcode")
+    return get_result_from_report(exitcode, config, "Puppet agent exited with a non 0 exitcode")
   end
 end
 
@@ -180,11 +180,11 @@ def run(params_and_config)
   # run then as mentioned in https://tickets.puppetlabs.com/browse/CTH-272. I'm
   # going to start by failing and take it from there.
   if running?(config)
-    return get_result_from_report(DEFAULT_ERROR_CODE, config, "Puppet is already running")
+    return get_result_from_report(DEFAULT_ERROR_CODE, config, "Puppet agent is already performing a run")
   end
 
   if disabled?(config)
-    return get_result_from_report(DEFAULT_ERROR_CODE, config, "Puppet is disabled")
+    return get_result_from_report(DEFAULT_ERROR_CODE, config, "Puppet agent is disabled")
   end
 
   return start_run(config, params)
