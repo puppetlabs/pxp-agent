@@ -7,6 +7,13 @@ puppet_module_executable = File.join(SourcePath, 'pxp-module-puppet', 'modules',
 agent1 = agents[0]
 agent_pid = 0
 
+teardown do
+  if (agent_pid != 0)
+    step 'Kill the hanging Puppet agent'
+    on(agent1, "kill -9 #{agent_pid}")
+  end
+end
+
 step 'Start and pause puppet agent'
 on(agent1, "cat << EOF > /tmp/pause_puppet.sh\n" +
                         "#!/bin/sh\n\n" +
@@ -42,6 +49,3 @@ on(agent1, "echo '#{params_and_config.to_json}' | #{run_command}", :acceptable_e
   assert(resultJson['error'] == 'Puppet agent is already performing a run', "error in result JSON was not the expected error 'Puppet agent is already performing a run'")
   assert("unknown" == resultJson['status'], 'run status was not "unknown" (should be unknown due to no report yaml generated)')
 end
-
-step 'Kill the hanging Puppet agent'
-on(agent1, "kill -9 #{agent_pid}")
