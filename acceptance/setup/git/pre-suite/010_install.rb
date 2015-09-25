@@ -13,18 +13,7 @@ step 'Install puppet-agent' do
   end
 end
 
-AGENT_PACKAGES = {
-  :redhat => [
-    'puppet-agent',
-  ],
-  :debian => [
-    'puppet-agent',
-  ],
-}
-
-# For now, install puppet on everything
-# TODO (JS) - install Puppet server on master
-install_packages_on(hosts, AGENT_PACKAGES)
+install_puppet_agent_on(hosts, {:default_action => 'gem_install'})
 
 step 'Install pxp-module-puppet on all hosts'
 repositories = [
@@ -49,7 +38,19 @@ step 'Ensure puppet user and group added to master' do
   on master, puppet('resource group puppet   ensure=present')
 end
 
-step 'start all the things' do
-  on master, puppet("config set server #{master} --section agent")
-  on master, puppet('master')
+step 'Hosts: create puppet.conf'
+hosts.each do |host|
+  on host, puppet('config set reports "store"   --section main')
+  on host, puppet("config set server #{master}           --section agent")
+  on host, puppet('config set report true                --section agent')
 end
+on master, puppet("config set 'dns_alt_names' 'puppet,#{master.hostname}'       --section master")
+on master, puppet('config set environmentpath /etc/puppetlabs/code/environments --section master')
+on master, puppet('config set storeconfigs false                                 --section master')
+#on master, puppet('config set storeconfigs_backend puppetdb                     --section master')
+#on master, puppet('config set data_binding_terminus none                        --section master')
+on master, puppet('master')
+
+# TODO (JS) there should be a seperate cert-signing file
+on(agents, puppet("agent --test --server #{master}"), :acceptable_exit_codes => [0,1])
+on(master, puppet("cert sign --all"), :acceptable_exit_codes => [0,24])
