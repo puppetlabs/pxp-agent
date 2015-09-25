@@ -163,6 +163,11 @@ def metadata()
 end
 
 def run(params_and_config)
+  if !params_and_config
+    return get_result_from_report(DEFAULT_ERROR_CODE, {},
+                                  "Invalid json parsed on STDIN. Cannot start run action")
+  end
+
   params = params_and_config["params"]
   config = params_and_config["config"]
 
@@ -173,7 +178,7 @@ def run(params_and_config)
 
   if !File.exist?(config["puppet_bin"])
     return get_result_from_report(DEFAULT_ERROR_CODE, config,
-                             "Puppet executable '#{config["puppet_bin"]}' does not exist")
+                                  "Puppet executable '#{config["puppet_bin"]}' does not exist")
   end
 
   # Instead of failing we could poll until the lockfile goes away and start a
@@ -196,15 +201,7 @@ if __FILE__ == $0
   if action == 'metadata'
     puts metadata.to_json
   else
-    params_and_config = {}
-
-    begin
-      params_and_config = JSON.parse($stdin.read.chomp)
-    rescue => e
-      puts get_result_from_report(1, config,
-                             "Invalid json parsed on STDIN. Cannot start run action").to_json
-      exit 1
-    end
+    params_and_config = JSON.parse($stdin.read.chomp) rescue nil
 
     run_result = run(params_and_config)
     puts run_result.to_json

@@ -248,6 +248,13 @@ describe "pxp-module-puppet" do
           "Puppet agent is disabled"
     end
 
+    it "fails when invalid json is passed" do
+      # JSON is parsed when the action is invoked. Any invalid json will call run
+      # with nil
+      expect(run(nil)["error"]).to be ==
+          "Invalid json parsed on STDIN. Cannot start run action"
+    end
+
     it "starts the run" do
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
