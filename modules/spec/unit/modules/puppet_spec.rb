@@ -1,6 +1,6 @@
 #!/usr/bin/env rspec
 
-load File.join(File.dirname(__FILE__), "../", "../", "../", "modules", "puppet")
+load File.join(File.dirname(__FILE__), "../", "../", "../", "puppet")
 
 describe "pxp-module-puppet" do
 

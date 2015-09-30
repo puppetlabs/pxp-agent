@@ -1,7 +1,7 @@
 language: ruby
 sudo: false
 script:
-  - "bundle exec rspec spec"
+  - cd modules && bundle exec rspec spec
 notifications:
   email: false
 rvm:

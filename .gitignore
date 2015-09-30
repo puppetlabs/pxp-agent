@@ -4,4 +4,3 @@
 /lib/tests/resources/test_spool/
 .idea/
 .DS_Store
-Gemfile.lock
