@@ -1,0 +1,8 @@
+language: ruby
+sudo: false
+script:
+  - "bundle exec rspec spec"
+notifications:
+  email: false
+rvm:
+  - 2.1.7
