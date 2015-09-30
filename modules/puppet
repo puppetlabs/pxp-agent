@@ -42,7 +42,7 @@ def make_command_string(config, params)
     dev_null = "nul"
   end
 
-  return "#{env} #{config["puppet_bin"]} agent -t #{flags} > #{dev_null} 2>&1".lstrip
+  return "#{env} #{config["puppet_bin"]} agent --no-usecacheonfailure --no-splay --show_diff --no-daemonize --onetime --verbose #{flags} > #{dev_null} 2>&1".lstrip
 end
 
 def get_result_from_report(exitcode, config, error = "")
