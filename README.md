@@ -38,7 +38,7 @@ single JSON object. Example:
 
 The PXP agent has the following configuration options
 
-**config-file (optional)**
+**config-file (required)**
 
 Specify which config file to use.
 
