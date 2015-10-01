@@ -29,36 +29,28 @@ namespace lth_jc = leatherman::json_container;
 namespace lth_log = leatherman::logging;
 
 #ifdef _WIN32
-    namespace lth_w = leatherman::windows;
-    const std::string DEFAULT_ACTION_RESULTS_DIR = []() {
-        wchar_t buf[MAX_PATH+1];
-        auto num = GetTempPathW(MAX_PATH+1, buf);
-        if (num <= 0 || num > MAX_PATH) {
-            throw std::runtime_error((boost::format("failure getting Windows TEMP directory: %1%") % lth_w::system_error()).str());
-        }
-        fs::path p = fs::path(buf) / "pxp-agent";
-        return p.string() + "/";
-    }();
-
-    static const fs::path DEFAULT_SHARE_DIR { "TBD" };
-
-    static const fs::path DEFAULT_CONF_DIR = []() {
+    static const fs::path DATA_DIR = []() {
         wchar_t szPath[MAX_PATH+1];
         if (FAILED(SHGetFolderPathW(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szPath))) {
-            throw std::runtime_error((boost::format("failure getting Windows AppData directory: %1%") % lth_w::system_error()).str());
+            throw std::runtime_error((boost::format(
+                "failure getting Windows AppData directory: %1%")
+                    % leatherman::windows::system_error()).str());
         }
         return fs::path(szPath) / "PuppetLabs" / "pxp-agent";
     }();
-#else
-    const std::string DEFAULT_ACTION_RESULTS_DIR = "/tmp/pxp-agent/";
 
+    static const fs::path DEFAULT_SHARE_DIR { DATA_DIR / "var" };
+    static const fs::path DEFAULT_CONF_DIR { DATA_DIR / "etc" }
+#else
     static const fs::path DEFAULT_SHARE_DIR { "/opt/puppetlabs/pxp-agent" };
     static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
 #endif
 
-static const std::string DEFAULT_MODULES_DIR = (DEFAULT_SHARE_DIR / "modules").string();
-static const std::string DEFAULT_MODULES_CONF_DIR = (DEFAULT_CONF_DIR / "modules.d").string();
-static const std::string DEFAULT_CONFIG_FILE = (DEFAULT_CONF_DIR / "pxp-agent.cfg").string();
+const std::string DEFAULT_ACTION_RESULTS_DIR { (DEFAULT_SHARE_DIR / "spool").string() };
+
+static const std::string DEFAULT_MODULES_DIR { (DEFAULT_CONF_DIR / "modules").string() };
+static const std::string DEFAULT_MODULES_CONF_DIR { (DEFAULT_CONF_DIR / "modules.d").string() };
+static const std::string DEFAULT_CONFIG_FILE { (DEFAULT_CONF_DIR / "pxp-agent.cfg").string() };
 
 static const std::string AGENT_CLIENT_TYPE { "agent" };
 
@@ -164,16 +156,12 @@ void Configuration::validateAndNormalizeConfiguration() {
 
         if (!fs::exists(spool_dir)) {
             LOG_INFO("Creating spool directory '%1%'", spool_dir);
-            if (!fs::create_directory(spool_dir)) {
+            if (!fs::create_directories(spool_dir)) {
                 throw Configuration::Error { "failed to create the results "
                                              "directory '" + spool_dir + "'" };
             }
         } else if (!fs::is_directory(spool_dir)) {
             throw Configuration::Error { "not a spool directory: " + spool_dir };
-        }
-
-        if (spool_dir.back() != '/') {
-            HW::SetFlag<std::string>("spool-dir", spool_dir + "/");
         }
     }
 

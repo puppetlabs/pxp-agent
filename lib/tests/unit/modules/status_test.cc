@@ -85,7 +85,7 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
     auto testResultFiles =
         [&] (bool success, std::string result_path) {
             if (!boost::filesystem::exists(DEFAULT_ACTION_RESULTS_DIR)
-                && !boost::filesystem::create_directory(DEFAULT_ACTION_RESULTS_DIR)) {
+                && !boost::filesystem::create_directories(DEFAULT_ACTION_RESULTS_DIR)) {
                 FAIL("Failed to create the results directory");
             }
 
