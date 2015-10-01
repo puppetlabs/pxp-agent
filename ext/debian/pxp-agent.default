@@ -1,0 +1,4 @@
+# Defaults for pxp-agent - sourced by /etc/init.d/pxp-agent
+
+# Startup options
+#PXP_AGENT_OPTIONS=--loglevel=debug

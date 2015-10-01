@@ -1,0 +1,115 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          pxp-agent
+# Required-Start:    $network $named $remote_fs $syslog
+# Required-Stop:     $network $named $remote_fs $syslog
+# Should-Start:      pxp-agent
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+
+PATH=/opt/puppetlabs/puppet/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+exec=/opt/puppetlabs/puppet/bin/pxp-agent
+prog="pxp-agent"
+desc="PXP agent"
+
+piddir=/var/run/puppetlabs
+pidfile="${piddir}/${prog}.pid"
+
+[ -x $exec ] || exit 5
+
+[ -r /etc/default/pxp-agent ] && . /etc/default/pxp-agent
+
+. /lib/lsb/init-functions
+
+reload_pxp_agent() {
+    start-stop-daemon --stop --quiet --signal HUP --pidfile $pidfile --name $prog
+}
+
+start_pxp_agent() {
+    mkdir -p $piddir
+    start-stop-daemon --start --quiet --pidfile $pidfile --startas $exec -- --daemonize $PXP_AGENT_OPTIONS
+}
+
+stop_pxp_agent() {
+    start-stop-daemon --stop --retry TERM/10/KILL/5 --quiet --oknodo --pidfile $pidfile --name $prog && rm -f "${pidfile}"
+}
+
+restart_pxp_agent() {
+    log_begin_msg "Restarting $desc"
+    stop_pxp_agent
+    start_pxp_agent
+    log_end_msg $?
+}
+
+status_pxp_agent() {
+    if (type status_of_proc > /dev/null 2>&1) ; then
+        status_of_proc -p "${pidfile}" "${exec}" "${prog}"
+    else
+        status_of_proc() {
+            local pidfile daemon name status
+
+            pidfile=
+            OPTIND=1
+            while getopts p: opt ; do
+                case "$opt" in
+                    p)  pidfile="$OPTARG";;
+                esac
+            done
+            shift $(($OPTIND - 1))
+
+            if [ -n "$pidfile" ]; then
+                pidfile="-p $pidfile"
+            fi
+            daemon="$1"
+            name="$2"
+            status="0"
+            pidofproc $pidfile $daemon >/dev/null || status="$?"
+            if [ "$status" = 0 ]; then
+                log_success_msg "$name is running"
+                return 0
+            elif [ "$status" = 4 ]; then
+                log_failure_msg "could not access PID file for $name"
+                return $status
+            else
+                log_failure_msg "$name is not running"
+                return $status
+            fi
+        }
+        status_of_proc -p "${pidfile}" "${exec}"
+    fi
+}
+
+case "$1" in
+    start)
+        log_begin_msg "Starting $desc"
+        start_pxp_agent
+        log_end_msg $?
+    ;;
+    stop)
+        log_begin_msg "Stopping $desc"
+        stop_pxp_agent
+        log_end_msg $?
+    ;;
+    reload)
+        log_begin_msg "Reloading $desc"
+        reload_pxp_agent
+        log_end_msg $?
+    ;;
+    status)
+        status_pxp_agent
+    ;;
+    restart|force-reload)
+        restart_pxp_agent
+    ;;
+    condrestart)
+        if status_pxp_agent >/dev/null 2>&1; then
+            restart_pxp_agent
+        fi
+    ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart|condrestart}" >&2
+        exit 1
+    ;;
+esac
