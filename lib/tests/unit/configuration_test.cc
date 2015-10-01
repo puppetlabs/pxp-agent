@@ -32,8 +32,9 @@ const char* ARGV[] = { "test-command",
                        "--cert", CERT.data(),
                        "--key", KEY.data(),
                        "--modules-dir", MODULES_DIR.data(),
+                       "--daemonize=false",
                        "--spool-dir", SPOOL_DIR.data() };
-const int ARGC = 15;
+const int ARGC = 16;
 
 static void configureTest() {
     Configuration::Instance().initialize(ARGC, const_cast<char**>(ARGV), false);
@@ -149,8 +150,8 @@ TEST_CASE("Configuration::get", "[configuration]") {
 
         SECTION("return the default value if the flag was not set") {
             resetTest();
-            // NB: ignoring --spool-dir in ARGV since argc is set to 11
-            Configuration::Instance().initialize(11, const_cast<char**>(ARGV), false);
+            // NB: ignoring --spool-dir in ARGV since argc is set to 14
+            Configuration::Instance().initialize(14, const_cast<char**>(ARGV), false);
 
             REQUIRE(Configuration::Instance().get<std::string>("spool-dir")
                     == DEFAULT_ACTION_RESULTS_DIR);
@@ -228,6 +229,13 @@ TEST_CASE("Configuration::validateAndNormalizeConfiguration", "[configuration]")
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
                           Configuration::Error);
     }
+
+    SECTION("it fails when daemonize is set by no logfile is specified") {
+        Configuration::Instance().set<bool>("daemonize", true);
+        REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
+                          Configuration::Error);
+    }
+
     resetTest();
 }
 

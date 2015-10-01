@@ -13,7 +13,7 @@ include_directories(
     ${facter_INCLUDE_DIR}
 )
 
-set(LIBRARY_SOURCES
+set(LIBRARY_COMMON_SOURCES
     src/action_request.cc
     src/agent.cc
     src/configuration.cc
@@ -27,6 +27,13 @@ set(LIBRARY_SOURCES
     src/pxp_schemas.cc
     src/thread_container.cc
 )
+
+if (UNIX)
+    set(LIBRARY_STANDARD_SOURCES
+        src/util/posix/pid_file.cc
+        src/util/posix/daemonize.cc
+    )
+endif()
 
 SET(LIBS
     ${cpp-pcp-client_LIBRARY}
@@ -44,7 +51,8 @@ else()
     set(LIBPXP_AGENT_INSTALL_DESTINATION lib)
 endif()
 
-add_library(libpxp-agent ${LIBRARY_SOURCES})
+add_library(libpxp-agent ${LIBRARY_COMMON_SOURCES} ${LIBRARY_STANDARD_SOURCES})
+
 target_link_libraries(libpxp-agent ${LIBS})
 set_target_properties(libpxp-agent PROPERTIES PREFIX "" SUFFIX ".so" IMPORT_PREFIX "" IMPORT_SUFFIX ".so.a")
 

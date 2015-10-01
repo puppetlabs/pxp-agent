@@ -158,6 +158,7 @@ class Configuration {
     void parseConfigFile();
     void setupLogging();
     void setAgentConfiguration();
+    void setNonExposedOptions();
 };
 
 }  // namespace PXPAgent
