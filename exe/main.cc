@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
         // Failed to validate action argument or flag
         err_msg = e.what();
     } catch(Configuration::Error& e) {
-        std::cout << "An unexpected error has occurred:\n";
+        std::cout << "An unexpected error has occurred:\n  ";
         err_msg = e.what();
     }
 
