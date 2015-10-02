@@ -7,5 +7,5 @@
   :'puppetserver-confdir' => '/etc/puppetserver/conf.d',
   :pre_suite     => [
     'setup/git/pre-suite/000_EnvSetup.rb',
-    'setup/git/pre-suite/010_Install.rb',],
+    'setup/git/pre-suite/010_install.rb',],
 }
