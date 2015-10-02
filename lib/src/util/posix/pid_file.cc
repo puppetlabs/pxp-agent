@@ -32,8 +32,18 @@ PIDFile::PIDFile(const std::string& dir_path_)
           file_path { dir_path + "/" + FILENAME },
           locked_fd { FD_PUN },
           cleanup_when_done { false } {
-    if (!fs::exists(dir_path) || !fs::is_directory(dir_path)) {
-        throw PIDFile::Error { "the specified PID directory does not exist" };
+    if (fs::exists(dir_path)) {
+        if (!fs::is_directory(dir_path)) {
+            throw PIDFile::Error { "the PID directory '" + dir_path
+                                   + "' is not a directory" };
+        }
+    } else {
+        LOG_INFO("Creating PID directory '%1%'", dir_path);
+        try {
+            fs::create_directory(dir_path);
+        } catch (const fs::filesystem_error& e) {
+            throw PIDFile::Error { e.what() };
+        }
     }
 }
 

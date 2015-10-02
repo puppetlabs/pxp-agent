@@ -48,8 +48,8 @@ TEST_CASE("PIDFile ctor", "[util]") {
         REQUIRE_NOTHROW(PIDFile { PID_DIR });
     }
 
-    SECTION("cannot instantiate if the directory does not exist") {
-        REQUIRE_THROWS_AS(PIDFile { PID_DIR + "/foo/bar" }, PIDFile::Error);
+    SECTION("can instantiate if the directory does not exist") {
+        REQUIRE_NOTHROW(PIDFile { PID_DIR + "/foo/bar" });
     }
 
     SECTION("cannot instantiate if the directory is a regular file") {

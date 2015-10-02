@@ -34,6 +34,7 @@ class PIDFile {
     void lock();
 
     // Write the specified PID number plus a newline.
+    // Create the PID directory if necessary.
     // Throw a PIDFile::Error if it fails.
     void write(const pid_t& pid);
 

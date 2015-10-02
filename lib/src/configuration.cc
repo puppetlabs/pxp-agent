@@ -183,15 +183,6 @@ void Configuration::validateAndNormalizeConfiguration() {
                                          "as a daemon" };
         }
 
-        if (!fs::exists(PID_DIR)) {
-            LOG_INFO("Creating PID directory '%1%'", PID_DIR);
-            if (!fs::create_directories(PID_DIR)) {
-                throw Configuration::Error { "failed to create the PID "
-                                             "directory '" + PID_DIR + "'" };
-            }
-        } else if (!fs::is_directory(PID_DIR)) {
-            throw Configuration::Error { "not a directory: " + PID_DIR };
-        }
     }
 }
 

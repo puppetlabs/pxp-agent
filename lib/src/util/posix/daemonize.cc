@@ -43,6 +43,9 @@ std::unique_ptr<PIDFile> daemonize() {
         return nullptr;
     }
 
+    // Set umask; child processes will inherit
+    umask(UMASK_FLAGS);
+
     // Lock the PID file
 
     auto pid_dir = Configuration::Instance().get<std::string>("pid-dir");
@@ -121,9 +124,6 @@ std::unique_ptr<PIDFile> daemonize() {
 
     // Write PID to file
     pidf_ptr->write(agent_pid);
-
-    // Set umask
-    umask(UMASK_FLAGS);
 
     // Change work directory
     if (chdir(DEFAULT_DAEMON_WORKING_DIR.data())) {
