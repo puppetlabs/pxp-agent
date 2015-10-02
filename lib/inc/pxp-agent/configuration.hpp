@@ -9,7 +9,8 @@ namespace PXPAgent {
 
 namespace HW = HorseWhisperer;
 
-extern const std::string DEFAULT_ACTION_RESULTS_DIR;
+extern const std::string DEFAULT_SPOOL_DIR;     // used by unit tests
+extern const std::string LOGFILE_NAME;          // not configurable
 
 enum Types { Integer, String, Bool, Double };
 

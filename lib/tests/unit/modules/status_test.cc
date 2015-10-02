@@ -2,7 +2,7 @@
 #include "../content_format.hpp"                    // ENVELOPE_TXT
 
 #include <pxp-agent/modules/status.hpp>
-#include <pxp-agent/configuration.hpp>              // DEFAULT_ACTION_RESULTS_DIR
+#include <pxp-agent/configuration.hpp>              // DEFAULT_SPOOL_DIR
 
 #include <cpp-pcp-client/protocol/chunks.hpp>       // ParsedChunks
 
@@ -33,15 +33,7 @@ boost::format STATUS_FORMAT {
     "}"
 };
 
-static const std::string STATUS_TXT { (STATUS_FORMAT % "the-uuid-string").str() };
-
 static const std::vector<lth_jc::JsonContainer> NO_DEBUG {};
-
-static const PCPClient::ParsedChunks PARSED_CHUNKS {
-                    lth_jc::JsonContainer(ENVELOPE_TXT),
-                    lth_jc::JsonContainer(STATUS_TXT),
-                    NO_DEBUG,
-                    0 };
 
 TEST_CASE("Modules::Status::executeAction", "[modules]") {
     Modules::Status status_module {};
@@ -58,6 +50,11 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
     }
 
     SECTION("it can call the 'query' action") {
+        PCPClient::ParsedChunks PARSED_CHUNKS {
+            lth_jc::JsonContainer(ENVELOPE_TXT),
+            lth_jc::JsonContainer((STATUS_FORMAT % "the-uuid-string").str()),
+            NO_DEBUG,
+            0 };
         ActionRequest request { RequestType::Blocking, PARSED_CHUNKS };
         REQUIRE_NOTHROW(status_module.executeAction(request));
     }
@@ -76,19 +73,19 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
             REQUIRE_NOTHROW(status_module.executeAction(request));
         }
 
-        SECTION("it returns status 'Unknown'") {
+        SECTION("it returns status 'unknown'") {
             auto outcome = status_module.executeAction(request);
-            REQUIRE(outcome.results.get<std::string>("status") == "Unknown");
+            REQUIRE(outcome.results.get<std::string>("status") == "unknown");
         }
+    }
+
+    if (!boost::filesystem::exists(DEFAULT_SPOOL_DIR)
+        && !boost::filesystem::create_directories(DEFAULT_SPOOL_DIR)) {
+        FAIL("Failed to create the results directory");
     }
 
     auto testResultFiles =
         [&] (bool success, std::string result_path) {
-            if (!boost::filesystem::exists(DEFAULT_ACTION_RESULTS_DIR)
-                && !boost::filesystem::create_directory(DEFAULT_ACTION_RESULTS_DIR)) {
-                FAIL("Failed to create the results directory");
-            }
-
             auto symlink_name = lth_util::get_UUID();
             std::string other_status_txt { (STATUS_FORMAT % symlink_name).str() };
             PCPClient::ParsedChunks other_chunks {
@@ -98,7 +95,7 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
                     0 };
             ActionRequest request { RequestType::Blocking, other_chunks };
 
-            boost::filesystem::path dest { DEFAULT_ACTION_RESULTS_DIR };
+            boost::filesystem::path dest { DEFAULT_SPOOL_DIR };
             dest /= symlink_name;
             if (!boost::filesystem::exists(dest)
                     && !boost::filesystem::create_directories(dest)) {

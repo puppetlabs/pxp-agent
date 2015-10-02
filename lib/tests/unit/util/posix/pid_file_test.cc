@@ -29,7 +29,7 @@ const std::string TMP_DIR { std::string { PXP_AGENT_ROOT_PATH }
                             + "/lib/tests/resources/test_spool/tmp_pid" };
 
 void initializeTmpPIDFile(const std::string dir, const std::string& txt) {
-    if (!fs::exists(dir) && !fs::create_directory(dir)) {
+    if (!fs::exists(dir) && !fs::create_directories(dir)) {
         FAIL("failed to create tmp_pid directory");
     }
 
@@ -71,7 +71,7 @@ TEST_CASE("PIDFile::isExecuting") {
 
     SECTION("returns false if the file does not exist") {
         fs::remove_all(TMP_DIR);
-        if (!fs::create_directory(TMP_DIR)) {
+        if (!fs::create_directories(TMP_DIR)) {
             FAIL("failed to create tmp_pid directory");
         }
         PIDFile p_f { TMP_DIR };
@@ -111,7 +111,7 @@ TEST_CASE("PIDFile::read", "[util]") {
 TEST_CASE("PIDFile::write", "[util]") {
     SECTION("successfully writes into the PID file") {
         fs::remove_all(TMP_DIR);
-        if (!fs::create_directory(TMP_DIR)) {
+        if (!fs::create_directories(TMP_DIR)) {
             FAIL("failed to create tmp_pid directory");
         }
         PIDFile p_f { TMP_DIR };
@@ -128,7 +128,7 @@ TEST_CASE("PIDFile::write", "[util]") {
 TEST_CASE("PIDFile::cleanup", "[util]") {
     SECTION("successfully removes the PID file") {
         fs::remove_all(TMP_DIR);
-        if (!fs::create_directory(TMP_DIR)) {
+        if (!fs::create_directories(TMP_DIR)) {
             FAIL("failed to create tmp_pid directory");
         }
         PIDFile p_f { TMP_DIR };

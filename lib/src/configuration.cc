@@ -30,41 +30,40 @@ namespace lth_log = leatherman::logging;
 
 #ifdef _WIN32
     namespace lth_w = leatherman::windows;
-    const std::string DEFAULT_ACTION_RESULTS_DIR = []() {
-        wchar_t buf[MAX_PATH+1];
-        auto num = GetTempPathW(MAX_PATH+1, buf);
-        if (num <= 0 || num > MAX_PATH) {
-            throw std::runtime_error(
-                (boost::format("failure getting Windows TEMP directory: %1%")
-                    % lth_w::system_error()).str());
-        }
-        fs::path p = fs::path(buf) / "pxp-agent";
-        return p.string() + "/";
-    }();
-
-    static const fs::path DEFAULT_SHARE_DIR { "TBD" };
-
-    static const fs::path DEFAULT_CONF_DIR = []() {
+    static const fs::path DATA_DIR = []() {
         wchar_t szPath[MAX_PATH+1];
         if (FAILED(SHGetFolderPathW(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szPath))) {
-            throw std::runtime_error(
+            throw Configuration::Error {
                 (boost::format("failure getting Windows AppData directory: %1%")
-                    % lth_w::system_error()).str());
+                    % lth_w::system_error()).str() };
         }
         return fs::path(szPath) / "PuppetLabs" / "pxp-agent";
     }();
-#else
-    const std::string DEFAULT_ACTION_RESULTS_DIR = "/tmp/pxp-agent/";
 
-    static const fs::path DEFAULT_SHARE_DIR { "/opt/puppetlabs/pxp-agent" };
+    static const fs::path DEFAULT_CONF_DIR { DATA_DIR / "etc" };
+    const std::string DEFAULT_SPOOL_DIR { (DATA_DIR / "var" / "spool").string() };
+    static const std::string PID_DIR { (DATA_DIR / "var" / "run").string() };
+    static const std::string DEFAULT_LOG_DIR { (DATA_DIR / "var" / "log").string() };
+#else
     static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
+    const std::string DEFAULT_SPOOL_DIR { "/opt/puppetlabs/pxp-agent/spool" };
+    static const std::string PID_DIR { "/var/run/puppetlabs" };
+    static const std::string DEFAULT_LOG_DIR { "/var/log/puppetlabs/pxp-agent" };
 #endif
 
-static const std::string DEFAULT_MODULES_DIR = (DEFAULT_SHARE_DIR / "modules").string();
-static const std::string DEFAULT_MODULES_CONF_DIR = (DEFAULT_CONF_DIR / "modules.d").string();
-static const std::string DEFAULT_CONFIG_FILE = (DEFAULT_CONF_DIR / "pxp-agent.cfg").string();
+
+// TODO(ale): temporary fix; update this for CTH-373
+static const std::string DEFAULT_MODULES_DIR {
+    (fs::current_path() / "modules").string() };
+
+
+static const std::string DEFAULT_MODULES_CONF_DIR {
+    (DEFAULT_CONF_DIR / "modules").string() };
+static const std::string DEFAULT_CONFIG_FILE {
+    (DEFAULT_CONF_DIR / "pxp-agent.conf").string() };
 
 static const std::string AGENT_CLIENT_TYPE { "agent" };
+const std::string LOGFILE_NAME { "pxp-agent.log" };
 
 //
 // Public interface
@@ -169,22 +168,13 @@ void Configuration::validateAndNormalizeConfiguration() {
 
         if (!fs::exists(spool_dir)) {
             LOG_INFO("Creating spool directory '%1%'", spool_dir);
-            if (!fs::create_directory(spool_dir)) {
+            if (!fs::create_directories(spool_dir)) {
                 throw Configuration::Error { "failed to create the results "
                                              "directory '" + spool_dir + "'" };
             }
         } else if (!fs::is_directory(spool_dir)) {
             throw Configuration::Error { "not a spool directory: " + spool_dir };
         }
-
-        if (spool_dir.back() != '/') {
-            HW::SetFlag<std::string>("spool-dir", spool_dir + "/");
-        }
-    }
-
-    if (!HW::GetFlag<std::string>("logfile").empty()) {
-        auto path = lth_file::shell_quote(HW::GetFlag<std::string>("logfile"));
-        HW::SetFlag<std::string>("logfile", path);
     }
 
     if (HW::GetFlag<bool>("daemonize")) {
@@ -193,16 +183,14 @@ void Configuration::validateAndNormalizeConfiguration() {
                                          "as a daemon" };
         }
 
-        auto pid_dir = DEFAULT_CONF_DIR.string();
-
-        if (!fs::exists(pid_dir)) {
-            LOG_INFO("Creating PID directory '%1%'", pid_dir);
-            if (!fs::create_directory(pid_dir)) {
+        if (!fs::exists(PID_DIR)) {
+            LOG_INFO("Creating PID directory '%1%'", PID_DIR);
+            if (!fs::create_directories(PID_DIR)) {
                 throw Configuration::Error { "failed to create the PID "
-                                             "directory '" + pid_dir + "'" };
+                                             "directory '" + PID_DIR + "'" };
             }
-        } else if (!fs::is_directory(pid_dir)) {
-            throw Configuration::Error { "not a directory: " + pid_dir };
+        } else if (!fs::is_directory(PID_DIR)) {
+            throw Configuration::Error { "not a directory: " + PID_DIR };
         }
     }
 }
@@ -227,12 +215,6 @@ void Configuration::defineDefaultValues() {
     HW::SetAppName("pxp-agent");
     HW::SetHelpBanner("Usage: pxp-agent [options]");
     HW::SetVersion(std::string { PXP_AGENT_VERSION } + "\n");
-
-    std::string modules_dir { "" };
-
-    if (fs::is_directory(DEFAULT_MODULES_DIR)) {
-        modules_dir = DEFAULT_MODULES_DIR;
-    }
 
     defaults_.insert(std::pair<std::string, Base_ptr>("server", Base_ptr(
         new Entry<std::string>("server",
@@ -262,12 +244,12 @@ void Configuration::defineDefaultValues() {
                                Types::String,
                                ""))));
 
-    defaults_.insert(std::pair<std::string, Base_ptr>("logfile", Base_ptr(
-        new Entry<std::string>("logfile",
+    defaults_.insert(std::pair<std::string, Base_ptr>("logdir", Base_ptr(
+        new Entry<std::string>("logdir",
                                "",
-                               "Log file (defaults to console logging)",
+                               { "Log directory, default: " + DEFAULT_LOG_DIR },
                                Types::String,
-                               ""))));
+                               DEFAULT_LOG_DIR))));
 
     defaults_.insert(std::pair<std::string, Base_ptr>("loglevel", Base_ptr(
         new Entry<std::string>("loglevel",
@@ -276,33 +258,44 @@ void Configuration::defineDefaultValues() {
                                Types::String,
                                "info"))));
 
+    defaults_.insert(std::pair<std::string, Base_ptr>("console-logger", Base_ptr(
+        new Entry<bool>("console-logger",
+                        "",
+                        "Show log messages only on console, default: false "
+                        "(log to file)",
+                        Types::Bool,
+                        false))));
+
     defaults_.insert(std::pair<std::string, Base_ptr>("config-file", Base_ptr(
         new Entry<std::string>("config-file",
                                "",
-                               "Specify a non default config file to use",
+                               { "Config file, default: " + DEFAULT_CONFIG_FILE },
                                Types::String,
                                DEFAULT_CONFIG_FILE))));
 
     defaults_.insert(std::pair<std::string, Base_ptr>("spool-dir", Base_ptr(
         new Entry<std::string>("spool-dir",
                                "",
-                               "Specify directory to spool delayed results to",
+                               { "Spool action results directory, default: " +
+                                    DEFAULT_SPOOL_DIR },
                                Types::String,
-                               DEFAULT_ACTION_RESULTS_DIR))));
+                               DEFAULT_SPOOL_DIR))));
 
     defaults_.insert(std::pair<std::string, Base_ptr>("modules-config-dir", Base_ptr(
         new Entry<std::string>("modules-config-dir",
                                "",
-                               "Specify directory where module config files are stored",
+                               { "Module config files directory, default: " +
+                                    DEFAULT_MODULES_CONF_DIR },
                                Types::String,
                                DEFAULT_MODULES_CONF_DIR))));
 
     defaults_.insert(std::pair<std::string, Base_ptr>("modules-dir", Base_ptr(
         new Entry<std::string>("modules-dir",
                                "",
-                               "Specify directory containing external modules",
+                               { "Dirctory with modules scripts, default: " +
+                                    DEFAULT_MODULES_DIR },
                                Types::String,
-                               modules_dir))));
+                               DEFAULT_MODULES_DIR))));
 
     defaults_.insert(std::pair<std::string, Base_ptr>("daemonize", Base_ptr(
         new Entry<bool>("daemonize",
@@ -367,6 +360,7 @@ void Configuration::setDefaultValues() {
 void Configuration::parseConfigFile() {
     lth_jc::JsonContainer config_json;
 
+    // TODO(ale): update this for CTH-380
     if (!lth_file::file_readable(config_file_)) {
         throw Configuration::Error { "config file '" + config_file_
                                      + "' doesn't exist" };
@@ -435,35 +429,41 @@ void Configuration::parseConfigFile() {
     }
 }
 
-static void validateLogFile(std::string log_file) {
-    log_file = lth_file::tilde_expand(log_file);
-    boost::filesystem::path log_path { log_file };
-
-    if (boost::filesystem::exists(log_path)) {
-        // Check existent file
-        if (!boost::filesystem::is_regular_file(log_path)) {
-            throw Configuration::Error { "log file is not a regular file" };
+static void validateLogDirPath(fs::path logdir_path) {
+    if (boost::filesystem::exists(logdir_path)) {
+        if (!boost::filesystem::is_directory(logdir_path)) {
+            throw Configuration::Error { "log directory is not a directory" };
         }
     } else {
-        // Check parent directory
-        auto log_dir = log_path.parent_path();
-        if (!boost::filesystem::exists(log_dir)) {
-            throw Configuration::Error { "invalid log file path; parent "
+        auto parentdir_path = logdir_path.parent_path();
+        if (!boost::filesystem::exists(parentdir_path)) {
+            throw Configuration::Error { "invalid log directory; parent "
                                          "directory does not exist" };
         }
     }
 }
 
 void Configuration::setupLogging() {
-    auto logfile = HW::GetFlag<std::string>("logfile");
+    auto console_logger = HW::GetFlag<bool>("console-logger");
     auto loglevel = HW::GetFlag<std::string>("loglevel");
 
-    if (!logfile.empty()) {
+    if (!console_logger) {
+        auto logdir = HW::GetFlag<std::string>("logdir");
+
+        if (logdir.empty()) {
+            throw Configuration::Error { "must specify either log directory or "
+                                         "console-logger flag" };
+        }
+
+        fs::path logdir_path { lth_file::tilde_expand(logdir) };
+
         // NOTE(ale): we must validate the logifle path since we set
         // up logging before calling validateAndNormalizeConfiguration
-        validateLogFile(logfile);
+        validateLogDirPath(logdir_path);
+
+        auto logfile = (logdir_path / LOGFILE_NAME).string();
         static std::ofstream file_stream {};
-        file_stream.open(lth_file::tilde_expand(logfile), std::ios_base::app);
+        file_stream.open(logfile, std::ios_base::app);
         lth_log::setup_logging(file_stream);
 #ifdef LOG_COLOR
         lth_log::set_colorization(true);
@@ -507,7 +507,7 @@ void Configuration::setAgentConfiguration() {
 void Configuration::setNonExposedOptions() {
     HW::DefineGlobalFlag<std::string>("pid-dir",
                                       "",
-                                      DEFAULT_CONF_DIR.string(),
+                                      PID_DIR,
                                       nullptr);
 }
 
