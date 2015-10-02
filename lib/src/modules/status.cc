@@ -16,6 +16,11 @@ namespace lth_file = leatherman::file_util;
 
 static const std::string QUERY { "query" };
 
+const std::string Status::UNKNOWN { "unknown" };
+const std::string Status::SUCCESS { "success" };
+const std::string Status::FAILURE { "failure" };
+const std::string Status::RUNNING { "running" };
+
 Status::Status() {
     module_name = "status";
     actions.push_back(QUERY);
@@ -36,7 +41,7 @@ ActionOutcome Status::callAction(const ActionRequest& request) {
 
     if (!boost::filesystem::exists(results_dir)) {
         LOG_ERROR("Found no results for job %1%", t_id);
-        results.set<std::string>("status", "Unknown");
+        results.set<std::string>("status", Status::UNKNOWN);
     } else {
         LOG_DEBUG("Retrieving results for job %1% from %2%", t_id, results_dir);
         lth_jc::JsonContainer status_data { lth_file::read(results_dir + "/status") };
@@ -45,9 +50,10 @@ ActionOutcome Status::callAction(const ActionRequest& request) {
         auto exitcode = status_data.get<int>("exitcode");;
 
         if (status_txt == "running") {
-            results.set<std::string>("status", "running");
+            results.set<std::string>("status", Status::RUNNING);
         } else if (status_txt == "completed") {
-            std::string status { (exitcode == EXIT_SUCCESS ? "success" : "failure") };
+            std::string status {
+                (exitcode == EXIT_SUCCESS ? Status::SUCCESS : Status::FAILURE) };
             auto err = lth_file::read(results_dir + "/stderr");
             auto out = lth_file::read(results_dir + "/stdout");
 
@@ -56,7 +62,7 @@ ActionOutcome Status::callAction(const ActionRequest& request) {
             results.set<std::string>("stdout", out);
             results.set<std::string>("stderr", err);
         } else {
-            results.set<std::string>("status", "unknown");
+            results.set<std::string>("status", Status::UNKNOWN);
         }
     }
 
