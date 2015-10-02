@@ -2,6 +2,8 @@ namespace :ci do
 
   namespace :test do
     task :packages do
+      `eval "$(ssh-agent -t 24h -s)"`
+      `ssh-add "${HOME}/.ssh/id_rsa"`
       sh('beaker -h config/nodes/centos7-64mdc-centos7-64a-nodefaultrole.yaml '\
          '--tests tests '\
          '--options config/git/options.rb')
