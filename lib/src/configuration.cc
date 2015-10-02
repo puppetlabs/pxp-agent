@@ -188,8 +188,9 @@ void Configuration::validateAndNormalizeConfiguration() {
     }
 
     if (HW::GetFlag<bool>("daemonize")) {
-        if (HW::GetFlag<std::string>("logfile").empty()) {
-            throw Configuration::Error { "must specify a logfile to run as a daemon" };
+        if (HW::GetFlag<bool>("console-logger")) {
+            throw Configuration::Error { "must log to file when executing "
+                                         "as a daemon" };
         }
 
         auto pid_dir = DEFAULT_CONF_DIR.string();
@@ -367,7 +368,8 @@ void Configuration::parseConfigFile() {
     lth_jc::JsonContainer config_json;
 
     if (!lth_file::file_readable(config_file_)) {
-        throw Configuration::Error { "Config file '" + config_file_ + "' doesn't exist" };
+        throw Configuration::Error { "config file '" + config_file_
+                                     + "' doesn't exist" };
     }
 
     try {
@@ -377,7 +379,8 @@ void Configuration::parseConfigFile() {
     }
 
     if (config_json.type() != lth_jc::DataType::Object) {
-        throw Configuration::Error { "invalid config file content; not a JSON object" };
+        throw Configuration::Error { "invalid config file content; not a "
+                                     "JSON object" };
     }
 
     for (const auto& key : config_json.keys()) {
