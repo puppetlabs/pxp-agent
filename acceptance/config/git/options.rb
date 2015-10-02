@@ -8,4 +8,8 @@
   :pre_suite     => [
     'setup/git/pre-suite/000_EnvSetup.rb',
     'setup/git/pre-suite/010_install.rb',],
+  :ssh           => {
+    :keys => ["id_rsa_acceptance", "#{ENV['HOME']}/.ssh/id_rsa-acceptance",
+              "id_rsa", "#{ENV['HOME']}/.ssh/id_rsa"],
+  },
 }
