@@ -98,7 +98,7 @@ std::unique_ptr<PIDFile> daemonize() {
         removeLockAndExit(EXIT_FAILURE);
     }
 
-    // Second fork - the child wont be a session leader and wont be
+    // Second fork - the child won't be a session leader and won't be
     // associated with any controlling terminal
 
     auto second_child_pid = fork();

@@ -100,14 +100,18 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
 
             boost::filesystem::path dest { DEFAULT_ACTION_RESULTS_DIR };
             dest /= symlink_name;
-            if (!boost::filesystem::exists(dest) && !boost::filesystem::create_directory(dest)) {
+            if (!boost::filesystem::exists(dest)
+                    && !boost::filesystem::create_directories(dest)) {
                 FAIL("Failed to create test directory");
             }
 
             try {
                 std::for_each(boost::filesystem::directory_iterator(result_path),
-                    boost::filesystem::directory_iterator(),
-                    [&](boost::filesystem::directory_entry &d) { boost::filesystem::copy(d.path(), dest / d.path().filename()); });
+                              boost::filesystem::directory_iterator(),
+                              [&](boost::filesystem::directory_entry &d) {
+                                  boost::filesystem::copy(
+                                    d.path(), dest / d.path().filename());
+                              });
             } catch (boost::filesystem::filesystem_error &e) {
                 FAIL((boost::format("Failed to copy files: %1%") % e.what()).str());
             }
@@ -129,17 +133,20 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
             }
 
             SECTION("it returns the action output") {
-                // On Windows the line-ending of the test file will depend on your git configuration,
-                // so allow for \r\n or just \n.
+                // On Windows the line-ending of the test file will
+                // depend on your git configuration, so allow for
+                // \r\n or just \n.
                 auto outcome = status_module.executeAction(request);
                 boost::regex out { (success ? "\\*\\*\\*OUTPUT\\r?\\n" : "") };
-                REQUIRE(boost::regex_match(outcome.results.get<std::string>("stdout"), out));
+                REQUIRE(boost::regex_match(
+                    outcome.results.get<std::string>("stdout"), out));
             }
 
             SECTION("it returns the action error string") {
                 auto outcome = status_module.executeAction(request);
                 boost::regex err { (success ? "" : "\\*\\*\\*ERROR\\r?\\n") };
-                REQUIRE(boost::regex_match(outcome.results.get<std::string>("stderr"), err));
+                REQUIRE(boost::regex_match(
+                    outcome.results.get<std::string>("stderr"), err));
             }
 
             boost::filesystem::remove_all(dest);
