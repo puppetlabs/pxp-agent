@@ -3,7 +3,23 @@ require 'json'
 
 def action_metadata
    metadata = {
-    :description => "valid schema for unit tests",
+    :description => "schema test",
+    :configuration => {
+      :type => "object",
+      :properties => {
+        :spam_dir => {
+          :type => "string"
+        },
+        :eggs_dir => {
+          :type => "string"
+        },
+        :beans_file => {
+          :type => "string"
+        }
+      },
+      :required => [:spam_dir, :eggs_dir, :beans_file],
+      :additionalProperties => false,
+    },
     :actions => [
       { :name => "string",
         :description => "reverses a string",
@@ -26,6 +42,30 @@ def action_metadata
           :required => [ :output ],
         },
       },
+      { :name => "hash",
+        :description => "reverses an element of a hash",
+        :input => {
+          :type => "object",
+          :properties => {
+            :input => {
+              :type => 'string',
+            },
+          },
+          :required => [ :input ],
+        },
+        :output => {
+          :type => "object",
+          :properties => {
+            :input => {
+              :type => 'string',
+            },
+            :output => {
+              :type => 'string',
+            },
+          },
+          :required => [ :input, :output ],
+        },
+      },
     ],
   }
 
@@ -33,9 +73,15 @@ def action_metadata
 end
 
 def action_string
-  params = JSON.load($stdin)
+  params = JSON.load($stdin)["params"]
   output = { :output => params['argument'].reverse }
   puts output.to_json
+end
+
+def action_hash
+  hash = JSON.load($stdin)["params"]
+  hash['output'] = hash['input'].reverse
+  puts hash.to_json
 end
 
 action = ARGV.shift || 'metadata'
