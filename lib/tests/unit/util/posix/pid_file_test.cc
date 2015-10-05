@@ -50,6 +50,8 @@ TEST_CASE("PIDFile ctor", "[util]") {
 
     SECTION("can instantiate if the directory does not exist") {
         REQUIRE_NOTHROW(PIDFile { PID_DIR + "/foo/bar" });
+
+        fs::remove_all(PID_DIR + "/foo");
     }
 
     SECTION("cannot instantiate if the directory is a regular file") {
