@@ -40,7 +40,7 @@ PIDFile::PIDFile(const std::string& dir_path_)
     } else {
         LOG_INFO("Creating PID directory '%1%'", dir_path);
         try {
-            fs::create_directory(dir_path);
+            fs::create_directories(dir_path);
         } catch (const fs::filesystem_error& e) {
             throw PIDFile::Error { e.what() };
         }
