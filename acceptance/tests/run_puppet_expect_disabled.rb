@@ -2,7 +2,7 @@ require 'json'
 
 test_name 'Attempt to run Puppet when agent is disabled'
 
-puppet_module_executable = File.join(SourcePath, 'pxp-module-puppet', 'modules', 'puppet')
+puppet_module_executable = File.join(SourcePath, 'pxp-agent', 'modules', 'pxp-module-puppet')
 
 agent1 = agents[0]
 

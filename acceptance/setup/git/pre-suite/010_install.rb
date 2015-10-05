@@ -15,9 +15,9 @@ end
 
 install_puppet_agent_on(hosts, {:default_action => 'gem_install'})
 
-step 'Install pxp-module-puppet on all hosts'
+step 'Install pxp-agen on all hosts'
 repositories = [
-  {:name    => 'pxp-module-puppet',
+  {:name    => 'pxp-agent',
    :sha     => ENV['PXP_MODULE_PUPPET_VER'],
    :private => true,
   },
