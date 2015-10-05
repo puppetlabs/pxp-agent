@@ -83,7 +83,8 @@ int main(int argc, char *argv[]) {
         case HW::ParseResult::OK:
             return HW::Start();
         case HW::ParseResult::HELP:
-            HorseWhisperer::ShowHelp();
+            // Show only the global section of HorseWhisperer's help
+            HorseWhisperer::ShowHelp(false);
             return 0;
         case HW::ParseResult::VERSION:
             HorseWhisperer::ShowVersion();
