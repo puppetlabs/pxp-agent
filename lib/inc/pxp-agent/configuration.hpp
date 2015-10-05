@@ -4,6 +4,7 @@
 #include <horsewhisperer/horsewhisperer.h>
 
 #include <map>
+#include <stdexcept>
 
 namespace PXPAgent {
 
