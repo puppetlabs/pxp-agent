@@ -87,8 +87,11 @@ class ResultsStorage {
             LOG_DEBUG("Creating results directory for '%1% %2%', transaction "
                        "%3%, in '%4%'", request.module(), request.action(),
                        request.transactionId(), results_dir);
-            if (!fs::create_directory(results_dir)) {
-                throw Error { "failed to create directory '" + results_dir + "'" };
+            try {
+                fs::create_directories(results_dir);
+            } catch (const fs::filesystem_error& e) {
+                std::string err_msg { "failed to create results directory: " };
+                throw Error { err_msg + e.what() };
             }
         }
 

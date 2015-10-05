@@ -17,6 +17,8 @@ class PIDFile {
     static const std::string FILENAME;
 
     // Throw a PIDFile::Error if dir_path is not a directory.
+    // Passing dir_path to enable testing; note that DIR_PATH is
+    // hardcoded in Configuration
     PIDFile(const std::string& dir_path);
 
     // Perform clean up if previously requested by cleanUpWhenDone().

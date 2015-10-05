@@ -1,6 +1,8 @@
 #include <pxp-agent/modules/status.hpp>
 #include <pxp-agent/configuration.hpp>
+
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
 
 #include <leatherman/file_util/file.hpp>
 
@@ -12,6 +14,7 @@
 namespace PXPAgent {
 namespace Modules {
 
+namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
 
 static const std::string QUERY { "query" };
@@ -37,9 +40,10 @@ Status::Status() {
 ActionOutcome Status::callAction(const ActionRequest& request) {
     lth_jc::JsonContainer results {};
     auto t_id = request.params().get<std::string>("transaction_id");
-    auto results_dir = Configuration::Instance().get<std::string>("spool-dir") + t_id;
+    fs::path results_path { Configuration::Instance().get<std::string>("spool-dir") };
+    auto results_dir = (results_path / t_id).string();
 
-    if (!boost::filesystem::exists(results_dir)) {
+    if (!fs::exists(results_dir)) {
         LOG_ERROR("Found no results for job %1%", t_id);
         results.set<std::string>("status", Status::UNKNOWN);
     } else {

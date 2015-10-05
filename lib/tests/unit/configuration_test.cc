@@ -131,7 +131,7 @@ TEST_CASE("Configuration::get", "[configuration]") {
 
         SECTION("return the default value correctly") {
             REQUIRE(Configuration::Instance().get<std::string>("spool-dir")
-                    == DEFAULT_ACTION_RESULTS_DIR);
+                    == DEFAULT_SPOOL_DIR);
         }
 
         SECTION("throw a Configuration::Error if the flag is unknown") {
@@ -154,7 +154,7 @@ TEST_CASE("Configuration::get", "[configuration]") {
             Configuration::Instance().initialize(14, const_cast<char**>(ARGV), false);
 
             REQUIRE(Configuration::Instance().get<std::string>("spool-dir")
-                    == DEFAULT_ACTION_RESULTS_DIR);
+                    == DEFAULT_SPOOL_DIR);
         }
 
         SECTION("return the correct value after the flag has been set") {
@@ -230,8 +230,9 @@ TEST_CASE("Configuration::validateAndNormalizeConfiguration", "[configuration]")
                           Configuration::Error);
     }
 
-    SECTION("it fails when daemonize is set by no logfile is specified") {
+    SECTION("it fails when daemonize is set and log is set to console") {
         Configuration::Instance().set<bool>("daemonize", true);
+        Configuration::Instance().set<bool>("console-logger", true);
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
                           Configuration::Error);
     }

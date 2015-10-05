@@ -27,9 +27,17 @@ int startAgent(std::vector<std::string> arguments) {
 #ifndef _WIN32
     std::unique_ptr<Util::PIDFile> pidf_ptr;
 
-    if (Configuration::Instance().get<bool>("daemonize")) {
-        // Store it for RAII
-        pidf_ptr = Util::daemonize();
+    try {
+        if (Configuration::Instance().get<bool>("daemonize")) {
+            // Store it for RAII
+            pidf_ptr = Util::daemonize();
+        }
+    } catch (const std::exception& e) {
+        LOG_ERROR("Failed to daemonize: %1%", e.what());
+        return 1;
+    } catch (...) {
+        LOG_ERROR("Failed to daemonize");
+        return 1;
     }
 #endif
 
@@ -39,12 +47,12 @@ int startAgent(std::vector<std::string> arguments) {
         Agent agent { agent_configuration };
         agent.start();
         success = true;
-    } catch (Agent::Error& e) {
-        LOG_ERROR("fatal error: %1%", e.what());
-    } catch (std::exception& e) {
-        LOG_ERROR("unexpected error: %1%", e.what());
+    } catch (const Agent::Error& e) {
+        LOG_ERROR("Fatal error: %1%", e.what());
+    } catch (const std::exception& e) {
+        LOG_ERROR("Unexpected error: %1%", e.what());
     } catch (...) {
-        LOG_ERROR("unexpected error");
+        LOG_ERROR("Unexpected error");
     }
 
     return (success ? 0 : 1);
@@ -58,11 +66,11 @@ int main(int argc, char *argv[]) {
 
     try {
         parse_result = Configuration::Instance().initialize(argc, argv);
-    } catch (HW::horsewhisperer_error& e) {
+    } catch (const HW::horsewhisperer_error& e) {
         // Failed to validate action argument or flag
         err_msg = e.what();
-    } catch(Configuration::Error& e) {
-        std::cout << "An unexpected error has occurred:\n  ";
+    } catch(const Configuration::Error& e) {
+        std::cout << "A configuration error has occurred:\n  ";
         err_msg = e.what();
     }
 
