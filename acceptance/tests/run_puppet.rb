@@ -2,7 +2,7 @@ require 'json'
 
 test_name 'Install module on agent host and run Puppet from server'
 
-puppet_module_executable = File.join(SourcePath, 'pxp-module-puppet', 'modules', 'puppet')
+puppet_module_executable = File.join(SourcePath, 'pxp-agent', 'modules', 'pxp-module-puppet')
 
 agent1 = agents[0]
 

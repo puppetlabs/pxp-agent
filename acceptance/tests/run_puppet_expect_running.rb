@@ -2,7 +2,7 @@ require 'json'
 
 test_name 'Run Puppet when agent already running'
 
-puppet_module_executable = File.join(SourcePath, 'pxp-module-puppet', 'modules', 'puppet')
+puppet_module_executable = File.join(SourcePath, 'pxp-agent', 'modules', 'pxp-module-puppet')
 
 agent1 = agents[0]
 agent_pid = 0
