@@ -267,8 +267,8 @@ void RequestProcessor::processBlockingRequest(const ActionRequest& request) {
 }
 
 void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
-    // HERE(ale): assuming spool_dir ends with '/' (up to Configuration)
-    std::string results_dir { spool_dir_ + request.transactionId() };
+    fs::path spool_path { spool_dir_ };
+    std::string results_dir { (spool_path / request.transactionId()).string() };
     std::string err_msg {};
 
     LOG_DEBUG("Starting '%1% %2%' job with ID %3% for non-blocking request %4% "
@@ -333,7 +333,7 @@ void RequestProcessor::loadModulesConfiguration() {
                 // naming convention for config files are .cfg. Don't
                 // process files that don't end in this extension
             },
-            "\\.cfg$");
+            "\\.conf$");
     } else {
         LOG_WARNING("Directory '%1%' specified by modules-config-dir doesn't "
                     "exist", modules_config_dir_);
