@@ -75,8 +75,6 @@ void PIDFile::lock() {
         std::string msg { "failed to open "  };
         throw PIDFile::Error { msg + file_path };
     }
-
-    PIDFile::exclusivelyLockFile(locked_fd);
 }
 
 void PIDFile::write(const pid_t& pid) {
@@ -117,9 +115,6 @@ pid_t PIDFile::read() {
 
 void PIDFile::cleanup() {
     if (locked_fd != FD_PUN) {
-        LOG_DEBUG("Unlocking PID file %1% and closing its open file descriptor",
-                  file_path);
-        PIDFile::unlockFile(locked_fd);
         close(locked_fd);
     }
 
@@ -143,28 +138,6 @@ void PIDFile::cleanupWhenDone() {
 }
 
 // Static function members
-
-void PIDFile::exclusivelyLockFile(int fd) {
-    if (flock(fd, LOCK_EX | LOCK_NB) != 0) {
-        std::string msg { "failed to lock: "};
-
-        if (errno == EWOULDBLOCK) {
-            msg += "already locked by another process";
-        } else {
-            msg += "unexpected error with errno=" + std::to_string(errno);
-        }
-
-        throw PIDFile::Error { msg };
-    }
-}
-
-void PIDFile::unlockFile(int fd) {
-    if (flock(fd, LOCK_UN) == -1) {
-        std::string msg { "failed to lock open file descriptor "};
-        throw PIDFile::Error { msg + std::to_string(fd)
-                               + " with errno=" + std::to_string(errno) };
-    }
-}
 
 bool PIDFile::isProcessExecuting(pid_t pid) {
     if (kill(pid, 0)) {
