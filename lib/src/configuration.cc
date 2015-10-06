@@ -184,7 +184,6 @@ void Configuration::validateAndNormalizeConfiguration() {
             throw Configuration::Error { "must log to file when executing "
                                          "as a daemon" };
         }
-
     }
 }
 
@@ -423,15 +422,16 @@ void Configuration::parseConfigFile() {
 }
 
 static void validateLogDirPath(fs::path logdir_path) {
-    if (boost::filesystem::exists(logdir_path)) {
-        if (!boost::filesystem::is_directory(logdir_path)) {
+    if (fs::exists(logdir_path)) {
+        if (!fs::is_directory(logdir_path)) {
             throw Configuration::Error { "log directory is not a directory" };
         }
     } else {
-        auto parentdir_path = logdir_path.parent_path();
-        if (!boost::filesystem::exists(parentdir_path)) {
-            throw Configuration::Error { "invalid log directory; parent "
-                                         "directory does not exist" };
+        try {
+            fs::create_directories(logdir_path);
+        } catch (const fs::filesystem_error& e) {
+            std::string err_msg { "failed to create log directory: " };
+            throw Configuration::Error { err_msg + e.what() };
         }
     }
 }
