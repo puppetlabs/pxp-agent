@@ -100,6 +100,8 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[],
         throw Configuration::Error { "An error occurred while parsing cli options"};
     }
 
+    setNonExposedOptions();
+
     if (parse_result == HW::ParseResult::OK) {
         // No further processing or user interaction are required if
         // the parsing outcome is HW::ParseResult::HELP or VERSION
@@ -115,7 +117,6 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[],
 
         validateAndNormalizeConfiguration();
         setAgentConfiguration();
-        setNonExposedOptions();
     }
 
     initialized_ = true;
@@ -189,6 +190,10 @@ void Configuration::validateAndNormalizeConfiguration() {
 
 const Configuration::Agent& Configuration::getAgentConfiguration() const {
     return agent_configuration_;
+}
+
+bool Configuration::isInitialized() const {
+  return initialized_;
 }
 
 //
@@ -352,7 +357,12 @@ void Configuration::setDefaultValues() {
 void Configuration::parseConfigFile() {
     lth_jc::JsonContainer config_json;
 
-    // TODO(ale): update this for CTH-380
+    // if the default config file doesn't exist we go into unconfigured mode
+    if (config_file_ == DEFAULT_CONFIG_FILE &&
+            !lth_file::file_readable(config_file_)) {
+        throw Configuration::UnconfiguredError { "unconfigured" };
+    }
+
     if (!lth_file::file_readable(config_file_)) {
         throw Configuration::Error { "config file '" + config_file_
                                      + "' doesn't exist" };

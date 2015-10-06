@@ -4,6 +4,8 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.util.posix.daemonize"
 #include <leatherman/logging/logging.hpp>
 
+#include <horsewhisperer/horsewhisperer.h>
+
 #include <sys/types.h>
 #include <stdlib.h>         // exit()
 #include <unistd.h>         // _exit(), getpid(), fork(), setsid(), chdir()
@@ -18,6 +20,8 @@
 namespace PXPAgent {
 namespace Util {
 
+namespace HW = HorseWhisperer;
+
 const mode_t UMASK_FLAGS { 002 };
 const std::string DEFAULT_DAEMON_WORKING_DIR = "/";
 
@@ -26,7 +30,9 @@ static void sigHandler(int sig) {
     // the successive SIGKILL there are only 5 s - must be fast
 
     if (sig == SIGINT || sig == SIGTERM || sig == SIGQUIT) {
-        auto pid_dir = Configuration::Instance().get<std::string>("pid-dir");
+        // We use HW instead of Config because we may demonize without a valid
+        // configuration. Outcome of CTH-380
+        auto pid_dir = HW::GetFlag<std::string>("pid-dir");
         LOG_DEBUG("Caught signal %1% - removing PID file in %2%",
                   std::to_string(sig), pid_dir);
         PIDFile pidf { pid_dir };
@@ -47,8 +53,9 @@ std::unique_ptr<PIDFile> daemonize() {
     umask(UMASK_FLAGS);
 
     // Lock the PID file
-
-    auto pid_dir = Configuration::Instance().get<std::string>("pid-dir");
+    // We use HW instead of Config because we may demonize without a valid
+    // configuration. Outcome of CTH-380
+    auto pid_dir = HW::GetFlag<std::string>("pid-dir");
     std::unique_ptr<PIDFile> pidf_ptr { new PIDFile(pid_dir) };
 
     if (pidf_ptr->isExecuting()) {

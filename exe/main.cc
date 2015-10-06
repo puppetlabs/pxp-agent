@@ -14,6 +14,7 @@
 #include <horsewhisperer/horsewhisperer.h>
 
 #include <memory>
+#include <thread>
 
 namespace PXPAgent {
 
@@ -21,8 +22,6 @@ namespace HW = HorseWhisperer;
 namespace lth_file = leatherman::file_util;
 
 int startAgent(std::vector<std::string> arguments) {
-    const auto& agent_configuration =
-        Configuration::Instance().getAgentConfiguration();
 
 #ifndef _WIN32
     std::unique_ptr<Util::PIDFile> pidf_ptr;
@@ -41,7 +40,21 @@ int startAgent(std::vector<std::string> arguments) {
     }
 #endif
 
+    if (!Configuration::Instance().isInitialized()) {
+        // start a thread that just busy waits to facilitate acceptance testing
+        std::thread idle_thread { []() {
+            LOG_WARNING("pxp-agent started unconfigured. No connection can be established");
+            for (;;) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+            }
+        }};
+        idle_thread.join();
+        return 0;
+    }
+
     bool success { false };
+    const auto& agent_configuration =
+        Configuration::Instance().getAgentConfiguration();
 
     try {
         Agent agent { agent_configuration };
@@ -68,7 +81,12 @@ int main(int argc, char *argv[]) {
         parse_result = Configuration::Instance().initialize(argc, argv);
     } catch (const HW::horsewhisperer_error& e) {
         // Failed to validate action argument or flag
-        err_msg = e.what();
+        std::cout << e.what() << "\nCannot start pxp-agent'n";
+        return 1;
+    } catch(const Configuration::UnconfiguredError& e) {
+        std::cout << "Default config file doesn't exist.\n";
+        std::cout << "Starting pxp-agent unconfigured\n";
+        return HW::Start();
     } catch(const Configuration::Error& e) {
         std::cout << "A configuration error has occurred:\n  ";
         err_msg = e.what();
