@@ -52,23 +52,16 @@ std::unique_ptr<PIDFile> daemonize() {
     // Set umask; child processes will inherit
     umask(UMASK_FLAGS);
 
-    // Lock the PID file
     // We use HW instead of Config because we may demonize without a valid
     // configuration. Outcome of CTH-380
     auto pid_dir = HW::GetFlag<std::string>("pid-dir");
+
+    // Lock the PID file
     std::unique_ptr<PIDFile> pidf_ptr { new PIDFile(pid_dir) };
 
     if (pidf_ptr->isExecuting()) {
         auto pid = pidf_ptr->read();
         LOG_ERROR("Already running with PID=%1%", pid);
-        exit(EXIT_FAILURE);
-    }
-
-    try {
-        pidf_ptr->lock();
-        LOG_DEBUG("Locked the PID file; no other daemon should be executing");
-    } catch (const PIDFile::Error& e) {
-        LOG_ERROR("Failed to lock the PID file: %1%", e.what());
         exit(EXIT_FAILURE);
     }
 
