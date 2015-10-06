@@ -333,7 +333,7 @@ void RequestProcessor::loadModulesConfiguration() {
                 // naming convention for config files are .cfg. Don't
                 // process files that don't end in this extension
             },
-            "\\.cfg$");
+            "\\.conf$");
     } else {
         LOG_WARNING("Directory '%1%' specified by modules-config-dir doesn't "
                     "exist", modules_config_dir_);
