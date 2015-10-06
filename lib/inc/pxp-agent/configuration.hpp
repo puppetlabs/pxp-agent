@@ -48,6 +48,9 @@ class Configuration {
     struct Error : public std::runtime_error {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
+    struct UnconfiguredError : public Error {
+        explicit UnconfiguredError(std::string const& msg) : Error(msg) {}
+    };
 
     static Configuration& Instance() {
         static Configuration instance {};
@@ -146,6 +149,9 @@ class Configuration {
 
     /// Return the whole agent configuration
     const Agent& getAgentConfiguration() const;
+
+    /// Returns true if the agent was successfuly initialized
+    bool isInitialized() const;
 
   private:
     bool initialized_;
