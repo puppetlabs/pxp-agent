@@ -1,0 +1,5 @@
+# Defaults for pxp-agent - sourced by /etc/init.d/pxp-agent
+
+# Startup options
+#DAEMON_OPTS=""
+#PXP_AGENT_EXTRA_OPTS=--loglevel=debug

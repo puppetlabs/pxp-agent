@@ -1,0 +1,12 @@
+[Unit]
+Description=PCP Execution Protocol (PXP) Agent
+After=syslog.target network.target
+
+[Service]
+EnvironmentFile=-/etc/sysconfig/pxp-agent
+EnvironmentFile=-/etc/default/pxp-agent
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStart=/opt/puppetlabs/puppet/bin/pxp-agent $PXP_AGENT_EXTRA_OPTS
+
+[Install]
+WantedBy=multi-user.target
