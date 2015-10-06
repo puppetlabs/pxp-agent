@@ -14,6 +14,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>       // open() flags
 #include <unistd.h>      // close()
+#include <sys/wait.h>    // waitpid()
+#include <signal.h>      // sigemptyset()
 
 namespace PXPAgent {
 namespace Util {
@@ -27,6 +29,7 @@ const std::string PID_DIR { std::string { PXP_AGENT_ROOT_PATH }
                             + "/lib/tests/resources/config" };
 const std::string TMP_DIR { std::string { PXP_AGENT_ROOT_PATH }
                             + "/lib/tests/resources/test_spool/tmp_pid" };
+const std::string PID_FILE_NAME { "pxp-agent.pid" };
 
 void initializeTmpPIDFile(const std::string dir, const std::string& txt) {
     if (!fs::exists(dir) && !fs::create_directories(dir)) {
@@ -59,9 +62,31 @@ TEST_CASE("PIDFile ctor", "[util]") {
                                     + "/README.md" },
                           PIDFile::Error);
     }
+
+    SECTION("create the directory if necessary") {
+        REQUIRE_FALSE(fs::exists(PID_DIR + "/foo/bar"));
+
+        PIDFile p_f { PID_DIR + "/foo/bar" };
+
+        REQUIRE(fs::exists(PID_DIR + "/foo/bar"));
+
+        fs::remove_all(PID_DIR + "/foo");
+    }
+
+    SECTION("create the PIDFile") {
+        REQUIRE_FALSE(fs::exists(PID_DIR + "/foo/bar/" + PID_FILE_NAME));
+
+        PIDFile p_f { PID_DIR + "/foo/bar" };
+
+        REQUIRE(fs::exists(PID_DIR + "/foo/bar/" + PID_FILE_NAME ));
+
+        fs::remove_all(PID_DIR + "/foo");
+    }
 }
 
 TEST_CASE("PIDFile::isExecuting") {
+    fs::remove_all(TMP_DIR);
+
     SECTION("the file contains the PID of an executing process") {
         auto pid = getpid();
         std::string pid_txt { std::to_string(pid) };
@@ -72,7 +97,6 @@ TEST_CASE("PIDFile::isExecuting") {
     }
 
     SECTION("returns false if the file does not exist") {
-        fs::remove_all(TMP_DIR);
         if (!fs::create_directories(TMP_DIR)) {
             FAIL("failed to create tmp_pid directory");
         }
@@ -148,60 +172,141 @@ TEST_CASE("PIDFile::cleanup", "[util]") {
     fs::remove_all(TMP_DIR);
 }
 
-TEST_CASE("PIDFile::exclusivelyLockFile", "[util]") {
-    SECTION("it can lock a file") {
+static void dumbSigHandler(int sig) {}
+
+static void testConcurrentLock(int child_lock_type,
+                               int parent_lock_type,
+                               bool parent_lock_success) {
+    sigset_t block_mask, orig_mask, empty_mask;
+    struct sigaction sa;
+
+    sigemptyset(&block_mask);
+    sigaddset(&block_mask, SIGUSR1);
+
+    if (sigprocmask(SIG_BLOCK, &block_mask, &orig_mask) == -1) {
+        FAIL("Failed to set the signal mask");
+    }
+
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+    sa.sa_handler = dumbSigHandler;
+
+    if (sigaction(SIGUSR1, &sa, NULL) == -1) {
+        FAIL("Failed to set SIGUSR1 disposition");
+    }
+
+    auto child_pid = fork();
+
+    switch (child_pid) {
+        case -1:
+            FAIL("failed to fork");
+        case 0:
+            {
+                // CHILD: acquire lock, signal parent, wait for signal, exit
+                auto child_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+                PIDFile::lockFile(child_fd, child_lock_type);
+                kill(getppid(), SIGUSR1);
+                sigemptyset(&empty_mask);
+                if (sigsuspend(&empty_mask) == -1 && errno != EINTR) {
+                    WARN("error while waiting for suspended parent signal");
+                }
+                close(child_fd);
+                _exit(EXIT_SUCCESS);
+            }
+        default:
+            {
+                // PARENT: wait for child signal, acquire lock, signal child
+                auto parent_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+                sigemptyset(&empty_mask);
+                if (sigsuspend(&empty_mask) == -1 && errno != EINTR) {
+                    // Just warn; we don't want the child hanging
+                    WARN("error while waiting for suspended parent signal");
+                }
+                bool success { false };
+
+                if (parent_lock_success) {
+                    // Filtering exception for 'success' in order to
+                    // be able to signal child and avoid him hanging
+                    try {
+                        PIDFile::lockFile(parent_fd, parent_lock_type);
+                        success = true;
+                    } catch (const PIDFile::Error& e) {
+                        // pass
+                    }
+                } else {
+                    try {
+                        PIDFile::lockFile(parent_fd, parent_lock_type);
+                    } catch (const PIDFile::Error& e) {
+                        success = true;
+                    }
+                }
+                kill(child_pid, SIGUSR1);
+                waitpid(child_pid, nullptr, 0);
+                close(parent_fd);
+                REQUIRE(success);
+            }
+    }
+
+    if (sigprocmask(SIG_SETMASK, &orig_mask, NULL) == -1) {
+        WARN("Failed to reset signal mask");
+    }
+}
+
+TEST_CASE("PIDFile::lockFile", "[util]") {
+    SECTION("it can lock a file (read lock)") {
         auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
         if (fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
 
-        REQUIRE_NOTHROW(PIDFile::exclusivelyLockFile(fd));
-        close(fd);    }
+        REQUIRE_NOTHROW(PIDFile::lockFile(fd, F_RDLCK));
+        close(fd);
+    }
 
-    SECTION("cannot lock a file that is locked by a different file descriptor") {
-        auto first_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
-        if (first_fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
-        auto second_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
-        if (second_fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
-        PIDFile::exclusivelyLockFile(first_fd);
+    SECTION("it can lock a file (write lock)") {
+        auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+        if (fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
 
-        REQUIRE_THROWS_AS(PIDFile::exclusivelyLockFile(second_fd),
-                          PIDFile::Error);
+        REQUIRE_NOTHROW(PIDFile::lockFile(fd, F_WRLCK));
+        close(fd);
+    }
 
-        close(first_fd);
-        close(second_fd);
+    SECTION("can get a read lock if the file already has one") {
+        REQUIRE_NOTHROW(testConcurrentLock(F_RDLCK, F_RDLCK, true));
+    }
+
+    SECTION("cannot get a read lock if a write lock was already acquired") {
+        REQUIRE_NOTHROW(testConcurrentLock(F_WRLCK, F_RDLCK, false));
+    }
+
+    SECTION("cannot get a write lock if a read lock was already acquired") {
+        REQUIRE_NOTHROW(testConcurrentLock(F_RDLCK, F_WRLCK, false));
+    }
+
+    SECTION("cannot get a write lock if a write lock was already acquired") {
+        REQUIRE_NOTHROW(testConcurrentLock(F_WRLCK, F_WRLCK, false));
     }
 
     SECTION("locking is idempotent, i.e. we can lock the same open fd "
-            "multiple times") {
+            "multiple times (read lock)") {
         auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
         if (fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
-        PIDFile::exclusivelyLockFile(fd);
+        PIDFile::lockFile(fd, F_RDLCK);
 
-        REQUIRE_NOTHROW(PIDFile::exclusivelyLockFile(fd));
-        REQUIRE_NOTHROW(PIDFile::exclusivelyLockFile(fd));
+        REQUIRE_NOTHROW(PIDFile::lockFile(fd, F_RDLCK));
+        REQUIRE_NOTHROW(PIDFile::lockFile(fd, F_RDLCK));
         close(fd);
     }
 }
 
 TEST_CASE("PIDFile::unlockFile", "[util]") {
-    SECTION("it can successfully unlock a locked file") {
+    SECTION("it unlock a locked file") {
         auto first_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
         if (first_fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
-        auto second_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
-        if (second_fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
-        PIDFile::exclusivelyLockFile(first_fd);
+        PIDFile::lockFile(first_fd, F_WRLCK);
 
-        // Can't lock; it's already locked
-        REQUIRE_THROWS_AS(PIDFile::exclusivelyLockFile(second_fd),
-                          PIDFile::Error);
-
-        // Unlocking a locked file is ok
+        // Unlocking a locked file is always ok
         REQUIRE_NOTHROW(PIDFile::unlockFile(first_fd));
 
-        // Unlocking works
-        REQUIRE_NOTHROW(PIDFile::exclusivelyLockFile(second_fd));
-
         close(first_fd);
-        close(second_fd);
     }
 
     SECTION("unlocking is idempotent, i.e. we can unlock an unlocked file") {
@@ -211,6 +316,123 @@ TEST_CASE("PIDFile::unlockFile", "[util]") {
         REQUIRE_NOTHROW(PIDFile::unlockFile(fd));
         REQUIRE_NOTHROW(PIDFile::unlockFile(fd));
         close(fd);
+    }
+}
+
+static void testLockCheck(int child_lock_type,
+                          int parent_check_lock_type,
+                          bool parent_check_success) {
+    sigset_t block_mask, orig_mask, empty_mask;
+    struct sigaction sa;
+
+    sigemptyset(&block_mask);
+    sigaddset(&block_mask, SIGUSR1);
+
+    if (sigprocmask(SIG_BLOCK, &block_mask, &orig_mask) == -1) {
+        FAIL("Failed to set the signal mask");
+    }
+
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+    sa.sa_handler = dumbSigHandler;
+
+    if (sigaction(SIGUSR1, &sa, NULL) == -1) {
+        FAIL("Failed to set SIGUSR1 disposition");
+    }
+
+    auto child_pid = fork();
+
+    switch (child_pid) {
+        case -1:
+            FAIL("failed to fork");
+        case 0:
+            {
+                // CHILD: acquire lock, signal parent, wait for signal, exit
+                auto child_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+                PIDFile::lockFile(child_fd, child_lock_type);
+                kill(getppid(), SIGUSR1);
+                sigemptyset(&empty_mask);
+                if (sigsuspend(&empty_mask) == -1 && errno != EINTR) {
+                    WARN("error while waiting for suspended parent signal");
+                }
+                close(child_fd);
+                _exit(EXIT_SUCCESS);
+            }
+        default:
+            {
+                // PARENT: wait for child signal, check lock status, signal child
+                auto parent_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+                sigemptyset(&empty_mask);
+                if (sigsuspend(&empty_mask) == -1 && errno != EINTR) {
+                    // Just warn; we don't want the child hanging
+                    WARN("error while waiting for suspended parent signal");
+                }
+                bool outcome { false };
+
+                // Filtering exception for 'outcome' in order to
+                // be able to signal child and avoid him hanging
+                try {
+                    outcome = PIDFile::canLockFile(parent_fd,
+                                                   parent_check_lock_type);
+                } catch (const PIDFile::Error& e) {
+                    // pass
+                }
+
+                kill(child_pid, SIGUSR1);
+                waitpid(child_pid, nullptr, 0);
+                close(parent_fd);
+                REQUIRE(outcome == parent_check_success);
+            }
+    }
+
+    if (sigprocmask(SIG_SETMASK, &orig_mask, NULL) == -1) {
+        WARN("Failed to reset signal mask");
+    }
+}
+
+TEST_CASE("PIDFile::canLockFile", "[util]") {
+    SECTION("successfully check read lock on unlocked file") {
+        auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+
+        REQUIRE(PIDFile::canLockFile(fd, F_RDLCK));
+        close(fd);
+    }
+
+    SECTION("successfully check write lock on unlocked file") {
+        auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+
+        REQUIRE(PIDFile::canLockFile(fd, F_WRLCK));
+        close(fd);
+    }
+
+    SECTION("successfully check file locked by the same process") {
+        auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+        PIDFile::lockFile(fd, F_RDLCK);
+
+        REQUIRE(PIDFile::canLockFile(fd, F_RDLCK));
+        REQUIRE(PIDFile::canLockFile(fd, F_WRLCK));
+
+        PIDFile::lockFile(fd, F_WRLCK);
+
+        REQUIRE(PIDFile::canLockFile(fd, F_RDLCK));
+        REQUIRE(PIDFile::canLockFile(fd, F_WRLCK));
+        close(fd);
+    }
+
+    SECTION("successfully check read lock on locked file (read)") {
+        REQUIRE_NOTHROW(testLockCheck(F_RDLCK, F_RDLCK, true));
+    }
+
+    SECTION("successfully check write lock on locked file (read)") {
+        REQUIRE_NOTHROW(testLockCheck(F_RDLCK, F_WRLCK, false));
+    }
+
+    SECTION("successfully check read lock on locked file (write)") {
+        REQUIRE_NOTHROW(testLockCheck(F_WRLCK, F_RDLCK, false));
+    }
+
+    SECTION("successfully check write lock on locked file (write)") {
+        REQUIRE_NOTHROW(testLockCheck(F_WRLCK, F_WRLCK, false));
     }
 }
 

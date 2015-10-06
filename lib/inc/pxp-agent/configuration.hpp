@@ -48,6 +48,7 @@ class Configuration {
     struct Error : public std::runtime_error {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
+
     struct UnconfiguredError : public Error {
         explicit UnconfiguredError(std::string const& msg) : Error(msg) {}
     };

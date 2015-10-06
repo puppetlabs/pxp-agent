@@ -16,9 +16,12 @@ class PIDFile {
 
     static const std::string FILENAME;
 
-    // Throw a PIDFile::Error if dir_path is not a directory.
-    // Passing dir_path to enable testing; note that DIR_PATH is
-    // hardcoded in Configuration
+    // Create the PID file directory if necessary.
+    // Open the PID file.
+    // Throw a PIDFile::Error if dir_path is not a directory or in
+    // case of a failure when opening the PID file.
+    // NB: we pass dir_path to enable testing; DIR_PATH is hardcoded
+    // in Configuration
     PIDFile(const std::string& dir_path);
 
     // Perform clean up if previously requested by cleanUpWhenDone().
@@ -28,10 +31,27 @@ class PIDFile {
     // running process, false otherwise.
     bool isExecuting();
 
-    // Attempt to lock the PID file.
-    // Throw a PIDFile::Error in case it fails to open such file or
-    // if it fails to lock it.
-    void lock();
+    // Try to acquire a read lock for the PID file.
+    // Throw a PIDFile::Error in case it fails to lock or, in case
+    // 'blocking' is flagged, wait until the lock can be performed.
+    // Throw a PIDFile::Error in case of system call error.
+    void lockRead(bool blocking = false);
+
+    // Try to acquire a write lock for the PID file.
+    // Throw a PIDFile::Error in case it fails to lock or, in case
+    // 'blocking' is flagged, wait until the lock can be performed.
+    // Throw a PIDFile::Error in case of system call error.
+    void lockWrite(bool blocking = false);
+
+    // Return true if it is possible to acquire a read lock for the
+    // PID file, false otherwise.
+    // Throw a PIDFile::Error in case it fails to perform the check.
+    bool canLockRead();
+
+    // Return true if it is possible to acquire a write lock for the
+    // PID file, false otherwise.
+    // Throw a PIDFile::Error in case it fails to perform the check.
+    bool canLockWrite();
 
     // Write the specified PID number plus a newline.
     // Throw a PIDFile::Error if it fails.
@@ -42,7 +62,7 @@ class PIDFile {
     // is empty; it does not contain an unsigned integer value.
     pid_t read();
 
-    // If previosly locked, unlock the PID file and close its file
+    // If previously locked, unlock the PID file and close its file
     // descriptor.
     // If the PID file exists, remove it.
     void cleanup();
@@ -54,10 +74,39 @@ class PIDFile {
     // NB: does not consider recycled PIDs nor zombie processes.
     static bool isProcessExecuting(pid_t pid);
 
+    // Lock the file related to the specified file descriptor with the
+    // specified lock type (F_RDLCK or F_WRLCK).
+    // NB: the created lock will be specific to this process and the
+    // inode - it will not be inherited by child processes; the
+    // function relies on the fcntl system call.
+    // Non blocking call; will throw a PIDFile::Error in case it fails
+    // to lock immediately.
+    static void lockFile(int fd, int lock_type);
+
+    // Lock the file related to the specified file descriptor with the
+    // specified lock type (F_RDLCK or F_WRLCK).
+    // NB: the created lock will be specific to this process and the
+    // inode - it will not be inherited by child processes; the
+    // function relies on the fcntl system call.
+    // Blocking call; will throw a PIDFile::Error in case it fails
+    // to perform the fcntl system call or in case an interrupt
+    // signal is caught.
+    static void lockFileBlocking(int fd, int lock_type);
+
+    // Release any lock associated with this process associated with
+    // the file related to specified file descriptor.
+    static void unlockFile(int fd);
+
+    // Return true if it's possible to acquire the specified lock type
+    // (F_RDLCK or F_WRLCK) on the specified file descriptor, false
+    // otherwise.
+    // Throw a PIDFile::Error in case it fails to perform the check.
+    static bool canLockFile(int fd, int lock_type);
+
   private:
     std::string dir_path;
     std::string file_path;
-    int locked_fd;
+    int pidfile_fd;
     bool cleanup_when_done;
 };
 

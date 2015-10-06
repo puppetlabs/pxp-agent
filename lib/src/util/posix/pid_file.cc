@@ -13,7 +13,7 @@
 
 #include <sys/file.h>       // open()
 #include <sys/stat.h>
-#include <fcntl.h>          // open() flags
+#include <fcntl.h>          // fcntl(), open() flags
 #include <signal.h>         // kill()
 #include <unistd.h>         // getpid()
 
@@ -23,14 +23,12 @@ namespace Util {
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
 
-const int FD_PUN { -1 };
-
 const std::string PIDFile::FILENAME { "pxp-agent.pid" };
 
 PIDFile::PIDFile(const std::string& dir_path_)
         : dir_path { dir_path_ },
           file_path { dir_path + "/" + FILENAME },
-          locked_fd { FD_PUN },
+          pidfile_fd {},
           cleanup_when_done { false } {
     if (fs::exists(dir_path)) {
         if (!fs::is_directory(dir_path)) {
@@ -44,6 +42,14 @@ PIDFile::PIDFile(const std::string& dir_path_)
         } catch (const fs::filesystem_error& e) {
             throw PIDFile::Error { e.what() };
         }
+    }
+
+    pidfile_fd = open(file_path.data(), O_RDWR | O_CREAT, 0640);
+
+    if (pidfile_fd == -1) {
+        LOG_ERROR("Failed to open PID file '%1%'; errno=%2%", file_path, errno);
+        std::string msg { "failed to open PID file" };
+        throw PIDFile::Error { msg };
     }
 }
 
@@ -62,19 +68,35 @@ bool PIDFile::isExecuting() {
         auto pid = PIDFile::read();
         return isProcessExecuting(pid);
     } catch (const PIDFile::Error& e) {
-        LOG_DEBUG("Failed to read PID file %1%: %2%", file_path, e.what());
+        // NB: isProcessExecuting() does not throw
+        LOG_DEBUG("Couldn't retrieve PID from file %1%: %2%", file_path, e.what());
     }
 
     return false;
 }
 
-void PIDFile::lock() {
-    locked_fd = open(file_path.data(), O_RDWR | O_CREAT, 0640);
-
-    if (locked_fd == -1) {
-        std::string msg { "failed to open "  };
-        throw PIDFile::Error { msg + file_path };
+void PIDFile::lockRead(bool blocking) {
+    if (blocking){
+        lockFileBlocking(pidfile_fd, F_RDLCK);
+    } else {
+        lockFile(pidfile_fd, F_RDLCK);
     }
+}
+
+void PIDFile::lockWrite(bool blocking) {
+    if (blocking){
+        lockFileBlocking(pidfile_fd, F_WRLCK);
+    } else {
+        lockFile(pidfile_fd, F_WRLCK);
+    }
+}
+
+bool PIDFile::canLockRead() {
+    return canLockFile(pidfile_fd, F_RDLCK);
+}
+
+bool PIDFile::canLockWrite() {
+    return canLockFile(pidfile_fd, F_WRLCK);
 }
 
 void PIDFile::write(const pid_t& pid) {
@@ -114,9 +136,10 @@ pid_t PIDFile::read() {
 }
 
 void PIDFile::cleanup() {
-    if (locked_fd != FD_PUN) {
-        close(locked_fd);
-    }
+    LOG_DEBUG("Unlocking PID file %1% and closing its open file descriptor",
+              file_path);
+    PIDFile::unlockFile(pidfile_fd);
+    close(pidfile_fd);
 
     if (fs::exists(file_path) && fs::is_regular_file(file_path)) {
         if (lth_file::file_readable(file_path)) {
@@ -154,6 +177,79 @@ bool PIDFile::isProcessExecuting(pid_t pid) {
     }
 
     return true;
+}
+
+static int callFcntl(int fd, int cmd, int lock_type) {
+    struct flock fl;
+    fl.l_type = lock_type;
+    fl.l_whence = SEEK_SET;
+    fl.l_start = 0;
+    fl.l_len = 0;
+
+    return fcntl(fd, cmd, &fl);
+}
+
+void PIDFile::lockFile(int fd, int lock_type) {
+    // NOTE(ale): fcntl-based lock files are process / inode specific
+    assert(lock_type == F_RDLCK || lock_type == F_WRLCK);
+
+    if (callFcntl(fd, F_SETLK, lock_type) == -1) {
+        std::string msg;
+
+        if (errno == EAGAIN || errno == EACCES) {
+            msg = "incompatible with an existent lock";
+        } else if (errno == EDEADLK) {
+            msg = "deadlock";
+        } else {
+            // Unexpected; see fcntl's man 2
+            msg = "unexpected error with errno=" + std::to_string(errno);
+        }
+
+        throw PIDFile::Error { msg };
+    }
+}
+
+void PIDFile::lockFileBlocking(int fd, int lock_type) {
+    assert(lock_type == F_RDLCK || lock_type == F_WRLCK);
+
+    if (callFcntl(fd, F_SETLKW, lock_type) == -1) {
+        std::string msg;
+
+        if (errno == EINTR) {
+            msg = "caught an interrupt signal";
+        } else {
+            // Unexpected; see fcntl's man 2
+            msg = "unexpected error with errno=" + std::to_string(errno);
+        }
+
+        throw PIDFile::Error { msg };
+    }
+}
+
+void PIDFile::unlockFile(int fd) {
+    // NOTE(ale): it is always safe to unlock with fcntl()
+    if (callFcntl(fd, F_SETLK, F_UNLCK) == -1) {
+        std::string msg { "errno=" + std::to_string(errno) };
+        throw PIDFile::Error { msg };
+    }
+}
+
+bool PIDFile::canLockFile(int fd, int lock_type) {
+    assert(lock_type == F_RDLCK || lock_type == F_WRLCK);
+
+    struct flock fl;
+    fl.l_type = lock_type;
+    fl.l_whence = SEEK_SET;
+    fl.l_start = 0;
+    fl.l_len = 0;
+
+    if (fcntl(fd, F_GETLK, &fl) == -1) {
+        // Failure
+        std::string msg { "errno=" + std::to_string(errno) };
+        throw PIDFile::Error { msg };
+    }
+
+    return (fl.l_type == F_UNLCK);
 }
 
 }  // namespace Util
