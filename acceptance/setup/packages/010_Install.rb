@@ -25,12 +25,6 @@ PACKAGES = {
   :debian => [
     'puppet'
   ],
-#  :solaris => [
-#    'puppet',
-#  ],
-#  :windows => [
-#    'puppet',
-#  ],
 }
 
 install_packages_on(agents, PACKAGES)
@@ -43,6 +37,7 @@ agents.each do |agent|
     logger.info 'Prevent Puppet Service from Running'
     on(agent, puppet('resource service puppet ensure=stopped enable=false'))
     logger.info 'Vendored Ruby needs to be on PATH for pxp-agent to load libraries'
-    on(agent, 'echo "export PATH=\$PATH\":/cygdrive/c/Program Files/Puppet Labs/Puppet/sys/ruby/bin\"" >> ~/.bashrc')
+    # export needs sed'd to first line as bashrc exits for non-interaction shells near top of file
+    on(agent, "sed -i '1iexport\ PATH=\$PATH\":\/cygdrive\/c\/Program\ Files\/Puppet\ Labs\/Puppet\/sys\/ruby\/bin\"' ~/.bashrc")
   end
 end
