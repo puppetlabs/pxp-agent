@@ -107,6 +107,20 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[],
         // the parsing outcome is HW::ParseResult::HELP or VERSION
         config_file_ = HW::GetFlag<std::string>("config-file");
 
+        if (config_file_ == DEFAULT_CONFIG_FILE
+                && !lth_file::file_readable(config_file_)) {
+            // No config file specified from CL and the default one
+            // does not exist: run in unconfigured mode
+
+            if (enable_logging) {
+                // Set logging with default options at debug level
+                setupLogging();
+                lth_log::set_level(lth_log::log_level::debug);
+            }
+
+            throw Configuration::UnconfiguredError { "unconfigured" };
+        }
+
         if (!config_file_.empty()) {
             parseConfigFile();
         }
@@ -356,12 +370,6 @@ void Configuration::setDefaultValues() {
 
 void Configuration::parseConfigFile() {
     lth_jc::JsonContainer config_json;
-
-    // if the default config file doesn't exist we go into unconfigured mode
-    if (config_file_ == DEFAULT_CONFIG_FILE &&
-            !lth_file::file_readable(config_file_)) {
-        throw Configuration::UnconfiguredError { "unconfigured" };
-    }
 
     if (!lth_file::file_readable(config_file_)) {
         throw Configuration::Error { "config file '" + config_file_
