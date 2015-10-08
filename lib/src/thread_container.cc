@@ -1,6 +1,7 @@
 #include <pxp-agent/thread_container.hpp>
 
-#include <chrono>
+#include <cpp-pcp-client/util/chrono.hpp>
+
 #include <algorithm>  // remove_if
 #include <iterator>   // distance
 
@@ -52,7 +53,7 @@ ThreadContainer::ThreadContainer(const std::string& name,
 
 ThreadContainer::~ThreadContainer() {
     {
-        std::lock_guard<std::mutex> the_lock { mutex_ };
+        PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
         destructing_ = true;
         cond_var_.notify_one();
     }
@@ -76,11 +77,11 @@ ThreadContainer::~ThreadContainer() {
     }
 }
 
-void ThreadContainer::add(std::thread task,
+void ThreadContainer::add(PCPClient::Util::thread task,
                           std::shared_ptr<std::atomic<bool>> is_done) {
     LOG_TRACE("Adding thread %1% to the '%2%' ThreadContainer; added %3% "
               "threads so far", task.get_id(), name_, num_added_threads_);
-    std::lock_guard<std::mutex> the_lock { mutex_ };
+    PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
     threads_.push_back(std::shared_ptr<ManagedThread> {
         new ManagedThread { std::move(task), is_done } });
     num_added_threads_++;
@@ -98,27 +99,27 @@ void ThreadContainer::add(std::thread task,
 
         is_monitoring_ = true;
         monitoring_thread_ptr_.reset(
-            new std::thread(&ThreadContainer::monitoringTask_, this));
+            new PCPClient::Util::thread(&ThreadContainer::monitoringTask_, this));
     }
 }
 
 bool ThreadContainer::isMonitoring() {
-    std::lock_guard<std::mutex> the_lock { mutex_ };
+    PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
     return is_monitoring_;
 }
 
 uint32_t ThreadContainer::getNumAddedThreads() {
-    std::lock_guard<std::mutex> the_lock { mutex_ };
+    PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
     return num_added_threads_;
 }
 
 uint32_t ThreadContainer::getNumErasedThreads() {
-    std::lock_guard<std::mutex> the_lock { mutex_ };
+    PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
     return num_erased_threads_;
 }
 
 void ThreadContainer::setName(const std::string& name) {
-    std::lock_guard<std::mutex> the_lock { mutex_ };
+    PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
     name_ = name;
 }
 
@@ -128,15 +129,15 @@ void ThreadContainer::setName(const std::string& name) {
 
 void ThreadContainer::monitoringTask_() {
     LOG_DEBUG("Starting monitoring task for the '%1%' ThreadContainer, "
-              "with id %2%", name_, std::this_thread::get_id());
+              "with id %2%", name_, PCPClient::Util::this_thread::get_id());
 
     while (true) {
-        std::unique_lock<std::mutex> the_lock { mutex_ };
-        auto now = std::chrono::system_clock::now();
+        PCPClient::Util::unique_lock<PCPClient::Util::mutex> the_lock { mutex_ };
+        auto now = PCPClient::Util::chrono::system_clock::now();
 
         // Wait for thread objects or for the check interval timeout
         cond_var_.wait_until(the_lock,
-                             now + std::chrono::milliseconds(check_interval));
+                             now + PCPClient::Util::chrono::milliseconds(check_interval));
 
         if (destructing_) {
             // The dtor has been invoked
