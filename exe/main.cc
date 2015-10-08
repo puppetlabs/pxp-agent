@@ -15,6 +15,7 @@
 
 #include <memory>
 #include <thread>
+#include <chrono>
 
 namespace PXPAgent {
 
@@ -22,13 +23,13 @@ namespace HW = HorseWhisperer;
 namespace lth_file = leatherman::file_util;
 
 int startAgent(std::vector<std::string> arguments) {
-
 #ifndef _WIN32
     std::unique_ptr<Util::PIDFile> pidf_ptr;
 
     try {
         if (Configuration::Instance().get<bool>("daemonize")) {
             // Store it for RAII
+            // NB: pidf_ptr will be nullptr if already a daemon
             pidf_ptr = Util::daemonize();
         }
     } catch (const std::exception& e) {
@@ -41,13 +42,16 @@ int startAgent(std::vector<std::string> arguments) {
 #endif
 
     if (!Configuration::Instance().isInitialized()) {
-        // start a thread that just busy waits to facilitate acceptance testing
-        std::thread idle_thread { []() {
-            LOG_WARNING("pxp-agent started unconfigured. No connection can be established");
-            for (;;) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-            }
-        }};
+        // Start a thread that just busy waits to facilitate
+        // acceptance testing
+        std::thread idle_thread {
+            []() {
+                LOG_WARNING("pxp-agent started unconfigured. No connection can "
+                            "be established");
+                for (;;) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+                }
+            } };
         idle_thread.join();
         return 0;
     }

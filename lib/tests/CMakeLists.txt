@@ -36,7 +36,7 @@ set (PXP-AGENT_TEST_LIBS
     libpxp-agent
 )
 
-add_executable(${test_BIN} ${COMMON_TEST_SOURCES})
+add_executable(${test_BIN} ${COMMON_TEST_SOURCES} ${STANDARD_TEST_SOURCES})
 target_link_libraries(${test_BIN} ${PXP-AGENT_TEST_LIBS})
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
