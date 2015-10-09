@@ -1,11 +1,11 @@
 #ifndef SRC_THREAD_CONTAINER_H_
 #define SRC_THREAD_CONTAINER_H_
 
-#include <thread>
+#include <cpp-pcp-client/util/thread.hpp>
+
 #include <vector>
 #include <memory>   // shared_ptr
 #include <atomic>
-#include <condition_variable>
 #include <string>
 
 namespace PXPAgent {
@@ -17,7 +17,7 @@ static const uint32_t THREADS_THRESHOLD { 10 };
 
 struct ManagedThread {
     /// Thread object
-    std::thread the_instance;
+    PCPClient::Util::thread the_instance;
 
     /// Flag that indicates whether or not the thread has finished its
     /// execution
@@ -47,7 +47,7 @@ class ThreadContainer {
     /// Add the specified thread instance to the container together
     /// with the pointer to the atomic boolean that will tell when
     /// it has completed its execution
-    void add(std::thread task, std::shared_ptr<std::atomic<bool>> done);
+    void add(PCPClient::Util::thread task, std::shared_ptr<std::atomic<bool>> done);
 
     /// Return true if the monitoring thread is actually executing,
     /// false otherwise
@@ -61,10 +61,10 @@ class ThreadContainer {
   private:
     std::string name_;
     std::vector<std::shared_ptr<ManagedThread>> threads_;
-    std::unique_ptr<std::thread> monitoring_thread_ptr_;
+    std::unique_ptr<PCPClient::Util::thread> monitoring_thread_ptr_;
     bool destructing_;
-    std::mutex mutex_;
-    std::condition_variable cond_var_;
+    PCPClient::Util::mutex mutex_;
+    PCPClient::Util::condition_variable cond_var_;
     bool is_monitoring_;
     uint32_t num_added_threads_;
     uint32_t num_erased_threads_;

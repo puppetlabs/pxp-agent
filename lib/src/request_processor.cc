@@ -12,6 +12,8 @@
 #include <leatherman/util/strings.hpp>
 #include <leatherman/util/timer.hpp>
 
+#include <cpp-pcp-client/util/thread.hpp>
+
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.request_processor"
 #include <leatherman/logging/logging.hpp>
 
@@ -118,7 +120,7 @@ class ResultsStorage {
 //
 
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
-                           ActionRequest&& request,
+                           ActionRequest request,
                            std::string job_id,
                            ResultsStorage results_storage,
                            std::shared_ptr<PXPConnector> connector_ptr,
@@ -279,13 +281,13 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
         // Flag to enable signaling from task to thread_container
         auto done = std::make_shared<std::atomic<bool>>(false);
 
-        thread_container_.add(std::thread(&nonBlockingActionTask,
-                                          modules_[request.module()],
-                                          request,
-                                          request.transactionId(),
-                                          ResultsStorage { request, results_dir },
-                                          connector_ptr_,
-                                          done),
+        thread_container_.add(PCPClient::Util::thread(&nonBlockingActionTask,
+                                                      modules_[request.module()],
+                                                      request,
+                                                      request.transactionId(),
+                                                      ResultsStorage { request, results_dir },
+                                                      connector_ptr_,
+                                                      done),
                               done);
     } catch (ResultsStorage::Error& e) {
         // Failed to instantiate ResultsStorage
