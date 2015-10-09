@@ -88,6 +88,9 @@ endif()
 add_subdirectory(lib)
 add_subdirectory(exe)
 
+# Add the module install (the exe install is handled in the exe subdir)
+install(FILES modules/pxp-module-puppet DESTINATION pxp-agent/modules)
+
 # Add the test suite
 
 if(TEST_VIRTUAL)
