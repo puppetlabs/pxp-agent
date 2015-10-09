@@ -16,11 +16,17 @@ Build with make and make install
 
 ## Configuring the agent
 
-The PXP agent is configured with a config file. The values in the config file can be
-overridden by supplying arguments on the command line.
+The PXP agent is configured with a config file. The values in the config file
+can be overridden by supplying arguments on the command line.
 
-The agent will look for the default config file */etc/puppetlabs/pxp-agent/pxp-agent.cfg*
-A different config file can be specified by passing the --config-file flag
+The agent will look for the default config file in:
+ - \*nix: */etc/puppetlabs/pxp-agent/pxp-agent.conf*
+ - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\etc\pxp-agent.conf*
+
+A different config file can be specified by passing the `--config-file` option.
+In case the `--config-file` option is not used and the default config file does
+not exist, the agent will start anyway in unconfigured mode; but will not
+attempt to connect to any PCP server.
 
 The config files use the JSON format. Options must be specified as entries of a
 single JSON object. Example:
@@ -34,13 +40,36 @@ single JSON object. Example:
 }
 ```
 
-## Config options
+### Daemon
+
+The agent will execute as a daemon unless the `--foreground` flag is specified.
+During its execution, the daemon PID will be stored in:
+ - \*nix: */var/run/puppetlabs/pxp-agent.pid*
+ - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\run\pxp-agent.pid*
+
+### Logging
+
+By default, log messages will be writted to the pxp-agent.log file in:
+ - \*nix: */var/log/puppetlabs/pxp-agent*
+ - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\log*
+
+You can specify a different directory with the `--logdir` flag.
+
+The default log level is `info`. You can specify a different log level by
+using the `--loglevel` option with one of the following strings: `none`,
+`trace`, `debug`, `info`, `warning`, `error`, `fatal`.
+
+### List of all configuration options
 
 The PXP agent has the following configuration options
 
-**config-file (required)**
+**config-file (optional)**
 
 Specify which config file to use.
+
+**foreground (optional flag)**
+
+Don't become a daemon and execute on foreground on the associated terminal.
 
 **server (required)**
 
@@ -68,6 +97,10 @@ If logfile is not configured output will be logged to the console
 Specify one of the following logging levels: *none*, *trace*, *debug*, *info*,
 *warning*, *error*, or *fatal*; the default one is *info*
 
+**console-logger (optional flag)**
+
+Display logging messages on the associated terminal; requires `--foreground`
+
 **spool-dir (optional)**
 
 The location where the outcome of non-blocking requests will be stored; the
@@ -81,7 +114,7 @@ Specify the directory where modules are stored
 
 Specify the directory containing the configuration files of modules
 
-### Starting the agent
+## Starting the agent
 
 The agent can be started by running
 ```
