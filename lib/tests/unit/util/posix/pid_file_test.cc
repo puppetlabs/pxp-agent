@@ -78,7 +78,7 @@ TEST_CASE("PIDFile ctor", "[util]") {
 
         PIDFile p_f { PID_DIR + "/foo/bar" };
 
-        REQUIRE(fs::exists(PID_DIR + "/foo/bar/" + PID_FILE_NAME ));
+        REQUIRE(fs::exists(PID_DIR + "/foo/bar/" + PID_FILE_NAME));
 
         fs::remove_all(PID_DIR + "/foo");
     }
