@@ -27,7 +27,7 @@ int startAgent(std::vector<std::string> arguments) {
     std::unique_ptr<Util::PIDFile> pidf_ptr;
 
     try {
-        if (Configuration::Instance().get<bool>("daemonize")) {
+        if (!Configuration::Instance().get<bool>("foreground")) {
             // Store it for RAII
             // NB: pidf_ptr will be nullptr if already a daemon
             pidf_ptr = Util::daemonize();

@@ -194,7 +194,7 @@ void Configuration::validateAndNormalizeConfiguration() {
         }
     }
 
-    if (HW::GetFlag<bool>("daemonize")) {
+    if (!HW::GetFlag<bool>("foreground")) {
         if (HW::GetFlag<bool>("console-logger")) {
             throw Configuration::Error { "must log to file when executing "
                                          "as a daemon" };
@@ -308,12 +308,12 @@ void Configuration::defineDefaultValues() {
                                Types::String,
                                DEFAULT_MODULES_DIR))));
 
-    defaults_.insert(std::pair<std::string, Base_ptr>("daemonize", Base_ptr(
-        new Entry<bool>("daemonize",
+    defaults_.insert(std::pair<std::string, Base_ptr>("foreground", Base_ptr(
+        new Entry<bool>("foreground",
                         "",
-                        "Execute as a daemon",
+                        "Don't daemonize, default false",
                         Types::Bool,
-                        true))));
+                        false))));
 }
 
 void Configuration::setDefaultValues() {

@@ -32,7 +32,7 @@ const char* ARGV[] = { "test-command",
                        "--cert", CERT.data(),
                        "--key", KEY.data(),
                        "--modules-dir", MODULES_DIR.data(),
-                       "--daemonize=false",
+                       "--foreground=true",
                        "--spool-dir", SPOOL_DIR.data() };
 const int ARGC = 16;
 
@@ -230,8 +230,8 @@ TEST_CASE("Configuration::validateAndNormalizeConfiguration", "[configuration]")
                           Configuration::Error);
     }
 
-    SECTION("it fails when daemonize is set and log is set to console") {
-        Configuration::Instance().set<bool>("daemonize", true);
+    SECTION("it fails when foreground is unflagged and log is set to console") {
+        Configuration::Instance().set<bool>("foreground", false);
         Configuration::Instance().set<bool>("console-logger", true);
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
                           Configuration::Error);
