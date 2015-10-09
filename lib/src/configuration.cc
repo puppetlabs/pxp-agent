@@ -311,7 +311,7 @@ void Configuration::defineDefaultValues() {
     defaults_.insert(std::pair<std::string, Base_ptr>("foreground", Base_ptr(
         new Entry<bool>("foreground",
                         "",
-                        "Don't daemonize, default false",
+                        "Don't daemonize, default: false",
                         Types::Bool,
                         false))));
 }
