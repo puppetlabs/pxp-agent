@@ -14,8 +14,8 @@
 #include <horsewhisperer/horsewhisperer.h>
 
 #include <memory>
-#include <thread>
-#include <chrono>
+#include <cpp-pcp-client/util/thread.hpp>
+#include <cpp-pcp-client/util/chrono.hpp>
 
 namespace PXPAgent {
 
@@ -44,12 +44,12 @@ int startAgent(std::vector<std::string> arguments) {
     if (!Configuration::Instance().isInitialized()) {
         // Start a thread that just busy waits to facilitate
         // acceptance testing
-        std::thread idle_thread {
+        PCPClient::Util::thread idle_thread {
             []() {
                 LOG_WARNING("pxp-agent started unconfigured. No connection can "
                             "be established");
                 for (;;) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+                    PCPClient::Util::this_thread::sleep_for(PCPClient::Util::chrono::milliseconds(5000));
                 }
             } };
         idle_thread.join();
