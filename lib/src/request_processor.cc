@@ -360,14 +360,18 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
                 auto f_p = f->path().string();
 
                 try {
-                    ExternalModule* e_m = new ExternalModule(f_p);
-                    auto config_itr = modules_config_.find(e_m->module_name);
+                    ExternalModule* e_m;
+                    auto config_itr = modules_config_.find(
+                        fs::path(f_p).filename().string());
 
                     if (config_itr != modules_config_.end()) {
-                        e_m->validateAndSetConfiguration(config_itr->second);
+                        e_m = new ExternalModule(f_p, config_itr->second);
+                        e_m->validateConfiguration();
                         LOG_DEBUG("The '%1%' module configuration has been "
                                   "validated: %2%", e_m->module_name,
                                   config_itr->second.toString());
+                    } else {
+                        e_m = new ExternalModule(f_p);
                     }
 
                     modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
