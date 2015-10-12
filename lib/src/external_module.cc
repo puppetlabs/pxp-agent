@@ -58,10 +58,10 @@ PCPClient::Validator getMetadataValidator() {
 //
 // Public interface
 //
-
-ExternalModule::ExternalModule(const std::string& path)
+ExternalModule::ExternalModule(const std::string& path,
+                               const lth_jc::JsonContainer& config)
         : path_ { path },
-          config_ { "{}" } {
+          config_ { config } {
     boost::filesystem::path module_path { path };
     module_name = module_path.filename().string();
     auto metadata = getMetadata();
@@ -74,10 +74,7 @@ ExternalModule::ExternalModule(const std::string& path)
             LOG_DEBUG("Found no configuration schema for module '%1%'", module_name);
         }
 
-        for (auto& action : metadata.get<std::vector<lth_jc::JsonContainer>>(
-                                        METADATA_ACTIONS_ENTRY)) {
-            registerAction(action);
-        }
+        registerActions(metadata);
     } catch (lth_jc::data_error& e) {
         LOG_ERROR("Failed to retrieve metadata of module %1%: %2%",
                   module_name, e.what());
@@ -86,10 +83,26 @@ ExternalModule::ExternalModule(const std::string& path)
     }
 }
 
-void ExternalModule::validateAndSetConfiguration(const lth_jc::JsonContainer& config) {
+ExternalModule::ExternalModule(const std::string& path)
+        : path_ { path },
+          config_ { "{}" } {
+    boost::filesystem::path module_path { path };
+    module_name = module_path.filename().string();
+    auto metadata = getMetadata();
+
+    try {
+       registerActions(metadata);
+    } catch (lth_jc::data_error& e) {
+        LOG_ERROR("Failed to retrieve metadata of module %1%: %2%",
+                  module_name, e.what());
+        std::string err { "invalid metadata of module " + module_name };
+        throw Module::LoadingError { err };
+    }
+}
+
+void ExternalModule::validateConfiguration() {
     if (config_validator_.includesSchema(module_name)) {
-        config_validator_.validate(config, module_name);
-        config_ = config;
+        config_validator_.validate(config_, module_name);
     } else {
         LOG_DEBUG("The '%1%' configuration will not be validated; no JSON "
                   "schema is available", module_name);
@@ -107,13 +120,24 @@ const PCPClient::Validator ExternalModule::metadata_validator_ {
 
 // Retrieve and validate the module metadata
 const lth_jc::JsonContainer ExternalModule::getMetadata() {
-    auto exec =
+    lth_exec::result exec { false, "", "", 0 };
+
+    if (config_.includes("interpreter")) {
+        std::string interpreter { config_.get<std::string>("interpreter") };
+        LOG_DEBUG("Found 'interpreter' field with value '%1%' in module '%2%' config'",
+                  interpreter, module_name);
+        exec = lth_exec::execute(interpreter,
+                                 {path_, "metadata"}, 0,
+                                 {lth_exec::execution_options::merge_environment});
+    } else {
+        exec =
 #ifdef _WIN32
-        lth_exec::execute("cmd.exe", { "/c", path_, "metadata" },
+            lth_exec::execute("cmd.exe", { "/c", path_, "metadata" },
 #else
-        lth_exec::execute(path_, { "metadata" },
+            lth_exec::execute(path_, { "metadata" },
 #endif
-         0, {lth_exec::execution_options::merge_environment});
+            0, {lth_exec::execution_options::merge_environment});
+    }
 
     if (!exec.error.empty()) {
         LOG_ERROR("Failed to load the external module metadata from %1%: %2%",
@@ -147,13 +171,16 @@ void ExternalModule::registerConfiguration(const lth_jc::JsonContainer& config_m
     }
 }
 
+void ExternalModule::registerActions(const lth_jc::JsonContainer& metadata) {
+    for (auto& action : metadata.get<std::vector<lth_jc::JsonContainer>>(
+                                    METADATA_ACTIONS_ENTRY)) {
+        registerAction(action);
+    }
+}
+
 // Register the specified action after ensuring that the input and
 // output schemas are valid JSON (i.e. we can instantiate Schema).
 void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
-    // TODO(ale): use '<module>_<action>' instead of just 'action' as
-    // the schema name, to allow the same action name in different
-    // modules, otherwise Validator::registerSchema() will error
-
     // NOTE(ale): name, input, and output are required action entries
     auto action_name = action.get<std::string>("name");
     LOG_INFO("Validating action '%1% %2%'", module_name, action_name);
@@ -197,13 +224,24 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     LOG_INFO("About to execute '%1% %2%' - request input: %3%",
              module_name, action_name, request_input_txt);
 
-    auto exec =
+    lth_exec::result exec { false, "", "", 0 };
+
+    if (config_.includes("interpreter")) {
+        std::string interpreter { config_.get<std::string>("interpreter") };
+        LOG_DEBUG("Found 'interpreter' field with value '%1%' in module '%2%' config'",
+                  interpreter, module_name);
+        exec = lth_exec::execute(interpreter,
+                                 {path_, action_name}, request_input_txt, 0,
+                                 {lth_exec::execution_options::merge_environment});
+    } else {
+        exec =
 #ifdef _WIN32
-        lth_exec::execute("cmd.exe", { "/c", path_, action_name },
+            lth_exec::execute("cmd.exe", { "/c", path_, action_name },
 #else
-        lth_exec::execute(path_, { action_name },
+            lth_exec::execute(path_, { action_name },
 #endif
-        request_input_txt, 0, {lth_exec::execution_options::merge_environment});
+            request_input_txt, 0, {lth_exec::execution_options::merge_environment});
+    }
 
     if (exec.output.empty()) {
         LOG_DEBUG("'%1% %2%' produced no output", module_name, action_name);

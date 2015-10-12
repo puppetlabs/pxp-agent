@@ -30,11 +30,14 @@ class ExternalModule : public Module {
     /// invalid input or output schemas.
     explicit ExternalModule(const std::string& exec_path);
 
-    /// In case a configuration schema has been registered fot this
-    /// module, validate and set the passed configuration data.
+    explicit ExternalModule(const std::string& path,
+                            const lth_jc::JsonContainer& config);
+
+    /// In case a configuration schema has been registered for this
+    /// module, validate configuration data.
     /// Throw a validation_error in case the configuration schema was
     /// not registered or in case of an invalid configuration data.
-    void validateAndSetConfiguration(const lth_jc::JsonContainer& config);
+    void validateConfiguration();
 
   private:
     /// The path of the module file
@@ -49,6 +52,8 @@ class ExternalModule : public Module {
     const lth_jc::JsonContainer getMetadata();
 
     void registerConfiguration(const lth_jc::JsonContainer& config);
+
+    void registerActions(const lth_jc::JsonContainer& metadata);
 
     void registerAction(const lth_jc::JsonContainer& action);
 
