@@ -11,9 +11,9 @@ namespace :ci do
         .select{|e| e.length == 2 && e[0] =~ /[A-Z]+$/ }
         .each {|e| ENV[e[0]] = e[1] }
       `ssh-add "${HOME}/.ssh/id_rsa"`
-      sh('beaker -h config/nodes/centos7-64mdc-centos7-64a-nodefaultrole.yaml '\
+      sh('beaker -h config/nodes/centos7-64mdc-win2012r2-64a-nodefaultrole.yaml '\
          '--tests tests '\
-         '--options config/git/options.rb')
+         '--options config/packages/options.rb')
     end
   end
 
