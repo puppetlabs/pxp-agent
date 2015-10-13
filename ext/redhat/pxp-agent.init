@@ -39,7 +39,7 @@ fi
 start() {
     echo -n $"Starting PXP agent: "
     mkdir -p $piddir
-    daemon $daemonopts $exec --daemonize ${PXP_AGENT_OPTIONS}
+    daemon $daemonopts $exec ${PXP_AGENT_OPTIONS}
     RETVAL=$?
     echo
     [ $RETVAL = 0 ] && touch ${lockfile}

@@ -29,7 +29,7 @@ reload_pxp_agent() {
 
 start_pxp_agent() {
     mkdir -p $piddir
-    start-stop-daemon --start --quiet --pidfile $pidfile --startas $exec -- --daemonize $PXP_AGENT_OPTIONS
+    start-stop-daemon --start --quiet --pidfile $pidfile --startas $exec -- $PXP_AGENT_OPTIONS
 }
 
 stop_pxp_agent() {
