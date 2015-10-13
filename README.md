@@ -87,10 +87,10 @@ The location of the pxp-agent certificate, example /etc/puppet/ssl/certs/bob_crt
 
 The location of the pxp-agent's private key, example /etc/puppet/ssl/certs/bob_key.pem
 
-**logfile (optional)**
+**logdir (optional)**
 
-Location of the file where log output should be written to, example /var/log/pxp/agent.log.
-If logfile is not configured output will be logged to the console
+Directory where the `pxp-agent.pid` file will be stored. This option must be set
+to a valid directory in case pxp-agent is executed as a daemon.
 
 **loglevel (optional)**
 
