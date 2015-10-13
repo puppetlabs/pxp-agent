@@ -44,18 +44,33 @@ namespace lth_log = leatherman::logging;
     const std::string DEFAULT_SPOOL_DIR { (DATA_DIR / "var" / "spool").string() };
     const std::string PID_DIR { (DATA_DIR / "var" / "run").string() };
     static const std::string DEFAULT_LOG_DIR { (DATA_DIR / "var" / "log").string() };
+
+    static const std::string DEFAULT_MODULES_DIR = []() {
+        wchar_t szPath[MAX_PATH];
+        if (GetModuleFileNameW(NULL, szPath, MAX_PATH) == 0) {
+            throw Configuration::Error { "failed to retrive pxp-agent binary path" };
+        }
+        // Go up twice, assuming the subtree from Puppet Specs:
+        //      C:\Program Files\Puppet Labs\Puppet\pxp-agent
+        //          bin
+        //              pxp-agent.exe
+        //          modules
+        //              pxp-module-puppet
+        try {
+            return (fs::path(szPath).parent_path().parent_path() / "modules").string();
+        } catch (const std::exception& e) {
+            throw Configuration::Error {
+                (boost::format("failed to determine the modules directory path: %1%")
+                    % e.what()).str() };
+        }
+    }();
 #else
     static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
     const std::string DEFAULT_SPOOL_DIR { "/opt/puppetlabs/pxp-agent/spool" };
     const std::string PID_DIR { "/var/run/puppetlabs" };
     static const std::string DEFAULT_LOG_DIR { "/var/log/puppetlabs/pxp-agent" };
+    static const std::string DEFAULT_MODULES_DIR { "/opt/puppetlabs/pxp-agent/modules" };
 #endif
-
-
-// TODO(ale): temporary fix; update this for CTH-373
-static const std::string DEFAULT_MODULES_DIR {
-    (fs::current_path() / "modules").string() };
-
 
 static const std::string DEFAULT_MODULES_CONF_DIR {
     (DEFAULT_CONF_DIR / "modules").string() };
@@ -287,8 +302,11 @@ void Configuration::defineDefaultValues() {
     defaults_.insert(std::pair<std::string, Base_ptr>("modules-dir", Base_ptr(
         new Entry<std::string>("modules-dir",
                                "",
-                               { "Dirctory with modules scripts, default: " +
-                                    DEFAULT_MODULES_DIR },
+                               { "Modules directory, default"
+#ifdef _WIN32
+                                 " (relative to the pxp-agent.exe path)"
+#endif
+                                 ": " + DEFAULT_MODULES_DIR },
                                Types::String,
                                DEFAULT_MODULES_DIR))));
 
