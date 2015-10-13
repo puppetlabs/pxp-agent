@@ -6,8 +6,6 @@
 
 #include <leatherman/file_util/file.hpp>
 
-#include <fstream>
-
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.modules.status"
 #include <leatherman/logging/logging.hpp>
 

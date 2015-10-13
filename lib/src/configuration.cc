@@ -3,6 +3,7 @@
 #include "version-inl.hpp"
 
 #include <boost/filesystem/operations.hpp>
+#include <leatherman/locale/locale.hpp>
 
 #include <leatherman/file_util/file.hpp>
 
@@ -13,7 +14,8 @@
 
 #include <cpp-pcp-client/util/logging.hpp>
 
-#include <fstream>
+#include <boost/nowide/iostream.hpp>
+#include <boost/nowide/fstream.hpp>
 
 #ifdef _WIN32
     #include <leatherman/windows/system_error.hpp>
@@ -29,6 +31,7 @@ namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
 namespace lth_jc = leatherman::json_container;
 namespace lth_log = leatherman::logging;
+namespace lth_loc = leatherman::locale;
 
 #ifdef _WIN32
     namespace lth_w = leatherman::windows;
@@ -94,6 +97,13 @@ void Configuration::reset() {
 
 HW::ParseResult Configuration::initialize(int argc, char *argv[],
                                           bool enable_logging) {
+    // Initialize boost filesystem's locale to a UTF-8 default.
+    // Logging gets setup the same way via the default 2nd argument.
+#if (!defined(__sun) && !defined(_AIX)) || !defined(__GNUC__)
+    // Locale support in GCC on Solaris is busted, so skip it.
+    fs::path::imbue(lth_loc::get_locale());
+#endif
+
     setDefaultValues();
 
     HW::DefineAction("start", 0, false, "Start the agent (Default)",
@@ -478,8 +488,8 @@ void Configuration::setupLogging() {
         validateLogDirPath(logdir_path);
 
         auto logfile = (logdir_path / LOGFILE_NAME).string();
-        static std::ofstream file_stream {};
-        file_stream.open(logfile, std::ios_base::app);
+        static boost::nowide::ofstream file_stream {};
+        file_stream.open(logfile.c_str(), std::ios_base::app);
         stream = &file_stream;
 
 #ifndef LOG_COLOR
@@ -487,7 +497,7 @@ void Configuration::setupLogging() {
 #endif  // LOG_COLOR
     } else {
         // Log on stdout by default
-        stream = &std::cout;
+        stream = &boost::nowide::cout;
     }
 
     lth_log::log_level lvl = lth_log::log_level::none;
