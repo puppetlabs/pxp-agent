@@ -67,9 +67,6 @@ The agent will look for the default config file in:
  - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\etc\pxp-agent.conf*
 
 A different config file can be specified by passing the `--config-file` option.
-In case the `--config-file` option is not used and the default configuration
-file does not exist, the agent will start anyway in unconfigured mode; but will
-not attempt to connect to any PCP server.
 
 The config files use the JSON format. Options must be specified as entries of a
 single JSON object. Example:
@@ -82,6 +79,12 @@ single JSON object. Example:
     "cert" : "/etc/puppetlabs/puppet/ssl/certs/myhost.net.pem"
 }
 ```
+
+### Starting unconfigured
+
+If no server, key, ca or cert value is supplied, the agent will still be able
+in unconfigured mode. In this mode no connection will be established by the 
+process will not terminate.
 
 ### Daemon
 
@@ -114,19 +117,19 @@ Specify which config file to use.
 
 Don't become a daemon and execute on foreground on the associated terminal.
 
-**server (required)**
+**server (required to connect)**
 
 The PXP server you wish to connect the agent to, example wws://192.168.0.1:8061/pxp/
 
-**ca (required)**
+**ca (required to connect)**
 
 The location of your CA certificate, example /etc/puppet/ssl/ca/ca_crt.pem
 
-**cert (required)**
+**cert (required to connect)**
 
 The location of the pxp-agent certificate, example /etc/puppet/ssl/certs/bob_crt.pem
 
-**key (required)**
+**key (required to connect)**
 
 The location of the pxp-agent's private key, example /etc/puppet/ssl/certs/bob_key.pem
 
