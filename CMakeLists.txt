@@ -36,9 +36,6 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} /opt/local/include)
 endif()
 
-# Set the client library's logging prefix
-set(CPP_PCP_CLIENT_LOGGING_PREFIX "puppetlabs.pxp_agent")
-
 # Leatherman it up
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/vendor/leatherman/cmake")
 include(options)
