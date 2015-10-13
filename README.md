@@ -1,7 +1,8 @@
 # PXP Agent
 
-This is the agent for the Puppet Remote Execution Protocol (PXP), based on the
-the Puppet Communications Protocol (PCP).
+This is the agent for the PCP Execution Protocol [(PXP)][1], based on the
+the Puppet Communications Protocol [(PCP)][2]. It enables the execution of
+[actions][3] on remote nodes, via PXP.
 
 ## Building from source
 
@@ -14,6 +15,48 @@ the Puppet Communications Protocol (PCP).
 
 Build with make and make install
 
+## Modules
+
+[Actions][3] are grouped in modules, by which they can be loaded and configured
+within pxp-agent. An example of module is given by the [Puppet module][4].
+
+### Modules interface
+
+A module is a file that provides the module metadata and an interface to
+execute its actions.
+
+The module metadata is a JSON object containing the following entries:
+ - `configuration`: an object that specifies options that may be included in a separate configuration file (see below);
+ - `actions`: a JSON array containing specifications for the `input` and `output` of each action.
+
+For a trivial example of module, please refer to the [reverse module][5] used
+for testing.
+
+pxp-agent will execute a module to retrieve its metadata (by passing no
+argument) and to run a given action (by invoking the action with the input
+specified in the [PXP request][6]). Normally when pxp-agent calls a module it
+must be executable. When the `interpreter` field is specified in the
+configuration file (see below), pxp-agent will use this value to execute the
+module instead.
+
+Note that the [transaction status module][7] is implemented natively; there is
+no external file for it.
+
+### Modules configuration
+
+Modules can be configured by placing a configuration file in the
+`--modules-config-dir`. Config options must be specified in the module metadata
+(see above). Module config files are named like `module_name.conf`.
+
+Module configuration files may specify the `interpreter` field.  For
+example:
+
+```
+{
+    "interpreter" : "/opt/puppetlabs/puppet/bin/ruby"
+}
+```
+
 ## Configuring the agent
 
 The PXP agent is configured with a config file. The values in the config file
@@ -24,9 +67,9 @@ The agent will look for the default config file in:
  - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\etc\pxp-agent.conf*
 
 A different config file can be specified by passing the `--config-file` option.
-In case the `--config-file` option is not used and the default config file does
-not exist, the agent will start anyway in unconfigured mode; but will not
-attempt to connect to any PCP server.
+In case the `--config-file` option is not used and the default configuration
+file does not exist, the agent will start anyway in unconfigured mode; but will
+not attempt to connect to any PCP server.
 
 The config files use the JSON format. Options must be specified as entries of a
 single JSON object. Example:
@@ -87,10 +130,10 @@ The location of the pxp-agent certificate, example /etc/puppet/ssl/certs/bob_crt
 
 The location of the pxp-agent's private key, example /etc/puppet/ssl/certs/bob_key.pem
 
-**logfile (optional)**
+**logdir (optional)**
 
-Location of the file where log output should be written to, example /var/log/pxp/agent.log.
-If logfile is not configured output will be logged to the console
+Directory where the `pxp-agent.log` file will be stored. This option must be set
+to a valid directory in case pxp-agent is executed as a daemon.
 
 **loglevel (optional)**
 
@@ -121,3 +164,11 @@ The agent can be started by running
 pxp-agent
 ```
 in the ./build/bin directory
+
+[1]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/README.md
+[2]: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/README.md
+[3]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/actions.md
+[4]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/pxp-module-puppet
+[5]: https://github.com/puppetlabs/pxp-agent/blob/master/lib/tests/resources/modules/reverse_valid
+[6]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
+[7]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md
