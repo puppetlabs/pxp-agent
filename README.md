@@ -83,8 +83,8 @@ single JSON object. Example:
 ### Starting unconfigured
 
 If no server, key, ca or cert value is supplied, the agent will still be able
-in unconfigured mode. In this mode no connection will be established by the 
-process will not terminate.
+to start in unconfigured mode. In this mode no connection will be established but
+the process will not terminate.
 
 ### Daemon
 
