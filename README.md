@@ -40,14 +40,32 @@ single JSON object. Example:
 }
 ```
 
-### Daemon
+## Configuring modules
+
+Modules can be configured by placing a configuration file in the
+`--modules-config-dir`. Config options must be specified in the metadata returned
+from executing the module with no arguments before they can be specified. Module
+config files are named like `module_name.conf`.
+
+Module configuration files may specify the `interpreter` field. Normally when
+pxp-agent calls a module it must be executable. When the `interpreter` field
+is specified pxp-agent will use this value to execute the module instead. For
+example:
+
+```
+{
+    "interpreter" : "/opt/puppetlabs/puppet/bin/ruby"
+}
+```
+
+## Daemon
 
 The agent will execute as a daemon unless the `--foreground` flag is specified.
 During its execution, the daemon PID will be stored in:
  - \*nix: */var/run/puppetlabs/pxp-agent.pid*
  - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\run\pxp-agent.pid*
 
-### Logging
+## Logging
 
 By default, log messages will be writted to the pxp-agent.log file in:
  - \*nix: */var/log/puppetlabs/pxp-agent*
