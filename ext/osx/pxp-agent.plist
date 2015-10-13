@@ -15,7 +15,7 @@
         <true/>
         <key>ProgramArguments</key>
         <array>
-                <string>/opt/puppetlabs/puppet/bin/pxp-agent</string>
+                <string>/opt/puppetlabs/puppet/bin/pxp-agent --foreground</string>
         </array>
         <key>RunAtLoad</key>
         <true/>
