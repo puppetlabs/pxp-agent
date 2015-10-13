@@ -27,7 +27,8 @@ int startAgent(std::vector<std::string> arguments) {
     std::unique_ptr<Util::PIDFile> pidf_ptr;
 
     try {
-        if (!Configuration::Instance().get<bool>("foreground")) {
+        // Using HW because configuration may not be initialized at this point
+        if (!HW::GetFlag<bool>("foreground")) {
             // Store it for RAII
             // NB: pidf_ptr will be nullptr if already a daemon
             pidf_ptr = Util::daemonize();
@@ -79,7 +80,6 @@ int main(int argc, char *argv[]) {
     Configuration::Instance().setStartFunction(startAgent);
 
     HW::ParseResult parse_result;
-    std::string err_msg {};
 
     try {
         parse_result = Configuration::Instance().initialize(argc, argv);
@@ -88,16 +88,11 @@ int main(int argc, char *argv[]) {
         std::cout << e.what() << "\nCannot start pxp-agent'n";
         return 1;
     } catch(const Configuration::UnconfiguredError& e) {
-        std::cout << "Default config file doesn't exist.\n";
-        std::cout << "Starting pxp-agent unconfigured\n";
-        return HW::Start();
+        std::cout << "A configuration error has occurred: " << e.what() << std::endl;
+        std::cout << "pxp-agent will start unconfigured\n";
     } catch(const Configuration::Error& e) {
-        std::cout << "A configuration error has occurred:\n  ";
-        err_msg = e.what();
-    }
-
-    if (!err_msg.empty()) {
-        std::cout << err_msg << "\nCannot start pxp-agent" << std::endl;
+        std::cout << "A configuration error has occurred: " << e.what() << std::endl;
+        std::cout << "pxp-agent cannot start" << std::endl;
         return 1;
     }
 
