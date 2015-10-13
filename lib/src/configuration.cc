@@ -42,12 +42,12 @@ namespace lth_log = leatherman::logging;
 
     static const fs::path DEFAULT_CONF_DIR { DATA_DIR / "etc" };
     const std::string DEFAULT_SPOOL_DIR { (DATA_DIR / "var" / "spool").string() };
-    static const std::string PID_DIR { (DATA_DIR / "var" / "run").string() };
+    const std::string PID_DIR { (DATA_DIR / "var" / "run").string() };
     static const std::string DEFAULT_LOG_DIR { (DATA_DIR / "var" / "log").string() };
 #else
     static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
     const std::string DEFAULT_SPOOL_DIR { "/opt/puppetlabs/pxp-agent/spool" };
-    static const std::string PID_DIR { "/var/run/puppetlabs" };
+    const std::string PID_DIR { "/var/run/puppetlabs" };
     static const std::string DEFAULT_LOG_DIR { "/var/log/puppetlabs/pxp-agent" };
 #endif
 
@@ -99,8 +99,6 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[],
         || parse_result == HW::ParseResult::INVALID_FLAG) {
         throw Configuration::Error { "An error occurred while parsing cli options"};
     }
-
-    setNonExposedOptions();
 
     if (parse_result == HW::ParseResult::OK) {
         // No further processing or user interaction are required if
@@ -513,13 +511,6 @@ void Configuration::setAgentConfiguration() {
         HW::GetFlag<std::string>("spool-dir"),
         HW::GetFlag<std::string>("modules-config-dir"),
         AGENT_CLIENT_TYPE };
-}
-
-void Configuration::setNonExposedOptions() {
-    HW::DefineGlobalFlag<std::string>("pid-dir",
-                                      "",
-                                      PID_DIR,
-                                      nullptr);
 }
 
 }  // namespace PXPAgent

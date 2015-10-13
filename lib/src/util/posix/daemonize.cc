@@ -1,4 +1,5 @@
 #include <pxp-agent/util/posix/daemonize.hpp>
+#include <pxp-agent/configuration.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.util.posix.daemonize"
 #include <leatherman/logging/logging.hpp>
@@ -29,12 +30,9 @@ static void sigHandler(int sig) {
     // the successive SIGKILL there are only 5 s - must be fast
 
     if (sig == SIGINT || sig == SIGTERM || sig == SIGQUIT) {
-        // We use HW instead of Config because we may daemonize
-        // without a valid configuration. Outcome of CTH-380
-        auto pid_dir = HW::GetFlag<std::string>("pid-dir");
         LOG_DEBUG("Caught signal %1% - removing PID file in %2%",
-                  std::to_string(sig), pid_dir);
-        PIDFile pidf { pid_dir };
+                  std::to_string(sig), PID_DIR);
+        PIDFile pidf { PID_DIR };
         pidf.cleanup();
         exit(EXIT_SUCCESS);
     }
@@ -53,13 +51,9 @@ std::unique_ptr<PIDFile> daemonize() {
     // Set umask; child processes will inherit
     umask(UMASK_FLAGS);
 
-    // We use HW instead of Config because we may daemonize without a
-    // valid configuration. Outcome of CTH-380
-    auto pid_dir = HW::GetFlag<std::string>("pid-dir");
-
     // Check PID file; get read lock; ensure we can obtain write lock
 
-    std::unique_ptr<PIDFile> pidf_ptr { new PIDFile(pid_dir) };
+    std::unique_ptr<PIDFile> pidf_ptr { new PIDFile(PID_DIR) };
 
     auto removeLockAndExit = [&pidf_ptr] () {
                                  pidf_ptr->cleanupWhenDone();
@@ -257,7 +251,7 @@ std::unique_ptr<PIDFile> daemonize() {
     freopen("/dev/null", "w", stderr);
 
     LOG_INFO("Daemonization completed; pxp-agent PID=%1%, PID lock file in '%2%'",
-             agent_pid, pid_dir);
+             agent_pid, PID_DIR);
 
     // Set PIDFile dtor to clean itself up and return pointer for RAII
     pidf_ptr->cleanupWhenDone();
