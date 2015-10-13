@@ -36,6 +36,12 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} /opt/local/include)
 endif()
 
+# Set RPATH if not installing to a system library directory
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" INSTALL_IS_SYSTEM_DIR)
+if ("${INSTALL_IS_SYSTEM_DIR}" STREQUAL "-1")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif()
+
 # Leatherman it up
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/vendor/leatherman/cmake")
 include(options)
