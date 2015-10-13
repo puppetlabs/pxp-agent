@@ -11,6 +11,8 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.configuration"
 #include <leatherman/logging/logging.hpp>
 
+#include <cpp-pcp-client/util/logging.hpp>
+
 #include <fstream>
 
 #ifdef _WIN32
@@ -459,6 +461,8 @@ void Configuration::setupLogging() {
     auto console_logger = HW::GetFlag<bool>("console-logger");
     auto loglevel = HW::GetFlag<std::string>("loglevel");
 
+    std::ostream *stream = nullptr;
+    bool color = true;
     if (!console_logger) {
         auto logdir = HW::GetFlag<std::string>("logdir");
 
@@ -476,16 +480,17 @@ void Configuration::setupLogging() {
         auto logfile = (logdir_path / LOGFILE_NAME).string();
         static std::ofstream file_stream {};
         file_stream.open(logfile, std::ios_base::app);
-        lth_log::setup_logging(file_stream);
-#ifdef LOG_COLOR
-        lth_log::set_colorization(true);
+        stream = &file_stream;
+
+#ifndef LOG_COLOR
+        color = false;
 #endif  // LOG_COLOR
     } else {
         // Log on stdout by default
-        lth_log::setup_logging(std::cout);
-        lth_log::set_colorization(true);
+        stream = &std::cout;
     }
 
+    lth_log::log_level lvl = lth_log::log_level::none;
     try {
         // NOTE(ale): ignoring HorseWhisperer's vlevel ("-v" flag)
         const std::map<std::string, lth_log::log_level> option_to_log_level {
@@ -497,11 +502,15 @@ void Configuration::setupLogging() {
             { "error", lth_log::log_level::error },
             { "fatal", lth_log::log_level::fatal }
         };
-
-        lth_log::set_level(option_to_log_level.at(loglevel));
+        lvl = option_to_log_level.at(loglevel);
     } catch (const std::out_of_range& e) {
         throw Configuration::Error { "invalid log level: '" + loglevel + "'" };
     }
+
+    lth_log::setup_logging(*stream);
+    lth_log::set_colorization(color);
+    lth_log::set_level(lvl);
+    PCPClient::Util::setupLogging(*stream, color, loglevel);
 }
 
 void Configuration::setAgentConfiguration() {
