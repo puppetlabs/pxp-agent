@@ -79,7 +79,7 @@ int startAgent(std::vector<std::string> arguments) {
 int main(int argc, char *argv[]) {
     Configuration::Instance().setStartFunction(startAgent);
 
-    HW::ParseResult parse_result;
+    HW::ParseResult parse_result { HW::ParseResult::OK };
 
     try {
         parse_result = Configuration::Instance().initialize(argc, argv);
@@ -90,6 +90,7 @@ int main(int argc, char *argv[]) {
     } catch(const Configuration::UnconfiguredError& e) {
         std::cout << "A configuration error has occurred: " << e.what() << std::endl;
         std::cout << "pxp-agent will start unconfigured\n";
+        // Don't return, if we're unconfigured we can still start
     } catch(const Configuration::Error& e) {
         std::cout << "A configuration error has occurred: " << e.what() << std::endl;
         std::cout << "pxp-agent cannot start" << std::endl;
@@ -107,7 +108,7 @@ int main(int argc, char *argv[]) {
             HorseWhisperer::ShowVersion();
             return 0;
         default:
-            std::cout << "An unexpected code was returned when trying to parse"
+            std::cout << "An unexpected code was returned when trying to parse "
                       << "command line arguments - "
                       << static_cast<int>(parse_result) << ". Aborting"
                       << std::endl;
