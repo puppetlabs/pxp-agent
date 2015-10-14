@@ -18,6 +18,7 @@
 #include <cpp-pcp-client/util/chrono.hpp>
 
 #include <boost/nowide/args.hpp>
+#include <boost/nowide/iostream.hpp>
 
 namespace PXPAgent {
 
@@ -90,15 +91,15 @@ int main(int argc, char *argv[]) {
         parse_result = Configuration::Instance().initialize(argc, argv);
     } catch (const HW::horsewhisperer_error& e) {
         // Failed to validate action argument or flag
-        std::cout << e.what() << "\nCannot start pxp-agent'n";
+        boost::nowide::cout << e.what() << "\nCannot start pxp-agent" << std::endl;
         return 1;
     } catch(const Configuration::UnconfiguredError& e) {
-        std::cout << "A configuration error has occurred: " << e.what() << std::endl;
-        std::cout << "pxp-agent will start unconfigured\n";
+        boost::nowide::cout << "A configuration error has occurred: " << e.what() << std::endl;
+        boost::nowide::cout << "pxp-agent will start unconfigured" << std::endl;
         // Don't return, if we're unconfigured we can still start
     } catch(const Configuration::Error& e) {
-        std::cout << "A configuration error has occurred: " << e.what() << std::endl;
-        std::cout << "pxp-agent cannot start" << std::endl;
+        boost::nowide::cout << "A configuration error has occurred: " << e.what() << std::endl;
+        boost::nowide::cout << "pxp-agent cannot start" << std::endl;
         return 1;
     }
 
@@ -113,7 +114,7 @@ int main(int argc, char *argv[]) {
             HorseWhisperer::ShowVersion();
             return 0;
         default:
-            std::cout << "An unexpected code was returned when trying to parse "
+            boost::nowide::cout << "An unexpected code was returned when trying to parse "
                       << "command line arguments - "
                       << static_cast<int>(parse_result) << ". Aborting"
                       << std::endl;
