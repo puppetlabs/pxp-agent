@@ -17,6 +17,8 @@
 #include <cpp-pcp-client/util/thread.hpp>
 #include <cpp-pcp-client/util/chrono.hpp>
 
+#include <boost/nowide/args.hpp>
+
 namespace PXPAgent {
 
 namespace HW = HorseWhisperer;
@@ -77,6 +79,9 @@ int startAgent(std::vector<std::string> arguments) {
 }
 
 int main(int argc, char *argv[]) {
+    // Fix args on Windows to be UTF-8
+    boost::nowide::args arg_utf8(argc, argv);
+
     Configuration::Instance().setStartFunction(startAgent);
 
     HW::ParseResult parse_result { HW::ParseResult::OK };
