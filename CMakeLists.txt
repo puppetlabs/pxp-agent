@@ -13,6 +13,8 @@ option(LOG_COLOR "Enable colorization for logging" OFF)
 
 # Project Output Paths
 
+set(MODULES_INSTALL_PATH pxp-agent/modules CACHE STRING  "Location to install core modulee. Can be an absolute path, or relative path from CMAKE_INSTALL_PREFIX.")
+
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 set(VENDOR_DIRECTORY ${PROJECT_SOURCE_DIR}/vendor)
@@ -92,7 +94,9 @@ add_subdirectory(lib)
 add_subdirectory(exe)
 
 # Add the module install (the exe install is handled in the exe subdir)
-install(FILES modules/pxp-module-puppet DESTINATION pxp-agent/modules)
+install(FILES modules/pxp-module-puppet
+        DESTINATION ${MODULES_INSTALL_PATH}
+        PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 # Add the test suite
 
