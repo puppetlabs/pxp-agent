@@ -3,16 +3,27 @@
 
 #include <horsewhisperer/horsewhisperer.h>
 
+#include <boost/nowide/fstream.hpp>
+
 #include <map>
+#include <memory>
 #include <stdexcept>
 
 namespace PXPAgent {
 
 namespace HW = HorseWhisperer;
 
+//
+// Tokens
+//
+
 extern const std::string DEFAULT_SPOOL_DIR;     // used by unit tests
 extern const std::string LOGFILE_NAME;          // not configurable
 extern const std::string PID_DIR;               // not configurable
+
+//
+// Types
+//
 
 enum Types { Integer, String, Bool, Double };
 
@@ -43,6 +54,19 @@ struct Entry : EntryBase {
 };
 
 using Base_ptr = std::unique_ptr<EntryBase>;
+
+//
+// Platform-specific interface
+//
+
+/// Perform the platform specific configuration steps for setting up
+/// the pxp-agent logging to file.
+/// Throw a Configuration::Error in case of failure.
+void configure_platform_file_logging();
+
+//
+// Configuration
+//
 
 class Configuration {
   public:
@@ -155,12 +179,32 @@ class Configuration {
     /// Returns true if the agent was successfuly initialized
     bool isInitialized() const;
 
+    /// Try to close the log file stream,  then try to open the log
+    /// file in append mode and associate it to the log file stream.
+    /// All possible exceptions will be filtered.
+    void reopenLogfile() const;
+
   private:
+    // Whether Configuration singleton was successfully instantiated
     bool initialized_;
+
+    // Stores options with relative default values
     std::map<std::string, Base_ptr> defaults_;
+
+    // Path to the pxp-agent configuration file
     std::string config_file_;
+
+    // Function that starts the pxp-agent service
     std::function<int(std::vector<std::string>)> start_function_;
+
+    // Cache agent configuration parameters
     Agent agent_configuration_;
+
+    // Path to the logfile
+    std::string logfile_;
+
+    // Stream abstraction object for the logfile
+    mutable boost::nowide::ofstream logfile_fstream_;
 
     Configuration();
     void defineDefaultValues();

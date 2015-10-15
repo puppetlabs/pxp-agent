@@ -2,7 +2,8 @@
 
 #include "version-inl.hpp"
 
-#include <boost/filesystem/operations.hpp>
+#include <cpp-pcp-client/util/logging.hpp>
+
 #include <leatherman/locale/locale.hpp>
 
 #include <leatherman/file_util/file.hpp>
@@ -12,10 +13,9 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.configuration"
 #include <leatherman/logging/logging.hpp>
 
-#include <cpp-pcp-client/util/logging.hpp>
+#include <boost/filesystem/operations.hpp>
 
 #include <boost/nowide/iostream.hpp>
-#include <boost/nowide/fstream.hpp>
 
 #ifdef _WIN32
     #include <leatherman/windows/system_error.hpp>
@@ -218,7 +218,22 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const {
 }
 
 bool Configuration::isInitialized() const {
-  return initialized_;
+    return initialized_;
+}
+
+void Configuration::reopenLogfile() const {
+    if (!logfile_.empty()) {
+        try {
+            logfile_fstream_.close();
+        } catch (const std::exception& e) {
+            LOG_DEBUG("Failed to close logfile stream; already closed?");
+        }
+        try {
+            logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
+        } catch (const std::exception& e) {
+            LOG_ERROR("Failed to open logfile stream");
+        }
+    }
 }
 
 //
@@ -229,7 +244,9 @@ Configuration::Configuration() : initialized_ { false },
                                  defaults_ {},
                                  config_file_ { "" },
                                  start_function_ {},
-                                 agent_configuration_ {} {
+                                 agent_configuration_ {},
+                                 logfile_ { "" },
+                                 logfile_fstream_ {} {
     defineDefaultValues();
 }
 
@@ -473,6 +490,7 @@ void Configuration::setupLogging() {
     std::ostream *stream = nullptr;
 
     if (!console_logger) {
+        // We should log on file
         auto logdir = HW::GetFlag<std::string>("logdir");
 
         if (logdir.empty()) {
@@ -486,16 +504,16 @@ void Configuration::setupLogging() {
         // up logging before calling validateAndNormalizeConfiguration
         validateLogDirPath(logdir_path);
 
-        auto logfile = (logdir_path / LOGFILE_NAME).string();
-        static boost::nowide::ofstream file_stream {};
-        file_stream.open(logfile.c_str(), std::ios_base::app);
-        stream = &file_stream;
+        logfile_ = (logdir_path / LOGFILE_NAME).string();
+        logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
+        stream = &logfile_fstream_;
     } else {
         // Log on stdout by default
         stream = &boost::nowide::cout;
     }
 
     lth_log::log_level lvl = lth_log::log_level::none;
+
     try {
         // NOTE(ale): ignoring HorseWhisperer's vlevel ("-v" flag)
         const std::map<std::string, lth_log::log_level> option_to_log_level {
@@ -512,8 +530,8 @@ void Configuration::setupLogging() {
         throw Configuration::Error { "invalid log level: '" + loglevel + "'" };
     }
 
+    // Configure logging for pxp-agent
     lth_log::setup_logging(*stream);
-
     lth_log::set_level(lvl);
 
 #ifdef DEV_LOG_COLOR
@@ -526,7 +544,15 @@ void Configuration::setupLogging() {
     bool force_colorization = false;
 #endif  // DEV_LOG_COLOR
 
+    // Configure logging for cpp-pcp-client
     PCPClient::Util::setupLogging(*stream, force_colorization, loglevel);
+
+    if (!console_logger) {
+        // Configure platform-specific things for file logging
+        // NB: we do that after setting up lth_log in order to log in
+        //     case of failure
+        configure_platform_file_logging();
+    }
 }
 
 void Configuration::setAgentConfiguration() {
