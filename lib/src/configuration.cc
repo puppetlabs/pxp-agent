@@ -470,9 +470,8 @@ static void validateLogDirPath(fs::path logdir_path) {
 void Configuration::setupLogging() {
     auto console_logger = HW::GetFlag<bool>("console-logger");
     auto loglevel = HW::GetFlag<std::string>("loglevel");
-
     std::ostream *stream = nullptr;
-    bool color = true;
+
     if (!console_logger) {
         auto logdir = HW::GetFlag<std::string>("logdir");
 
@@ -491,10 +490,6 @@ void Configuration::setupLogging() {
         static boost::nowide::ofstream file_stream {};
         file_stream.open(logfile.c_str(), std::ios_base::app);
         stream = &file_stream;
-
-#ifndef LOG_COLOR
-        color = false;
-#endif  // LOG_COLOR
     } else {
         // Log on stdout by default
         stream = &boost::nowide::cout;
@@ -518,9 +513,20 @@ void Configuration::setupLogging() {
     }
 
     lth_log::setup_logging(*stream);
-    lth_log::set_colorization(color);
+
     lth_log::set_level(lvl);
-    PCPClient::Util::setupLogging(*stream, color, loglevel);
+
+#ifdef DEV_LOG_COLOR
+    // Enable colorozation anyway (development setting - it helps
+    // debugging PXP message workflow, but it will add useless shell
+    // control sequences to log entries on file)
+    lth_log::set_colorization(true);
+    bool force_colorization = true;
+#else
+    bool force_colorization = false;
+#endif  // DEV_LOG_COLOR
+
+    PCPClient::Util::setupLogging(*stream, force_colorization, loglevel);
 }
 
 void Configuration::setAgentConfiguration() {
