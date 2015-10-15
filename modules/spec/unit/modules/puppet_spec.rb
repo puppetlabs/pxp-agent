@@ -45,14 +45,14 @@ describe "pxp-module-puppet" do
       params = default_params
       params["env"] = ["FOO=bar", "BAR=foo"]
       expect(make_command_string(default_config, params)).to be ==
-        "FOO=bar BAR=foo puppet agent --no-usecacheonfailure --no-splay --show_diff --no-daemonize --onetime --verbose  > /dev/null 2>&1"
+        "FOO=bar BAR=foo puppet agent  > /dev/null 2>&1"
     end
 
     it "should correctly append any flags" do
       params = default_params
       params["flags"] = ["--noop", "--foo=bar"]
       expect(make_command_string(default_config, params)).to be ==
-        "puppet agent --no-usecacheonfailure --no-splay --show_diff --no-daemonize --onetime --verbose --noop --foo=bar > /dev/null 2>&1"
+        "puppet agent --noop --foo=bar > /dev/null 2>&1"
     end
 
     it "should correctly join both flags and env variables" do
@@ -61,13 +61,13 @@ describe "pxp-module-puppet" do
       params["flags"] = ["--noop", "--foo=bar"]
 
       expect(make_command_string(default_config, params)).to be ==
-        "FOO=bar BAR=foo puppet agent --no-usecacheonfailure --no-splay --show_diff --no-daemonize --onetime --verbose --noop --foo=bar > /dev/null 2>&1"
+        "FOO=bar BAR=foo puppet agent --noop --foo=bar > /dev/null 2>&1"
     end
 
     it "uses the correct 'dev/null' on Windows" do
       allow_any_instance_of(Object).to receive(:is_win?).and_return("true")
       expect(make_command_string(default_config, default_params)).to be ==
-        "puppet agent --no-usecacheonfailure --no-splay --show_diff --no-daemonize --onetime --verbose  > nul 2>&1"
+        "puppet agent  > nul 2>&1"
     end
   end
 
