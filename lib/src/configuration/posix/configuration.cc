@@ -4,6 +4,7 @@
 #include <leatherman/logging/logging.hpp>
 
 #include <stdexcept>
+#include <signal.h>
 
 namespace PXPAgent {
 
