@@ -31,10 +31,17 @@ if (UNIX)
     set(LIBRARY_STANDARD_SOURCES
         src/util/posix/pid_file.cc
         src/util/posix/daemonize.cc
+        src/configuration/posix/configuration.cc
     )
 endif()
 
-SET(LIBS
+if (WIN32)
+    set(LIBRARY_STANDARD_SOURCES
+        src/configuration/windows/configuration.cc
+    )
+endif()
+
+set(LIBS
     ${cpp-pcp-client_LIBRARY}
     ${Boost_LIBRARIES}
     ${OPENSSL_SSL_LIBRARY}
