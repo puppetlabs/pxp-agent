@@ -9,7 +9,7 @@ endif()
 # define further options
 option(EXTERNAL_CPP_PCP_CLIENT "ON - use an installed version of cpp-pcp-client. OFF - use the git submodule" ON)
 option(TEST_VIRTUAL "ON - certain class member functions became virtual to enable mocking for unit tests" OFF)
-option(LOG_COLOR "Enable colorization for logging" OFF)
+option(DEV_LOG_COLOR "Enable colorization for logging (development setting)" OFF)
 
 # Project Output Paths
 
@@ -66,8 +66,8 @@ set(LEATHERMAN_USE_WINDOWS TRUE)
 leatherman_logging_line_numbers()
 add_subdirectory("vendor/leatherman")
 
-if(LOG_COLOR)
-    add_definitions(-DLOG_COLOR)
+if(DEV_LOG_COLOR)
+    add_definitions(-DDEV_LOG_COLOR)
 endif()
 
 # Find libraries
