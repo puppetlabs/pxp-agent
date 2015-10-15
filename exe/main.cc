@@ -1,10 +1,7 @@
 #include <pxp-agent/agent.hpp>
 #include <pxp-agent/configuration.hpp>
 
-#ifndef _WIN32
-#include <pxp-agent/util/posix/pid_file.hpp>
-#include <pxp-agent/util/posix/daemonize.hpp>
-#endif
+#include <pxp-agent/util/daemonize.hpp>
 
 #include <leatherman/file_util/file.hpp>
 
@@ -26,7 +23,17 @@ namespace HW = HorseWhisperer;
 namespace lth_file = leatherman::file_util;
 
 int startAgent(std::vector<std::string> arguments) {
-#ifndef _WIN32
+#ifdef _WIN32
+    try {
+        Util::daemonize();
+    } catch (const std::exception& e) {
+        LOG_ERROR("Failed to daemonize: %1%", e.what());
+        return 1;
+    } catch (...) {
+        LOG_ERROR("Failed to daemonize");
+        return 1;
+    }
+#else
     std::unique_ptr<Util::PIDFile> pidf_ptr;
 
     try {
@@ -76,6 +83,9 @@ int startAgent(std::vector<std::string> arguments) {
         LOG_ERROR("Unexpected error");
     }
 
+#ifdef _WIN32
+    Util::cleanup();
+#endif
     return (success ? 0 : 1);
 }
 
