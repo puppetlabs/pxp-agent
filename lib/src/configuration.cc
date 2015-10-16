@@ -470,12 +470,8 @@ static void validateLogDirPath(fs::path logdir_path) {
             throw Configuration::Error { "log directory is not a directory" };
         }
     } else {
-        try {
-            fs::create_directories(logdir_path);
-        } catch (const fs::filesystem_error& e) {
-            std::string err_msg { "failed to create log directory: " };
-            throw Configuration::Error { err_msg + e.what() };
-        }
+        throw Configuration::Error { "--logdir '" + logdir_path.string() +
+                                     "' doesn't exist" };
     }
 }
 
