@@ -293,7 +293,8 @@ void Configuration::defineDefaultValues() {
     defaults_.insert(std::pair<std::string, Base_ptr>("loglevel", Base_ptr(
         new Entry<std::string>("loglevel",
                                "",
-                               "Log level; defaults to 'info'",
+                               "Valid options are 'none', 'trace', 'debug', 'info',"
+                               "'warning', 'error' and 'fatal'. Defaults to 'info'",
                                Types::String,
                                "info"))));
 
