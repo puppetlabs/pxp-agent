@@ -1,10 +1,8 @@
-#include <pxp-agent/util/posix/daemonize.hpp>
+#include <pxp-agent/util/daemonize.hpp>
 #include <pxp-agent/configuration.hpp>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.util.posix.daemonize"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.util.daemonize"
 #include <leatherman/logging/logging.hpp>
-
-#include <horsewhisperer/horsewhisperer.h>
 
 #include <sys/types.h>
 #include <stdlib.h>         // exit()
@@ -19,8 +17,6 @@
 
 namespace PXPAgent {
 namespace Util {
-
-namespace HW = HorseWhisperer;
 
 const mode_t UMASK_FLAGS { 002 };
 const std::string DEFAULT_DAEMON_WORKING_DIR = "/";

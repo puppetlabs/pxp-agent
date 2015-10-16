@@ -1,10 +1,7 @@
 #include <pxp-agent/agent.hpp>
 #include <pxp-agent/configuration.hpp>
 
-#ifndef _WIN32
-#include <pxp-agent/util/posix/pid_file.hpp>
-#include <pxp-agent/util/posix/daemonize.hpp>
-#endif
+#include <pxp-agent/util/daemonize.hpp>
 
 #include <leatherman/file_util/file.hpp>
 
@@ -28,13 +25,18 @@ namespace lth_file = leatherman::file_util;
 int startAgent(std::vector<std::string> arguments) {
 #ifndef _WIN32
     std::unique_ptr<Util::PIDFile> pidf_ptr;
+#endif
 
     try {
         // Using HW because configuration may not be initialized at this point
         if (!HW::GetFlag<bool>("foreground")) {
+#ifdef _WIN32
+            Util::daemonize();
+#else
             // Store it for RAII
             // NB: pidf_ptr will be nullptr if already a daemon
             pidf_ptr = Util::daemonize();
+#endif
         }
     } catch (const std::exception& e) {
         LOG_ERROR("Failed to daemonize: %1%", e.what());
@@ -43,7 +45,6 @@ int startAgent(std::vector<std::string> arguments) {
         LOG_ERROR("Failed to daemonize");
         return 1;
     }
-#endif
 
     if (!Configuration::Instance().isInitialized()) {
         // Start a thread that just busy waits to facilitate
@@ -76,6 +77,9 @@ int startAgent(std::vector<std::string> arguments) {
         LOG_ERROR("Unexpected error");
     }
 
+#ifdef _WIN32
+    Util::daemon_cleanup();
+#endif
     return (success ? 0 : 1);
 }
 

@@ -52,6 +52,7 @@ include(options)
 include(cflags) # Leatherman
 set(PXP_AGENT_FLAGS "")
 set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS} ${PXP_AGENT_FLAGS}")
+add_definitions(${LEATHERMAN_DEFINITIONS})
 
 set(LEATHERMAN_USE_LOCALE TRUE)
 set(LEATHERMAN_USE_NOWIDE TRUE)
