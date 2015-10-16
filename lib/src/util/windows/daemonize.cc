@@ -1,17 +1,18 @@
 #include <pxp-agent/util/daemonize.hpp>
-#include <pxp-agent/util/windows/pid_file.hpp>
 #include <pxp-agent/configuration.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.util.daemonize"
 #include <leatherman/logging/logging.hpp>
+#include <leatherman/windows/system_error.hpp>
 
 #include <cstdlib>
+#include <cassert>
 #include <windows.h>
 
 namespace PXPAgent {
 namespace Util {
 
-static std::unique_ptr<PIDFile> _pidf_ptr;
+namespace lth_win = leatherman::windows;
 
 BOOL ctrl_handler(DWORD sig)
 {
@@ -20,9 +21,8 @@ BOOL ctrl_handler(DWORD sig)
         case CTRL_CLOSE_EVENT:
         case CTRL_SHUTDOWN_EVENT:
         {
-            LOG_DEBUG("Caught signal %1% - removing PID file in %2%",
-                      std::to_string(sig), PID_DIR);
-            cleanup();
+            LOG_DEBUG("Caught signal %1% - shutting down", std::to_string(sig));
+            daemon_cleanup();
             exit(EXIT_SUCCESS);
         }
         default:
@@ -30,43 +30,42 @@ BOOL ctrl_handler(DWORD sig)
     }
 }
 
-// Initialize the PID file and set up signal handlers
+static HANDLE program_lock = INVALID_HANDLE_VALUE;
+static constexpr char program_lock_name[] = "com_puppetlabs_pxp-agent";
+
 void daemonize() {
-    std::unique_ptr<PIDFile> pidf_ptr { new PIDFile(PID_DIR) };
-
-    if (pidf_ptr->isExecuting()) {
-        auto pid = pidf_ptr->read();
-        LOG_ERROR("Already running with PID=%1%", pid);
+    assert(program_lock == INVALID_HANDLE_VALUE);
+    program_lock = CreateMutexA(NULL, TRUE, program_lock_name);
+    if (NULL == program_lock) {
+        LOG_ERROR("Unable to acquire process lock: %1%", lth_win::system_error());
+        exit(EXIT_FAILURE);
+    } else if (ERROR_ALREADY_EXISTS == GetLastError()) {
+        LOG_ERROR("Already running daemonized");
         exit(EXIT_FAILURE);
     }
-
-    try {
-        pidf_ptr->lock();
-        LOG_DEBUG("Obtained a lock for the PID file; no other pxp-agent "
-                  "daemon should be executing");
-    } catch (const PIDFile::Error& e) {
-        LOG_ERROR("Failed get a lock for the PID file: %1%", e.what());
-        exit(EXIT_FAILURE);
-    }
-
-    auto agent_pid = GetCurrentProcessId();
-    pidf_ptr->write(agent_pid);
 
     if (SetConsoleCtrlHandler(static_cast<PHANDLER_ROUTINE>(ctrl_handler), TRUE)) {
-        LOG_DEBUG("Control handler installed");
+        LOG_DEBUG("Console control handler installed");
     } else {
-        LOG_ERROR("Could not set control handler");
+        LOG_ERROR("Could not set control handler: %1%", lth_win::system_error());
+        daemon_cleanup();
         exit(EXIT_FAILURE);
     }
 
-    LOG_INFO("Daemonization completed; pxp-agent PID=%1%, PID lock file in '%2%'",
-             agent_pid, PID_DIR);
-
-    _pidf_ptr = std::move(pidf_ptr);
+    LOG_INFO("Daemonization completed; pxp-agent PID=%1%, process lock '%2%'",
+             GetCurrentProcessId(), program_lock_name);
 }
 
-void cleanup() {
-    _pidf_ptr->cleanup();
+void daemon_cleanup() {
+    // This doesn't currently use RAII because the scope isn't clear, and global static
+    // destruction would preclude using logging because Boost.Log also uses global static
+    // destruction.
+    if (program_lock != INVALID_HANDLE_VALUE && program_lock != NULL) {
+        LOG_DEBUG("Removing process lock '%1%'", program_lock_name);
+        ReleaseMutex(program_lock);
+        CloseHandle(program_lock);
+        program_lock = INVALID_HANDLE_VALUE;
+    }
 }
 
 }  // namespace Util

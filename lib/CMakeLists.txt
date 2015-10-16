@@ -38,7 +38,6 @@ endif()
 if (WIN32)
     set(LIBRARY_STANDARD_SOURCES
         src/util/windows/daemonize.cc
-        src/util/windows/pid_file.cc
         src/configuration/windows/configuration.cc
     )
 endif()

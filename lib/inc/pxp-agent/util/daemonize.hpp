@@ -3,15 +3,15 @@
 
 #ifndef _WIN32
 #include <pxp-agent/util/posix/pid_file.hpp>
-#endif
 #include <memory>
+#endif
 
 namespace PXPAgent {
 namespace Util {
 
 #ifdef _WIN32
 void daemonize();
-void cleanup();
+void daemon_cleanup();
 #else
 std::unique_ptr<PIDFile> daemonize();
 #endif
