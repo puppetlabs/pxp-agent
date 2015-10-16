@@ -27,6 +27,12 @@ class PIDFile {
     // Perform clean up if previously requested by cleanUpWhenDone().
     ~PIDFile();
 
+    // Disable copies, and provide move semantics.
+    PIDFile(PIDFile const&) = delete;
+    PIDFile& operator=(PIDFile const&) = delete;
+    PIDFile(PIDFile &&) = default;
+    PIDFile& operator=(PIDFile &&) = default;
+
     // Return true if the PID file stores a PID relative to a
     // running process, false otherwise.
     bool isExecuting();
