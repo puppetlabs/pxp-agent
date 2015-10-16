@@ -2,13 +2,14 @@
 #include "../content_format.hpp"                    // ENVELOPE_TXT
 
 #include <pxp-agent/modules/status.hpp>
-#include <pxp-agent/configuration.hpp>              // DEFAULT_SPOOL_DIR
 
 #include <cpp-pcp-client/protocol/chunks.hpp>       // ParsedChunks
 
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/file_util/file.hpp>
 #include <leatherman/util/strings.hpp>
+
+#include <horsewhisperer/horsewhisperer.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -22,6 +23,10 @@ namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 namespace lth_util = leatherman::util;
+namespace HW = HorseWhisperer;
+
+const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
+                                      + "/lib/tests/resources/test_spool/" };
 
 static const std::string QUERY_ACTION { "query" };
 
@@ -79,13 +84,14 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
         }
     }
 
-    if (!boost::filesystem::exists(DEFAULT_SPOOL_DIR)
-        && !boost::filesystem::create_directories(DEFAULT_SPOOL_DIR)) {
+    if (!boost::filesystem::exists(SPOOL_DIR)
+        && !boost::filesystem::create_directories(SPOOL_DIR)) {
         FAIL("Failed to create the results directory");
     }
 
     auto testResultFiles =
         [&] (bool success, std::string result_path) {
+            HW::SetFlag<std::string>("spool-dir", SPOOL_DIR);
             auto symlink_name = lth_util::get_UUID();
             std::string other_status_txt { (STATUS_FORMAT % symlink_name).str() };
             PCPClient::ParsedChunks other_chunks {
@@ -95,7 +101,7 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
                     0 };
             ActionRequest request { RequestType::Blocking, other_chunks };
 
-            boost::filesystem::path dest { DEFAULT_SPOOL_DIR };
+            boost::filesystem::path dest { SPOOL_DIR };
             dest /= symlink_name;
             if (!boost::filesystem::exists(dest)
                     && !boost::filesystem::create_directories(dest)) {
@@ -161,6 +167,10 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
             result_path += "/lib/tests/resources/delayed_result_failure";
             testResultFiles(false, result_path);
         }
+    }
+
+    if (!boost::filesystem::exists(SPOOL_DIR)) {
+        boost::filesystem::remove_all(SPOOL_DIR);
     }
 }
 

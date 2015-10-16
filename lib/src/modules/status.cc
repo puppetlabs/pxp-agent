@@ -1,5 +1,4 @@
 #include <pxp-agent/modules/status.hpp>
-#include <pxp-agent/configuration.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -9,11 +8,14 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.modules.status"
 #include <leatherman/logging/logging.hpp>
 
+#include <horsewhisperer/horsewhisperer.h>
+
 namespace PXPAgent {
 namespace Modules {
 
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
+namespace HW = HorseWhisperer;
 
 static const std::string QUERY { "query" };
 
@@ -38,7 +40,7 @@ Status::Status() {
 ActionOutcome Status::callAction(const ActionRequest& request) {
     lth_jc::JsonContainer results {};
     auto t_id = request.params().get<std::string>("transaction_id");
-    fs::path results_path { Configuration::Instance().get<std::string>("spool-dir") };
+    fs::path results_path { HW::GetFlag<std::string>("spool-dir") };
     auto results_dir = (results_path / t_id).string();
 
     if (!fs::exists(results_dir)) {
