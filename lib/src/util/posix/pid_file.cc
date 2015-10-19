@@ -37,7 +37,6 @@ PIDFile::PIDFile(const std::string& dir_path_)
         }
     } else {
         std::string err_msg { "'" + dir_path + "' doesn't exist. Cannot create PID file" };
-        //LOG_ERROR(err_msg);
         throw PIDFile::Error { err_msg };
     }
 
