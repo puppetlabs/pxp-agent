@@ -113,9 +113,7 @@ The PXP agent has the following configuration options
 
 Specify which config file to use.
 
-**foreground (optional flag)**
 
-Don't become a daemon and execute on foreground on the associated terminal.
 
 **server (required to connect)**
 
@@ -147,11 +145,6 @@ Specify one of the following logging levels: *none*, *trace*, *debug*, *info*,
 
 Display logging messages on the associated terminal; requires `--foreground`
 
-**spool-dir (optional)**
-
-The location where the outcome of non-blocking requests will be stored; the
-default location is */tmp/pxp-agent/*
-
 **modules-dir (optional)**
 
 Specify the directory where modules are stored
@@ -160,9 +153,18 @@ Specify the directory where modules are stored
 
 Specify the directory containing the configuration files of modules
 
+**spool-dir (optional)**
+
+The location where the outcome of non-blocking requests will be stored; the
+default location is */tmp/pxp-agent/*
+
+**foreground (optional flag)**
+
+Don't become a daemon and execute on foreground on the associated terminal.
+
 ## Starting the agent
 
-The agent can be started by running
+The agent can be started as a daemon by running
 ```
 pxp-agent
 ```
