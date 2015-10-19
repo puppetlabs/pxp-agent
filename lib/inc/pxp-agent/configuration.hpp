@@ -28,29 +28,36 @@ extern const std::string PID_DIR;               // not configurable
 enum Types { Integer, String, Bool, Double };
 
 struct EntryBase {
-    // config option name. must match one of the flag names and config file option
+    // Config option name
+    // HERE: must match one of the flag names and config file option
     std::string name;
-    // cli flag aliases (e.g. --server --serv -s)
+    // CLI option aliases (e.g. --server --serv -s)
     std::string aliases;
-    // help string to be displayed by --help flag
+    // Help string to be displayed by --help flag
     std::string help;
     // Value type
     Types type;
+    // Whether the option was already parsed from config file
     bool configured = false;
-    EntryBase(std::string Name, std::string Aliases,
-              std::string Help, Types Type) : name(Name),
-                                              aliases(Aliases),
-                                              help(Help),
-                                              type(Type) {}
+
+    EntryBase(std::string _name, std::string _aliases, std::string _help, Types _type)
+            : name { _name },
+              aliases { _aliases },
+              help { _help },
+              type { _type } {
+    }
 };
 
 template <typename T>
 struct Entry : EntryBase {
-    Entry<T>(std::string Name, std::string Aliases,
-             std::string Help, Types Type, T Value) : EntryBase(Name, Aliases, Help, Type),
-                                                      value(Value) {}
-    // default value (can be empty)
+    // Default value
     T value;
+
+    Entry<T>(std::string _name, std::string _aliases, std::string _help, Types _type,
+             T _value)
+            : EntryBase { _name, _aliases, _help, _type },
+              value { _value } {
+    }
 };
 
 using Base_ptr = std::unique_ptr<EntryBase>;
