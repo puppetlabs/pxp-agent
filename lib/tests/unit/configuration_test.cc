@@ -32,8 +32,8 @@ const char* ARGV[] = { "test-command",
                        "--cert", CERT.data(),
                        "--key", KEY.data(),
                        "--modules-dir", MODULES_DIR.data(),
-                       "--foreground=true",
-                       "--spool-dir", SPOOL_DIR.data() };
+                       "--spool-dir", SPOOL_DIR.data(),
+                       "--foreground=true",};
 const int ARGC = 16;
 
 static void configureTest() {
@@ -150,11 +150,11 @@ TEST_CASE("Configuration::get", "[configuration]") {
 
         SECTION("return the default value if the flag was not set") {
             resetTest();
-            // NB: ignoring --spool-dir in ARGV since argc is set to 14
-            Configuration::Instance().initialize(14, const_cast<char**>(ARGV), false);
+            // NB: ignoring --foreground in ARGV since argc is set to 14
+            Configuration::Instance().initialize(15, const_cast<char**>(ARGV), false);
 
-            REQUIRE(Configuration::Instance().get<std::string>("spool-dir")
-                    == DEFAULT_SPOOL_DIR);
+            REQUIRE(Configuration::Instance().get<bool>("foreground")
+                    == false);
         }
 
         SECTION("return the correct value after the flag has been set") {

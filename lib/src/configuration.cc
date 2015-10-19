@@ -193,15 +193,10 @@ void Configuration::validateAndNormalizeConfiguration() {
         spool_dir = lth_file::tilde_expand(spool_dir);
 
         if (!fs::exists(spool_dir)) {
-            LOG_INFO("Creating spool directory '%1%'", spool_dir);
-            try {
-                fs::create_directories(spool_dir);
-            } catch (const fs::filesystem_error& e) {
-                std::string err_msg { "failed to create the spool directory: " };
-                throw Configuration::Error { err_msg + e.what() };
-            }
+            throw Configuration::Error { "spool-dir does not exists" };
         } else if (!fs::is_directory(spool_dir)) {
-            throw Configuration::Error { "not a spool directory: " + spool_dir };
+            throw Configuration::Error { "--spool-dir '" + spool_dir +
+                                         "' is not a directory'"};
         }
     }
 
@@ -476,12 +471,8 @@ static void validateLogDirPath(fs::path logdir_path) {
             throw Configuration::Error { "log directory is not a directory" };
         }
     } else {
-        try {
-            fs::create_directories(logdir_path);
-        } catch (const fs::filesystem_error& e) {
-            std::string err_msg { "failed to create log directory: " };
-            throw Configuration::Error { err_msg + e.what() };
-        }
+        throw Configuration::Error { "--logdir '" + logdir_path.string() +
+                                     "' doesn't exist" };
     }
 }
 

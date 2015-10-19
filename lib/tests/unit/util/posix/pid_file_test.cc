@@ -51,10 +51,8 @@ TEST_CASE("PIDFile ctor", "[util]") {
         REQUIRE_NOTHROW(PIDFile { PID_DIR });
     }
 
-    SECTION("can instantiate if the directory does not exist") {
-        REQUIRE_NOTHROW(PIDFile { PID_DIR + "/foo/bar" });
-
-        fs::remove_all(PID_DIR + "/foo");
+    SECTION("it fails if the directory does not exist") {
+        REQUIRE_THROWS(PIDFile { PID_DIR + "/foo/bar" });
     }
 
     SECTION("cannot instantiate if the directory is a regular file") {
@@ -63,24 +61,12 @@ TEST_CASE("PIDFile ctor", "[util]") {
                           PIDFile::Error);
     }
 
-    SECTION("create the directory if necessary") {
-        REQUIRE_FALSE(fs::exists(PID_DIR + "/foo/bar"));
-
-        PIDFile p_f { PID_DIR + "/foo/bar" };
-
-        REQUIRE(fs::exists(PID_DIR + "/foo/bar"));
-
-        fs::remove_all(PID_DIR + "/foo");
-    }
-
     SECTION("create the PIDFile") {
-        REQUIRE_FALSE(fs::exists(PID_DIR + "/foo/bar/" + PID_FILE_NAME));
-
-        PIDFile p_f { PID_DIR + "/foo/bar" };
-
-        REQUIRE(fs::exists(PID_DIR + "/foo/bar/" + PID_FILE_NAME));
-
-        fs::remove_all(PID_DIR + "/foo");
+        fs::remove_all(PID_DIR + "/" + PID_FILE_NAME);
+        REQUIRE(!fs::exists(PID_DIR + "/" + PID_FILE_NAME));
+        PIDFile p_f { PID_DIR };
+        REQUIRE(fs::exists(PID_DIR + "/" + PID_FILE_NAME));
+        fs::remove_all(PID_DIR + "/" + PID_FILE_NAME);
     }
 }
 
