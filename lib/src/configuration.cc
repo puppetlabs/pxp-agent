@@ -251,6 +251,15 @@ void Configuration::defineDefaultValues() {
     HW::SetVersion(std::string { PXP_AGENT_VERSION } + "\n");
 
     defaults_.insert(
+        Option { "config-file",
+                 Base_ptr { new Entry<std::string>(
+                    "config-file",
+                    "",
+                    { "Config file, default: " + DEFAULT_CONFIG_FILE },
+                    Types::String,
+                    DEFAULT_CONFIG_FILE) } });
+
+    defaults_.insert(
         Option { "server",
                  Base_ptr { new Entry<std::string>(
                     "server",
@@ -316,23 +325,17 @@ void Configuration::defineDefaultValues() {
                     false) } });
 
     defaults_.insert(
-        Option { "config-file",
+        Option { "modules-dir",
                  Base_ptr { new Entry<std::string>(
-                    "config-file",
+                    "modules-dir",
                     "",
-                    { "Config file, default: " + DEFAULT_CONFIG_FILE },
+                    { "Modules directory, default"
+#ifdef _WIN32
+                      " (relative to the pxp-agent.exe path)"
+#endif
+                      ": " + DEFAULT_MODULES_DIR },
                     Types::String,
-                    DEFAULT_CONFIG_FILE) } });
-
-    defaults_.insert(
-        Option { "spool-dir",
-                 Base_ptr { new Entry<std::string>(
-                    "spool-dir",
-                    "",
-                    { "Spool action results directory, default: " +
-                    DEFAULT_SPOOL_DIR },
-                    Types::String,
-                    DEFAULT_SPOOL_DIR) } });
+                    DEFAULT_MODULES_DIR) } });
 
     defaults_.insert(
         Option { "modules-config-dir",
@@ -345,17 +348,14 @@ void Configuration::defineDefaultValues() {
                     DEFAULT_MODULES_CONF_DIR) } });
 
     defaults_.insert(
-        Option { "modules-dir",
+        Option { "spool-dir",
                  Base_ptr { new Entry<std::string>(
-                    "modules-dir",
+                    "spool-dir",
                     "",
-                    { "Modules directory, default"
-#ifdef _WIN32
-                      " (relative to the pxp-agent.exe path)"
-#endif
-                      ": " + DEFAULT_MODULES_DIR },
+                    { "Spool action results directory, default: " +
+                    DEFAULT_SPOOL_DIR },
                     Types::String,
-                    DEFAULT_MODULES_DIR) } });
+                    DEFAULT_SPOOL_DIR) } });
 
     defaults_.insert(
         Option { "foreground",
