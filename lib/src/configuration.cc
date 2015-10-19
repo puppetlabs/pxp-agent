@@ -250,111 +250,137 @@ void Configuration::defineDefaultValues() {
     HW::SetHelpBanner("Usage: pxp-agent [options]");
     HW::SetVersion(std::string { PXP_AGENT_VERSION } + "\n");
 
-    defaults_.insert(std::pair<std::string, Base_ptr>("server", Base_ptr(
-        new Entry<std::string>("server",
-                               "s",
-                               "PCP server URL",
-                               Types::String,
-                               ""))));
+    defaults_.insert(
+        Option { "config-file",
+                 Base_ptr { new Entry<std::string>(
+                    "config-file",
+                    "",
+                    { "Config file, default: " + DEFAULT_CONFIG_FILE },
+                    Types::String,
+                    DEFAULT_CONFIG_FILE) } });
 
-    defaults_.insert(std::pair<std::string, Base_ptr>("ca", Base_ptr(
-        new Entry<std::string>("ca",
-                               "",
-                               "CA certificate",
-                               Types::String,
-                               ""))));
+    defaults_.insert(
+        Option { "server",
+                 Base_ptr { new Entry<std::string>(
+                    "server",
+                    "s",
+                    "PCP server URL",
+                    Types::String,
+                    "") } });
 
-    defaults_.insert(std::pair<std::string, Base_ptr>("cert", Base_ptr(
-        new Entry<std::string>("cert",
-                               "",
-                               "pxp-agent certificate",
-                               Types::String,
-                               ""))));
+    defaults_.insert(
+        Option { "ca",
+                 Base_ptr { new Entry<std::string>(
+                    "ca",
+                    "",
+                    "CA certificate",
+                    Types::String,
+                    "") } });
 
-    defaults_.insert(std::pair<std::string, Base_ptr>("key", Base_ptr(
-        new Entry<std::string>("key",
-                               "",
-                               "pxp-agent private key",
-                               Types::String,
-                               ""))));
+    defaults_.insert(
+        Option { "cert",
+                 Base_ptr { new Entry<std::string>(
+                    "cert",
+                    "",
+                    "pxp-agent certificate",
+                    Types::String,
+                    "") } });
 
-    defaults_.insert(std::pair<std::string, Base_ptr>("logdir", Base_ptr(
-        new Entry<std::string>("logdir",
-                               "",
-                               { "Log directory, default: " + DEFAULT_LOG_DIR },
-                               Types::String,
-                               DEFAULT_LOG_DIR))));
+    defaults_.insert(
+        Option { "key",
+                 Base_ptr { new Entry<std::string>(
+                    "key",
+                    "",
+                    "pxp-agent private key",
+                    Types::String,
+                    "") } });
 
-    defaults_.insert(std::pair<std::string, Base_ptr>("loglevel", Base_ptr(
-        new Entry<std::string>("loglevel",
-                               "",
-                               "Valid options are 'none', 'trace', 'debug', 'info',"
-                               "'warning', 'error' and 'fatal'. Defaults to 'info'",
-                               Types::String,
-                               "info"))));
+    defaults_.insert(
+        Option { "logdir",
+                 Base_ptr { new Entry<std::string>(
+                    "logdir",
+                    "",
+                    { "Log directory, default: " + DEFAULT_LOG_DIR },
+                    Types::String,
+                    DEFAULT_LOG_DIR) } });
 
-    defaults_.insert(std::pair<std::string, Base_ptr>("console-logger", Base_ptr(
-        new Entry<bool>("console-logger",
-                        "",
-                        "Show log messages only on console, default: false "
-                        "(log to file)",
-                        Types::Bool,
-                        false))));
+    defaults_.insert(
+        Option { "loglevel",
+                 Base_ptr { new Entry<std::string>(
+                    "loglevel",
+                    "",
+                    "Valid options are 'none', 'trace', 'debug', 'info',"
+                    "'warning', 'error' and 'fatal'. Defaults to 'info'",
+                    Types::String,
+                    "info") } });
 
-    defaults_.insert(std::pair<std::string, Base_ptr>("config-file", Base_ptr(
-        new Entry<std::string>("config-file",
-                               "",
-                               { "Config file, default: " + DEFAULT_CONFIG_FILE },
-                               Types::String,
-                               DEFAULT_CONFIG_FILE))));
+    defaults_.insert(
+        Option { "console-logger",
+                 Base_ptr { new Entry<bool>(
+                    "console-logger",
+                    "",
+                    "Show log messages only on console, default: false "
+                    "(log to file)",
+                    Types::Bool,
+                    false) } });
 
-    defaults_.insert(std::pair<std::string, Base_ptr>("spool-dir", Base_ptr(
-        new Entry<std::string>("spool-dir",
-                               "",
-                               { "Spool action results directory, default: " +
-                                    DEFAULT_SPOOL_DIR },
-                               Types::String,
-                               DEFAULT_SPOOL_DIR))));
-
-    defaults_.insert(std::pair<std::string, Base_ptr>("modules-config-dir", Base_ptr(
-        new Entry<std::string>("modules-config-dir",
-                               "",
-                               { "Module config files directory, default: " +
-                                    DEFAULT_MODULES_CONF_DIR },
-                               Types::String,
-                               DEFAULT_MODULES_CONF_DIR))));
-
-    defaults_.insert(std::pair<std::string, Base_ptr>("modules-dir", Base_ptr(
-        new Entry<std::string>("modules-dir",
-                               "",
-                               { "Modules directory, default"
+    defaults_.insert(
+        Option { "modules-dir",
+                 Base_ptr { new Entry<std::string>(
+                    "modules-dir",
+                    "",
+                    { "Modules directory, default"
 #ifdef _WIN32
-                                 " (relative to the pxp-agent.exe path)"
+                      " (relative to the pxp-agent.exe path)"
 #endif
-                                 ": " + DEFAULT_MODULES_DIR },
-                               Types::String,
-                               DEFAULT_MODULES_DIR))));
+                      ": " + DEFAULT_MODULES_DIR },
+                    Types::String,
+                    DEFAULT_MODULES_DIR) } });
 
-    defaults_.insert(std::pair<std::string, Base_ptr>("foreground", Base_ptr(
-        new Entry<bool>("foreground",
-                        "",
-                        "Don't daemonize, default: false",
-                        Types::Bool,
-                        false))));
+    defaults_.insert(
+        Option { "modules-config-dir",
+                 Base_ptr { new Entry<std::string>(
+                    "modules-config-dir",
+                    "",
+                    { "Module config files directory, default: " +
+                    DEFAULT_MODULES_CONF_DIR },
+                    Types::String,
+                    DEFAULT_MODULES_CONF_DIR) } });
+
+    defaults_.insert(
+        Option { "spool-dir",
+                 Base_ptr { new Entry<std::string>(
+                    "spool-dir",
+                    "",
+                    { "Spool action results directory, default: " +
+                    DEFAULT_SPOOL_DIR },
+                    Types::String,
+                    DEFAULT_SPOOL_DIR) } });
+
+    defaults_.insert(
+        Option { "foreground",
+                 Base_ptr { new Entry<bool>(
+                    "foreground",
+                    "",
+                    "Don't daemonize, default: false",
+                    Types::Bool,
+                    false) } });
 }
 
 void Configuration::setDefaultValues() {
-    for (const auto& entry : defaults_) {
-        std::string flag_names = entry.second->name;
+    for (auto opt_idx = defaults_.get<Option::ByInsertion>().begin();
+         opt_idx != defaults_.get<Option::ByInsertion>().end();
+         ++opt_idx) {
+        std::string flag_names { opt_idx->ptr->name };
 
-        if (!entry.second->aliases.empty()) {
-            flag_names += " " + entry.second->aliases;
+        if (!opt_idx->ptr->aliases.empty()) {
+            flag_names += " " + opt_idx->ptr->aliases;
         }
 
-        switch (entry.second->type) {
+        switch (opt_idx->ptr->type) {
             case Integer:
                 {
-                    Entry<int>* entry_ptr = (Entry<int>*) entry.second.get();
+                    Entry<int>* entry_ptr = (Entry<int>*) opt_idx->ptr.get();
                     HW::DefineGlobalFlag<int>(flag_names, entry_ptr->help,
                                               entry_ptr->value,
                                               [entry_ptr] (int v) {
@@ -364,7 +390,7 @@ void Configuration::setDefaultValues() {
                 break;
             case Bool:
                 {
-                    Entry<bool>* entry_ptr = (Entry<bool>*) entry.second.get();
+                    Entry<bool>* entry_ptr = (Entry<bool>*) opt_idx->ptr.get();
                     HW::DefineGlobalFlag<bool>(flag_names, entry_ptr->help,
                                                entry_ptr->value,
                                                [entry_ptr] (bool v) {
@@ -374,7 +400,7 @@ void Configuration::setDefaultValues() {
                 break;
             case Double:
                 {
-                    Entry<double>* entry_ptr = (Entry<double>*) entry.second.get();
+                    Entry<double>* entry_ptr = (Entry<double>*) opt_idx->ptr.get();
                     HW::DefineGlobalFlag<double>(flag_names, entry_ptr->help,
                                                  entry_ptr->value,
                                                  [entry_ptr] (double v) {
@@ -384,7 +410,7 @@ void Configuration::setDefaultValues() {
                 break;
             default:
                 {
-                    Entry<std::string>* entry_ptr = (Entry<std::string>*) entry.second.get();
+                    Entry<std::string>* entry_ptr = (Entry<std::string>*) opt_idx->ptr.get();
                     HW::DefineGlobalFlag<std::string>(flag_names, entry_ptr->help,
                                                       entry_ptr->value,
                                                       [entry_ptr] (std::string v) {
@@ -414,50 +440,52 @@ void Configuration::parseConfigFile() {
     }
 
     for (const auto& key : config_json.keys()) {
-        try {
-            const auto& entry = defaults_.at(key);
+        const auto& opt_idx = defaults_.get<Option::ByName>().find(key);
 
-            if (!entry->configured) {
-                switch (entry->type) {
-                    case Integer:
-                        if (config_json.type(key) == lth_jc::DataType::Int) {
-                            HW::SetFlag<int>(key, config_json.get<int>(key));
-                        } else {
-                            std::string err { "field '" + key + "' must be of "
-                                              "type Integer" };
-                            throw Configuration::Error { err };
-                        }
-                        break;
-                    case Bool:
-                        if (config_json.type(key) == lth_jc::DataType::Bool) {
-                            HW::SetFlag<bool>(key, config_json.get<bool>(key));
-                        } else {
-                            std::string err { "field '" + key + "' must be of "
-                                              "type Bool" };
-                            throw Configuration::Error { err };
-                        }
-                        break;
-                    case Double:
-                        if (config_json.type(key) == lth_jc::DataType::Double) {
-                            HW::SetFlag<double>(key, config_json.get<double>(key));
-                        } else {
-                            std::string err { "field '" + key + "' must be of "
-                                              "type Double" };
-                            throw Configuration::Error { err };
-                        }
-                        break;
-                    default:
-                        if (config_json.type(key) == lth_jc::DataType::String) {
-                            auto val = config_json.get<std::string>(key);
-                            HW::SetFlag<std::string>(key, val);
-                        } else {
-                            std::string err { "field '" + key + "' must be of "
-                                              "type String" };
-                            throw Configuration::Error { err };
-                        }
-                }
+        if (opt_idx != defaults_.get<Option::ByName>().end()) {
+            if (opt_idx->ptr->configured) {
+                continue;
             }
-        } catch (const std::out_of_range& e) {
+
+            switch (opt_idx->ptr->type) {
+                case Integer:
+                    if (config_json.type(key) == lth_jc::DataType::Int) {
+                        HW::SetFlag<int>(key, config_json.get<int>(key));
+                    } else {
+                        std::string err { "field '" + key + "' must be of "
+                                          "type Integer" };
+                        throw Configuration::Error { err };
+                    }
+                    break;
+                case Bool:
+                    if (config_json.type(key) == lth_jc::DataType::Bool) {
+                        HW::SetFlag<bool>(key, config_json.get<bool>(key));
+                    } else {
+                        std::string err { "field '" + key + "' must be of "
+                                          "type Bool" };
+                        throw Configuration::Error { err };
+                    }
+                    break;
+                case Double:
+                    if (config_json.type(key) == lth_jc::DataType::Double) {
+                        HW::SetFlag<double>(key, config_json.get<double>(key));
+                    } else {
+                        std::string err { "field '" + key + "' must be of "
+                                          "type Double" };
+                        throw Configuration::Error { err };
+                    }
+                    break;
+                default:
+                    if (config_json.type(key) == lth_jc::DataType::String) {
+                        auto val = config_json.get<std::string>(key);
+                        HW::SetFlag<std::string>(key, val);
+                    } else {
+                        std::string err { "field '" + key + "' must be of "
+                                          "type String" };
+                        throw Configuration::Error { err };
+                    }
+            }
+        } else {
             std::string err { "field '" + key + "' is not a valid "
                               "configuration variable" };
             throw Configuration::Error { err };

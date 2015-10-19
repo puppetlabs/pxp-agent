@@ -5,7 +5,11 @@
 
 #include <boost/nowide/fstream.hpp>
 
-#include <map>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/random_access_index.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/member.hpp>
+
 #include <memory>
 #include <stdexcept>
 
@@ -54,6 +58,36 @@ struct Entry : EntryBase {
 };
 
 using Base_ptr = std::unique_ptr<EntryBase>;
+
+// Use a boost::multi_index container to allow accessing default
+// options by key (option name) and insertion order
+struct Option {
+    std::string name;
+    Base_ptr ptr;
+
+    // boost::multi_index tag: retrieve option by name, map-style
+    // NB: any type can be used as a multi-index tag
+    struct ByName {};
+
+    // boost::multi_index tag: retrieve option by insertion order,
+    // vector-style
+    struct ByInsertion {};
+};
+
+typedef boost::multi_index::multi_index_container<
+    Option,
+    boost::multi_index::indexed_by<
+        boost::multi_index::hashed_unique<
+            boost::multi_index::tag<Option::ByName>,
+            boost::multi_index::member<Option,
+                                       std::string,
+                                       &Option::name>
+        >,
+        boost::multi_index::random_access<
+            boost::multi_index::tag<Option::ByInsertion>
+        >
+    >
+> Options;
 
 //
 // Platform-specific interface
@@ -137,11 +171,12 @@ class Configuration {
         }
 
         // Configuration instance not initialized; get default
-        auto entry = defaults_.find(flagname);
-        if (entry == defaults_.end()) {
+        const auto& opt_idx = defaults_.get<Option::ByName>().find(flagname);
+
+        if (opt_idx == defaults_.get<Option::ByName>().end()) {
             throw Configuration::Error { "no default value for " + flagname };
         } else {
-            Entry<T>* entry_ptr = (Entry<T>*) entry->second.get();
+            Entry<T>* entry_ptr = (Entry<T>*) opt_idx->ptr.get();
             return entry_ptr->value;
         }
     }
@@ -189,7 +224,7 @@ class Configuration {
     bool initialized_;
 
     // Stores options with relative default values
-    std::map<std::string, Base_ptr> defaults_;
+    Options defaults_;
 
     // Path to the pxp-agent configuration file
     std::string config_file_;
