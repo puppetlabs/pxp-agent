@@ -118,19 +118,18 @@ Specify which config file to use.
 The WebSocket URI of the PXP broker you wish to connect the agent to, example
 wws://192.168.0.1:8061/pxp/
 
+**ssl-ca-cert (required to connect)**
 
+The location of your SSL Certificate Authority certificate, example
+/etc/puppet/ssl/ca/ca_crt.pem
 
-**ca (required to connect)**
+**ssl-cert (required to connect)**
 
-The location of your CA certificate, example /etc/puppet/ssl/ca/ca_crt.pem
+The location of the pxp-agent SSL certificate, example /etc/puppet/ssl/certs/bob_crt.pem
 
-**cert (required to connect)**
+**ssl-key (required to connect)**
 
-The location of the pxp-agent certificate, example /etc/puppet/ssl/certs/bob_crt.pem
-
-**key (required to connect)**
-
-The location of the pxp-agent's private key, example /etc/puppet/ssl/certs/bob_key.pem
+The location of the pxp-agent's SSL private key, example /etc/puppet/ssl/certs/bob_key.pem
 
 **logdir (optional)**
 
