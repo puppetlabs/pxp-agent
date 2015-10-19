@@ -357,39 +357,49 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
 
         for (auto f = fs::directory_iterator(dir_path); f != end; ++f) {
             if (!fs::is_directory(f->status())) {
-                auto f_p = f->path().string();
+                auto f_p = fs::canonical(f->path());
+                auto extension = f_p.extension();
+                auto module_name = f_p.stem();
 
-                try {
-                    ExternalModule* e_m;
-                    auto config_itr = modules_config_.find(
-                        fs::path(f_p).filename().string());
+                // valid module have no extension on *nix, .bat extensions on
+                // Windows
+#ifndef _WIN32
+                if (extension == "") {
+#else
+                if (extension == ".bat") {
+#endif
+                    try {
+                        ExternalModule* e_m;
+                        auto config_itr = modules_config_.find(
+                            f_p.stem().string());
 
-                    if (config_itr != modules_config_.end()) {
-                        e_m = new ExternalModule(f_p, config_itr->second);
-                        e_m->validateConfiguration();
-                        LOG_DEBUG("The '%1%' module configuration has been "
-                                  "validated: %2%", e_m->module_name,
-                                  config_itr->second.toString());
-                    } else {
-                        e_m = new ExternalModule(f_p);
+                        if (config_itr != modules_config_.end()) {
+                            e_m = new ExternalModule(f_p.string(), config_itr->second);
+                            e_m->validateConfiguration();
+                            LOG_DEBUG("The '%1%' module configuration has been "
+                                      "validated: %2%", e_m->module_name,
+                                      config_itr->second.toString());
+                        } else {
+                            e_m = new ExternalModule(f_p.string());
+                        }
+
+                        modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
+                    } catch (Module::LoadingError& e) {
+                        LOG_ERROR("Failed to load %1%; %2%", f_p, e.what());
+                    } catch (PCPClient::validation_error& e) {
+                        LOG_ERROR("Failed to configure %1%; %2%", f_p, e.what());
+                    } catch (std::exception& e) {
+                        LOG_ERROR("Unexpected error when loading %1%; %2%",
+                                  f_p, e.what());
+                    } catch (...) {
+                        LOG_ERROR("Unexpected error when loading %1%", f_p);
                     }
-
-                    modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
-                } catch (Module::LoadingError& e) {
-                    LOG_ERROR("Failed to load %1%; %2%", f_p, e.what());
-                } catch (PCPClient::validation_error& e) {
-                    LOG_ERROR("Failed to configure %1%; %2%", f_p, e.what());
-                } catch (std::exception& e) {
-                    LOG_ERROR("Unexpected error when loading %1%; %2%",
-                              f_p, e.what());
-                } catch (...) {
-                    LOG_ERROR("Unexpected error when loading %1%", f_p);
                 }
             }
         }
     } else {
         LOG_WARNING("Failed to locate the modules directory; no external "
-                    "module will be loaded");
+                    "modules will be loaded");
     }
 }
 

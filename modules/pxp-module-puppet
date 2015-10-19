@@ -172,8 +172,13 @@ def run(params_and_config)
   config = params_and_config["config"]
 
   if config["puppet_bin"].nil? || config["puppet_bin"].empty?
-    return get_result_from_report(DEFAULT_ERROR_CODE, config,
-                                  "puppet_bin configuration value not set")
+    if !is_win?
+      config["puppet_bin"] = "/opt/puppetlabs/bin/puppet"
+    else
+      module_path = File.expand_path(File.dirname(__FILE__))
+      puppet_bin = File.join(module_path, '..', '..', 'bin', 'puppet.bat')
+      config["puppet_bin"] = File.expand_path(puppet_bin)
+    end
   end
 
   if !File.exist?(config["puppet_bin"])
