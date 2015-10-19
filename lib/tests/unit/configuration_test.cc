@@ -33,7 +33,7 @@ const char* ARGV[] = { "test-command",
                        "--key", KEY.data(),
                        "--modules-dir", MODULES_DIR.data(),
                        "--spool-dir", SPOOL_DIR.data(),
-                       "--foreground=true",};
+                       "--foreground=true"};
 const int ARGC = 16;
 
 static void configureTest() {
