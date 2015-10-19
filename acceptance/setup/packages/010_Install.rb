@@ -13,8 +13,8 @@ step "Install repositories on target machines..." do
 
   repo_configs_dir = 'repo_configs'
   logger.debug('about to install repo for puppet-agent from ' + sha.to_s + ' ' + repo_configs_dir.to_s)
-  agents.each do |agent|
-    install_repos_on(agent, 'puppet-agent', sha, repo_configs_dir)
+  hosts.each do |host|
+    install_repos_on(host, 'puppet-agent', sha, repo_configs_dir)
   end
 end
 
@@ -27,7 +27,8 @@ PACKAGES = {
   ],
 }
 
-install_packages_on(agents, PACKAGES)
+# Install puppet on all hosts including master
+install_packages_on(hosts, PACKAGES)
 
 step 'Install MSIs on any Windows agents'
 agents.each do |agent|
