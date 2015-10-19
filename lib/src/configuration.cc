@@ -156,10 +156,10 @@ void Configuration::setStartFunction(
 
 void Configuration::validateAndNormalizeConfiguration() {
     // determine which of your values must be initalised
-    if (HW::GetFlag<std::string>("server").empty()) {
-        throw Configuration::UnconfiguredError{ "server value must be defined" };
-    } else if (HW::GetFlag<std::string>("server").find("wss://") != 0) {
-        throw Configuration::UnconfiguredError { "server value must start with wss://" };
+    if (HW::GetFlag<std::string>("broker-ws-uri").empty()) {
+        throw Configuration::UnconfiguredError{ "broker-ws-uri value must be defined" };
+    } else if (HW::GetFlag<std::string>("broker-ws-uri").find("wss://") != 0) {
+        throw Configuration::UnconfiguredError { "broker-ws-uri value must start with wss://" };
     }
 
     if (HW::GetFlag<std::string>("ca").empty()) {
@@ -260,11 +260,11 @@ void Configuration::defineDefaultValues() {
                     DEFAULT_CONFIG_FILE) } });
 
     defaults_.insert(
-        Option { "server",
+        Option { "broker-ws-uri",
                  Base_ptr { new Entry<std::string>(
-                    "server",
-                    "s",
-                    "PCP server URL",
+                    "broker-ws-uri",
+                    "b",
+                    "WebSocket URI of the PCP broker",
                     Types::String,
                     "") } });
 
@@ -578,7 +578,7 @@ void Configuration::setupLogging() {
 void Configuration::setAgentConfiguration() {
     agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
-        HW::GetFlag<std::string>("server"),
+        HW::GetFlag<std::string>("broker-ws-uri"),
         HW::GetFlag<std::string>("ca"),
         HW::GetFlag<std::string>("cert"),
         HW::GetFlag<std::string>("key"),

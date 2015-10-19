@@ -73,7 +73,7 @@ single JSON object. Example:
 
 ```
 {
-    "server" : "wss://127.0.0.1:8090/pcp/",
+    "broker-ws-uri" : "wss://127.0.0.1:8090/pcp/",
     "key" : "/etc/puppetlabs/puppet/ssl/private_keys/myhost.net.pem",
     "ca" : "/etc/puppetlabs/puppet/ssl/certs/ca.pem",
     "cert" : "/etc/puppetlabs/puppet/ssl/certs/myhost.net.pem"
@@ -82,9 +82,9 @@ single JSON object. Example:
 
 ### Starting unconfigured
 
-If no server, key, ca or cert value is supplied, the agent will still be able
-to start in unconfigured mode. In this mode no connection will be established but
-the process will not terminate.
+If no broker WebSocket URI, SSL key, ca or cert value is supplied, the agent
+will still be able to start in unconfigured mode. In this mode no connection
+will be established but the process will not terminate.
 
 ### Daemon
 
@@ -113,11 +113,12 @@ The PXP agent has the following configuration options
 
 Specify which config file to use.
 
+**broker-ws-uri (required to connect)**
+
+The WebSocket URI of the PXP broker you wish to connect the agent to, example
+wws://192.168.0.1:8061/pxp/
 
 
-**server (required to connect)**
-
-The PXP server you wish to connect the agent to, example wws://192.168.0.1:8061/pxp/
 
 **ca (required to connect)**
 

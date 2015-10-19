@@ -16,7 +16,7 @@ namespace HW = HorseWhisperer;
 
 const std::string CONFIG { std::string { PXP_AGENT_ROOT_PATH }
                            + "/lib/tests/resources/config/empty-pxp-agent.cfg" };
-const std::string SERVER { "wss:///test_server" };
+const std::string TEST_BROKER_WS_URI { "wss:///test_c_t_h_u_n_broker" };
 const std::string CA { getCaPath() };
 const std::string CERT { getCertPath() };
 const std::string KEY { getKeyPath() };
@@ -27,7 +27,7 @@ const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
 
 const char* ARGV[] = { "test-command",
                        "--config-file", CONFIG.data(),
-                       "--server", SERVER.data(),
+                       "--broker-ws-uri", TEST_BROKER_WS_URI.data(),
                        "--ca", CA.data(),
                        "--cert", CERT.data(),
                        "--key", KEY.data(),
@@ -176,14 +176,14 @@ TEST_CASE("Configuration::get", "[configuration]") {
 TEST_CASE("Configuration::validateAndNormalizeConfiguration", "[configuration]") {
     configureTest();
 
-    SECTION("it fails when server is undefined") {
-        Configuration::Instance().set<std::string>("server", "");
+    SECTION("it fails when the broker WebSocket URI is undefined") {
+        Configuration::Instance().set<std::string>("broker-ws-uri", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
                           Configuration::Error);
     }
 
-    SECTION("it fails when server is invlaid") {
-        Configuration::Instance().set<std::string>("server", "ws://");
+    SECTION("it fails when the broker WebSocket URi is invlaid") {
+        Configuration::Instance().set<std::string>("broker-ws-uri", "ws://");
         REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
                           Configuration::Error);
     }
