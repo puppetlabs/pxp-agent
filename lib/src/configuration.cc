@@ -508,14 +508,17 @@ void Configuration::parseConfigFile() {
     }
 }
 
-static void validateLogDirPath(fs::path logdir_path) {
+static void validateLogDirPath(const std::string& logfile) {
+    auto logdir_path = fs::path(logfile).parent_path();
+
     if (fs::exists(logdir_path)) {
         if (!fs::is_directory(logdir_path)) {
             throw Configuration::Error { "log directory is not a directory" };
         }
     } else {
-        throw Configuration::Error { "the log directory '" + logdir_path.string()
-                                     + "' doesn't exist" };
+        throw Configuration::Error {
+            (boost::format("cannot write to '%1%'; its parent directory does "
+                           "not exist") % logfile).str() };
     }
 }
 
@@ -528,11 +531,10 @@ void Configuration::setupLogging() {
     if (!log_on_stdout) {
         // We should log on file
         logfile_ = lth_file::tilde_expand(logfile_);
-        auto logdir_path = fs::path(logfile_).parent_path();
 
         // NOTE(ale): we must validate the logifle path since we set
         // up logging before calling validateAndNormalizeConfiguration
-        validateLogDirPath(logdir_path);
+        validateLogDirPath(logfile_);
 
         logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
         stream = &logfile_fstream_;
