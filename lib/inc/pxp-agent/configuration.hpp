@@ -22,7 +22,6 @@ namespace HW = HorseWhisperer;
 //
 
 extern const std::string DEFAULT_SPOOL_DIR;     // used by unit tests
-extern const std::string LOGFILE_NAME;          // not configurable
 
 //
 // Types
