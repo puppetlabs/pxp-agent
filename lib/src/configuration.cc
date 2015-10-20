@@ -71,7 +71,7 @@ namespace lth_loc = leatherman::locale;
 #else
     static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
     const std::string DEFAULT_SPOOL_DIR { "/opt/puppetlabs/pxp-agent/spool" };
-    const std::string DEFAULT_PID_FILE { "/var/run/puppetlabs/pxp-agent.pid" };
+    static const std::string DEFAULT_PID_FILE { "/var/run/puppetlabs/pxp-agent.pid" };
     static const std::string DEFAULT_LOG_DIR { "/var/log/puppetlabs/pxp-agent" };
     static const std::string DEFAULT_MODULES_DIR { "/opt/puppetlabs/pxp-agent/modules" };
 #endif
@@ -381,7 +381,7 @@ void Configuration::defineDefaultValues() {
                     "",
                     { "PID file path, default: " + DEFAULT_PID_FILE },
                     Types::String,
-                    DEFAULT_SPOOL_DIR) } });
+                    DEFAULT_PID_FILE) } });
 #endif
 }
 
