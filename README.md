@@ -119,10 +119,7 @@ console by using an hyphen instead of a file path: `--logfile -`.
 
 By default, log messages are written to the stdout stream.
 
-You can specify a log file with `--logfile` option. In that case, no
-file rotation will take place.
-
-Note that it is not possible to have log messages displayed only on console.
+You can specify a log file with `--logfile` option.
 
 ## Log level
 
