@@ -54,14 +54,6 @@ Modules can be configured by placing a configuration file in the
 `--modules-config-dir`. Config options must be specified in the module metadata
 (see above). Module config files are named like `module_name.conf`.
 
-Module configuration files may specify the `interpreter` field.  For
-example:
-
-```
-{
-    "interpreter" : "/opt/puppetlabs/puppet/bin/ruby"
-}
-```
 
 ## Configuring the agent
 
@@ -79,10 +71,10 @@ single JSON object. Example:
 
 ```
 {
-    "broker-ws-uri" : "wss://127.0.0.1:8090/pcp/",
-    "key" : "/etc/puppetlabs/puppet/ssl/private_keys/myhost.net.pem",
-    "ca" : "/etc/puppetlabs/puppet/ssl/certs/ca.pem",
-    "cert" : "/etc/puppetlabs/puppet/ssl/certs/myhost.net.pem"
+    "broker-ws-uri" : "wss://127.0.0.1:8142/pcp/",
+    "ssl-key" : "/etc/puppetlabs/puppet/ssl/private_keys/myhost.net.pem",
+    "ssl-ca-cert" : "/etc/puppetlabs/puppet/ssl/certs/ca.pem",
+    "ssl-cert" : "/etc/puppetlabs/puppet/ssl/certs/myhost.net.pem"
 }
 ```
 
@@ -129,7 +121,7 @@ Specify which config file to use.
 **broker-ws-uri (required to connect)**
 
 The WebSocket URI of the PXP broker you wish to connect the agent to, example
-wws://192.168.0.1:8061/pxp/
+wws://192.168.0.1:8142/pxp/
 
 **ssl-ca-cert (required to connect)**
 
