@@ -47,7 +47,6 @@ namespace lth_loc = leatherman::locale;
 
     static const fs::path DEFAULT_CONF_DIR { DATA_DIR / "etc" };
     const std::string DEFAULT_SPOOL_DIR { (DATA_DIR / "var" / "spool").string() };
-    const std::string PID_DIR { (DATA_DIR / "var" / "run").string() };
     static const std::string DEFAULT_LOG_DIR { (DATA_DIR / "var" / "log").string() };
 
     static const std::string DEFAULT_MODULES_DIR = []() {
