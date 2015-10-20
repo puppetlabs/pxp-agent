@@ -14,15 +14,14 @@ class PIDFile {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
 
-    static const std::string FILENAME;
-
     // Create the PID file directory if necessary.
     // Open the PID file.
-    // Throw a PIDFile::Error if dir_path is not a directory or in
-    // case of a failure when opening the PID file.
-    // NB: we pass dir_path to enable testing; DIR_PATH is hardcoded
-    // in Configuration
-    PIDFile(const std::string& dir_path);
+    // Throw a PIDFile::Error: if file_path exists but is not a
+    // regular file or in case of a failure when opening it; if its
+    // parent directory is not a directory.
+    // NB: we pass the file path to enable testing, even if it is
+    // accessible via Configuration
+    PIDFile(const std::string& file_path);
 
     // Perform clean up if previously requested by cleanUpWhenDone().
     ~PIDFile();

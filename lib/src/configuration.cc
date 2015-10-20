@@ -71,7 +71,7 @@ namespace lth_loc = leatherman::locale;
 #else
     static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
     const std::string DEFAULT_SPOOL_DIR { "/opt/puppetlabs/pxp-agent/spool" };
-    const std::string PID_DIR { "/var/run/puppetlabs" };
+    const std::string DEFAULT_PID_FILE { "/var/run/puppetlabs/pxp-agent.pid" };
     static const std::string DEFAULT_LOG_DIR { "/var/log/puppetlabs/pxp-agent" };
     static const std::string DEFAULT_MODULES_DIR { "/opt/puppetlabs/pxp-agent/modules" };
 #endif
@@ -207,6 +207,9 @@ void Configuration::validateAndNormalizeConfiguration() {
                                          "as a daemon" };
         }
     }
+
+    // NOTE(ale): we validate pidfile in util/posix/pid_file.cc to
+    // enable testing in pid_file_test.cc
 }
 
 const Configuration::Agent& Configuration::getAgentConfiguration() const {
@@ -366,6 +369,20 @@ void Configuration::defineDefaultValues() {
                     "Don't daemonize, default: false",
                     Types::Bool,
                     false) } });
+
+#ifndef _WIN32
+    // NOTE(ale): we don't daemonize on Windows; we rely NSSM to start
+    // the pxp-agent service and on CreateMutexA() to avoid multiple
+    // pxp-agent instances at once
+    defaults_.insert(
+        Option { "pidfile",
+                 Base_ptr { new Entry<std::string>(
+                    "pidfile",
+                    "",
+                    { "PID file path, default: " + DEFAULT_PID_FILE },
+                    Types::String,
+                    DEFAULT_SPOOL_DIR) } });
+#endif
 }
 
 void Configuration::setDefaultValues() {

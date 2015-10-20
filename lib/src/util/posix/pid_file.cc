@@ -10,7 +10,6 @@
 
 #include <cstdio>           // remove()
 #include <cassert>
-
 #include <sys/file.h>       // open()
 #include <sys/stat.h>
 #include <fcntl.h>          // fcntl(), open() flags
@@ -23,13 +22,16 @@ namespace Util {
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
 
-const std::string PIDFile::FILENAME { "pxp-agent.pid" };
-
-PIDFile::PIDFile(const std::string& dir_path_)
-        : dir_path { dir_path_ },
-          file_path { dir_path + "/" + FILENAME },
+PIDFile::PIDFile(const std::string& file_path_)
+        : dir_path { fs::path(file_path_).parent_path().string() },
+          file_path { file_path_ },
           pidfile_fd {},
           cleanup_when_done { false } {
+    if (fs::exists(file_path) && !(fs::is_regular_file(file_path))) {
+        throw PIDFile::Error { "the PID file '" + file_path
+                               + "' is not a regular file" };
+    }
+
     if (fs::exists(dir_path)) {
         if (!fs::is_directory(dir_path)) {
             throw PIDFile::Error { "the PID directory '" + dir_path
