@@ -169,6 +169,7 @@ def run(params_and_config)
   end
 
   params = params_and_config["params"]
+  params.merge!({'flags' => ['--onetime', '--no-daemonize']})
   config = params_and_config["config"]
 
   if config["puppet_bin"].nil? || config["puppet_bin"].empty?
