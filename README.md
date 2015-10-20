@@ -95,11 +95,26 @@ During its execution, the daemon PID will be stored in:
 
 ### Logging
 
-By default, log messages will be writted to the pxp-agent.log file in:
- - \*nix: */var/log/puppetlabs/pxp-agent*
- - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\log*
+## *nix
 
-You can specify a different directory with the `--logdir` flag.
+By default, log messages will be written to
+*/var/log/puppetlabs/pxp-agent/pxp-agent.log*.
+
+You can specify a different file with the `--logfile` option.
+
+When running in foreground mode, it is possible to display log messages on
+console by using an hyphen instead of a file path: `--logfile -`.
+
+## Windows
+
+By default, log messages are written to the stdout stream.
+
+You can specify a log file with `--logfile` option. In that case, no
+file rotation will take place.
+
+Note that it is not possible to have log messages displayed only on console.
+
+## Log level
 
 The default log level is `info`. You can specify a different log level by
 using the `--loglevel` option with one of the following strings: `none`,
@@ -131,19 +146,14 @@ The location of the pxp-agent SSL certificate, example /etc/puppet/ssl/certs/bob
 
 The location of the pxp-agent's SSL private key, example /etc/puppet/ssl/certs/bob_key.pem
 
-**logdir (optional)**
+**logfile (optional)**
 
-Directory where the `pxp-agent.log` file will be stored. This option must be set
-to a valid directory in case pxp-agent is executed as a daemon.
+The path of the log file.
 
 **loglevel (optional)**
 
 Specify one of the following logging levels: *none*, *trace*, *debug*, *info*,
 *warning*, *error*, or *fatal*; the default one is *info*
-
-**console-logger (optional flag)**
-
-Display logging messages on the associated terminal; requires `--foreground`
 
 **modules-dir (optional)**
 
