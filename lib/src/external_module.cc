@@ -63,7 +63,7 @@ ExternalModule::ExternalModule(const std::string& path,
         : path_ { path },
           config_ { config } {
     boost::filesystem::path module_path { path };
-    module_name = module_path.filename().string();
+    module_name = module_path.stem().string();
     auto metadata = getMetadata();
 
     try {
@@ -87,7 +87,7 @@ ExternalModule::ExternalModule(const std::string& path)
         : path_ { path },
           config_ { "{}" } {
     boost::filesystem::path module_path { path };
-    module_name = module_path.filename().string();
+    module_name = module_path.stem().string();
     auto metadata = getMetadata();
 
     try {
@@ -120,24 +120,13 @@ const PCPClient::Validator ExternalModule::metadata_validator_ {
 
 // Retrieve and validate the module metadata
 const lth_jc::JsonContainer ExternalModule::getMetadata() {
-    lth_exec::result exec { false, "", "", 0 };
-
-    if (config_.includes("interpreter")) {
-        std::string interpreter { config_.get<std::string>("interpreter") };
-        LOG_DEBUG("Found 'interpreter' field with value '%1%' in module '%2%' config'",
-                  interpreter, module_name);
-        exec = lth_exec::execute(interpreter,
-                                 {path_, "metadata"}, 0,
-                                 {lth_exec::execution_options::merge_environment});
-    } else {
-        exec =
+    auto exec =
 #ifdef _WIN32
-            lth_exec::execute("cmd.exe", { "/c", path_, "metadata" },
+        lth_exec::execute("cmd.exe", { "/c", path_, "metadata" },
 #else
-            lth_exec::execute(path_, { "metadata" },
+        lth_exec::execute(path_, { "metadata" },
 #endif
             0, {lth_exec::execution_options::merge_environment});
-    }
 
     if (!exec.error.empty()) {
         LOG_ERROR("Failed to load the external module metadata from %1%: %2%",
@@ -223,25 +212,13 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
 
     LOG_INFO("About to execute '%1% %2%' - request input: %3%",
              module_name, action_name, request_input_txt);
-
-    lth_exec::result exec { false, "", "", 0 };
-
-    if (config_.includes("interpreter")) {
-        std::string interpreter { config_.get<std::string>("interpreter") };
-        LOG_DEBUG("Found 'interpreter' field with value '%1%' in module '%2%' config'",
-                  interpreter, module_name);
-        exec = lth_exec::execute(interpreter,
-                                 {path_, action_name}, request_input_txt, 0,
-                                 {lth_exec::execution_options::merge_environment});
-    } else {
-        exec =
+    auto exec =
 #ifdef _WIN32
-            lth_exec::execute("cmd.exe", { "/c", path_, action_name },
+        lth_exec::execute("cmd.exe", { "/c", path_, action_name },
 #else
-            lth_exec::execute(path_, { action_name },
+        lth_exec::execute(path_, { action_name },
 #endif
             request_input_txt, 0, {lth_exec::execution_options::merge_environment});
-    }
 
     if (exec.output.empty()) {
         LOG_DEBUG("'%1% %2%' produced no output", module_name, action_name);
