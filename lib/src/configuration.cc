@@ -47,7 +47,8 @@ namespace lth_loc = leatherman::locale;
 
     static const fs::path DEFAULT_CONF_DIR { DATA_DIR / "etc" };
     const std::string DEFAULT_SPOOL_DIR { (DATA_DIR / "var" / "spool").string() };
-    static const std::string DEFAULT_LOG_DIR { (DATA_DIR / "var" / "log").string() };
+    static const std::string DEFAULT_LOG_FILE {
+        (DATA_DIR / "var" / "log" / "pxp-agent.log").string() };
 
     static const std::string DEFAULT_MODULES_DIR = []() {
         wchar_t szPath[MAX_PATH];
@@ -72,7 +73,7 @@ namespace lth_loc = leatherman::locale;
     static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
     const std::string DEFAULT_SPOOL_DIR { "/opt/puppetlabs/pxp-agent/spool" };
     static const std::string DEFAULT_PID_FILE { "/var/run/puppetlabs/pxp-agent.pid" };
-    static const std::string DEFAULT_LOG_DIR { "/var/log/puppetlabs/pxp-agent" };
+    static const std::string DEFAULT_LOG_FILE { "/var/log/puppetlabs/pxp-agent/pxp-agent.log" };
     static const std::string DEFAULT_MODULES_DIR { "/opt/puppetlabs/pxp-agent/modules" };
 #endif
 
@@ -82,7 +83,6 @@ static const std::string DEFAULT_CONFIG_FILE {
     (DEFAULT_CONF_DIR / "pxp-agent.conf").string() };
 
 static const std::string AGENT_CLIENT_TYPE { "agent" };
-const std::string LOGFILE_NAME { "pxp-agent.log" };
 
 //
 // Public interface
@@ -201,12 +201,16 @@ void Configuration::validateAndNormalizeConfiguration() {
         }
     }
 
-    if (!HW::GetFlag<bool>("foreground")) {
-        if (HW::GetFlag<bool>("console-logger")) {
-            throw Configuration::Error { "must log to file when executing "
-                                         "as a daemon" };
-        }
+#ifndef _WIN32
+    // NOTE(ale): util/posix/daemonize.cc will ensure that the daemon
+    // is not associated with any controlling terminal. It will also
+    // redirect stdout to /dev/null, together with the other standard
+    // files. Setting log_level to none to reduce useless overhead.
+    if (!HW::GetFlag<bool>("foreground")
+            && HW::GetFlag<std::string>("logfile") == "-") {
+        lth_log::set_level(lth_log::log_level::none);
     }
+#endif
 
     // NOTE(ale): we validate pidfile in util/posix/pid_file.cc to
     // enable testing in pid_file_test.cc
@@ -300,13 +304,13 @@ void Configuration::defineDefaultValues() {
                     "") } });
 
     defaults_.insert(
-        Option { "logdir",
+        Option { "logfile",
                  Base_ptr { new Entry<std::string>(
-                    "logdir",
+                    "logfile",
                     "",
-                    { "Log directory, default: " + DEFAULT_LOG_DIR },
+                    { "Log file, default: " + DEFAULT_LOG_FILE },
                     Types::String,
-                    DEFAULT_LOG_DIR) } });
+                    DEFAULT_LOG_FILE) } });
 
     defaults_.insert(
         Option { "loglevel",
@@ -317,16 +321,6 @@ void Configuration::defineDefaultValues() {
                     "'warning', 'error' and 'fatal'. Defaults to 'info'",
                     Types::String,
                     "info") } });
-
-    defaults_.insert(
-        Option { "console-logger",
-                 Base_ptr { new Entry<bool>(
-                    "console-logger",
-                    "",
-                    "Show log messages only on console, default: false "
-                    "(log to file)",
-                    Types::Bool,
-                    false) } });
 
     defaults_.insert(
         Option { "modules-dir",
@@ -511,38 +505,34 @@ void Configuration::parseConfigFile() {
     }
 }
 
-static void validateLogDirPath(fs::path logdir_path) {
+static void validateLogDirPath(const std::string& logfile) {
+    auto logdir_path = fs::path(logfile).parent_path();
+
     if (fs::exists(logdir_path)) {
         if (!fs::is_directory(logdir_path)) {
             throw Configuration::Error { "log directory is not a directory" };
         }
     } else {
-        throw Configuration::Error { "--logdir '" + logdir_path.string() +
-                                     "' doesn't exist" };
+        throw Configuration::Error {
+            (boost::format("cannot write to '%1%'; its parent directory does "
+                           "not exist") % logfile).str() };
     }
 }
 
 void Configuration::setupLogging() {
-    auto console_logger = HW::GetFlag<bool>("console-logger");
+    logfile_ = HW::GetFlag<std::string>("logfile");
+    auto log_on_stdout = (logfile_ == "-");
     auto loglevel = HW::GetFlag<std::string>("loglevel");
     std::ostream *stream = nullptr;
 
-    if (!console_logger) {
+    if (!log_on_stdout) {
         // We should log on file
-        auto logdir = HW::GetFlag<std::string>("logdir");
-
-        if (logdir.empty()) {
-            throw Configuration::Error { "must specify either log directory or "
-                                         "console-logger flag" };
-        }
-
-        fs::path logdir_path { lth_file::tilde_expand(logdir) };
+        logfile_ = lth_file::tilde_expand(logfile_);
 
         // NOTE(ale): we must validate the logifle path since we set
         // up logging before calling validateAndNormalizeConfiguration
-        validateLogDirPath(logdir_path);
+        validateLogDirPath(logfile_);
 
-        logfile_ = (logdir_path / LOGFILE_NAME).string();
         logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
         stream = &logfile_fstream_;
     } else {
@@ -585,7 +575,7 @@ void Configuration::setupLogging() {
     // Configure logging for cpp-pcp-client
     PCPClient::Util::setupLogging(*stream, force_colorization, loglevel);
 
-    if (!console_logger) {
+    if (!log_on_stdout) {
         // Configure platform-specific things for file logging
         // NB: we do that after setting up lth_log in order to log in
         //     case of failure

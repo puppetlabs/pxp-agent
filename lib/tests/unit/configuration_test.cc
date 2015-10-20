@@ -6,6 +6,9 @@
 
 #include "horsewhisperer/horsewhisperer.h"
 
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.configuration_test"
+#include <leatherman/logging/logging.hpp>
+
 #include <catch.hpp>
 
 #include <string>
@@ -13,6 +16,7 @@
 namespace PXPAgent {
 
 namespace HW = HorseWhisperer;
+namespace lth_log = leatherman::logging;
 
 const std::string CONFIG { std::string { PXP_AGENT_ROOT_PATH }
                            + "/lib/tests/resources/config/empty-pxp-agent.cfg" };
@@ -230,11 +234,11 @@ TEST_CASE("Configuration::validateAndNormalizeConfiguration", "[configuration]")
                           Configuration::Error);
     }
 
-    SECTION("it fails when foreground is unflagged and log is set to console") {
+    SECTION("it sets log level to none if foreground is unflagged and logfile is set to stdout") {
         Configuration::Instance().set<bool>("foreground", false);
-        Configuration::Instance().set<bool>("console-logger", true);
-        REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          Configuration::Error);
+        Configuration::Instance().set<std::string>("logfile", "-");
+
+        REQUIRE(lth_log::get_level() == lth_log::log_level::none);
     }
 
     resetTest();

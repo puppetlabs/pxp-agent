@@ -2,7 +2,9 @@
 
 This is the agent for the PCP Execution Protocol [(PXP)][1], based on the
 the Puppet Communications Protocol [(PCP)][2]. It enables the execution of
-[actions][3] on remote nodes, via PXP.
+[actions][3] on remote nodes, via PXP. The pxp-agent needs to be connected to a
+[PCP broker][8] in order to be used; please refer to the documentation below
+for how to do that.
 
 ## Building from source
 
@@ -14,6 +16,10 @@ the Puppet Communications Protocol [(PCP)][2]. It enables the execution of
  - ruby (2.0 and newer)
 
 Build with make and make install
+
+## Configuring
+ To do that, you
+need to specify the secure WebSocket URL of
 
 ## Modules
 
@@ -80,6 +86,10 @@ single JSON object. Example:
 }
 ```
 
+Note that you have to specify the WebSocket secure URL of the [PCP broker][8]
+in order to establish the WebSocket connection on top of which the PCP
+communication will take place.
+
 ### Starting unconfigured
 
 If no broker WebSocket URI, SSL key, ca or cert value is supplied, the agent
@@ -95,11 +105,14 @@ During its execution, the daemon PID will be stored in:
 
 ### Logging
 
-By default, log messages will be writted to the pxp-agent.log file in:
- - \*nix: */var/log/puppetlabs/pxp-agent*
- - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\log*
+By default, log messages will be written to:
+ - \*nix: */var/log/puppetlabs/pxp-agent/pxp-agent.log*
+ - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\log\pxp-agent.log*.
 
-You can specify a different directory with the `--logdir` flag.
+You can specify a different file with the `--logfile` option.
+
+When running in foreground mode, it is possible to display log messages on
+console by using an hyphen instead of a file path: `--logfile -`.
 
 The default log level is `info`. You can specify a different log level by
 using the `--loglevel` option with one of the following strings: `none`,
@@ -131,19 +144,14 @@ The location of the pxp-agent SSL certificate, example /etc/puppet/ssl/certs/bob
 
 The location of the pxp-agent's SSL private key, example /etc/puppet/ssl/certs/bob_key.pem
 
-**logdir (optional)**
+**logfile (optional)**
 
-Directory where the `pxp-agent.log` file will be stored. This option must be set
-to a valid directory in case pxp-agent is executed as a daemon.
+The path of the log file.
 
 **loglevel (optional)**
 
 Specify one of the following logging levels: *none*, *trace*, *debug*, *info*,
 *warning*, *error*, or *fatal*; the default one is *info*
-
-**console-logger (optional flag)**
-
-Display logging messages on the associated terminal; requires `--foreground`
 
 **modules-dir (optional)**
 
@@ -183,3 +191,4 @@ in the ./build/bin directory
 [5]: https://github.com/puppetlabs/pxp-agent/blob/master/lib/tests/resources/modules/reverse_valid
 [6]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
 [7]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md
+[8]: https://github.com/puppetlabs/pcp-broker
