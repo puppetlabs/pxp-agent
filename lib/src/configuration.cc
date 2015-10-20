@@ -265,7 +265,7 @@ void Configuration::defineDefaultValues() {
         Option { "broker-ws-uri",
                  Base_ptr { new Entry<std::string>(
                     "broker-ws-uri",
-                    "b",
+                    "",
                     "WebSocket URI of the PCP broker",
                     Types::String,
                     "") } });

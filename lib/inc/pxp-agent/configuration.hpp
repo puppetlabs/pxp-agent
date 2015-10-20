@@ -35,7 +35,7 @@ struct EntryBase {
     // Config option name
     // HERE: must match one of the flag names and config file option
     std::string name;
-    // CLI option aliases (e.g. --broker --bro -b)
+    // CLI option aliases (e.g. --enable-transmogrification -t)
     std::string aliases;
     // Help string to be displayed by --help flag
     std::string help;
