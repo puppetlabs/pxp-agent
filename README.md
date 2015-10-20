@@ -2,7 +2,9 @@
 
 This is the agent for the PCP Execution Protocol [(PXP)][1], based on the
 the Puppet Communications Protocol [(PCP)][2]. It enables the execution of
-[actions][3] on remote nodes, via PXP.
+[actions][3] on remote nodes, via PXP. The pxp-agent needs to be connected to a
+[PCP broker][8] in order to be used; please refer to the documentation below
+for how to do that.
 
 ## Building from source
 
@@ -14,6 +16,10 @@ the Puppet Communications Protocol [(PCP)][2]. It enables the execution of
  - ruby (2.0 and newer)
 
 Build with make and make install
+
+## Configuring
+ To do that, you
+need to specify the secure WebSocket URL of
 
 ## Modules
 
@@ -79,6 +85,10 @@ single JSON object. Example:
     "cert" : "/etc/puppetlabs/puppet/ssl/certs/myhost.net.pem"
 }
 ```
+
+Note that you have to specify the WebSocket secure URL of the [PCP broker][8]
+in order to establish the WebSocket connection on top of which the PCP
+communication will take place.
 
 ### Starting unconfigured
 
@@ -193,3 +203,4 @@ in the ./build/bin directory
 [5]: https://github.com/puppetlabs/pxp-agent/blob/master/lib/tests/resources/modules/reverse_valid
 [6]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
 [7]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md
+[8]: https://github.com/puppetlabs/pcp-broker
