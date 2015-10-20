@@ -156,11 +156,17 @@ Specify the directory containing the configuration files of modules
 **spool-dir (optional)**
 
 The location where the outcome of non-blocking requests will be stored; the
-default location is */tmp/pxp-agent/*
+default location is:
+ - \*nix: */opt/puppetlabs/pxp-agent/spool*
+ - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\spool*
 
 **foreground (optional flag)**
 
 Don't become a daemon and execute on foreground on the associated terminal.
+
+**pidfile (optional; only on *nix platforms)**
+
+The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 
 ## Starting the agent
 

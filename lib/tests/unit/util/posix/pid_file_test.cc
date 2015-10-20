@@ -30,16 +30,15 @@ const std::string PID_DIR { std::string { PXP_AGENT_ROOT_PATH }
 const std::string TMP_DIR { std::string { PXP_AGENT_ROOT_PATH }
                             + "/lib/tests/resources/test_spool/tmp_pid" };
 const std::string PID_FILE_NAME { "pxp-agent.pid" };
+const std::string PID_FILE { PID_DIR + "/" + PID_FILE_NAME };
 
 void initializeTmpPIDFile(const std::string dir, const std::string& txt) {
     if (!fs::exists(dir) && !fs::create_directories(dir)) {
         FAIL("failed to create tmp_pid directory");
     }
 
-    std::string pid_file_path { dir + "/" + PIDFile::FILENAME };
-
     try {
-        lth_file::atomic_write_to_file(txt + "\n", pid_file_path);
+        lth_file::atomic_write_to_file(txt + "\n", dir + "/" + PID_FILE_NAME);
     } catch (const std::exception&) {
         FAIL("failed to write temporary pid file");
         fs::remove_all(dir);
@@ -48,25 +47,27 @@ void initializeTmpPIDFile(const std::string dir, const std::string& txt) {
 
 TEST_CASE("PIDFile ctor", "[util]") {
     SECTION("can instantiate") {
-        REQUIRE_NOTHROW(PIDFile { PID_DIR });
+        REQUIRE_NOTHROW(PIDFile { PID_FILE });
     }
 
     SECTION("it fails if the directory does not exist") {
-        REQUIRE_THROWS(PIDFile { PID_DIR + "/foo/bar" });
+        REQUIRE_THROWS(PIDFile { PID_DIR + "/foo/bar/pxp-agent.pid" });
     }
 
     SECTION("cannot instantiate if the directory is a regular file") {
         REQUIRE_THROWS_AS(PIDFile { std::string { PXP_AGENT_ROOT_PATH }
-                                    + "/README.md" },
+                                    + "/README.md/pxp-agent.pid" },
                           PIDFile::Error);
     }
 
     SECTION("create the PIDFile") {
-        fs::remove_all(PID_DIR + "/" + PID_FILE_NAME);
-        REQUIRE(!fs::exists(PID_DIR + "/" + PID_FILE_NAME));
-        PIDFile p_f { PID_DIR };
-        REQUIRE(fs::exists(PID_DIR + "/" + PID_FILE_NAME));
-        fs::remove_all(PID_DIR + "/" + PID_FILE_NAME);
+        fs::remove_all(PID_FILE);
+        REQUIRE(!fs::exists(PID_FILE));
+
+        PIDFile p_f { PID_FILE };
+
+        REQUIRE(fs::exists(PID_FILE));
+        fs::remove_all(PID_FILE);
     }
 }
 
@@ -77,7 +78,7 @@ TEST_CASE("PIDFile::isExecuting") {
         auto pid = getpid();
         std::string pid_txt { std::to_string(pid) };
         initializeTmpPIDFile(TMP_DIR, pid_txt);
-        PIDFile p_f { TMP_DIR };
+        PIDFile p_f { TMP_DIR + "/" + PID_FILE_NAME };
 
         REQUIRE(p_f.isExecuting());
     }
@@ -86,21 +87,21 @@ TEST_CASE("PIDFile::isExecuting") {
         if (!fs::create_directories(TMP_DIR)) {
             FAIL("failed to create tmp_pid directory");
         }
-        PIDFile p_f { TMP_DIR };
+        PIDFile p_f { TMP_DIR + "/" + PID_FILE_NAME };
 
         REQUIRE_FALSE(p_f.isExecuting());
     }
 
     SECTION("returns false if the file is empty") {
         initializeTmpPIDFile(TMP_DIR, "");
-        PIDFile p_f { TMP_DIR };
+        PIDFile p_f { TMP_DIR + "/" + PID_FILE_NAME };
 
         REQUIRE_FALSE(p_f.isExecuting());
     }
 
     SECTION("returns false if the file contains an invalid integer string") {
         initializeTmpPIDFile(TMP_DIR, "spam");
-        PIDFile p_f { TMP_DIR };
+        PIDFile p_f { TMP_DIR + "/" + PID_FILE_NAME };
 
         REQUIRE_FALSE(p_f.isExecuting());
     }
@@ -112,7 +113,7 @@ TEST_CASE("PIDFile::read", "[util]") {
     SECTION("can successfully read") {
         pid_t pid { 12340987 };
         initializeTmpPIDFile(TMP_DIR, std::to_string(pid));
-        PIDFile p_f { TMP_DIR };
+        PIDFile p_f { TMP_DIR + "/" + PID_FILE_NAME };
 
         REQUIRE(p_f.read() == pid);
     }
@@ -126,7 +127,7 @@ TEST_CASE("PIDFile::write", "[util]") {
         if (!fs::create_directories(TMP_DIR)) {
             FAIL("failed to create tmp_pid directory");
         }
-        PIDFile p_f { TMP_DIR };
+        PIDFile p_f { TMP_DIR + "/" + PID_FILE_NAME };
         pid_t pid { 424242 };
         p_f.write(pid);
         auto read_pid = p_f.read();
@@ -143,10 +144,10 @@ TEST_CASE("PIDFile::cleanup", "[util]") {
         if (!fs::create_directories(TMP_DIR)) {
             FAIL("failed to create tmp_pid directory");
         }
-        PIDFile p_f { TMP_DIR };
+        std::string pid_file_path { TMP_DIR + "/" + PID_FILE_NAME };
+        PIDFile p_f { pid_file_path };
         pid_t pid { 353535 };
         p_f.write(pid);
-        std::string pid_file_path { TMP_DIR + "/" + PIDFile::FILENAME };
 
         REQUIRE(lth_file::file_readable(pid_file_path));
 

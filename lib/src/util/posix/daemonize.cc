@@ -26,9 +26,10 @@ static void sigHandler(int sig) {
     // the successive SIGKILL there are only 5 s - must be fast
 
     if (sig == SIGINT || sig == SIGTERM || sig == SIGQUIT) {
-        LOG_DEBUG("Caught signal %1% - removing PID file in %2%",
-                  std::to_string(sig), PID_DIR);
-        PIDFile pidf { PID_DIR };
+        auto pidfile = Configuration::Instance().get<std::string>("pidfile");
+        LOG_DEBUG("Caught signal %1% - removing PID file '%2%'",
+                  std::to_string(sig), pidfile);
+        PIDFile pidf { pidfile };
         pidf.cleanup();
         exit(EXIT_SUCCESS);
     }
@@ -49,7 +50,8 @@ std::unique_ptr<PIDFile> daemonize() {
 
     // Check PID file; get read lock; ensure we can obtain write lock
 
-    std::unique_ptr<PIDFile> pidf_ptr { new PIDFile(PID_DIR) };
+    auto pidfile = Configuration::Instance().get<std::string>("pidfile");
+    std::unique_ptr<PIDFile> pidf_ptr { new PIDFile(pidfile) };
 
     auto removeLockAndExit = [&pidf_ptr] () {
                                  pidf_ptr->cleanupWhenDone();
@@ -247,7 +249,7 @@ std::unique_ptr<PIDFile> daemonize() {
     freopen("/dev/null", "w", stderr);
 
     LOG_INFO("Daemonization completed; pxp-agent PID=%1%, PID lock file in '%2%'",
-             agent_pid, PID_DIR);
+             agent_pid, pidfile);
 
     // Set PIDFile dtor to clean itself up and return pointer for RAII
     pidf_ptr->cleanupWhenDone();
