@@ -105,23 +105,14 @@ During its execution, the daemon PID will be stored in:
 
 ### Logging
 
-## *nix
-
-By default, log messages will be written to
-*/var/log/puppetlabs/pxp-agent/pxp-agent.log*.
+By default, log messages will be written to:
+ - \*nix: */var/log/puppetlabs/pxp-agent/pxp-agent.log*
+ - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\log\pxp-agent.log*.
 
 You can specify a different file with the `--logfile` option.
 
 When running in foreground mode, it is possible to display log messages on
 console by using an hyphen instead of a file path: `--logfile -`.
-
-## Windows
-
-By default, log messages are written to the stdout stream.
-
-You can specify a log file with `--logfile` option.
-
-## Log level
 
 The default log level is `info`. You can specify a different log level by
 using the `--loglevel` option with one of the following strings: `none`,

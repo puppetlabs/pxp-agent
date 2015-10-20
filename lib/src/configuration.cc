@@ -47,7 +47,8 @@ namespace lth_loc = leatherman::locale;
 
     static const fs::path DEFAULT_CONF_DIR { DATA_DIR / "etc" };
     const std::string DEFAULT_SPOOL_DIR { (DATA_DIR / "var" / "spool").string() };
-    static const std::string DEFAULT_LOG_FILE { "-" };
+    static const std::string DEFAULT_LOG_FILE {
+        (DATA_DIR / "var" / "log" / "pxp-agent.log").string() };
 
     static const std::string DEFAULT_MODULES_DIR = []() {
         wchar_t szPath[MAX_PATH];
@@ -307,11 +308,7 @@ void Configuration::defineDefaultValues() {
                  Base_ptr { new Entry<std::string>(
                     "logfile",
                     "",
-#ifdef _WIN32
                     { "Log file, default: " + DEFAULT_LOG_FILE },
-#else
-                    { "Log file, default: '-' (log to stdout)" },
-#endif
                     Types::String,
                     DEFAULT_LOG_FILE) } });
 
