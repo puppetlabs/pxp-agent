@@ -31,7 +31,7 @@ class Agent {
 
     // Start the agent and loop indefinitely, by:
     //  - registering message callbacks;
-    //  - connecting to the PCP server;
+    //  - connecting to the PCP broker;
     //  - monitoring the state of the connection;
     //  - re-establishing the connection when requested.
     //

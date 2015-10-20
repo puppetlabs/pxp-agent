@@ -13,7 +13,7 @@ class Ping : public PXPAgent::Module {
     // NOTE(ale): public for testing
     /// Ping calculates the time it took for a message to travel from
     /// the controller to the agent. It will then add that duration
-    /// and the current server time in milliseconds to the response.
+    /// and the current broker time in milliseconds to the response.
     lth_jc::JsonContainer ping(const ActionRequest& request);
 
   private:

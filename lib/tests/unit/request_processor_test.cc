@@ -21,7 +21,7 @@ namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-static const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/pxp/" };
+static const std::string TEST_BROKER_WS_URI { "wss://127.0.0.1:8090/pxp/" };
 static const std::string CA { getCaPath() };
 static const std::string CERT { getCertPath() };
 static const std::string KEY { getKeyPath() };
@@ -31,7 +31,7 @@ static const std::string SPOOL { PXP_AGENT_ROOT_PATH
                           + std::string { "/lib/tests/resources/tmp/" } };
 
 static const Configuration::Agent agent_configuration { MODULES,
-                                                        TEST_SERVER_URL,
+                                                        TEST_BROKER_WS_URI,
                                                         CA,
                                                         CERT,
                                                         KEY,
@@ -127,7 +127,7 @@ class TestConnector : public PXPConnector {
 
 TEST_CASE("RequestProcessor::processRequest", "[agent]") {
     AgentConfiguration agent_configuration { BIN_PATH,
-                                             TEST_SERVER_URL,
+                                             TEST_BROKER_WS_URI,
                                              getCaPath(),
                                              getCertPath(),
                                              getKeyPath(),

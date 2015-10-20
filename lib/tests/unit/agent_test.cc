@@ -12,7 +12,7 @@
 
 namespace PXPAgent {
 
-const std::string TEST_SERVER_URL { "wss://127.0.0.1:8090/pxp/" };
+const std::string TEST_BROKER_WS_URI { "wss://127.0.0.1:8090/pxp/" };
 static const std::string MODULES { std::string { PXP_AGENT_ROOT_PATH }
                                    + "/lib/tests/resources/modules" };
 const std::string SPOOL { std::string { PXP_AGENT_ROOT_PATH }
@@ -20,7 +20,7 @@ const std::string SPOOL { std::string { PXP_AGENT_ROOT_PATH }
 
 TEST_CASE("Agent::Agent", "[agent]") {
     Configuration::Agent agent_configuration { MODULES,
-                                               TEST_SERVER_URL,
+                                               TEST_BROKER_WS_URI,
                                                getCaPath(),
                                                getCertPath(),
                                                getKeyPath(),

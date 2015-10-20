@@ -31,7 +31,7 @@ std::vector<lth_jc::JsonContainer> wrapDebug(
 }
 
 PXPConnector::PXPConnector(const Configuration::Agent& agent_configuration)
-        : PCPClient::Connector { agent_configuration.server_url,
+        : PCPClient::Connector { agent_configuration.broker_ws_uri,
                                  agent_configuration.client_type,
                                  agent_configuration.ca,
                                  agent_configuration.crt,
@@ -39,8 +39,8 @@ PXPConnector::PXPConnector(const Configuration::Agent& agent_configuration)
 }
 
 void PXPConnector::sendPCPError(const std::string& request_id,
-                                  const std::string& description,
-                                  const std::vector<std::string>& endpoints) {
+                                const std::string& description,
+                                const std::vector<std::string>& endpoints) {
     lth_jc::JsonContainer pcp_error_data {};
     pcp_error_data.set<std::string>("id", request_id);
     pcp_error_data.set<std::string>("description", description);

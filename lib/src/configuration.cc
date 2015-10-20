@@ -156,31 +156,33 @@ void Configuration::setStartFunction(
 
 void Configuration::validateAndNormalizeConfiguration() {
     // determine which of your values must be initalised
-    if (HW::GetFlag<std::string>("server").empty()) {
-        throw Configuration::UnconfiguredError{ "server value must be defined" };
-    } else if (HW::GetFlag<std::string>("server").find("wss://") != 0) {
-        throw Configuration::UnconfiguredError { "server value must start with wss://" };
+    if (HW::GetFlag<std::string>("broker-ws-uri").empty()) {
+        throw Configuration::UnconfiguredError{ "broker-ws-uri value must be defined" };
+    } else if (HW::GetFlag<std::string>("broker-ws-uri").find("wss://") != 0) {
+        throw Configuration::UnconfiguredError { "broker-ws-uri value must start with wss://" };
     }
 
-    if (HW::GetFlag<std::string>("ca").empty()) {
-        throw Configuration::UnconfiguredError { "ca value must be defined" };
-    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("ca"))) {
-        throw Configuration::UnconfiguredError { "ca file not found" };
+    if (HW::GetFlag<std::string>("ssl-ca-cert").empty()) {
+        throw Configuration::UnconfiguredError { "ssl-ca-cert value must be defined" };
+    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("ssl-ca-cert"))) {
+        throw Configuration::UnconfiguredError { "ssl-ca-cert file not found" };
     }
 
-    if (HW::GetFlag<std::string>("cert").empty()) {
-        throw Configuration::UnconfiguredError { "cert value must be defined" };
-    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("cert"))) {
-        throw Configuration::UnconfiguredError { "cert file not found" };
+    if (HW::GetFlag<std::string>("ssl-cert").empty()) {
+        throw Configuration::UnconfiguredError { "ssl-cert value must be defined" };
+    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("ssl-cert"))) {
+        throw Configuration::UnconfiguredError { "ssl-cert file not found" };
     }
 
-    if (HW::GetFlag<std::string>("key").empty()) {
-        throw Configuration::UnconfiguredError { "key value must be defined" };
-    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("key"))) {
-        throw Configuration::UnconfiguredError { "key file not found" };
+    if (HW::GetFlag<std::string>("ssl-key").empty()) {
+        throw Configuration::UnconfiguredError { "ssl-key value must be defined" };
+    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("ssl-key"))) {
+        throw Configuration::UnconfiguredError { "ssl-key file not found" };
     }
 
-    for (const auto& flag_name : std::vector<std::string> { "ca", "cert", "key" }) {
+    for (const auto& flag_name : std::vector<std::string> { "ssl-ca-cert",
+                                                            "ssl-cert",
+                                                            "ssl-key" }) {
         const auto& path = HW::GetFlag<std::string>(flag_name);
         HW::SetFlag<std::string>(flag_name, lth_file::tilde_expand(path));
     }
@@ -260,38 +262,38 @@ void Configuration::defineDefaultValues() {
                     DEFAULT_CONFIG_FILE) } });
 
     defaults_.insert(
-        Option { "server",
+        Option { "broker-ws-uri",
                  Base_ptr { new Entry<std::string>(
-                    "server",
-                    "s",
-                    "PCP server URL",
+                    "broker-ws-uri",
+                    "",
+                    "WebSocket URI of the PCP broker",
                     Types::String,
                     "") } });
 
     defaults_.insert(
-        Option { "ca",
+        Option { "ssl-ca-cert",
                  Base_ptr { new Entry<std::string>(
-                    "ca",
+                    "ssl-ca-cert",
                     "",
-                    "CA certificate",
+                    "SSL CA certificate",
                     Types::String,
                     "") } });
 
     defaults_.insert(
-        Option { "cert",
+        Option { "ssl-cert",
                  Base_ptr { new Entry<std::string>(
-                    "cert",
+                    "ssl-cert",
                     "",
-                    "pxp-agent certificate",
+                    "pxp-agent SSL certificate",
                     Types::String,
                     "") } });
 
     defaults_.insert(
-        Option { "key",
+        Option { "ssl-key",
                  Base_ptr { new Entry<std::string>(
-                    "key",
+                    "ssl-key",
                     "",
-                    "pxp-agent private key",
+                    "pxp-agent private SSL key",
                     Types::String,
                     "") } });
 
@@ -578,10 +580,10 @@ void Configuration::setupLogging() {
 void Configuration::setAgentConfiguration() {
     agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
-        HW::GetFlag<std::string>("server"),
-        HW::GetFlag<std::string>("ca"),
-        HW::GetFlag<std::string>("cert"),
-        HW::GetFlag<std::string>("key"),
+        HW::GetFlag<std::string>("broker-ws-uri"),
+        HW::GetFlag<std::string>("ssl-ca-cert"),
+        HW::GetFlag<std::string>("ssl-cert"),
+        HW::GetFlag<std::string>("ssl-key"),
         HW::GetFlag<std::string>("spool-dir"),
         HW::GetFlag<std::string>("modules-config-dir"),
         AGENT_CLIENT_TYPE };

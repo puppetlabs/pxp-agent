@@ -109,7 +109,7 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
     hops_str += (hop_format % "server_A" % "007" % "deliver").str();
     hops_str += " ]";
 
-    SECTION("it should copy the hops entry when msg passed through a single server") {
+    SECTION("it should copy the hops entry when msg passed through a single broker") {
         auto data_txt = (data_format % "").str();
         auto debug_txt = (debug_format % hops_str).str();
         std::vector<lth_jc::JsonContainer> other_debug {

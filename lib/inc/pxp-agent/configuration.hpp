@@ -35,7 +35,7 @@ struct EntryBase {
     // Config option name
     // HERE: must match one of the flag names and config file option
     std::string name;
-    // CLI option aliases (e.g. --server --serv -s)
+    // CLI option aliases (e.g. --enable-transmogrification -t)
     std::string aliases;
     // Help string to be displayed by --help flag
     std::string help;
@@ -126,7 +126,7 @@ class Configuration {
 
     struct Agent {
         std::string modules_dir;
-        std::string server_url;
+        std::string broker_ws_uri;
         std::string ca;
         std::string crt;
         std::string key;

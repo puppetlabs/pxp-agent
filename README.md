@@ -73,7 +73,7 @@ single JSON object. Example:
 
 ```
 {
-    "server" : "wss://127.0.0.1:8090/pcp/",
+    "broker-ws-uri" : "wss://127.0.0.1:8090/pcp/",
     "key" : "/etc/puppetlabs/puppet/ssl/private_keys/myhost.net.pem",
     "ca" : "/etc/puppetlabs/puppet/ssl/certs/ca.pem",
     "cert" : "/etc/puppetlabs/puppet/ssl/certs/myhost.net.pem"
@@ -82,9 +82,9 @@ single JSON object. Example:
 
 ### Starting unconfigured
 
-If no server, key, ca or cert value is supplied, the agent will still be able
-to start in unconfigured mode. In this mode no connection will be established but
-the process will not terminate.
+If no broker WebSocket URI, SSL key, ca or cert value is supplied, the agent
+will still be able to start in unconfigured mode. In this mode no connection
+will be established but the process will not terminate.
 
 ### Daemon
 
@@ -113,25 +113,23 @@ The PXP agent has the following configuration options
 
 Specify which config file to use.
 
-**foreground (optional flag)**
+**broker-ws-uri (required to connect)**
 
-Don't become a daemon and execute on foreground on the associated terminal.
+The WebSocket URI of the PXP broker you wish to connect the agent to, example
+wws://192.168.0.1:8061/pxp/
 
-**server (required to connect)**
+**ssl-ca-cert (required to connect)**
 
-The PXP server you wish to connect the agent to, example wws://192.168.0.1:8061/pxp/
+The location of your SSL Certificate Authority certificate, example
+/etc/puppet/ssl/ca/ca_crt.pem
 
-**ca (required to connect)**
+**ssl-cert (required to connect)**
 
-The location of your CA certificate, example /etc/puppet/ssl/ca/ca_crt.pem
+The location of the pxp-agent SSL certificate, example /etc/puppet/ssl/certs/bob_crt.pem
 
-**cert (required to connect)**
+**ssl-key (required to connect)**
 
-The location of the pxp-agent certificate, example /etc/puppet/ssl/certs/bob_crt.pem
-
-**key (required to connect)**
-
-The location of the pxp-agent's private key, example /etc/puppet/ssl/certs/bob_key.pem
+The location of the pxp-agent's SSL private key, example /etc/puppet/ssl/certs/bob_key.pem
 
 **logdir (optional)**
 
@@ -147,11 +145,6 @@ Specify one of the following logging levels: *none*, *trace*, *debug*, *info*,
 
 Display logging messages on the associated terminal; requires `--foreground`
 
-**spool-dir (optional)**
-
-The location where the outcome of non-blocking requests will be stored; the
-default location is */tmp/pxp-agent/*
-
 **modules-dir (optional)**
 
 Specify the directory where modules are stored
@@ -160,9 +153,18 @@ Specify the directory where modules are stored
 
 Specify the directory containing the configuration files of modules
 
+**spool-dir (optional)**
+
+The location where the outcome of non-blocking requests will be stored; the
+default location is */tmp/pxp-agent/*
+
+**foreground (optional flag)**
+
+Don't become a daemon and execute on foreground on the associated terminal.
+
 ## Starting the agent
 
-The agent can be started by running
+The agent can be started as a daemon by running
 ```
 pxp-agent
 ```
