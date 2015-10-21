@@ -6,8 +6,6 @@ end
 step 'Create config file'
 agents.each do |agent|
   if (agent.platform.upcase.start_with?('WINDOWS'))
-    on agent, 'mkdir /cygdrive/c/ProgramData/PuppetLabs/pxp-agent'
-    on agent, 'mkdir /cygdrive/c/ProgramData/PuppetLabs/pxp-agent/etc'
     config = <<OUTPUT
 {
   "broker-ws-uri" : "wss://#{master}:8142/pcp/",
@@ -17,10 +15,6 @@ agents.each do |agent|
 }
 OUTPUT
     create_remote_file(agent, '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/etc/pxp-agent.conf', config)
-    #TODO - RE-5776 - shouldn't need to create folders manually
-    on agent, 'mkdir /cygdrive/c/ProgramData/PuppetLabs/pxp-agent/var'
-    on agent, 'mkdir /cygdrive/c/ProgramData/PuppetLabs/pxp-agent/var/log'
-    on agent, 'mkdir /cygdrive/c/ProgramData/PuppetLabs/pxp-agent/var/spool'
   else
     config = <<OUTPUT
 {
