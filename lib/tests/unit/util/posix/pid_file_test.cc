@@ -23,12 +23,11 @@ namespace Util {
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
 
-const std::string LOCK_PATH { std::string { PXP_AGENT_ROOT_PATH }
-                              + "/lib/tests/resources/test_spool/tmp.lock" };
-const std::string PID_DIR { std::string { PXP_AGENT_ROOT_PATH }
-                            + "/lib/tests/resources/config" };
-const std::string TMP_DIR { std::string { PXP_AGENT_ROOT_PATH }
-                            + "/lib/tests/resources/test_spool/tmp_pid" };
+const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
+                              + "/lib/tests/resources/test_spool" };
+const std::string LOCK_PATH { SPOOL_DIR + "/tmp.lock" };
+const std::string PID_DIR { SPOOL_DIR + "/run" };
+const std::string TMP_DIR { SPOOL_DIR + "/tmp_pid" };
 const std::string PID_FILE_NAME { "pxp-agent.pid" };
 const std::string PID_FILE { PID_DIR + "/" + PID_FILE_NAME };
 
@@ -47,10 +46,16 @@ void initializeTmpPIDFile(const std::string dir, const std::string& txt) {
 
 TEST_CASE("PIDFile ctor", "[util]") {
     SECTION("can instantiate") {
+        if (!fs::exists(PID_DIR) && !fs::create_directories(PID_DIR)) {
+            FAIL("failed to create tmp_pid directory");
+        }
+
         REQUIRE_NOTHROW(PIDFile { PID_FILE });
+        fs::remove_all(PID_DIR);
     }
 
     SECTION("it fails if the directory does not exist") {
+        fs::remove_all(PID_DIR);
         REQUIRE_THROWS(PIDFile { PID_DIR + "/foo/bar/pxp-agent.pid" });
     }
 
@@ -61,13 +66,14 @@ TEST_CASE("PIDFile ctor", "[util]") {
     }
 
     SECTION("create the PIDFile") {
+        fs::create_directories(PID_FILE);
         fs::remove_all(PID_FILE);
         REQUIRE(!fs::exists(PID_FILE));
 
         PIDFile p_f { PID_FILE };
 
         REQUIRE(fs::exists(PID_FILE));
-        fs::remove_all(PID_FILE);
+        fs::remove_all(PID_DIR);
     }
 }
 
@@ -240,6 +246,10 @@ static void testConcurrentLock(int child_lock_type,
 }
 
 TEST_CASE("PIDFile::lockFile", "[util]") {
+    if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR)) {
+        FAIL("failed to create spool directory");
+    }
+
     SECTION("it can lock a file (read lock)") {
         auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
         if (fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
@@ -282,9 +292,15 @@ TEST_CASE("PIDFile::lockFile", "[util]") {
         REQUIRE_NOTHROW(PIDFile::lockFile(fd, F_RDLCK));
         close(fd);
     }
+
+    fs::remove_all(SPOOL_DIR);
 }
 
 TEST_CASE("PIDFile::unlockFile", "[util]") {
+    if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR)) {
+        FAIL("failed to create spool directory");
+    }
+
     SECTION("it unlock a locked file") {
         auto first_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
         if (first_fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
@@ -304,6 +320,8 @@ TEST_CASE("PIDFile::unlockFile", "[util]") {
         REQUIRE_NOTHROW(PIDFile::unlockFile(fd));
         close(fd);
     }
+
+    fs::remove_all(SPOOL_DIR);
 }
 
 static void testLockCheck(int child_lock_type,
@@ -378,6 +396,10 @@ static void testLockCheck(int child_lock_type,
 }
 
 TEST_CASE("PIDFile::canLockFile", "[util]") {
+    if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR)) {
+        FAIL("failed to create spool directory");
+    }
+
     SECTION("successfully check read lock on unlocked file") {
         auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
 
@@ -421,6 +443,8 @@ TEST_CASE("PIDFile::canLockFile", "[util]") {
     SECTION("successfully check write lock on locked file (write)") {
         REQUIRE_NOTHROW(testLockCheck(F_WRLCK, F_WRLCK, false));
     }
+
+    fs::remove_all(SPOOL_DIR);
 }
 
 TEST_CASE("PIDFile::isProcessExecuting", "[util]") {
