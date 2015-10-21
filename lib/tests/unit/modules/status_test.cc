@@ -1,7 +1,9 @@
+#include "../certs.hpp"
 #include "root_path.hpp"
 #include "../content_format.hpp"                    // ENVELOPE_TXT
 
 #include <pxp-agent/modules/status.hpp>
+#include <pxp-agent/configuration.hpp>
 
 #include <cpp-pcp-client/protocol/chunks.hpp>       // ParsedChunks
 
@@ -21,16 +23,23 @@
 
 namespace PXPAgent {
 
+namespace fs = boost::filesystem;
 namespace lth_jc = leatherman::json_container;
 namespace lth_util = leatherman::util;
 namespace HW = HorseWhisperer;
 
-const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
-                                      + "/lib/tests/resources/test_spool/" };
+static const std::string TEST_BROKER_WS_URI { "wss:///test_c_t_h_u_n_broker" };
+static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
+                                     + "/lib/tests/resources/test_spool" };
+static const std::string CA { getCaPath() };
+static const std::string CERT { getCertPath() };
+static const std::string KEY { getKeyPath() };
+static const std::string EMPTY_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
+                    + "/lib/tests/resources/config/empty-pxp-agent.cfg" };
 
 static const std::string QUERY_ACTION { "query" };
 
-boost::format STATUS_FORMAT {
+static boost::format STATUS_FORMAT {
     "{  \"transaction_id\" : \"2345236346\","
     "    \"module\" : \"status\","
     "    \"action\" : \"query\","
@@ -40,7 +49,32 @@ boost::format STATUS_FORMAT {
 
 static const std::vector<lth_jc::JsonContainer> NO_DEBUG {};
 
+static const char* ARGV[] = {
+    "test-command",
+    "--config-file", EMPTY_CONFIG.data(),
+    "--spool-dir", SPOOL_DIR.data(),
+    "--broker-ws-uri", TEST_BROKER_WS_URI.data(),
+    "--ssl-ca-cert", CA.data(),
+    "--ssl-cert", CERT.data(),
+    "--ssl-key", KEY.data() };
+static const int ARGC = 13;
+
+static void configureTest() {
+    HW::Reset();
+    if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR)) {
+        FAIL("Failed to create the results directory");
+    }
+
+    Configuration::Instance().initialize(ARGC, const_cast<char**>(ARGV), false);
+}
+
+static void resetTest() {
+    Configuration::Instance().reset();
+    fs::remove_all(SPOOL_DIR);
+}
+
 TEST_CASE("Modules::Status::executeAction", "[modules]") {
+    configureTest();
     Modules::Status status_module {};
 
     SECTION("the status module is correctly named") {
@@ -84,11 +118,6 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
         }
     }
 
-    if (!boost::filesystem::exists(SPOOL_DIR)
-        && !boost::filesystem::create_directories(SPOOL_DIR)) {
-        FAIL("Failed to create the results directory");
-    }
-
     auto testResultFiles =
         [&] (bool success, std::string result_path) {
             HW::SetFlag<std::string>("spool-dir", SPOOL_DIR);
@@ -101,21 +130,20 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
                     0 };
             ActionRequest request { RequestType::Blocking, other_chunks };
 
-            boost::filesystem::path dest { SPOOL_DIR };
+            fs::path dest { SPOOL_DIR };
             dest /= symlink_name;
-            if (!boost::filesystem::exists(dest)
-                    && !boost::filesystem::create_directories(dest)) {
+            if (!fs::exists(dest) && !fs::create_directories(dest)) {
                 FAIL("Failed to create test directory");
             }
 
             try {
-                std::for_each(boost::filesystem::directory_iterator(result_path),
-                              boost::filesystem::directory_iterator(),
-                              [&](boost::filesystem::directory_entry &d) {
-                                  boost::filesystem::copy(
+                std::for_each(fs::directory_iterator(result_path),
+                              fs::directory_iterator(),
+                              [&](fs::directory_entry &d) {
+                                  fs::copy(
                                     d.path(), dest / d.path().filename());
                               });
-            } catch (boost::filesystem::filesystem_error &e) {
+            } catch (fs::filesystem_error &e) {
                 FAIL((boost::format("Failed to copy files: %1%") % e.what()).str());
             }
 
@@ -152,7 +180,7 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
                     outcome.results.get<std::string>("stderr"), err));
             }
 
-            boost::filesystem::remove_all(dest);
+            fs::remove_all(dest);
         };
 
     SECTION("it correctly retrieves the results of a known job") {
@@ -169,9 +197,7 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
         }
     }
 
-    if (!boost::filesystem::exists(SPOOL_DIR)) {
-        boost::filesystem::remove_all(SPOOL_DIR);
-    }
+    resetTest();
 }
 
 }  // namespace PXPAgent

@@ -1,5 +1,4 @@
 #include "certs.hpp"
-
 #include "root_path.hpp"
 
 #include <pxp-agent/configuration.hpp>
@@ -9,56 +8,66 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.configuration_test"
 #include <leatherman/logging/logging.hpp>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
 #include <catch.hpp>
 
 #include <string>
 
 namespace PXPAgent {
 
+namespace fs = boost::filesystem;
 namespace HW = HorseWhisperer;
 namespace lth_log = leatherman::logging;
 
-const std::string CONFIG { std::string { PXP_AGENT_ROOT_PATH }
-                           + "/lib/tests/resources/config/empty-pxp-agent.cfg" };
-const std::string TEST_BROKER_WS_URI { "wss:///test_c_t_h_u_n_broker" };
-const std::string CA { getCaPath() };
-const std::string CERT { getCertPath() };
-const std::string KEY { getKeyPath() };
-const std::string MODULES_DIR { std::string { PXP_AGENT_ROOT_PATH }
-                                + "/lib/tests/resources/test_modules/" };
-const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
-                              + "/lib/tests/resources/test_spool/" };
+static const std::string CONFIG { std::string { PXP_AGENT_ROOT_PATH }
+                                  + "/lib/tests/resources/config/empty-pxp-agent.cfg" };
+static const std::string TEST_BROKER_WS_URI { "wss:///test_c_t_h_u_n_broker" };
+static const std::string CA { getCaPath() };
+static const std::string CERT { getCertPath() };
+static const std::string KEY { getKeyPath() };
+static const std::string MODULES_DIR { std::string { PXP_AGENT_ROOT_PATH }
+                                       + "/lib/tests/resources/test_modules/" };
+static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
+                                     + "/lib/tests/resources/test_spool" };
 
-const char* ARGV[] = { "test-command",
-                       "--config-file", CONFIG.data(),
-                       "--broker-ws-uri", TEST_BROKER_WS_URI.data(),
-                       "--ssl-ca-cert", CA.data(),
-                       "--ssl-cert", CERT.data(),
-                       "--ssl-key", KEY.data(),
-                       "--modules-dir", MODULES_DIR.data(),
-                       "--spool-dir", SPOOL_DIR.data(),
-                       "--foreground=true"};
-const int ARGC = 16;
+static const char* ARGV[] = {
+    "test-command",
+    "--config-file", CONFIG.data(),
+    "--broker-ws-uri", TEST_BROKER_WS_URI.data(),
+    "--ssl-ca-cert", CA.data(),
+    "--ssl-cert", CERT.data(),
+    "--ssl-key", KEY.data(),
+    "--modules-dir", MODULES_DIR.data(),
+    "--spool-dir", SPOOL_DIR.data(),
+    "--foreground=true"};
+static const int ARGC = 16;
 
 static void configureTest() {
+    HW::Reset();
+    if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR)) {
+        FAIL("Failed to create the results directory");
+    }
     Configuration::Instance().initialize(ARGC, const_cast<char**>(ARGV), false);
 }
 
 static void resetTest() {
     Configuration::Instance().reset();
+    fs::remove_all(SPOOL_DIR);
 }
 
 TEST_CASE("Configuration - metatest", "[configuration]") {
-    resetTest();
-
     SECTION("Metatest - can initialize Configuration") {
+        resetTest();
+        configureTest();
         REQUIRE_NOTHROW(Configuration::Instance()
                             .initialize(ARGC, const_cast<char**>(ARGV), false));
     }
 
-    configureTest();
 
     SECTION("Metatest - we can inject CL options into HorseWhisperer") {
+        configureTest();
         REQUIRE(HW::GetFlag<std::string>("ssl-ca-cert") == CA);
         REQUIRE(HW::GetFlag<std::string>("modules-dir") == MODULES_DIR);
         REQUIRE(HW::GetFlag<std::string>("spool-dir") == SPOOL_DIR);
@@ -153,12 +162,10 @@ TEST_CASE("Configuration::get", "[configuration]") {
         }
 
         SECTION("return the default value if the flag was not set") {
-            resetTest();
-            // NB: ignoring --foreground in ARGV since argc is set to 14
+            // NB: ignoring --foreground in ARGV since argc is set to 15
             Configuration::Instance().initialize(15, const_cast<char**>(ARGV), false);
 
-            REQUIRE(Configuration::Instance().get<bool>("foreground")
-                    == false);
+            REQUIRE(Configuration::Instance().get<bool>("foreground") == false);
         }
 
         SECTION("return the correct value after the flag has been set") {
