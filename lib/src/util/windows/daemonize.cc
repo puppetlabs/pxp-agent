@@ -14,7 +14,7 @@ namespace Util {
 
 namespace lth_win = leatherman::windows;
 
-BOOL ctrl_handler(DWORD sig)
+BOOL WINAPI ctrl_handler(DWORD sig)
 {
     switch (sig) {
         case CTRL_C_EVENT:
