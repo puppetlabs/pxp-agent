@@ -24,15 +24,12 @@ const std::string DEFAULT_DAEMON_WORKING_DIR = "/";
 static void sigHandler(int sig) {
     // NOTE(ale): if issued by the init process, between SIGTERM and
     // the successive SIGKILL there are only 5 s - must be fast
-
-    if (sig == SIGINT || sig == SIGTERM || sig == SIGQUIT) {
-        auto pidfile = Configuration::Instance().get<std::string>("pidfile");
-        LOG_DEBUG("Caught signal %1% - removing PID file '%2%'",
-                  std::to_string(sig), pidfile);
-        PIDFile pidf { pidfile };
-        pidf.cleanup();
-        exit(EXIT_SUCCESS);
-    }
+    auto pidfile = Configuration::Instance().get<std::string>("pidfile");
+    LOG_INFO("Caught signal %1% - removing PID file '%2%'",
+             std::to_string(sig), pidfile);
+    PIDFile pidf { pidfile };
+    pidf.cleanup();
+    exit(EXIT_SUCCESS);
 }
 
 static void dumbSigHandler(int sig) {}
@@ -228,6 +225,7 @@ std::unique_ptr<PIDFile> daemonize() {
     }
 
     // Change signal dispositions
+    // HERE(ale): don't touch SIGUSR2; it's used to reopen the logfile
 
     for (auto s : std::vector<int> { SIGINT, SIGTERM, SIGQUIT }) {
         if (signal(s, sigHandler) == SIG_ERR) {
