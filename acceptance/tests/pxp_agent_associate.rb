@@ -19,6 +19,10 @@ on agent1, puppet('resource service pxp-agent ensure=running')
 step 'Allow 10 seconds after service start-up for association to complete'
 sleep(10)
 
-success = "INFO.*Successfully established a WebSocket connection with the PCP broker"
-assert(on(agent1, "grep -e '#{success}' #{log_file} | wc -l | { read total; test $total -eq 1; };"),
-       "Expected connection message '#{success}' did not appear exactly once in logs")
+success = /INFO.*Successfully established a WebSocket connection with the PCP broker/
+on(agent1, "cat #{log_file}") do |result|
+  log_contents = result.stdout
+  assert_match(success, log_contents,
+               "Did not match expected association message '#{success.to_s}' " \
+               "in actual pxp-agent.log contents '#{log_contents}'")
+end
