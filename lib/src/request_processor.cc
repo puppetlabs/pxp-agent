@@ -84,7 +84,7 @@ class ResultsStorage {
     std::string status_path;
     lth_jc::JsonContainer action_status;
 
-    void initialize(const ActionRequest& request, const std::string results_dir) {
+    void initialize(const ActionRequest& request, const std::string& results_dir) {
         if (!fs::exists(results_dir)) {
             LOG_DEBUG("Creating results directory for '%1% %2%', transaction "
                        "%3%, in '%4%'", request.module(), request.action(),

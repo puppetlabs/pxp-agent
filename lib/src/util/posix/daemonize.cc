@@ -242,9 +242,9 @@ std::unique_ptr<PIDFile> daemonize() {
 
     // Redirect standard files; we always use boost::log anyway
 
-    freopen("/dev/null", "r", stdin);
-    freopen("/dev/null", "w", stdout);
-    freopen("/dev/null", "w", stderr);
+    stdin = freopen("/dev/null", "r", stdin);
+    stdout = freopen("/dev/null", "w", stdout);
+    stderr = freopen("/dev/null", "w", stderr);
 
     LOG_INFO("Daemonization completed; pxp-agent PID=%1%, PID lock file in '%2%'",
              agent_pid, pidfile);

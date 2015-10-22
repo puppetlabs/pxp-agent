@@ -31,7 +31,7 @@ const std::string TMP_DIR { SPOOL_DIR + "/tmp_pid" };
 const std::string PID_FILE_NAME { "pxp-agent.pid" };
 const std::string PID_FILE { PID_DIR + "/" + PID_FILE_NAME };
 
-void initializeTmpPIDFile(const std::string dir, const std::string& txt) {
+void initializeTmpPIDFile(const std::string& dir, const std::string& txt) {
     if (!fs::exists(dir) && !fs::create_directories(dir)) {
         FAIL("failed to create tmp_pid directory");
     }
