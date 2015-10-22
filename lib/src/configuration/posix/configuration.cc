@@ -9,7 +9,7 @@
 namespace PXPAgent {
 
 static void sigLogfileReopen(int signal) {
-    LOG_DEBUG("Caught SIGUSR2 signal - reopening log file");
+    LOG_INFO("Caught SIGUSR2 signal - reopening log file");
     try {
         Configuration::Instance().reopenLogfile();
     } catch (const std::exception& e) {
