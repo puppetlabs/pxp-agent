@@ -45,7 +45,7 @@ def make_command_string(config, params)
   return "#{env} #{config["puppet_bin"]} agent #{flags} > #{dev_null} 2>&1".lstrip
 end
 
-def get_result_from_report(exitcode, config, error = "")
+def get_result_from_report(exitcode, config, start_time, error = "", fail_hard = false)
   run_result = {"kind"             => "unknown",
                 "time"             => "unknown",
                 "transaction_uuid" => "unknown",
@@ -54,8 +54,7 @@ def get_result_from_report(exitcode, config, error = "")
                 "error"            => error,
                 "exitcode"         => exitcode}
 
-  # if it didn't exit 0, we can't be sure the last_run_report is ours
-  if exitcode != 0
+  if (fail_hard)
     return run_result
   end
 
@@ -72,15 +71,17 @@ def get_result_from_report(exitcode, config, error = "")
   begin
     last_run_report_yaml = YAML.load_file(last_run_report)
   rescue => e
-    run_result["error"] = "#{last_run_report} isn't valid yaml"
+    run_result["error"] = "#{last_run_report} could not be loaded: #{e}"
     return run_result
   end
 
-  run_result["kind"] = last_run_report_yaml.kind
-  run_result["time"] = last_run_report_yaml.time
-  run_result["transaction_uuid"] = last_run_report_yaml.transaction_uuid
-  run_result["environment"] = last_run_report_yaml.environment
-  run_result["status"] = last_run_report_yaml.status
+  if start_time.to_i < last_run_report_yaml.time.to_i
+    run_result["kind"] = last_run_report_yaml.kind
+    run_result["time"] = last_run_report_yaml.time
+    run_result["transaction_uuid"] = last_run_report_yaml.transaction_uuid
+    run_result["environment"] = last_run_report_yaml.environment
+    run_result["status"] = last_run_report_yaml.status
+  end
 
   return run_result
 end
@@ -88,18 +89,20 @@ end
 def start_run(config, params)
   exitcode = DEFAULT_ERROR_CODE
   cmd = make_command_string(config, params)
+  start_time = Time.now
+
   run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false})
 
   if !run_result
-     return get_result_from_report(exitcode, config, "Failed to start Puppet agent")
+     return get_result_from_report(exitcode, config, start_time, "Failed to start Puppet agent")
   end
 
   exitcode = run_result.exitstatus
 
-  if exitcode == 0
-    return get_result_from_report(exitcode, config)
+  if exitcode != 0
+    return get_result_from_report(exitcode, config, start_time, "Puppet agent exited with a non 0 exitcode")
   else
-    return get_result_from_report(exitcode, config, "Puppet agent exited with a non 0 exitcode")
+    return get_result_from_report(exitcode, config, start_time)
   end
 end
 
@@ -164,8 +167,8 @@ end
 
 def run(params_and_config)
   if !params_and_config
-    return get_result_from_report(DEFAULT_ERROR_CODE, {},
-                                  "Invalid json parsed on STDIN. Cannot start run action")
+    return get_result_from_report(DEFAULT_ERROR_CODE, {}, nil,
+                                  "Invalid json parsed on STDIN. Cannot start run action", true)
   end
 
   params = params_and_config["params"]
@@ -182,19 +185,21 @@ def run(params_and_config)
   end
 
   if !File.exist?(config["puppet_bin"])
-    return get_result_from_report(DEFAULT_ERROR_CODE, config,
-                                  "Puppet executable '#{config["puppet_bin"]}' does not exist")
+    return get_result_from_report(DEFAULT_ERROR_CODE, config, nil,
+                                  "Puppet executable '#{config["puppet_bin"]}' does not exist", true)
   end
 
   # Instead of failing we could poll until the lockfile goes away and start a
   # run then as mentioned in https://tickets.puppetlabs.com/browse/CTH-272. I'm
   # going to start by failing and take it from there.
   if running?(config)
-    return get_result_from_report(DEFAULT_ERROR_CODE, config, "Puppet agent is already performing a run")
+    return get_result_from_report(DEFAULT_ERROR_CODE, config, nil,
+                                  "Puppet agent is already performing a run", true)
   end
 
   if disabled?(config)
-    return get_result_from_report(DEFAULT_ERROR_CODE, config, "Puppet agent is disabled")
+    return get_result_from_report(DEFAULT_ERROR_CODE, config, nil,
+                                  "Puppet agent is disabled", true)
   end
 
   return start_run(config, params)
