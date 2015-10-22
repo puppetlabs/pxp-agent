@@ -6,6 +6,6 @@
     notifempty
     sharedscripts
     postrotate
-        /usr/bin/systemctl kill --signal=USR2 --kill-who=main
+        /usr/bin/systemctl kill --signal=USR2 --kill-who=main pxp-agent.service
     endscript
 }
