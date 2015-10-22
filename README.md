@@ -17,6 +17,43 @@ for how to do that.
 
 Build with make and make install
 
+## Starting the agent
+
+pxp-agent should be configured in your system to be executed automatically as a
+service. In case you need to run it manually, you can invoke directly its
+executable file; after building from source, it is located in the `./build/bin`
+directory; in case an installer was used, the default locations are:
+
+ - \*nix: */opt/puppetlabs/puppet/bin/pxp-agent*
+ - Windows: *C:\Program Files\Puppet Labs\Puppet\pxp-agent\bin\pxp-agent.exe*
+
+Configuration options can be passed as command line arguments or by using a
+configuration file (see below).
+
+The agent will execute as a background process by default; in that case,
+it prevents multiple instances running at the same time. Please refer to the
+following sections for platform-specific behavior.
+
+### *nix
+
+In case `--foreground` is unflagged, pxp-agent will start as a daemon and its
+PID will be stored in */var/run/puppetlabs/pxp-agent.pid*, or in another
+location if specified by `--pidfile`. pxp-agent will rely on such file to
+prevent multiple daemon instances from executing at once. The PID file will be
+removed if the daemon is stopped by using one of SIGINT, SIGTERM, or SIGQUIT
+signals.
+
+### Windows
+
+pxp-agent relies on [nssm][9] to execute as a service. In case `--foreground` is
+unflagged, a mutex-based mechanism will prevent multiple instances of pxp-agent.
+Note that no PID file will be created.
+
+### Starting unconfigured
+
+If no broker WebSocket URI, SSL key, ca or cert value is supplied, the agent
+will still be able to start in unconfigured mode. In this mode no connection
+will be established but the process will not terminate.
 
 ## Modules
 
@@ -78,19 +115,6 @@ single JSON object. Example:
 Note that you have to specify the WebSocket secure URL of the [PCP broker][8]
 in order to establish the WebSocket connection on top of which the PCP
 communication will take place.
-
-### Starting unconfigured
-
-If no broker WebSocket URI, SSL key, ca or cert value is supplied, the agent
-will still be able to start in unconfigured mode. In this mode no connection
-will be established but the process will not terminate.
-
-### Daemon
-
-The agent will execute as a daemon unless the `--foreground` flag is specified.
-During its execution, the daemon PID will be stored in:
- - \*nix: */var/run/puppetlabs/pxp-agent.pid*
- - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\run\pxp-agent.pid*
 
 ### Logging
 
@@ -165,14 +189,6 @@ Don't become a daemon and execute on foreground on the associated terminal.
 
 The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 
-## Starting the agent
-
-The agent can be started as a daemon by running
-```
-pxp-agent
-```
-in the ./build/bin directory
-
 [1]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/README.md
 [2]: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/README.md
 [3]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/actions.md
@@ -181,3 +197,4 @@ in the ./build/bin directory
 [6]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
 [7]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md
 [8]: https://github.com/puppetlabs/pcp-broker
+[9]: https://nssm.cc
