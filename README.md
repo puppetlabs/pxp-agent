@@ -118,7 +118,7 @@ Specify which config file to use.
 **broker-ws-uri (required to connect)**
 
 The WebSocket URI of the PXP broker you wish to connect the agent to, example
-wws://192.168.0.1:8142/pxp/
+*wss://192.168.0.1:8142/pxp/*
 
 **ssl-ca-cert (required to connect)**
 
