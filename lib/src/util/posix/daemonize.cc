@@ -25,8 +25,8 @@ static void sigHandler(int sig) {
     // NOTE(ale): if issued by the init process, between SIGTERM and
     // the successive SIGKILL there are only 5 s - must be fast
     auto pidfile = Configuration::Instance().get<std::string>("pidfile");
-    LOG_DEBUG("Caught signal %1% - removing PID file '%2%'",
-              std::to_string(sig), pidfile);
+    LOG_INFO("Caught signal %1% - removing PID file '%2%'",
+             std::to_string(sig), pidfile);
     PIDFile pidf { pidfile };
     pidf.cleanup();
     exit(EXIT_SUCCESS);

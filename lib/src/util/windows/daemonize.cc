@@ -21,7 +21,7 @@ BOOL WINAPI ctrl_handler(DWORD sig)
         case CTRL_CLOSE_EVENT:
         case CTRL_SHUTDOWN_EVENT:
         {
-            LOG_DEBUG("Caught signal %1% - shutting down", std::to_string(sig));
+            LOG_INFO("Caught signal %1% - shutting down", std::to_string(sig));
             daemon_cleanup();
             exit(EXIT_SUCCESS);
         }
