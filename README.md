@@ -17,9 +17,6 @@ for how to do that.
 
 Build with make and make install
 
-## Configuring
- To do that, you
-need to specify the secure WebSocket URL of
 
 ## Modules
 
