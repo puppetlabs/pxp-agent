@@ -172,6 +172,7 @@ def run(params_and_config)
   end
 
   params = params_and_config["params"]
+  params.merge!({'flags' => ['--onetime', '--no-daemonize']})
   config = params_and_config["config"]
   params["flags"] = params["flags"] | ["--onetime", "--no-daemonize", "--verbose"]
 
