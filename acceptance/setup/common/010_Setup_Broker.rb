@@ -2,11 +2,8 @@ pcp_broker_port = 8142
 pcp_broker_minutes_to_start = 2
 
 step 'Clone pcp-broker to master'
-on master, puppet('resource package git ensure=present')
 on master, 'git clone https://github.com/puppetlabs/pcp-broker.git'
 
-step 'Install Java'
-on master, puppet('resource package java ensure=present')
 step 'Download lein bootstrap'
 on master, 'cd /usr/bin && '\
            'curl -O https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein'

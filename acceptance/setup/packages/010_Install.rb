@@ -32,6 +32,16 @@ PACKAGES = {
 # Install puppet on all hosts including master
 install_packages_on(hosts, PACKAGES)
 
+step 'Install build dependencies on master'
+
+MASTER_PACKAGES = {
+  :redhat => [
+    'git',
+    'java-1.8.0-openjdk-devel',
+  ],
+}
+install_packages_on(master, MASTER_PACKAGES, :check_if_exists => true)
+
 step 'Install MSIs on any Windows agents'
 agents.each do |agent|
   if agent.platform.start_with?('windows')
