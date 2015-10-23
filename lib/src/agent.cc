@@ -34,13 +34,11 @@ void Agent::start() {
     try {
         connector_ptr_->connect();
     } catch (PCPClient::connection_config_error& e) {
-        LOG_ERROR("Failed to configure the underlying communications layer: %1%",
-                  e.what());
-        throw Agent::Error { "failed to configure the underlying communications"
-                             "layer" };
+        // Failed to configure WebSocket on our end
+        throw Agent::Error { std::string { "WebSocket error: " } + e.what() };
     } catch (PCPClient::connection_fatal_error& e) {
-        LOG_ERROR("Failed to connect: %1%", e.what());
-        throw Agent::Error { "failed to connect" };
+        // Failed to establish a WebSocket connection
+        throw Agent::Error { "failed to connect to the pcp-broker" };
     }
 
     // The agent is now connected and the request handlers are set;
