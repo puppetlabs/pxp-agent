@@ -173,6 +173,7 @@ def run(params_and_config)
 
   params = params_and_config["params"]
   config = params_and_config["config"]
+  params["flags"] = params["flags"] | ["--onetime", "--no-daemonize", "--verbose"]
 
   if config["puppet_bin"].nil? || config["puppet_bin"].empty?
     if !is_win?
