@@ -2,7 +2,10 @@ pcp_broker_port = 8142
 pcp_broker_minutes_to_start = 2
 
 step 'Clone pcp-broker to master'
-on master, 'git clone https://github.com/puppetlabs/pcp-broker.git'
+['pcp-broker', 'clj-pxp-puppet'].each do |repo|
+  clone_git_repo_on(master, '~',
+    extract_repo_info_from(build_git_url(repo, nil, nil, 'git')))
+end
 
 step 'Download lein bootstrap'
 on master, 'cd /usr/bin && '\
