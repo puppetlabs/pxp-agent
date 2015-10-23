@@ -5,6 +5,7 @@
 #include <pxp-agent/action_request.hpp>
 #include <pxp-agent/pxp_connector.hpp>
 #include <pxp-agent/configuration.hpp>
+#include <pxp-agent/export.h>
 
 #include <cpp-pcp-client/protocol/chunks.hpp>      // ParsedChunk
 
@@ -13,7 +14,7 @@
 
 namespace PXPAgent {
 
-class Agent {
+class LIBPXP_AGENT_EXPORT Agent {
   public:
     struct Error : public std::runtime_error {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}

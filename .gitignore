@@ -2,5 +2,6 @@
 /build/
 /dev-resources/
 /lib/tests/resources/test_spool/
+/lib/inc/pxp-agent/export.h
 .idea/
 .DS_Store

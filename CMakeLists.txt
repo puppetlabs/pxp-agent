@@ -82,6 +82,7 @@ find_package(OpenSSL REQUIRED)
 
 # Specify the .cmake files for vendored libraries
 include(${VENDOR_DIRECTORY}/horsewhisperer.cmake)
+add_definitions("-DHORSEWHISPERER_EXPORT=LIBPXP_AGENT_EXPORT")
 
 if(EXTERNAL_CPP_PCP_CLIENT)
     find_package(cpp-pcp-client REQUIRED)

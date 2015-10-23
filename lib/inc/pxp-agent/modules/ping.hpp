@@ -2,11 +2,12 @@
 #define SRC_MODULES_PING_H_
 
 #include <pxp-agent/module.hpp>
+#include <pxp-agent/export.h>
 
 namespace PXPAgent {
 namespace Modules {
 
-class Ping : public PXPAgent::Module {
+class LIBPXP_AGENT_EXPORT Ping : public PXPAgent::Module {
   public:
     Ping();
 

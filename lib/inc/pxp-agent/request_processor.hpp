@@ -6,6 +6,7 @@
 #include <pxp-agent/action_request.hpp>
 #include <pxp-agent/pxp_connector.hpp>
 #include <pxp-agent/configuration.hpp>
+#include <pxp-agent/export.h>
 
 #include <boost/filesystem/path.hpp>
 
@@ -15,7 +16,7 @@
 
 namespace PXPAgent {
 
-class RequestProcessor {
+class LIBPXP_AGENT_EXPORT RequestProcessor {
   public:
     struct Error : public std::runtime_error {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
