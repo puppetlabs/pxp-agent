@@ -8,8 +8,6 @@
 # Default-Stop:      0 1 6
 ### END INIT INFO
 
-PATH=/opt/puppetlabs/puppet/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-
 exec=/opt/puppetlabs/puppet/bin/pxp-agent
 prog="pxp-agent"
 desc="PXP agent"

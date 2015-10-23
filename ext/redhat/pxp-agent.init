@@ -11,9 +11,6 @@
 # Source function library.
 . /etc/rc.d/init.d/functions
 
-PATH=/opt/puppetlabs/puppet/bin:/usr/bin:/sbin:/bin:/usr/sbin
-export PATH
-
 [ -f /etc/sysconfig/pxp-agent ] && . /etc/sysconfig/pxp-agent
 
 exec=/opt/puppetlabs/puppet/bin/pxp-agent
