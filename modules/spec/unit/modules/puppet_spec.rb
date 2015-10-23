@@ -293,6 +293,30 @@ describe "pxp-module-puppet" do
           "Invalid json parsed on STDIN. Cannot start run action"
     end
 
+    it "populates flags with the correct defaults" do
+      expected_params = {"env" => [],
+                         "flags" => ["--onetime", "--no-daemonize", "--verbose"]}
+      allow(File).to receive(:exist?).and_return(true)
+      allow_any_instance_of(Object).to receive(:running?).and_return(false)
+      allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
+      expect_any_instance_of(Object).to receive(:start_run).with(default_config,
+                                                                 expected_params)
+      run({"config" => default_config, "params" => default_params})
+    end
+
+    it "does not add flag defaults if they have been passed" do
+      expected_params = {"env" => [],
+                         "flags" => ["--squirrels", "--onetime", "--no-daemonize", "--verbose"]}
+      passed_params = {"env" => [],
+                       "flags" => ["--squirrels", "--onetime", "--no-daemonize"]}
+      allow(File).to receive(:exist?).and_return(true)
+      allow_any_instance_of(Object).to receive(:running?).and_return(false)
+      allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
+      expect_any_instance_of(Object).to receive(:start_run).with(default_config,
+                                                                 expected_params)
+      run({"config" => default_config, "params" => passed_params})
+    end
+
     it "starts the run" do
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
