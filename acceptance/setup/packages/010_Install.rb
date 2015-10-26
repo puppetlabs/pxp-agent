@@ -3,6 +3,15 @@ extend Puppet::Acceptance::InstallUtils
 require 'beaker/dsl/install_utils'
 extend Beaker::DSL::InstallUtils
 
+step 'Confirm SSH Forwarding Enabled'
+ssh_auth_sock = on(master, 'echo $SSH_AUTH_SOCK').stdout.chomp
+if ssh_auth_sock.nil? || ssh_auth_sock.empty?
+  fail_test('SSH forwarding not configured properly - check ~/.ssh/config for ForwardAgent settings')
+end
+
+step 'Allow git clones via ssh to "unknown" host at github.com; required to clone private repos.'
+on master, "echo #{GitHubSig} >> $HOME/.ssh/known_hosts"
+
 test_name "Install Packages"
 sha = ENV['SUITE_COMMIT']
 unless (sha) then
