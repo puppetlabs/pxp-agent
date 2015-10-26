@@ -14,14 +14,15 @@ describe "pxp-module-puppet" do
 
   describe "last_run_result" do
     it "returns the basic structure with exitcode set" do
-      expect(last_run_result(42)).to be == {"kind" => "unknown",
-                                            "time" => "unknown",
+      expect(last_run_result(42)).to be == {"kind"             => "unknown",
+                                            "time"             => "unknown",
                                             "transaction_uuid" => "unknown",
-                                            "environment" => "unknown",
-                                            "status" => "unknown",
-                                            "error_type" => "",
-                                            "error" => "",
-                                            "exitcode" => 42}
+                                            "environment"      => "unknown",
+                                            "status"           => "unknown",
+                                            "error_type"       => "",
+                                            "error"            => "",
+                                            "exitcode"         => 42,
+                                            "version"          => 1}
     end
   end
 
@@ -87,14 +88,15 @@ describe "pxp-module-puppet" do
   describe "make_error_result" do
     it "should set the exitcode, error_type and error_message" do
       expect(make_error_result(42, Errors::FailedToStart, "test error")).to be == 
-          {"kind" => "unknown",
-           "time" => "unknown",
+          {"kind"             => "unknown",
+           "time"             => "unknown",
            "transaction_uuid" => "unknown",
-           "environment" => "unknown",
-           "status" => "unknown",
-           "error_type" => "agent_failed_to_start",
-           "error" => "test error",
-           "exitcode" => 42}
+           "environment"      => "unknown",
+           "status"           => "unknown",
+           "error_type"       => "agent_failed_to_start",
+           "error"            => "test error",
+           "exitcode"         => 42,
+           "version"          => 1}
     end
   end
 
@@ -110,7 +112,8 @@ describe "pxp-module-puppet" do
            "status"           => "unknown",
            "error_type"       => "no_last_run_report",
            "error"            => "/opt/puppetlabs/puppet/cache/state/last_run_report.yaml doesn't exist",
-           "exitcode"         => 0}
+           "exitcode"         => 0,
+           "version"          => 1}
     end
 
     it "doesn't process the last_run_report if the file cant be loaded" do
@@ -125,7 +128,8 @@ describe "pxp-module-puppet" do
            "status"           => "unknown",
            "error_type"       => "invalid_last_run_report",
            "error"            => "/opt/puppetlabs/puppet/cache/state/last_run_report.yaml could not be loaded: error",
-           "exitcode"         => 0}
+           "exitcode"         => 0,
+           "version"          => 1}
     end
 
     it "doesn't process the last_run_report if it hasn't been updated after the run was kicked" do
@@ -151,7 +155,8 @@ describe "pxp-module-puppet" do
            "status"           => "unknown",
            "error_type"       => "agent_exit_non_zero",
            "error"            => "Puppet agent exited with a non 0 exitcode",
-           "exitcode"         => -1}
+           "exitcode"         => -1,
+           "version"          => 1}
     end
 
       it "processes the last_run_report if it has been updated after the run was kicked" do
@@ -177,7 +182,8 @@ describe "pxp-module-puppet" do
            "status"           => "changed",
            "error_type"       => "agent_exit_non_zero",
            "error"            => "Puppet agent exited with a non 0 exitcode",
-           "exitcode"         => -1}
+           "exitcode"         => -1,
+           "version"          => 1}
     end
 
     it "correctly processes the last_run_report" do
@@ -203,7 +209,8 @@ describe "pxp-module-puppet" do
            "status"           => "changed",
            "error_type"       => "",
            "error"            => "",
-           "exitcode"         => 0}
+           "exitcode"         => 0,
+           "version"          => 1}
     end
   end
 
@@ -270,15 +277,21 @@ describe "pxp-module-puppet" do
                 :status => {
                   :type => "string"
                 },
+                :error_type => {
+                  :type => "string"
+                },
                 :error => {
                   :type => "string"
                 },
                 :exitcode => {
                   :type => "number"
+                },
+                :version => {
+                  :type => "number"
                 }
               },
               :required => [:kind, :time, :transaction_uuid, :environment, :status,
-                            :error, :exitcode]
+                            :error_type, :error, :exitcode, :version]
             }
           }
         ],
