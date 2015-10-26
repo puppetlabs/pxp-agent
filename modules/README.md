@@ -63,26 +63,27 @@ stdout. The JSON document will have the following fields.
 - `transaction_uuid` : The value of `transaction_uuid` in last_run_report.yaml
 - `environment` : The value of `environment` in last_run_report.yaml
 - `status` : The value of `status` in last_run_report.yaml
+- `error_type` : A string containing the machine readable error type
 - `error` : A string containing an error description if one occurred when trying to run Puppet
 - `exitcode` : The exitcode of the Puppet run
 
-### Error cases
+## Error cases
 
-### `puppet_bin` configuration value hasn't been set
+### Error Types
 
-Output will be
+If a run fails the `"error_type"` field will be set to one of the following values:
 
-```
-{
-    "kind" : "unknown",
-    "time" : "unknown",
-    "transaction_uuid" : "unknown",
-    "environment" : "unknown",
-    "status" : "unknown",
-    "error" : "puppet_bin configuration value not set",
-    "exitcode" : -1
-}
-```
+- `"invalid_json"` pxp-module-puppet was called with invalid json on stdin
+- `"no_puppet_bin"` The executable specified by `puppet_bin` doesn't exist
+- `"no_last_run_report"` last_run_report.yaml doesn't exist
+- `"invalid_last_run_report"` last_run_report.yaml could not be parsed
+- `"agent_already_running"` Puppet agent is already performing a run
+- `"agent_disabled"` Puppet agent is disabled
+- `"agent_failed_to_start"` Puppet agent failed to start
+- `"agent_exit_non_zero"` Puppet agent exited with a non-zero exitcode
+
+### Example error responses
+
 
 ### The `puppet_bin` file does not exist
 
@@ -93,6 +94,7 @@ Output will be
     "transaction_uuid" : "unknown",
     "environment" : "unknown",
     "status" : "unknown",
+    "error_type" : "no_puppet_bin",
     "error" : "Puppet executable '$puppet_bin' does not exist",
     "exitcode" : -1
 }
@@ -107,6 +109,7 @@ Output will be
     "transaction_uuid" : "unknown",
     "environment" : "unknown",
     "status" : "unknown",
+    "error_type" : "agent_already_running",
     "error" : "Puppet is already running",
     "exitcode" : -1
 }
@@ -121,6 +124,7 @@ Output will be
     "transaction_uuid" : "unknown",
     "environment" : "unknown",
     "status" : "unknown",
+    "error_type" : "agent_disabled",
     "error" : "Puppet is disabled",
     "exitcode" : -1
 }
@@ -135,6 +139,7 @@ Output will be
     "transaction_uuid" : "unknown",
     "environment" : "unknown",
     "status" : "unknown",
+    "error_type" : "invalid_json",
     "error" : "Invalid json parsed on STDIN",
     "exitcode" : -1
 }
@@ -149,6 +154,7 @@ Output will be
     "transaction_uuid" : "unknown",
     "environment" : "unknown",
     "status" : "unknown",
+    "error_type" : "agent_failed_to_start",
     "error" : "Failed to start Puppet",
     "exitcode" : -1
 }
@@ -163,6 +169,7 @@ Output will be
     "transaction_uuid" : "unknown",
     "environment" : "unknown",
     "status" : "unknown",
+    "error_type" : "agent_exit_non_zero",
     "error" : "Puppet exited with a non 0 exitcode",
     "exitcode" : $exitcode
 }
@@ -177,6 +184,7 @@ Output will be
     "transaction_uuid" : "unknown",
     "environment" : "unknown",
     "status" : "unknown",
+    "error_type" : "no_last_run_report",
     "error" : "$last_run_report.yaml doesn't exist",
     "exitcode" : $exitcode
 }
@@ -192,6 +200,7 @@ Output will be
     "transaction_uuid" : "unknown",
     "environment" : "unknown",
     "status" : "unknown",
+    "error_type" : "invalid_last_run_report",
     "error" : "$last_run_report.yaml isn't valid yaml",
     "exitcode" : exitcode
 }
