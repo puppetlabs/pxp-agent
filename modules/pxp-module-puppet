@@ -53,11 +53,20 @@ def disabled?(run_result)
   !!(run_result =~ /disabled(.*?)Use 'puppet agent --enable' to re-enable/m)
 end
 
-def make_command_string(config, params)
-  env = params["env"].join(" ")
-  flags = params["flags"].join(" ")
+def make_environment_hash(params)
+  env_hash = {}
+  params["env"].each do |entry|
+    key, value = entry.split('=')
+    env_hash[key] = value
+  end
 
-  return "#{env} #{config["puppet_bin"]} agent #{flags}".lstrip.rstrip
+  return env_hash
+end
+
+def make_command_array(config, params)
+  cmd_array = [config["puppet_bin"], "agent"]
+  cmd_array +=  params["flags"]
+  return cmd_array
 end
 
 def make_error_result(exitcode, error_type, error_message)
@@ -105,10 +114,12 @@ end
 
 def start_run(config, params)
   exitcode = DEFAULT_EXITCODE
-  cmd = make_command_string(config, params)
+  cmd = make_command_array(config, params)
+  env = make_environment_hash(params)
   start_time = Time.now
 
-  run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false})
+  run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false,
+                                                     :custom_environment => env})
 
   if !run_result
     return make_error_result(exitcode, Errors::FailedToStart,
