@@ -4,6 +4,19 @@ require 'json'
 require 'yaml'
 require 'puppet'
 
+module Errors
+  InvalidJson = "invalid_json"
+  NoPuppetBin = "no_puppet_bin"
+  NoLastRunReport = "no_last_run_report"
+  InvalidLastRunReport = "invalid_last_run_report"
+  AlreadyRunning = "agent_already_running"
+  Disabled = "agent_disabled"
+  FailedToStart = "agent_failed_to_start"
+  NonZeroExit = "agent_exit_non_zero"
+end
+
+DEFAULT_EXITCODE = -1
+
 # This method exists to facilitate testing
 def last_child_exit_status
   return $?
@@ -14,7 +27,16 @@ def is_win?
   return !!File::ALT_SEPARATOR
 end
 
-DEFAULT_ERROR_CODE = -1
+def last_run_result(exitcode)
+  return {"kind"             => "unknown",
+          "time"             => "unknown",
+          "transaction_uuid" => "unknown",
+          "environment"      => "unknown",
+          "status"           => "unknown",
+          "error_type"       => "",
+          "error"            => "",
+          "exitcode"         => exitcode}
+end
 
 def check_config_print(cli_arg, config)
   command = "#{config["puppet_bin"]} agent --configprint #{cli_arg}"
@@ -45,25 +67,20 @@ def make_command_string(config, params)
   return "#{env} #{config["puppet_bin"]} agent #{flags} > #{dev_null} 2>&1".lstrip
 end
 
-def get_result_from_report(exitcode, config, start_time, error = "", fail_hard = false)
-  run_result = {"kind"             => "unknown",
-                "time"             => "unknown",
-                "transaction_uuid" => "unknown",
-                "environment"      => "unknown",
-                "status"           => "unknown",
-                "error"            => error,
-                "exitcode"         => exitcode}
+def make_error_result(exitcode, error_type, error_message)
+  result = last_run_result(exitcode)
+  result["error_type"] = error_type
+  result["error"] = error_message
+  return result
+end
 
-  if (fail_hard)
-    return run_result
-  end
-
+def get_result_from_report(exitcode, config, start_time)
   last_run_report = File.join(check_config_print("statedir",config),
                               "last_run_report.yaml")
 
   if !File.exist?(last_run_report)
-    run_result["error"] = "#{last_run_report} doesn't exist"
-    return run_result
+    return make_error_result(exitcode, Errors::NoLastRunReport,
+                             "#{last_run_report} doesn't exist")
   end
 
   last_run_report_yaml = {}
@@ -71,8 +88,15 @@ def get_result_from_report(exitcode, config, start_time, error = "", fail_hard =
   begin
     last_run_report_yaml = YAML.load_file(last_run_report)
   rescue => e
-    run_result["error"] = "#{last_run_report} could not be loaded: #{e}"
-    return run_result
+    return make_error_result(exitcode, Errors::InvalidLastRunReport,
+                             "#{last_run_report} could not be loaded: #{e}")
+  end
+
+  run_result = last_run_result(exitcode)
+
+  if exitcode != 0
+    run_result = make_error_result(exitcode, Errors::NonZeroExit,
+                                   "Puppet agent exited with a non 0 exitcode")
   end
 
   if start_time.to_i < last_run_report_yaml.time.to_i
@@ -87,23 +111,19 @@ def get_result_from_report(exitcode, config, start_time, error = "", fail_hard =
 end
 
 def start_run(config, params)
-  exitcode = DEFAULT_ERROR_CODE
+  exitcode = DEFAULT_EXITCODE
   cmd = make_command_string(config, params)
   start_time = Time.now
 
   run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false})
 
   if !run_result
-     return get_result_from_report(exitcode, config, start_time, "Failed to start Puppet agent")
+    return make_error_result(exitcode, Errors::FailedToStart,
+                             "Failed to start Puppet agent")
   end
 
   exitcode = run_result.exitstatus
-
-  if exitcode != 0
-    return get_result_from_report(exitcode, config, start_time, "Puppet agent exited with a non 0 exitcode")
-  else
-    return get_result_from_report(exitcode, config, start_time)
-  end
+  get_result_from_report(exitcode, config, start_time)
 end
 
 def metadata()
@@ -167,8 +187,8 @@ end
 
 def run(params_and_config)
   if !params_and_config
-    return get_result_from_report(DEFAULT_ERROR_CODE, {}, nil,
-                                  "Invalid json parsed on STDIN. Cannot start run action", true)
+    return make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
+                             "Invalid json parsed on STDIN. Cannot start run action")
   end
 
   params = params_and_config["params"]
@@ -186,21 +206,21 @@ def run(params_and_config)
   end
 
   if !File.exist?(config["puppet_bin"])
-    return get_result_from_report(DEFAULT_ERROR_CODE, config, nil,
-                                  "Puppet executable '#{config["puppet_bin"]}' does not exist", true)
+    return make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
+                             "Puppet executable '#{config["puppet_bin"]}' does not exist")
   end
 
   # Instead of failing we could poll until the lockfile goes away and start a
   # run then as mentioned in https://tickets.puppetlabs.com/browse/CTH-272. I'm
   # going to start by failing and take it from there.
   if running?(config)
-    return get_result_from_report(DEFAULT_ERROR_CODE, config, nil,
-                                  "Puppet agent is already performing a run", true)
+    return make_error_result(DEFAULT_EXITCODE, Errors::AlreadyRunning,
+                             "Puppet agent is already performing a run")
   end
 
   if disabled?(config)
-    return get_result_from_report(DEFAULT_ERROR_CODE, config, nil,
-                                  "Puppet agent is disabled", true)
+    return make_error_result(DEFAULT_EXITCODE, Errors::Disabled,
+                             "Puppet agent is disabled")
   end
 
   return start_run(config, params)
