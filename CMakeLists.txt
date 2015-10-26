@@ -116,3 +116,7 @@ add_test(
 FILE (GLOB_RECURSE ALL_SOURCES lib/*.cc lib/*.hpp exe/*.cc exe/*.hpp)
 add_cpplint_files(${ALL_SOURCES})
 enable_cpplint()
+
+add_cppcheck_dirs("${PROJECT_SOURCE_DIR}/lib" "${PROJECT_SOURCE_DIR}/exe")
+enable_cppcheck()
+
