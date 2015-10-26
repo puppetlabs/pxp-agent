@@ -44,8 +44,14 @@ that will be passed to the Puppet run.
 You can test the module without running a pxp-agent. Make sure the module is
 executable and you can run it like:
 
+### Posix
 ```
 $ sudo echo "{\"params\":{\"env\":[],\"flags\":[\"--noop\"]}, \"config\" : {\"puppet_bin\" : \"/opt/puppetlabs/bin/puppet\"}}" | puppet run
+```
+
+### Windows (cmd.exe)
+```
+C:\Program Files\Puppet Labs\Puppet\pxp-agent\modules>echo {"params":{"env":[],"flags":["--noop"]}, "config" : {"puppet_bin" : "C\:\\Program Files\\Puppet Labs\\Puppet\\bin\\puppet.bat"}} | pxp-module-puppet.bat run
 ```
 
 ### NOTE
