@@ -53,40 +53,47 @@ describe "pxp-module-puppet" do
     end
   end
 
-  describe "make_command_string"do
-    it "should correctly prepend the env variables" do
+  describe "make_environment_dict" do
+    it "should correctly add the env entries" do
       params = default_params
       params["env"] = ["FOO=bar", "BAR=foo"]
-      expect(make_command_string(default_config, params)).to be ==
-        "FOO=bar BAR=foo puppet agent  > /dev/null 2>&1"
+      expect(make_environment_dict(params)).to be ==
+        {"FOO" => "bar", "BAR" => "foo"}
+    end
+
+    it "should correctly escape the env entries" do
+      params = default_params
+      params["env"] = ["FOO=bar;rm -rf /", "BAR=foo"]
+      expect(make_environment_dict(params)).to be ==
+        {"FOO" => "bar\\;rm\\ -rf\\ /", "BAR" => "foo"}
+    end
+  end
+
+  describe "make_command_vector" do
+    it "should correctly append the executable and action" do
+      params = default_params
+      expect(make_command_vector(default_config, params)).to be ==
+        ["puppet", "agent"]
     end
 
     it "should correctly append any flags" do
       params = default_params
-      params["flags"] = ["--noop", "--foo=bar"]
-      expect(make_command_string(default_config, params)).to be ==
-        "puppet agent --noop --foo=bar > /dev/null 2>&1"
+      params["flags"] = ["--noop", "--verbose"]
+      expect(make_command_vector(default_config, params)).to be ==
+        ["puppet", "agent", "--noop", "--verbose"]
     end
 
-    it "should correctly join both flags and env variables" do
+    it "should correctly escape flags" do
       params = default_params
-      params["env"] = ["FOO=bar", "BAR=foo"]
-      params["flags"] = ["--noop", "--foo=bar"]
-
-      expect(make_command_string(default_config, params)).to be ==
-        "FOO=bar BAR=foo puppet agent --noop --foo=bar > /dev/null 2>&1"
-    end
-
-    it "uses the correct 'dev/null' on Windows" do
-      allow_any_instance_of(Object).to receive(:is_win?).and_return("true")
-      expect(make_command_string(default_config, default_params)).to be ==
-        "puppet agent  > nul 2>&1"
+      params["flags"] = ["--foo=bar", "--dont=do;rm -rf /"]
+      expect(make_command_vector(default_config, params)).to be ==
+        ["puppet", "agent", "--foo\\=bar", "--dont\\=do\\;rm\\ -rf\\ /"]
     end
   end
 
   describe "make_error_result" do
     it "should set the exitcode, error_type and error_message" do
-      expect(make_error_result(42, Errors::FailedToStart, "test error")).to be == 
+      expect(make_error_result(42, Errors::FailedToStart, "test error")).to be ==
           {"kind" => "unknown",
            "time" => "unknown",
            "transaction_uuid" => "unknown",
