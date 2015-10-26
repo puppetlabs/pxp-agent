@@ -3,6 +3,7 @@
 require 'json'
 require 'yaml'
 require 'puppet'
+require 'shellwords'
 
 module Errors
   InvalidJson = "invalid_json"
@@ -54,17 +55,21 @@ def disabled?(config)
                                         config))
 end
 
-def make_command_string(config, params)
-  env = params["env"].join(" ")
-  flags = params["flags"].join(" ")
-
-  dev_null = "/dev/null"
-
-  if is_win?
-    dev_null = "nul"
+def make_environment_dict(params)
+  env_dict = {}
+  params["env"].each do |entry|
+    key, value = entry.split('=')
+    env_dict[Shellwords.escape(key)] = Shellwords.escape(value)
   end
 
-  return "#{env} #{config["puppet_bin"]} agent #{flags} > #{dev_null} 2>&1".lstrip
+  return env_dict
+end
+
+def make_command_vector(config, params)
+  cmd_vector = [config["puppet_bin"], "agent"]
+  cmd_vector +=  params["flags"].map{|flag| Shellwords.escape(flag)}
+
+  return cmd_vector
 end
 
 def make_error_result(exitcode, error_type, error_message)
@@ -112,10 +117,12 @@ end
 
 def start_run(config, params)
   exitcode = DEFAULT_EXITCODE
-  cmd = make_command_string(config, params)
+  cmd = make_command_vector(config, params)
+  env = make_environment_dict(params)
   start_time = Time.now
 
-  run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false})
+  run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false,
+                                                     :custom_environment => env})
 
   if !run_result
     return make_error_result(exitcode, Errors::FailedToStart,
