@@ -54,11 +54,6 @@ $ sudo echo "{\"params\":{\"env\":[],\"flags\":[\"--noop\"]}, \"config\" : {\"pu
 C:\Program Files\Puppet Labs\Puppet\pxp-agent\modules>echo {"params":{"env":[],"flags":["--noop"]}, "config" : {"puppet_bin" : "C\:\\Program Files\\Puppet Labs\\Puppet\\bin\\puppet.bat"}} | pxp-module-puppet.bat run
 ```
 
-### NOTE
-
-This manner of execution is subject to change on completion of
-[CTH-299](https://tickets.puppetlabs.com/browse/CTH-299)
-
 ## Output
 
 On successful completion of a Puppet run the module will print a JSON document to
