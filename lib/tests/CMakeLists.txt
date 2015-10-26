@@ -32,8 +32,12 @@ endif()
 set(test_BIN pxp-agent-unittests)
 
 set (PXP-AGENT_TEST_LIBS
-    ${CPP_PCP_CLIENT_LIB}
     libpxp-agent
+    ${cpp-pcp-client_LIBRARY}
+    ${OPENSSL_SSL_LIBRARY}
+    ${OPENSSL_CRYPTO_LIBRARY}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${LEATHERMAN_LIBRARIES}
 )
 
 add_executable(${test_BIN} ${COMMON_TEST_SOURCES} ${STANDARD_TEST_SOURCES})

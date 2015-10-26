@@ -7,15 +7,17 @@ set(PXP-AGENT_SOURCES
 include_directories(
     ../lib/inc # the libpxp-agent headers
     ${LEATHERMAN_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
     ${HORSEWHISPERER_INCLUDE_DIRS}
     ${cpp-pcp-client_INCLUDE_DIR}
 )
 
 set (PXP-AGENT_BIN_LIBS
-    ${CPP_PCP_CLIENT_LIB}
-    ${CMAKE_THREAD_LIBS_INIT}
     libpxp-agent
+    ${cpp-pcp-client_LIBRARY}
+    ${OPENSSL_SSL_LIBRARY}
+    ${OPENSSL_CRYPTO_LIBRARY}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${LEATHERMAN_LIBRARIES}
 )
 
 add_executable(pxp-agent ${PXP-AGENT_SOURCES})
