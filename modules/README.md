@@ -66,6 +66,7 @@ stdout. The JSON document will have the following fields.
 - `error_type` : A string containing the machine readable error type
 - `error` : A string containing an error description if one occurred when trying to run Puppet
 - `exitcode` : The exitcode of the Puppet run
+- `version` : The version of pxp-module-puppet output schema
 
 ## Error cases
 

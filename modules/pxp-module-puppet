@@ -35,7 +35,8 @@ def last_run_result(exitcode)
           "status"           => "unknown",
           "error_type"       => "",
           "error"            => "",
-          "exitcode"         => exitcode}
+          "exitcode"         => exitcode,
+          "version"          => 1}
 end
 
 def check_config_print(cli_arg, config)
@@ -162,15 +163,21 @@ def metadata()
             :status => {
               :type => "string"
             },
+            :error_type => {
+              :type => "string"
+            },
             :error => {
               :type => "string"
             },
             :exitcode => {
               :type => "number"
+            },
+            :version => {
+              :type => "number"
             }
           },
           :required => [:kind, :time, :transaction_uuid, :environment, :status,
-                        :error, :exitcode]
+                        :error_type, :error, :exitcode, :version]
         }
       }
     ],
