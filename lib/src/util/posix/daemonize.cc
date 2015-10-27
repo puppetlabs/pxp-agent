@@ -90,8 +90,8 @@ std::unique_ptr<PIDFile> daemonize() {
 
     switch (first_child_pid) {
         case -1:
-            LOG_ERROR("Failed to perform the first fork; errno=%1%",
-                      std::to_string(errno));
+            LOG_ERROR("Failed to perform the first fork; %1% (%2%)",
+                      strerror(errno), errno);
             removeLockAndExit();
         case 0:
             // CHILD - will fork and exit soon
@@ -123,7 +123,7 @@ std::unique_ptr<PIDFile> daemonize() {
 
     if (setsid() == -1) {
         LOG_ERROR("Failed to create new session for first child process; "
-                  "errno=%1%", std::to_string(errno));
+                  "%1% (%2%)", strerror(errno), errno);
         removeLockAndExit();
     }
 
@@ -158,8 +158,8 @@ std::unique_ptr<PIDFile> daemonize() {
 
     switch (second_child_pid) {
         case -1:
-            LOG_ERROR("Failed to perform the second fork; errno=%1%",
-                      std::to_string(errno));
+            LOG_ERROR("Failed to perform the second fork; %1% (%2%)",
+                      strerror(errno), errno);
             removeLockAndExit();
         case 0:
             // CHILD - will be the pxp-agent!
@@ -171,7 +171,7 @@ std::unique_ptr<PIDFile> daemonize() {
 
             if (sigsuspend(&empty_mask) == -1 && errno != EINTR) {
                 LOG_ERROR("Unexpected error while waiting for pending signals "
-                          "after second fork; errno=%1%", errno);
+                          "after second fork; %1% (%2%)", strerror(errno), errno);
             }
 
             _exit(EXIT_SUCCESS);
@@ -192,7 +192,7 @@ std::unique_ptr<PIDFile> daemonize() {
 
     if (sigprocmask(SIG_SETMASK, &orig_mask, NULL) == -1) {
         LOG_ERROR("Failed to reset signal mask after second fork; "
-                  "errno=%1%", errno);
+                  "%1% (%2%)", strerror(errno), errno);
         removeLockAndExit();
     }
 
@@ -217,8 +217,8 @@ std::unique_ptr<PIDFile> daemonize() {
     // Change work directory
 
     if (chdir(DEFAULT_DAEMON_WORKING_DIR.data())) {
-        LOG_ERROR("Failed to change work directory to '%1%'; errno=%2%",
-                  DEFAULT_DAEMON_WORKING_DIR, std::to_string(errno));
+        LOG_ERROR("Failed to change work directory to '%1%'; %2% (%3%)",
+                  DEFAULT_DAEMON_WORKING_DIR, strerror(errno), errno);
         removeLockAndExit();
     } else {
         LOG_DEBUG("Changed working directory to '%1%'", DEFAULT_DAEMON_WORKING_DIR);
@@ -243,13 +243,16 @@ std::unique_ptr<PIDFile> daemonize() {
     // Redirect standard files; we always use boost::log anyway
 
     if (freopen("/dev/null", "r", stdin) == nullptr) {
-        LOG_WARNING("Failed to redirect stdin to /dev/null; errno=%1%", std::to_string(errno));
+        LOG_WARNING("Failed to redirect stdin to /dev/null; %1% (%2%)",
+                    strerror(errno), errno);
     }
     if (freopen("/dev/null", "w", stdout) == nullptr) {
-        LOG_WARNING("Failed to redirect stdout to /dev/null; errno=%1%", std::to_string(errno));
+        LOG_WARNING("Failed to redirect stdout to /dev/null; %1% (%2%)",
+                    strerror(errno), errno);
     }
     if (freopen("/dev/null", "w", stderr) == nullptr) {
-        LOG_WARNING("Failed to redirect stderr to /dev/null; errno=%1%", std::to_string(errno));
+        LOG_WARNING("Failed to redirect stderr to /dev/null; %1% (%2%)",
+                    strerror(errno), errno);
     }
 
     LOG_INFO("Daemonization completed; pxp-agent PID=%1%, PID lock file in '%2%'",
