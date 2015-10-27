@@ -46,7 +46,7 @@ executable and you can run it like:
 
 ### Posix
 ```
-$ sudo echo "{\"params\":{\"env\":[],\"flags\":[\"--noop\"]}, \"config\" : {\"puppet_bin\" : \"/opt/puppetlabs/bin/puppet\"}}" | puppet run
+$ sudo echo "{\"params\":{\"env\":[],\"flags\":[\"--noop\"]}, \"config\" : {\"puppet_bin\" : \"/opt/puppetlabs/bin/puppet\"}}" | pxp-module-puppet run
 ```
 
 ### Windows (cmd.exe)
