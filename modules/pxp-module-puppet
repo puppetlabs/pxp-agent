@@ -45,27 +45,19 @@ def check_config_print(cli_arg, config)
   return process_output.to_s.chomp
 end
 
-def running?(config)
-  return File.exist?(check_config_print("agent_catalog_run_lockfile",
-                                        config))
+def running?(run_result)
+  !!(run_result =~ /Run of Puppet configuration client already in progress/)
 end
 
-def disabled?(config)
-  return File.exist?(check_config_print("agent_disabled_lockfile",
-                                        config))
+def disabled?(run_result)
+  !!(run_result =~ /disabled(.*?)Use 'puppet agent --enable' to re-enable/m)
 end
 
 def make_command_string(config, params)
   env = params["env"].join(" ")
   flags = params["flags"].join(" ")
 
-  dev_null = "/dev/null"
-
-  if is_win?
-    dev_null = "nul"
-  end
-
-  return "#{env} #{config["puppet_bin"]} agent #{flags} > #{dev_null} 2>&1".lstrip
+  return "#{env} #{config["puppet_bin"]} agent #{flags}".lstrip.rstrip
 end
 
 def make_error_result(exitcode, error_type, error_message)
@@ -124,7 +116,16 @@ def start_run(config, params)
   end
 
   exitcode = run_result.exitstatus
-  get_result_from_report(exitcode, config, start_time)
+
+  if disabled?(run_result.to_s)
+    return make_error_result(exitcode, Errors::Disabled,
+                             "Puppet agent is disabled")
+  elsif running?(run_result.to_s)
+    return make_error_result(exitcode, Errors::AlreadyRunning,
+                             "Puppet agent is already performing a run")
+  end
+
+  return get_result_from_report(exitcode, config, start_time)
 end
 
 def metadata()
@@ -215,19 +216,6 @@ def run(params_and_config)
   if !File.exist?(config["puppet_bin"])
     return make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
                              "Puppet executable '#{config["puppet_bin"]}' does not exist")
-  end
-
-  # Instead of failing we could poll until the lockfile goes away and start a
-  # run then as mentioned in https://tickets.puppetlabs.com/browse/CTH-272. I'm
-  # going to start by failing and take it from there.
-  if running?(config)
-    return make_error_result(DEFAULT_EXITCODE, Errors::AlreadyRunning,
-                             "Puppet agent is already performing a run")
-  end
-
-  if disabled?(config)
-    return make_error_result(DEFAULT_EXITCODE, Errors::Disabled,
-                             "Puppet agent is disabled")
   end
 
   return start_run(config, params)
