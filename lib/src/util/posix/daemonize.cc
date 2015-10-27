@@ -242,9 +242,15 @@ std::unique_ptr<PIDFile> daemonize() {
 
     // Redirect standard files; we always use boost::log anyway
 
-    stdin = freopen("/dev/null", "r", stdin);
-    stdout = freopen("/dev/null", "w", stdout);
-    stderr = freopen("/dev/null", "w", stderr);
+    if (freopen("/dev/null", "r", stdin) == nullptr) {
+        LOG_WARNING("Failed to redirect stdin to /dev/null; errno=%1%", std::to_string(errno));
+    }
+    if (freopen("/dev/null", "w", stdout) == nullptr) {
+        LOG_WARNING("Failed to redirect stdout to /dev/null; errno=%1%", std::to_string(errno));
+    }
+    if (freopen("/dev/null", "w", stderr) == nullptr) {
+        LOG_WARNING("Failed to redirect stderr to /dev/null; errno=%1%", std::to_string(errno));
+    }
 
     LOG_INFO("Daemonization completed; pxp-agent PID=%1%, PID lock file in '%2%'",
              agent_pid, pidfile);
