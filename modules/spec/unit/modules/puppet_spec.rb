@@ -35,22 +35,32 @@ describe "pxp-module-puppet" do
   end
 
   describe "running?" do
-    it "checks if the agent_catalog_run_lockfile exists" do
-      expect_any_instance_of(Object).to receive(:check_config_print).with(
-        "agent_catalog_run_lockfile", default_config).and_return(
-        "agent_catalog_run_lockfile")
-      expect(File).to receive(:exist?).with("agent_catalog_run_lockfile")
-      running?(default_config)
+    it "returns true if the output from a run states that a run is in progress" do
+      run_output = "Notice: Run of Puppet configuration client already in progress;" +
+                   "skipping  (/opt/puppetlabs/puppet/cache/state/agent_catalog_run.lock exists)"
+      expect(running?(run_output)).to be == true
+    end
+
+    it "returns false if the ouput from a run doesn't state that a run is in progress" do
+      run_output = "Notice: Skipping run of Puppet configuration client;" +
+                   "administratively disabled (Reason: 'reason not specified');\n" +
+                   "Use 'puppet agent --enable' to re-enable."
+      expect(running?(run_output)).to be == false
     end
   end
 
   describe "disabled?" do
-    it "checks if the agent_disabled_lockfile exists" do
-      expect_any_instance_of(Object).to receive(:check_config_print).with(
-        "agent_disabled_lockfile", default_config).and_return(
-        "agent_disabled_lockfile")
-      expect(File).to receive(:exist?).with("agent_disabled_lockfile")
-      disabled?(default_config)
+    it "returns true if the output from a run states that puppet agent is disabled" do
+      run_output = "Notice: Skipping run of Puppet configuration client;" +
+                   "administratively disabled (Reason: 'reason not specified');\n" +
+                   "Use 'puppet agent --enable' to re-enable."
+      expect(disabled?(run_output)).to be == true
+    end
+
+    it "returns false if the output from a run doesn't state that puppet is disabled" do
+      run_output = "Notice: Run of Puppet configuration client already in progress;" +
+                   "skipping  (/opt/puppetlabs/puppet/cache/state/agent_catalog_run.lock exists)"
+      expect(disabled?(run_output)).to be == false
     end
   end
 
@@ -59,14 +69,14 @@ describe "pxp-module-puppet" do
       params = default_params
       params["env"] = ["FOO=bar", "BAR=foo"]
       expect(make_command_string(default_config, params)).to be ==
-        "FOO=bar BAR=foo puppet agent  > /dev/null 2>&1"
+        "FOO=bar BAR=foo puppet agent"
     end
 
     it "should correctly append any flags" do
       params = default_params
       params["flags"] = ["--noop", "--foo=bar"]
       expect(make_command_string(default_config, params)).to be ==
-        "puppet agent --noop --foo=bar > /dev/null 2>&1"
+        "puppet agent --noop --foo=bar"
     end
 
     it "should correctly join both flags and env variables" do
@@ -75,19 +85,19 @@ describe "pxp-module-puppet" do
       params["flags"] = ["--noop", "--foo=bar"]
 
       expect(make_command_string(default_config, params)).to be ==
-        "FOO=bar BAR=foo puppet agent --noop --foo=bar > /dev/null 2>&1"
+        "FOO=bar BAR=foo puppet agent --noop --foo=bar"
     end
 
     it "uses the correct 'dev/null' on Windows" do
       allow_any_instance_of(Object).to receive(:is_win?).and_return("true")
       expect(make_command_string(default_config, default_params)).to be ==
-        "puppet agent  > nul 2>&1"
+        "puppet agent"
     end
   end
 
   describe "make_error_result" do
     it "should set the exitcode, error_type and error_message" do
-      expect(make_error_result(42, Errors::FailedToStart, "test error")).to be == 
+      expect(make_error_result(42, Errors::FailedToStart, "test error")).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
            "transaction_uuid" => "unknown",
@@ -159,7 +169,7 @@ describe "pxp-module-puppet" do
            "version"          => 1}
     end
 
-      it "processes the last_run_report if it has been updated after the run was kicked" do
+    it "processes the last_run_report if it has been updated after the run was kicked" do
       start_time = Time.now
       run_time = Time.now + 10
       last_run_report = double(:last_run_report)
@@ -235,7 +245,24 @@ describe "pxp-module-puppet" do
 
     it "populates output when it couldn't start" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(nil)
-      expect_any_instance_of(Object).to receive(:make_error_result).with(-1, Errors::FailedToStart, "Failed to start Puppet agent")
+      expect_any_instance_of(Object).to receive(:make_error_result).with(-1, Errors::FailedToStart, anything)
+      start_run(default_config, default_params)
+    end
+
+    it "populates the output if puppet is disabled" do
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
+      allow(runoutcome).to receive(:exitstatus).and_return(1)
+      allow_any_instance_of(Object).to receive(:disabled?).and_return(true)
+      expect_any_instance_of(Object).to receive(:make_error_result).with(1, Errors::Disabled, anything)
+      start_run(default_config, default_params)
+    end
+
+    it "populates the output when puppet is alreaady running" do
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
+      allow(runoutcome).to receive(:exitstatus).and_return(1)
+      allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
+      allow_any_instance_of(Object).to receive(:running?).and_return(true)
+      expect_any_instance_of(Object).to receive(:make_error_result).with(1, Errors::AlreadyRunning, anything)
       start_run(default_config, default_params)
     end
   end
@@ -312,21 +339,6 @@ describe "pxp-module-puppet" do
       allow(File).to receive(:exist?).and_return(false)
       expect(run({"config" => default_config, "params" => default_params})["error"]).to be ==
           "Puppet executable 'puppet' does not exist"
-    end
-
-    it "fails if puppet is already running" do
-      allow(File).to receive(:exist?).and_return(true)
-      allow_any_instance_of(Object).to receive(:running?).and_return(true)
-      expect(run({"config" => default_config, "params" => default_params})["error"]).to be ==
-          "Puppet agent is already performing a run"
-    end
-
-    it "fails if puppet is disabled" do
-      allow(File).to receive(:exist?).and_return(true)
-      allow_any_instance_of(Object).to receive(:running?).and_return(false)
-      allow_any_instance_of(Object).to receive(:disabled?).and_return(true)
-      expect(run({"config" => default_config, "params" => default_params})["error"]).to be ==
-          "Puppet agent is disabled"
     end
 
     it "fails when invalid json is passed" do
