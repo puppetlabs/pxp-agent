@@ -64,34 +64,27 @@ describe "pxp-module-puppet" do
     end
   end
 
-  describe "make_command_string"do
-    it "should correctly prepend the env variables" do
+  describe "make_environment_hash" do
+    it "should correctly add the env entries" do
       params = default_params
       params["env"] = ["FOO=bar", "BAR=foo"]
-      expect(make_command_string(default_config, params)).to be ==
-        "FOO=bar BAR=foo puppet agent"
+      expect(make_environment_hash(params)).to be ==
+        {"FOO" => "bar", "BAR" => "foo"}
+    end
+  end
+
+  describe "make_command_array" do
+    it "should correctly append the executable and action" do
+      params = default_params
+      expect(make_command_array(default_config, params)).to be ==
+        ["puppet", "agent"]
     end
 
     it "should correctly append any flags" do
       params = default_params
-      params["flags"] = ["--noop", "--foo=bar"]
-      expect(make_command_string(default_config, params)).to be ==
-        "puppet agent --noop --foo=bar"
-    end
-
-    it "should correctly join both flags and env variables" do
-      params = default_params
-      params["env"] = ["FOO=bar", "BAR=foo"]
-      params["flags"] = ["--noop", "--foo=bar"]
-
-      expect(make_command_string(default_config, params)).to be ==
-        "FOO=bar BAR=foo puppet agent --noop --foo=bar"
-    end
-
-    it "uses the correct 'dev/null' on Windows" do
-      allow_any_instance_of(Object).to receive(:is_win?).and_return("true")
-      expect(make_command_string(default_config, default_params)).to be ==
-        "puppet agent"
+      params["flags"] = ["--noop", "--verbose"]
+      expect(make_command_array(default_config, params)).to be ==
+        ["puppet", "agent", "--noop", "--verbose"]
     end
   end
 
