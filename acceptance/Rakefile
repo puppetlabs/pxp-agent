@@ -29,12 +29,15 @@ namespace :ci do
       # Start ssh-agent, parse the env variables from its output and add them to ENV
       # The usual `eval $(ssh-agent)` does not work because
       # the exported values will not persist after the statement completes
-      `ssh-agent -t 24h -s`
-        .split.map{|e| e.tr(';', '')}
-        .map{|e| e.split('=') }
-        .select{|e| e.length == 2 && e[0] =~ /[A-Z]+$/ }
-        .each {|e| ENV[e[0]] = e[1] }
-      `ssh-add "${HOME}/.ssh/id_rsa"`
+      # TODO (JS) - QA-2108 - This no longer works for local execution and must be skipped.
+      if not ENV['LOCAL_EXECUTION']
+        `ssh-agent -t 24h -s`
+          .split.map{|e| e.tr(';', '')}
+          .map{|e| e.split('=') }
+          .select{|e| e.length == 2 && e[0] =~ /[A-Z]+$/ }
+          .each {|e| ENV[e[0]] = e[1] }
+        `ssh-add "${HOME}/.ssh/id_rsa"`
+      end
 
       generate_host_config
 
