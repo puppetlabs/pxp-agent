@@ -6,7 +6,6 @@ include_directories(
     inc
     ${LEATHERMAN_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
-    SYSTEM ${Boost_Process_INCLUDE_DIRS}
     ${HORSEWHISPERER_INCLUDE_DIRS}
     ${INIH_INCLUDE_DIRS}
     ${cpp-pcp-client_INCLUDE_DIR}
