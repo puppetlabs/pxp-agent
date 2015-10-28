@@ -19,8 +19,6 @@ describe "pxp-module-puppet" do
                                             "transaction_uuid" => "unknown",
                                             "environment"      => "unknown",
                                             "status"           => "unknown",
-                                            "error_type"       => "",
-                                            "error"            => "",
                                             "exitcode"         => 42,
                                             "version"          => 1}
     end
@@ -210,8 +208,6 @@ describe "pxp-module-puppet" do
            "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
            "environment"      => "production",
            "status"           => "changed",
-           "error_type"       => "",
-           "error"            => "",
            "exitcode"         => 0,
            "version"          => 1}
     end
@@ -311,7 +307,7 @@ describe "pxp-module-puppet" do
                 }
               },
               :required => [:kind, :time, :transaction_uuid, :environment, :status,
-                            :error_type, :error, :exitcode, :version]
+                            :exitcode, :version]
             }
           }
         ],
