@@ -13,6 +13,7 @@ include_directories(
 )
 
 set (PXP-AGENT_BIN_LIBS
+    ${LEATHERMAN_LIBRARIES}
     ${CPP_PCP_CLIENT_LIB}
     ${CMAKE_THREAD_LIBS_INIT}
     libpxp-agent

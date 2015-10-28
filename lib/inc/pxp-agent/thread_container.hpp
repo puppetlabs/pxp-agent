@@ -2,6 +2,7 @@
 #define SRC_THREAD_CONTAINER_H_
 
 #include <cpp-pcp-client/util/thread.hpp>
+#include <pxp-agent/export.h>
 
 #include <vector>
 #include <memory>   // shared_ptr
@@ -34,7 +35,7 @@ struct ManagedThread {
 /// in case one or more stored threads are executing by the time
 /// the ThreadContainer destructor is called, the std::terminate
 /// function will be invoked; the program will then immediately abort.
-class ThreadContainer {
+class LIBPXP_AGENT_EXPORT ThreadContainer {
   public:
     uint32_t check_interval;  // [ms]
     uint32_t threads_threshold;  // number of stored thread objects

@@ -9,6 +9,7 @@
 
 #include <pxp-agent/action_request.hpp>
 #include <pxp-agent/configuration.hpp>
+#include <pxp-agent/export.h>
 
 #include <cpp-pcp-client/connector/connector.hpp>
 
@@ -21,7 +22,7 @@ namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-class PXPConnector : public PCPClient::Connector {
+class LIBPXP_AGENT_EXPORT PXPConnector : public PCPClient::Connector {
   public:
     PXPConnector(const Configuration::Agent& agent_configuration);
 

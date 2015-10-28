@@ -1,6 +1,7 @@
 #ifndef SRC_AGENT_UTIL_POSIX_PID_FILE_HPP_
 #define SRC_AGENT_UTIL_POSIX_PID_FILE_HPP_
 
+#include <pxp-agent/export.h>
 #include <sys/types.h>          // pid_t
 #include <string>
 #include <stdexcept>
@@ -8,7 +9,7 @@
 namespace PXPAgent {
 namespace Util {
 
-class PIDFile {
+class LIBPXP_AGENT_EXPORT PIDFile {
   public:
     struct Error : public std::runtime_error {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}

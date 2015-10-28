@@ -5,6 +5,8 @@
 
 #include <leatherman/json_container/json_container.hpp>
 
+#include <pxp-agent/export.h>
+
 #include <stdexcept>
 #include <string>
 #include <map>
@@ -18,7 +20,7 @@ static std::map<RequestType, std::string> requestTypeNames {
     { RequestType::Blocking, "blocking" },
     { RequestType::NonBlocking, "non blocking" } };
 
-class ActionRequest {
+class LIBPXP_AGENT_EXPORT ActionRequest {
   public:
     struct Error : public std::runtime_error {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}

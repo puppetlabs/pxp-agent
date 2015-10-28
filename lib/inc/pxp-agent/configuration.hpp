@@ -1,6 +1,7 @@
 #ifndef SRC_CONFIGURATION_H_
 #define SRC_CONFIGURATION_H_
 
+#include <pxp-agent/export.h>
 #include <horsewhisperer/horsewhisperer.h>
 
 #include <boost/nowide/fstream.hpp>
@@ -21,7 +22,7 @@ namespace HW = HorseWhisperer;
 // Tokens
 //
 
-extern const std::string DEFAULT_SPOOL_DIR;     // used by unit tests
+LIBPXP_AGENT_EXPORT extern const std::string DEFAULT_SPOOL_DIR;     // used by unit tests
 
 //
 // Types
@@ -101,13 +102,13 @@ typedef boost::multi_index::multi_index_container<
 /// Perform the platform specific configuration steps for setting up
 /// the pxp-agent logging to file.
 /// Throw a Configuration::Error in case of failure.
-void configure_platform_file_logging();
+LIBPXP_AGENT_EXPORT void configure_platform_file_logging();
 
 //
 // Configuration
 //
 
-class Configuration {
+class LIBPXP_AGENT_EXPORT Configuration {
   public:
     struct Error : public std::runtime_error {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}

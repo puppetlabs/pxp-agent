@@ -3,6 +3,7 @@
 
 #include <pxp-agent/action_outcome.hpp>
 #include <pxp-agent/action_request.hpp>
+#include <pxp-agent/export.h>
 
 #include <cpp-pcp-client/protocol/chunks.hpp>      // ParsedChunks
 #include <cpp-pcp-client/validator/validator.hpp>  // Validator
@@ -16,7 +17,7 @@ namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-class Module {
+class LIBPXP_AGENT_EXPORT Module {
   public:
     struct Error : public std::runtime_error {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}

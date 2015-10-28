@@ -5,15 +5,16 @@
 #include <pxp-agent/util/posix/pid_file.hpp>
 #include <memory>
 #endif
+#include <pxp-agent/export.h>
 
 namespace PXPAgent {
 namespace Util {
 
 #ifdef _WIN32
-void daemonize();
-void daemon_cleanup();
+LIBPXP_AGENT_EXPORT void daemonize();
+LIBPXP_AGENT_EXPORT void daemon_cleanup();
 #else
-std::unique_ptr<PIDFile> daemonize();
+LIBPXP_AGENT_EXPORT std::unique_ptr<PIDFile> daemonize();
 #endif
 
 }  // namespace Util

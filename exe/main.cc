@@ -8,8 +8,6 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.main"
 #include <leatherman/logging/logging.hpp>
 
-#include <horsewhisperer/horsewhisperer.h>
-
 #include <memory>
 #include <cpp-pcp-client/util/thread.hpp>
 #include <cpp-pcp-client/util/chrono.hpp>

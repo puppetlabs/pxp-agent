@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8.12)
-
 # Set include directories
 
 include_directories(
@@ -57,10 +55,20 @@ else()
     set(LIBPXP_AGENT_INSTALL_DESTINATION lib)
 endif()
 
-add_library(libpxp-agent ${LIBRARY_COMMON_SOURCES} ${LIBRARY_STANDARD_SOURCES})
-
-target_link_libraries(libpxp-agent ${LIBS})
+add_library(libpxp-agent SHARED ${LIBRARY_COMMON_SOURCES} ${LIBRARY_STANDARD_SOURCES})
+target_link_libraries(libpxp-agent PRIVATE ${LIBS})
 set_target_properties(libpxp-agent PROPERTIES PREFIX "" SUFFIX ".so" IMPORT_PREFIX "" IMPORT_SUFFIX ".so.a")
+
+# Generate the export header
+include(GenerateExportHeader)
+generate_export_header(libpxp-agent EXPORT_FILE_NAME "${CMAKE_CURRENT_LIST_DIR}/inc/pxp-agent/export.h")
+
+if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+    add_compiler_export_flags()
+elseif (WIN32)
+    add_compiler_export_flags()
+    add_definitions("-Dlibpxp_agent_EXPORTS")
+endif()
 
 install(TARGETS libpxp-agent DESTINATION "${LIBPXP_AGENT_INSTALL_DESTINATION}")
 

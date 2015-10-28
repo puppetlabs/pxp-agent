@@ -3,6 +3,7 @@
 
 #include <pxp-agent/module.hpp>
 #include <pxp-agent/thread_container.hpp>
+#include <pxp-agent/export.h>
 
 #include <map>
 #include <string>
@@ -10,7 +11,7 @@
 
 namespace PXPAgent {
 
-class ExternalModule : public Module {
+class LIBPXP_AGENT_EXPORT ExternalModule : public Module {
   public:
     /// Run the specified executable; its output must define the
     /// module by providing the metadata in JSON format.

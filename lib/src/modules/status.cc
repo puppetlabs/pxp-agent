@@ -8,6 +8,7 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.modules.status"
 #include <leatherman/logging/logging.hpp>
 
+#include <pxp-agent/export.h>
 #include <horsewhisperer/horsewhisperer.h>
 
 namespace PXPAgent {
