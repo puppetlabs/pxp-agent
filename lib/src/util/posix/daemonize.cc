@@ -242,15 +242,18 @@ std::unique_ptr<PIDFile> daemonize() {
 
     // Redirect standard files; we always use boost::log anyway
 
-    if (freopen("/dev/null", "r", stdin) == nullptr) {
+    auto tmpin = freopen("/dev/null", "r", stdin);
+    if (tmpin == nullptr) {
         LOG_WARNING("Failed to redirect stdin to /dev/null; %1% (%2%)",
                     strerror(errno), errno);
     }
-    if (freopen("/dev/null", "w", stdout) == nullptr) {
+    auto tmpout = freopen("/dev/null", "w", stdout);
+    if (tmpout == nullptr) {
         LOG_WARNING("Failed to redirect stdout to /dev/null; %1% (%2%)",
                     strerror(errno), errno);
     }
-    if (freopen("/dev/null", "w", stderr) == nullptr) {
+    auto tmperr = freopen("/dev/null", "w", stderr);
+    if (tmperr == nullptr) {
         LOG_WARNING("Failed to redirect stderr to /dev/null; %1% (%2%)",
                     strerror(errno), errno);
     }
