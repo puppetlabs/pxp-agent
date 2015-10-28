@@ -33,8 +33,6 @@ def last_run_result(exitcode)
           "transaction_uuid" => "unknown",
           "environment"      => "unknown",
           "status"           => "unknown",
-          "error_type"       => "",
-          "error"            => "",
           "exitcode"         => exitcode,
           "version"          => 1}
 end
@@ -189,7 +187,7 @@ def metadata()
             }
           },
           :required => [:kind, :time, :transaction_uuid, :environment, :status,
-                        :error_type, :error, :exitcode, :version]
+                        :exitcode, :version]
         }
       }
     ],
@@ -243,7 +241,7 @@ if __FILE__ == $0
     run_result = run(params_and_config)
     puts run_result.to_json
 
-    if !run_result["error"].empty?
+    if !run_result["error"].nil?
       exit 1
     end
   end
