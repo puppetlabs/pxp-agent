@@ -1,19 +1,46 @@
+def host_genconfigged
+  'hosts.cfg'
+end
+
+def hosts
+  ENV['HOSTS'] || ENV['CONFIG']
+end
+
 namespace :ci do
 
   namespace :test do
+
+    def generate_host_config
+      if hosts
+        return
+      end
+      if not ENV['LAYOUT']
+        puts "WARNING: LAYOUT environment variable not set. Defaulting to centos7-64mdc-windows2012r2-64a"
+      end
+      layout = "centos7-64mdc-windows2012r2-64a" || ENV["LAYOUT"]
+      generate = "bundle exec genconfig2"
+      generate += " --disable-default-role #{layout}"
+      generate += " > #{host_genconfigged}"
+      sh generate
+      sh "cat #{host_genconfigged}"
+    end
+
     task :packages do
       # Start ssh-agent, parse the env variables from its output and add them to ENV
       # The usual `eval $(ssh-agent)` does not work because
-      # the exported values will not persist after the statement completes 
+      # the exported values will not persist after the statement completes
       `ssh-agent -t 24h -s`
         .split.map{|e| e.tr(';', '')}
         .map{|e| e.split('=') }
         .select{|e| e.length == 2 && e[0] =~ /[A-Z]+$/ }
         .each {|e| ENV[e[0]] = e[1] }
       `ssh-add "${HOME}/.ssh/id_rsa"`
-      sh('beaker -h config/nodes/centos7-64mdc-win2012r2-64a-nodefaultrole.yaml '\
-         '--tests tests '\
-         '--options config/packages/options.rb')
+
+      generate_host_config
+
+      sh("beaker -h #{host_genconfigged} "\
+         "--tests tests "\
+         "--options config/packages/options.rb")
     end
   end
 
