@@ -2,18 +2,12 @@ def host_genconfigged
   'hosts.cfg'
 end
 
-def hosts
-  ENV['HOSTS'] || ENV['CONFIG']
-end
-
 namespace :ci do
 
   namespace :test do
 
     def generate_host_config
-      if hosts
-        return
-      end
+      puts "Generating host config using genconfig"
       if not ENV['LAYOUT']
         puts "WARNING: LAYOUT environment variable not set. Defaulting to centos7-64mdc-windows2012r2-64a"
       end
