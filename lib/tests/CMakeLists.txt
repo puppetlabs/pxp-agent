@@ -2,12 +2,11 @@
 
 include_directories(
     inc
-    SYSTEM ${Boost_INCLUDE_DIRS}
-    SYSTEM ${Boost_Process_INCLUDE_DIRS}
-    SYSTEM ${HORSEWHISPERER_INCLUDE_DIRS}
-    SYSTEM ${cpp-pcp-client_INCLUDE_DIR}
-    SYSTEM ${LEATHERMAN_CATCH_INCLUDE}
-    SYSTEM ${CATCH_DIRECTORY}
+    ${Boost_INCLUDE_DIRS}
+    ${HORSEWHISPERER_INCLUDE_DIRS}
+    ${cpp-pcp-client_INCLUDE_DIR}
+    ${LEATHERMAN_CATCH_INCLUDE}
+    ${CATCH_DIRECTORY}
 )
 
 set(COMMON_TEST_SOURCES
@@ -32,8 +31,12 @@ endif()
 set(test_BIN pxp-agent-unittests)
 
 set (PXP-AGENT_TEST_LIBS
-    ${CPP_PCP_CLIENT_LIB}
     libpxp-agent
+    ${cpp-pcp-client_LIBRARY}
+    ${OPENSSL_SSL_LIBRARY}
+    ${OPENSSL_CRYPTO_LIBRARY}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${LEATHERMAN_LIBRARIES}
 )
 
 add_executable(${test_BIN} ${COMMON_TEST_SOURCES} ${STANDARD_TEST_SOURCES})

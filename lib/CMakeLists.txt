@@ -6,7 +6,6 @@ include_directories(
     inc
     ${LEATHERMAN_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
-    SYSTEM ${Boost_Process_INCLUDE_DIRS}
     ${HORSEWHISPERER_INCLUDE_DIRS}
     ${INIH_INCLUDE_DIRS}
     ${cpp-pcp-client_INCLUDE_DIR}
@@ -42,26 +41,12 @@ if (WIN32)
     )
 endif()
 
-set(LIBS
-    ${cpp-pcp-client_LIBRARY}
-    ${Boost_LIBRARIES}
-    ${OPENSSL_SSL_LIBRARY}
-    ${OPENSSL_CRYPTO_LIBRARY}
-    ${PTHREADS}
-    ${LEATHERMAN_LIBRARIES}
-)
+add_library(libpxp-agent STATIC ${LIBRARY_COMMON_SOURCES} ${LIBRARY_STANDARD_SOURCES})
+set_target_properties(libpxp-agent PROPERTIES PREFIX "" IMPORT_PREFIX "")
 
-if (WIN32)
-    set(LIBPXP_AGENT_INSTALL_DESTINATION bin)
-else()
-    set(LIBPXP_AGENT_INSTALL_DESTINATION lib)
-endif()
-
-add_library(libpxp-agent ${LIBRARY_COMMON_SOURCES} ${LIBRARY_STANDARD_SOURCES})
-
-target_link_libraries(libpxp-agent ${LIBS})
-set_target_properties(libpxp-agent PROPERTIES PREFIX "" SUFFIX ".so" IMPORT_PREFIX "" IMPORT_SUFFIX ".so.a")
-
-install(TARGETS libpxp-agent DESTINATION "${LIBPXP_AGENT_INSTALL_DESTINATION}")
+install(TARGETS libpxp-agent
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
 
 add_subdirectory(tests)
