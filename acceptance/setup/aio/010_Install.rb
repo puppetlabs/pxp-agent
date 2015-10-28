@@ -11,7 +11,9 @@ step "Install repositories on target machines..." do
   repo_configs_dir = 'repo_configs'
   logger.debug('about to install repo for puppet-agent from ' + sha.to_s + ' ' + repo_configs_dir.to_s)
   hosts.each do |host|
-    install_repos_on(host, 'puppet-agent', sha, repo_configs_dir)
+    if !host.platform.start_with?('windows')
+      install_puppetlabs_dev_repo(host, 'puppet-agent', sha, repo_configs_dir, { :dev_builds_repos => 'PC1'})
+    end
   end
 end
 
