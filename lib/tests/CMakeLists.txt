@@ -30,23 +30,8 @@ endif()
 
 set(test_BIN pxp-agent-unittests)
 
-set (PXP-AGENT_TEST_LIBS
-    libpxp-agent
-    ${cpp-pcp-client_LIBRARY}
-    ${OPENSSL_SSL_LIBRARY}
-    ${OPENSSL_CRYPTO_LIBRARY}
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${LEATHERMAN_LIBRARIES}
-)
-
-if (WIN32)
-    set(PLATFORM_LIBS Ws2_32)
-elseif ("${CMAKE_SYSTEM_NAME}" MATCHES "SunOS")
-    set(PLATFORM_LIBS socket nsl)
-endif()
-
 add_executable(${test_BIN} ${COMMON_TEST_SOURCES} ${STANDARD_TEST_SOURCES})
-target_link_libraries(${test_BIN} ${PXP-AGENT_TEST_LIBS} ${PLATFORM_LIBS})
+target_link_libraries(${test_BIN} ${CPP_PCP_CLIENT_LIB} libpxp-agent)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lpthread -pthread")
