@@ -22,6 +22,8 @@ set (PXP-AGENT_BIN_LIBS
 
 if (WIN32)
     set(PLATFORM_LIBS Ws2_32)
+elseif ("${CMAKE_SYSTEM_NAME}" MATCHES "SunOS")
+    set(PLATFORM_LIBS socket nsl)
 endif()
 
 add_executable(pxp-agent ${PXP-AGENT_SOURCES})
