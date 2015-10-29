@@ -41,6 +41,8 @@ set (PXP-AGENT_TEST_LIBS
 
 if (WIN32)
     set(PLATFORM_LIBS Ws2_32)
+elseif ("${CMAKE_SYSTEM_NAME}" MATCHES "SunOS")
+    set(PLATFORM_LIBS socket nsl)
 endif()
 
 add_executable(${test_BIN} ${COMMON_TEST_SOURCES} ${STANDARD_TEST_SOURCES})
