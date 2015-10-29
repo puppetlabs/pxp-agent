@@ -20,7 +20,11 @@ set (PXP-AGENT_BIN_LIBS
     ${LEATHERMAN_LIBRARIES}
 )
 
+if (WIN32)
+    set(PLATFORM_LIBS Ws2_32)
+endif()
+
 add_executable(pxp-agent ${PXP-AGENT_SOURCES})
-target_link_libraries(pxp-agent ${PXP-AGENT_BIN_LIBS})
+target_link_libraries(pxp-agent ${PXP-AGENT_BIN_LIBS} ${PLATFORM_LIBS})
 
 install(TARGETS pxp-agent DESTINATION bin)

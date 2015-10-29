@@ -39,8 +39,12 @@ set (PXP-AGENT_TEST_LIBS
     ${LEATHERMAN_LIBRARIES}
 )
 
+if (WIN32)
+    set(PLATFORM_LIBS Ws2_32)
+endif()
+
 add_executable(${test_BIN} ${COMMON_TEST_SOURCES} ${STANDARD_TEST_SOURCES})
-target_link_libraries(${test_BIN} ${PXP-AGENT_TEST_LIBS})
+target_link_libraries(${test_BIN} ${PXP-AGENT_TEST_LIBS} ${PLATFORM_LIBS})
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lpthread -pthread")
