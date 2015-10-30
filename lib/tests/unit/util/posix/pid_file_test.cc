@@ -54,18 +54,6 @@ TEST_CASE("PIDFile ctor", "[util]") {
         fs::remove_all(PID_DIR);
     }
 
-    SECTION("it fails if the directory does not exist") {
-        fs::remove_all(PID_DIR);
-        REQUIRE_THROWS_AS(PIDFile { PID_DIR + "/foo/bar/pxp-agent.pid" },
-                          PIDFile::Error);
-    }
-
-    SECTION("cannot instantiate if the directory is a regular file") {
-        REQUIRE_THROWS_AS(PIDFile { std::string { PXP_AGENT_ROOT_PATH }
-                                    + "/README.md/pxp-agent.pid" },
-                          PIDFile::Error);
-    }
-
     SECTION("create the PIDFile") {
         fs::create_directories(PID_FILE);
         fs::remove_all(PID_FILE);
