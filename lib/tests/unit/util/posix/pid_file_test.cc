@@ -56,7 +56,8 @@ TEST_CASE("PIDFile ctor", "[util]") {
 
     SECTION("it fails if the directory does not exist") {
         fs::remove_all(PID_DIR);
-        REQUIRE_THROWS(PIDFile { PID_DIR + "/foo/bar/pxp-agent.pid" });
+        REQUIRE_THROWS_AS(PIDFile { PID_DIR + "/foo/bar/pxp-agent.pid" },
+                          PIDFile::Error);
     }
 
     SECTION("cannot instantiate if the directory is a regular file") {
