@@ -51,7 +51,7 @@ set (LIBS
 
 add_library(libpxp-agent STATIC ${LIBRARY_COMMON_SOURCES} ${LIBRARY_STANDARD_SOURCES})
 target_link_libraries(libpxp-agent ${LIBS})
-set_target_properties(libcpp-pcp-client PROPERTIES PREFIX "" IMPORT_PREFIX "")
+set_target_properties(libpxp-agent PROPERTIES PREFIX "" IMPORT_PREFIX "")
 
 install(TARGETS libpxp-agent
     RUNTIME DESTINATION bin
