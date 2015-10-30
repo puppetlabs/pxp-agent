@@ -11,22 +11,7 @@ include_directories(
     ${cpp-pcp-client_INCLUDE_DIR}
 )
 
-set (PXP-AGENT_BIN_LIBS
-    libpxp-agent
-    ${cpp-pcp-client_LIBRARY}
-    ${OPENSSL_SSL_LIBRARY}
-    ${OPENSSL_CRYPTO_LIBRARY}
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${LEATHERMAN_LIBRARIES}
-)
-
-if (WIN32)
-    set(PLATFORM_LIBS Ws2_32)
-elseif ("${CMAKE_SYSTEM_NAME}" MATCHES "SunOS")
-    set(PLATFORM_LIBS socket nsl)
-endif()
-
 add_executable(pxp-agent ${PXP-AGENT_SOURCES})
-target_link_libraries(pxp-agent ${PXP-AGENT_BIN_LIBS} ${PLATFORM_LIBS})
+target_link_libraries(pxp-agent ${CPP_PCP_CLIENT_LIB} libpxp-agent)
 
 install(TARGETS pxp-agent DESTINATION bin)

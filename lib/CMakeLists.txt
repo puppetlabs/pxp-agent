@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.2.2)
 
 # Set include directories
 
@@ -41,8 +41,17 @@ if (WIN32)
     )
 endif()
 
+set (LIBS
+    ${cpp-pcp-client_LIBRARY}
+    ${Boost_LIBRARIES}
+    ${OPENSSL_SSL_LIBRARY}
+    ${OPENSSL_CRYPTO_LIBRARY}
+    ${LEATHERMAN_LIBRARIES}
+)
+
 add_library(libpxp-agent STATIC ${LIBRARY_COMMON_SOURCES} ${LIBRARY_STANDARD_SOURCES})
-set_target_properties(libpxp-agent PROPERTIES PREFIX "" IMPORT_PREFIX "")
+target_link_libraries(libpxp-agent ${LIBS})
+set_target_properties(libcpp-pcp-client PROPERTIES PREFIX "" IMPORT_PREFIX "")
 
 install(TARGETS libpxp-agent
     RUNTIME DESTINATION bin
