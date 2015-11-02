@@ -164,29 +164,35 @@ TEST_CASE("Configuration::get", "[configuration]") {
 
     SECTION("After parsing and validating options") {
         configureTest();
-        Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
-        Configuration::Instance().validate();
 
         SECTION("can get a defined flag") {
+            Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+            Configuration::Instance().validate();
             REQUIRE_NOTHROW(Configuration::Instance().get<std::string>("ssl-ca-cert"));
         }
 
         SECTION("return the default value if the flag was not set") {
             // NB: ignoring --foreground in ARGV since argc is set to 15
-            configureTest();
             Configuration::Instance().parseOptions(15, const_cast<char**>(ARGV));
+#ifndef _WIN32
+            HW::SetFlag<std::string>("pidfile", SPOOL_DIR + "/test.pid");
+#endif
             Configuration::Instance().validate();
 
             REQUIRE(Configuration::Instance().get<bool>("foreground") == false);
         }
 
         SECTION("return the correct value after the flag has been set") {
+            Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+            Configuration::Instance().validate();
             Configuration::Instance().set<std::string>("spool-dir", "/fake/dir");
             REQUIRE(Configuration::Instance().get<std::string>("spool-dir")
                     == "/fake/dir");
         }
 
         SECTION("throw a Configuration::Error if the flag is unknown") {
+            Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+            Configuration::Instance().validate();
             REQUIRE_THROWS_AS(
                 Configuration::Instance().get<std::string>("still_dont_exist"),
                 Configuration::Error);
@@ -260,12 +266,15 @@ TEST_CASE("Configuration::setupLogging", "[configuration]") {
     Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
     Configuration::Instance().validate();
 
+#ifndef _WIN32
     SECTION("it sets log level to info by default") {
+        // NOTE(ale): we cannot test this on Windows because it won't
+        // allow us to delete the SPOOL_DIR while test.log is open
+        Configuration::Instance().set<std::string>("logfile", SPOOL_DIR + "/test.log");
         Configuration::Instance().setupLogging();
         REQUIRE(lth_log::get_level() == lth_log::log_level::info);
     }
 
-#ifndef _WIN32
     SECTION("it sets log level to none if foreground is unflagged and logfile "
             "is set to stdout") {
         Configuration::Instance().set<bool>("foreground", false);
