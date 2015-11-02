@@ -59,7 +59,7 @@ int startAgent(std::vector<std::string> arguments) {
         return EXIT_FAILURE;
     }
 
-    bool success { true };
+    int exit_code { EXIT_SUCCESS };
     if (!Configuration::Instance().valid()) {
         // pxp-agent will execute in uncofigured mode
         loopIdly();
@@ -73,13 +73,13 @@ int startAgent(std::vector<std::string> arguments) {
                       "the PCP broker again", e.what());
             loopIdly();
         } catch (const Agent::FatalError& e) {
-            success = false;
+            exit_code = EXIT_FAILURE;
             LOG_ERROR("Fatal error: %1%", e.what());
         } catch (const std::exception& e) {
-            success = false;
+            exit_code = EXIT_FAILURE;
             LOG_ERROR("Unexpected error: %1%", e.what());
         } catch (...) {
-            success = false;
+            exit_code = EXIT_FAILURE;
             LOG_ERROR("Unexpected error");
         }
     }
@@ -87,7 +87,7 @@ int startAgent(std::vector<std::string> arguments) {
 #ifdef _WIN32
     Util::daemon_cleanup();
 #endif
-    return (success ? EXIT_SUCCESS : EXIT_FAILURE);
+    return exit_code;
 }
 
 int main(int argc, char *argv[]) {

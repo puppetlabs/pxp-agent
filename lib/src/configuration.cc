@@ -145,10 +145,9 @@ HW::ParseResult Configuration::parseOptions(int argc, char *argv[]) {
         if (!config_file_.empty()) {
             parseConfigFile();
         }
-    } else {
-        // No further processing or user interaction are required if
-        // the parsing outcome is HW::ParseResult::HELP or VERSION
     }
+    // No further processing or user interaction are required if
+    // the parsing outcome is HW::ParseResult::HELP or VERSION
 
     return parse_result;
 }
@@ -158,7 +157,9 @@ static void validateLogDirPath(const std::string& logfile) {
 
     if (fs::exists(logdir_path)) {
         if (!fs::is_directory(logdir_path)) {
-            throw Configuration::Error { "log directory is not a directory" };
+            throw Configuration::Error {
+                (boost::format("cannot write to the specified logfile; '%1%' is "
+                               "not a directory") % logdir_path.string()).str() };
         }
     } else {
         throw Configuration::Error {
@@ -184,7 +185,6 @@ void Configuration::setupLogging() {
         logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
         stream = &logfile_fstream_;
     } else {
-        // Log on stdout by default
         stream = &boost::nowide::cout;
     }
 
