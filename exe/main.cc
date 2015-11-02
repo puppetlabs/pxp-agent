@@ -23,6 +23,15 @@ namespace PXPAgent {
 namespace HW = HorseWhisperer;
 namespace lth_file = leatherman::file_util;
 
+// Exit code returned after a successful execution
+static int PXP_AGENT_SUCCESS = 0;
+
+// Exit code returned after a general failure
+static int PXP_AGENT_GENERAL_FAILURE = 1;
+
+// Exit code returned after a parsing failure
+static int PXP_AGENT_PARSING_FAILURE = 2;
+
 // Start a thread that just busy waits to facilitate acceptance testing
 void loopIdly() {
     PCPClient::Util::thread idle_thread {
@@ -53,13 +62,13 @@ int startAgent(std::vector<std::string> arguments) {
         }
     } catch (const std::exception& e) {
         LOG_ERROR("Failed to daemonize: %1%", e.what());
-        return EXIT_FAILURE;
+        return PXP_AGENT_GENERAL_FAILURE;
     } catch (...) {
         LOG_ERROR("Failed to daemonize");
-        return EXIT_FAILURE;
+        return PXP_AGENT_GENERAL_FAILURE;
     }
 
-    int exit_code { EXIT_SUCCESS };
+    int exit_code { PXP_AGENT_SUCCESS };
     if (!Configuration::Instance().valid()) {
         // pxp-agent will execute in uncofigured mode
         loopIdly();
@@ -73,13 +82,13 @@ int startAgent(std::vector<std::string> arguments) {
                       "the PCP broker again", e.what());
             loopIdly();
         } catch (const Agent::FatalError& e) {
-            exit_code = EXIT_FAILURE;
+            exit_code = PXP_AGENT_GENERAL_FAILURE;
             LOG_ERROR("Fatal error: %1%", e.what());
         } catch (const std::exception& e) {
-            exit_code = EXIT_FAILURE;
+            exit_code = PXP_AGENT_GENERAL_FAILURE;
             LOG_ERROR("Unexpected error: %1%", e.what());
         } catch (...) {
-            exit_code = EXIT_FAILURE;
+            exit_code = PXP_AGENT_GENERAL_FAILURE;
             LOG_ERROR("Unexpected error");
         }
     }
@@ -113,10 +122,17 @@ int main(int argc, char *argv[]) {
         err_msg = e.what();
     }
     if (!err_msg.empty()) {
+        // Try to set up logging with default settings
+        try {
+            Configuration::Instance().setupLogging();
+            LOG_ERROR(err_msg);
+        } catch(Configuration::Error) {
+            // pass
+        }
         boost::nowide::cout << err_msg
                             << "\nCannot start pxp-agent"
                             << std::endl;
-        return EXIT_FAILURE;
+        return PXP_AGENT_PARSING_FAILURE;
     }
 
     switch (parse_result) {
@@ -125,17 +141,17 @@ int main(int argc, char *argv[]) {
         case HW::ParseResult::HELP:
             // Show only the global section of HorseWhisperer's help
             HW::ShowHelp(false);
-            return EXIT_SUCCESS;
+            return PXP_AGENT_SUCCESS;
         case HW::ParseResult::VERSION:
             HW::ShowVersion();
-            return EXIT_SUCCESS;
+            return PXP_AGENT_SUCCESS;
         default:
             boost::nowide::cout << "An unexpected code was returned when trying "
                                 << "to parse command line arguments - "
                                 << static_cast<int>(parse_result)
                                 << "\nCannot start pxp-agent"
                                 << std::endl;
-            return EXIT_FAILURE;
+            return PXP_AGENT_GENERAL_FAILURE;
     }
 
     // Set up logging
@@ -147,7 +163,7 @@ int main(int argc, char *argv[]) {
         boost::nowide::cout << "Failed to configure logging: " << e.what()
                             << "\nCannot start pxp-agent"
                             << std::endl;
-        return EXIT_FAILURE;
+        return PXP_AGENT_GENERAL_FAILURE;
     }
 
     // Validate options
@@ -161,7 +177,7 @@ int main(int argc, char *argv[]) {
     } catch(const Configuration::Error& e) {
         LOG_ERROR("Fatal configuration error: %1%; cannot start pxp-agent",
                   e.what());
-        return EXIT_FAILURE;
+        return PXP_AGENT_GENERAL_FAILURE;
     }
 
     return HW::Start();

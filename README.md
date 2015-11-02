@@ -55,6 +55,12 @@ If no broker WebSocket URI, SSL key, ca or cert value is supplied, the agent
 will still be able to start in unconfigured mode. In this mode no connection
 will be established but the process will not terminate.
 
+### Exit code
+
+On success, pxp-agent returns 0. In case of it fails to parse the command line
+options or the configuration file, it returns 2. For all other failures,
+including invalid options, it returns 1.
+
 ## Modules
 
 [Actions][3] are grouped in modules, by which they can be loaded and configured
