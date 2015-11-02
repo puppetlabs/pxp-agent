@@ -586,6 +586,13 @@ void Configuration::checkUnconfiguredMode() {
         }
     }
 
+    try {
+        PCPClient::getCommonNameFromCert(cert);
+        PCPClient::validatePrivateKeyCertPair(key, cert);
+    } catch (const PCPClient::connection_config_error& e) {
+        throw Configuration::UnconfiguredError { e.what() };
+    }
+
     HW::SetFlag<std::string>("ssl-ca-cert", ca);
     HW::SetFlag<std::string>("ssl-cert", cert);
     HW::SetFlag<std::string>("ssl-key", key);
