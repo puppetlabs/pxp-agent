@@ -104,7 +104,7 @@ typedef boost::multi_index::multi_index_container<
 void configure_platform_file_logging();
 
 //
-// Configuration
+// Configuration (singleton)
 //
 
 class Configuration {
@@ -133,31 +133,37 @@ class Configuration {
         std::string client_type;
     };
 
-    /// Set the configuration entries to their default values.
-    /// Unset the initialized_ flag.
-    void reset();
+    /// Reset the HorseWhisperer singleton.
+    /// Set the configuration entries to their default values and the
+    /// specified start function that will be configured as the
+    /// unique HorseWhisperer action for pxp-agent.
+    /// Initialize the boost filesystem locale.
+    void initialize(std::function<int(std::vector<std::string>)> start_function);
 
-    /// Define the default configuration values that depend on the
-    /// location of the executable.
     /// Parse the command line arguments and, if specified, the
-    /// configuration file, in order to obtain the configuration
-    /// values; validate and normalize them.
-    /// Enable logging if flagged (flag useful for prevent logging
-    /// during testing).
+    /// configuration file.
     /// Return a HorseWhisperer::ParseResult value indicating the
     /// parsing outcome (refer to HorseWhisperer).
     /// Throw a HorseWhisperer::flag_validation_error in case such
     /// exception is thrown by a flag validation callback.
     /// Throw a Configuration::Error: if it fails to parse the CLI
-    /// arguments; in case of a missing or invalid configuration
-    /// value; if the specified config file cannot be parsed or has
-    /// any invalid JSON entry.
-    HW::ParseResult initialize(int argc, char *argv[],
-                               bool enable_logging = true);
+    /// arguments; if the specified config file cannot be parsed or
+    /// has any invalid JSON entry.
+    HW::ParseResult parseOptions(int argc, char *argv[]);
 
-    /// Set the start function that will be executed when calling
-    /// HorseWhisperer::Start().
-    void setStartFunction(std::function<int(std::vector<std::string>)> start_function);
+    /// Validate logging configuration options and enable logging.
+    /// Throw a Configuration::Error: in case of invalid the specified
+    /// log file is in a non-esixtent directory.
+    void setupLogging();
+
+    /// Ensure all required values are valid. If necessary, expand
+    /// file paths to the expected format.
+    /// Throw a Configuration::UnconfiguredError in case any of the
+    /// options needed for configure the WebSocket connection is
+    /// missing or invalid.
+    /// Throw a Configuration::Error: if any of the remaining options
+    /// is invalid.
+    void validate();
 
     /// If Configuration was already initialized, return the value
     /// set for the specified flag (NB: the value can be a default);
@@ -167,7 +173,7 @@ class Configuration {
     /// Configuration::Error otherwise.
     template <typename T>
     T get(std::string flagname) {
-        if (initialized_) {
+        if (valid_) {
             try {
                 return HW::GetFlag<T>(flagname);
             } catch (HW::undefined_flag_error& e) {
@@ -193,9 +199,9 @@ class Configuration {
     /// unknown or the value is invalid.
     template<typename T>
     void set(std::string flagname, T value) {
-        if (!initialized_) {
+        if (!valid_) {
             throw Configuration::Error { "cannot set configuration value until "
-                                         "initialized" };
+                                         "configuration is validated" };
         }
 
         try {
@@ -207,17 +213,11 @@ class Configuration {
         }
     }
 
-    /// Ensure all required values are valid. If necessary, expand
-    /// file paths to the expected format.
-    /// Throw a Configuration::Error if any required file path is
-    /// missing or in case of invalid values.
-    void validateAndNormalizeConfiguration();
-
     /// Return the whole agent configuration
     const Agent& getAgentConfiguration() const;
 
-    /// Returns true if the agent was successfuly initialized
-    bool isInitialized() const;
+    /// Returns true if the agent was successfuly validated
+    bool valid() const;
 
     /// Try to close the log file stream,  then try to open the log
     /// file in append mode and associate it to the log file stream.
@@ -225,8 +225,9 @@ class Configuration {
     void reopenLogfile() const;
 
   private:
-    // Whether Configuration singleton was successfully instantiated
-    bool initialized_;
+    // Whether the Configuration singleton has successfully validated
+    // all options specified by both CLI and file
+    bool valid_;
 
     // Stores options with relative default values
     Options defaults_;
@@ -238,7 +239,7 @@ class Configuration {
     std::function<int(std::vector<std::string>)> start_function_;
 
     // Cache agent configuration parameters
-    Agent agent_configuration_;
+    mutable Agent agent_configuration_;
 
     // Path to the logfile
     std::string logfile_;
@@ -246,11 +247,15 @@ class Configuration {
     // Stream abstraction object for the logfile
     mutable boost::nowide::ofstream logfile_fstream_;
 
+    // Defines the default values
     Configuration();
+
     void defineDefaultValues();
     void setDefaultValues();
+    void setStartAction();
     void parseConfigFile();
-    void setupLogging();
+    void checkUnconfiguredMode();
+    void validateAndNormalizeConfiguration();
     void setAgentConfiguration();
 };
 

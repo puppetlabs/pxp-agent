@@ -10,6 +10,7 @@
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/file_util/file.hpp>
 #include <leatherman/util/strings.hpp>
+#include <leatherman/util/scope_exit.hpp>
 
 #include <horsewhisperer/horsewhisperer.h>
 
@@ -20,6 +21,8 @@
 #include <catch.hpp>
 
 #include <cstdio>
+#include <string>
+#include <vector>
 
 namespace PXPAgent {
 
@@ -65,16 +68,18 @@ static void configureTest() {
         FAIL("Failed to create the results directory");
     }
 
-    Configuration::Instance().initialize(ARGC, const_cast<char**>(ARGV), false);
+    Configuration::Instance().initialize([](std::vector<std::string>){ return 0; });
+    Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
 }
 
 static void resetTest() {
-    Configuration::Instance().reset();
+    // Configuration::Instance().reset();
     fs::remove_all(SPOOL_DIR);
 }
 
 TEST_CASE("Modules::Status::executeAction", "[modules]") {
     configureTest();
+    lth_util::scope_exit config_cleaner { resetTest };
     Modules::Status status_module {};
 
     SECTION("the status module is correctly named") {

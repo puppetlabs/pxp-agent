@@ -3,6 +3,9 @@
 
 #include <pxp-agent/util/daemonize.hpp>
 
+#include <cpp-pcp-client/util/thread.hpp>
+#include <cpp-pcp-client/util/chrono.hpp>
+
 #include <leatherman/file_util/file.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.main"
@@ -10,17 +13,27 @@
 
 #include <horsewhisperer/horsewhisperer.h>
 
-#include <memory>
-#include <cpp-pcp-client/util/thread.hpp>
-#include <cpp-pcp-client/util/chrono.hpp>
-
 #include <boost/nowide/args.hpp>
 #include <boost/nowide/iostream.hpp>
+
+#include <memory>
 
 namespace PXPAgent {
 
 namespace HW = HorseWhisperer;
 namespace lth_file = leatherman::file_util;
+
+// Start a thread that just busy waits to facilitate acceptance testing
+void loopIdly() {
+    PCPClient::Util::thread idle_thread {
+        []() {
+            for (;;) {
+                PCPClient::Util::this_thread::sleep_for(
+                    PCPClient::Util::chrono::milliseconds(5000));
+            }
+        } };
+    idle_thread.join();
+}
 
 int startAgent(std::vector<std::string> arguments) {
 #ifndef _WIN32
@@ -40,90 +53,113 @@ int startAgent(std::vector<std::string> arguments) {
         }
     } catch (const std::exception& e) {
         LOG_ERROR("Failed to daemonize: %1%", e.what());
-        return 1;
+        return EXIT_FAILURE;
     } catch (...) {
         LOG_ERROR("Failed to daemonize");
-        return 1;
+        return EXIT_FAILURE;
     }
 
-    if (!Configuration::Instance().isInitialized()) {
-        // Start a thread that just busy waits to facilitate
-        // acceptance testing
-        PCPClient::Util::thread idle_thread {
-            []() {
-                LOG_WARNING("pxp-agent started unconfigured. No connection can "
-                            "be established");
-                for (;;) {
-                    PCPClient::Util::this_thread::sleep_for(PCPClient::Util::chrono::milliseconds(5000));
-                }
-            } };
-        idle_thread.join();
-        return 0;
-    }
-
-    bool success { false };
-    const auto& agent_configuration =
-        Configuration::Instance().getAgentConfiguration();
-
-    try {
-        Agent agent { agent_configuration };
-        agent.start();
-        success = true;
-    } catch (const Agent::Error& e) {
-        LOG_ERROR("Fatal error: %1%", e.what());
-    } catch (const std::exception& e) {
-        LOG_ERROR("Unexpected error: %1%", e.what());
-    } catch (...) {
-        LOG_ERROR("Unexpected error");
+    bool success { true };
+    if (!Configuration::Instance().valid()) {
+        // pxp-agent will execute in uncofigured mode
+        loopIdly();
+    } else {
+        try {
+            Agent agent { Configuration::Instance().getAgentConfiguration() };
+            agent.start();
+        } catch (const Agent::Error& e) {
+            success = false;
+            LOG_ERROR("Fatal error: %1%", e.what());
+        } catch (const std::exception& e) {
+            success = false;
+            LOG_ERROR("Unexpected error: %1%", e.what());
+        } catch (...) {
+            success = false;
+            LOG_ERROR("Unexpected error");
+        }
     }
 
 #ifdef _WIN32
     Util::daemon_cleanup();
 #endif
-    return (success ? 0 : 1);
+    return (success ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[]) {
+    // Initialize
+
     // Fix args on Windows to be UTF-8
     boost::nowide::args arg_utf8(argc, argv);
 
-    Configuration::Instance().setStartFunction(startAgent);
+    Configuration::Instance().initialize(startAgent);
+
+    // Parse options
 
     HW::ParseResult parse_result { HW::ParseResult::OK };
+    std::string err_msg {};
 
     try {
-        parse_result = Configuration::Instance().initialize(argc, argv);
+        parse_result = Configuration::Instance().parseOptions(argc, argv);
     } catch (const HW::horsewhisperer_error& e) {
         // Failed to validate action argument or flag
-        boost::nowide::cout << e.what() << "\nCannot start pxp-agent" << std::endl;
-        return 1;
-    } catch(const Configuration::UnconfiguredError& e) {
-        boost::nowide::cout << "A configuration error has occurred: " << e.what() << std::endl;
-        boost::nowide::cout << "pxp-agent will start unconfigured" << std::endl;
-        // Don't return, if we're unconfigured we can still start
+        err_msg = e.what();
     } catch(const Configuration::Error& e) {
-        boost::nowide::cout << "A configuration error has occurred: " << e.what() << std::endl;
-        boost::nowide::cout << "pxp-agent cannot start" << std::endl;
-        return 1;
+        // Failed to parse the config file
+        err_msg = e.what();
+    }
+    if (!err_msg.empty()) {
+        boost::nowide::cout << err_msg
+                            << "\nCannot start pxp-agent"
+                            << std::endl;
+        return EXIT_FAILURE;
     }
 
     switch (parse_result) {
         case HW::ParseResult::OK:
-            return HW::Start();
+            break;
         case HW::ParseResult::HELP:
             // Show only the global section of HorseWhisperer's help
-            HorseWhisperer::ShowHelp(false);
-            return 0;
+            HW::ShowHelp(false);
+            return EXIT_SUCCESS;
         case HW::ParseResult::VERSION:
-            HorseWhisperer::ShowVersion();
-            return 0;
+            HW::ShowVersion();
+            return EXIT_SUCCESS;
         default:
-            boost::nowide::cout << "An unexpected code was returned when trying to parse "
-                      << "command line arguments - "
-                      << static_cast<int>(parse_result) << ". Aborting"
-                      << std::endl;
-            return 1;
+            boost::nowide::cout << "An unexpected code was returned when trying "
+                                << "to parse command line arguments - "
+                                << static_cast<int>(parse_result)
+                                << "\nCannot start pxp-agent"
+                                << std::endl;
+            return EXIT_FAILURE;
     }
+
+    // Set up logging
+
+    try {
+        Configuration::Instance().setupLogging();
+        LOG_INFO("pxp-agent logging has been initialized");
+    } catch(const Configuration::Error& e) {
+        boost::nowide::cout << "Failed to configure logging: " << e.what()
+                            << "\nCannot start pxp-agent"
+                            << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // Validate options
+
+    try {
+        Configuration::Instance().validate();
+        LOG_INFO("pxp-agent configuration has been validated");
+    } catch(const Configuration::UnconfiguredError& e) {
+        LOG_ERROR("WebSocket configuration error (%1%); pxp-agent will start "
+                  "unconfigured and no connection will be attempted", e.what());
+    } catch(const Configuration::Error& e) {
+        LOG_ERROR("Fatal configuration error: %1%; cannot start pxp-agent",
+                  e.what());
+        return EXIT_FAILURE;
+    }
+
+    return HW::Start();
 }
 
 }  // namespace PXPAgent

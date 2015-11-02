@@ -27,21 +27,6 @@ PIDFile::PIDFile(const std::string& file_path_)
           file_path { file_path_ },
           pidfile_fd {},
           cleanup_when_done { false } {
-    if (fs::exists(file_path) && !(fs::is_regular_file(file_path))) {
-        throw PIDFile::Error { "the PID file '" + file_path
-                               + "' is not a regular file" };
-    }
-
-    if (fs::exists(dir_path)) {
-        if (!fs::is_directory(dir_path)) {
-            throw PIDFile::Error { "the PID directory '" + dir_path
-                                   + "' is not a directory" };
-        }
-    } else {
-        std::string err_msg { "'" + dir_path + "' doesn't exist. Cannot create PID file" };
-        throw PIDFile::Error { err_msg };
-    }
-
     pidfile_fd = open(file_path.data(), O_RDWR | O_CREAT, 0640);
 
     if (pidfile_fd == -1) {
