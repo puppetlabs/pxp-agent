@@ -616,6 +616,7 @@ void Configuration::validateAndNormalizeConfiguration() {
         HW::SetFlag<std::string>("spool-dir", spool_dir);
     }
 
+#ifndef _WIN32
     if (!HW::GetFlag<bool>("foreground")) {
         auto pid_file = lth_file::tilde_expand(HW::GetFlag<std::string>("pidfile"));
         if (fs::exists(pid_file) && !(fs::is_regular_file(pid_file))) {
@@ -636,6 +637,7 @@ void Configuration::validateAndNormalizeConfiguration() {
 
         HW::SetFlag<std::string>("pidfile", pid_file);
     }
+#endif
 }
 
 }  // namespace PXPAgent
