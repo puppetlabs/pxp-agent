@@ -12,8 +12,8 @@ Agent::Agent(const Configuration::Agent& agent_configuration)
         try
             : connector_ptr_ { new PXPConnector(agent_configuration) },
               request_processor_ { connector_ptr_, agent_configuration } {
-} catch (PCPClient::connection_config_error& e) {
-    throw Agent::Error { std::string { "failed to configure: " } + e.what() };
+} catch (const PCPClient::connection_config_error& e) {
+    throw Agent::WebSocketConfigurationError { e.what() };
 }
 
 void Agent::start() {
@@ -33,12 +33,12 @@ void Agent::start() {
 
     try {
         connector_ptr_->connect();
-    } catch (PCPClient::connection_config_error& e) {
+    } catch (const PCPClient::connection_config_error& e) {
         // Failed to configure WebSocket on our end
-        throw Agent::Error { std::string { "WebSocket error: " } + e.what() };
-    } catch (PCPClient::connection_fatal_error& e) {
-        // Failed to establish a WebSocket connection
-        throw Agent::Error { "failed to connect to the pcp-broker" };
+        throw Agent::WebSocketConfigurationError { e.what() };
+    } catch (const PCPClient::connection_fatal_error& e) {
+        // Unexpected, as we didn't set max num retries
+        throw Agent::FatalError { e.what() };
     }
 
     // The agent is now connected and the request handlers are set;
@@ -49,18 +49,19 @@ void Agent::start() {
     // (the max_connect_attempts is 0 by default).
     try {
         connector_ptr_->monitorConnection();
-    } catch (PCPClient::connection_fatal_error) {
-        throw Agent::Error { "failed to reconnect" };
+    } catch (const PCPClient::connection_fatal_error& e) {
+        // Unexpected, as we didn't set max num retries
+        throw Agent::FatalError { e.what() };
     }
 }
 
 void Agent::blockingRequestCallback(
-                const PCPClient::ParsedChunks& parsed_chunks) {
+        const PCPClient::ParsedChunks& parsed_chunks) {
     request_processor_.processRequest(RequestType::Blocking, parsed_chunks);
 }
 
 void Agent::nonBlockingRequestCallback(
-                const PCPClient::ParsedChunks& parsed_chunks) {
+        const PCPClient::ParsedChunks& parsed_chunks) {
     request_processor_.processRequest(RequestType::NonBlocking, parsed_chunks);
 }
 

@@ -19,6 +19,14 @@ class Agent {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
 
+    struct WebSocketConfigurationError : public Error {
+        explicit WebSocketConfigurationError(std::string const& msg) : Error(msg) {}
+    };
+
+    struct FatalError : public Error {
+        explicit FatalError(std::string const& msg) : Error(msg) {}
+    };
+
     Agent() = delete;
 
     // Configure the pxp-agent run by:
