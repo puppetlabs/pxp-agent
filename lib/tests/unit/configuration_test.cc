@@ -5,6 +5,8 @@
 
 #include "horsewhisperer/horsewhisperer.h"
 
+#include <leatherman/util/scope_exit.hpp>
+
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.configuration_test"
 #include <leatherman/logging/logging.hpp>
 
@@ -14,12 +16,14 @@
 #include <catch.hpp>
 
 #include <string>
+#include <vector>
 
 namespace PXPAgent {
 
 namespace fs = boost::filesystem;
 namespace HW = HorseWhisperer;
 namespace lth_log = leatherman::logging;
+namespace lth_util = leatherman::util;
 
 static const std::string CONFIG { std::string { PXP_AGENT_ROOT_PATH }
                                   + "/lib/tests/resources/config/empty-pxp-agent.cfg" };
@@ -41,65 +45,68 @@ static const char* ARGV[] = {
     "--ssl-key", KEY.data(),
     "--modules-dir", MODULES_DIR.data(),
     "--spool-dir", SPOOL_DIR.data(),
-    "--foreground=true"};
+    "--foreground=true",
+    nullptr };
 static const int ARGC = 16;
 
 static void configureTest() {
-    HW::Reset();
     if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR)) {
         FAIL("Failed to create the results directory");
     }
-    Configuration::Instance().initialize(ARGC, const_cast<char**>(ARGV), false);
+    Configuration::Instance().initialize(
+        [](std::vector<std::string>) {
+            return EXIT_SUCCESS;
+        });
+    // Configuration::Instance().initialize(ARGC, const_cast<char**>(ARGV), false);
 }
 
 static void resetTest() {
-    Configuration::Instance().reset();
-    fs::remove_all(SPOOL_DIR);
+    if (fs::exists(SPOOL_DIR)) {
+        fs::remove_all(SPOOL_DIR);
+    }
 }
 
 TEST_CASE("Configuration - metatest", "[configuration]") {
+    lth_util::scope_exit config_cleaner { resetTest };
+
     SECTION("Metatest - can initialize Configuration") {
         resetTest();
-        configureTest();
-        REQUIRE_NOTHROW(Configuration::Instance()
-                            .initialize(ARGC, const_cast<char**>(ARGV), false));
+        REQUIRE_NOTHROW(configureTest());
     }
-
 
     SECTION("Metatest - we can inject CL options into HorseWhisperer") {
         configureTest();
+        Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
         REQUIRE(HW::GetFlag<std::string>("ssl-ca-cert") == CA);
         REQUIRE(HW::GetFlag<std::string>("modules-dir") == MODULES_DIR);
         REQUIRE(HW::GetFlag<std::string>("spool-dir") == SPOOL_DIR);
     }
-
-    resetTest();
 }
 
-TEST_CASE("Configuration::setStartFunction", "[configuration]") {
-    resetTest();
+TEST_CASE("Configuration::initialize()", "[configuration]") {
+    lth_util::scope_exit config_cleaner { resetTest };
 
     SECTION("No error when starting without setting a function") {
-        configureTest();
-
         REQUIRE_NOTHROW(HW::Start());
     }
 
-    SECTION("It does start correctly") {
-        Configuration::Instance().setStartFunction(
+    SECTION("It does set HorseWhisperer's action correctly") {
+        Configuration::Instance().initialize(
             [] (std::vector<std::string> arg) -> int {
-                return 1;
+                return 42;
             });
-        configureTest();
+        const char* args[] = { "pxp-agent", "start", nullptr };
+        HW::Parse(2, const_cast<char**>(args));
 
-        REQUIRE(HW::Start() == 1);
+        REQUIRE(HW::Start() == 42);
     }
-
-    resetTest();
 }
 
 TEST_CASE("Configuration::set", "[configuration]") {
     configureTest();
+    Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+    Configuration::Instance().validate();
+    lth_util::scope_exit config_cleaner { resetTest };
 
     SECTION("can set a known flag to a valid value") {
         REQUIRE_NOTHROW(Configuration::Instance().set<std::string>("ssl-ca-cert",
@@ -132,12 +139,13 @@ TEST_CASE("Configuration::set", "[configuration]") {
                           Configuration::Error);
         REQUIRE_NOTHROW(Configuration::Instance().set<int>("num_tentacles", 8));
     }
-
-    resetTest();
 }
 
 TEST_CASE("Configuration::get", "[configuration]") {
-    SECTION("Configuration was not initialized yet") {
+    lth_util::scope_exit config_cleaner { resetTest };
+    configureTest();
+
+    SECTION("When options were not parsed and validated yet") {
         SECTION("can get a defined flag") {
             REQUIRE_NOTHROW(Configuration::Instance().get<std::string>("ssl-ca-cert"));
         }
@@ -154,101 +162,128 @@ TEST_CASE("Configuration::get", "[configuration]") {
         }
     }
 
-    SECTION("Configuration was initialized") {
+    SECTION("After parsing and validating options") {
         configureTest();
 
         SECTION("can get a defined flag") {
+            Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+            Configuration::Instance().validate();
             REQUIRE_NOTHROW(Configuration::Instance().get<std::string>("ssl-ca-cert"));
         }
 
         SECTION("return the default value if the flag was not set") {
             // NB: ignoring --foreground in ARGV since argc is set to 15
-            Configuration::Instance().initialize(15, const_cast<char**>(ARGV), false);
+            Configuration::Instance().parseOptions(15, const_cast<char**>(ARGV));
+#ifndef _WIN32
+            HW::SetFlag<std::string>("pidfile", SPOOL_DIR + "/test.pid");
+#endif
+            Configuration::Instance().validate();
 
             REQUIRE(Configuration::Instance().get<bool>("foreground") == false);
         }
 
         SECTION("return the correct value after the flag has been set") {
+            Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+            Configuration::Instance().validate();
             Configuration::Instance().set<std::string>("spool-dir", "/fake/dir");
             REQUIRE(Configuration::Instance().get<std::string>("spool-dir")
                     == "/fake/dir");
         }
 
         SECTION("throw a Configuration::Error if the flag is unknown") {
+            Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+            Configuration::Instance().validate();
             REQUIRE_THROWS_AS(
                 Configuration::Instance().get<std::string>("still_dont_exist"),
                 Configuration::Error);
         }
-
-        resetTest();
     }
 }
 
-TEST_CASE("Configuration::validateAndNormalizeConfiguration", "[configuration]") {
+TEST_CASE("Configuration::validate", "[configuration]") {
+    lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
+    Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
 
-    SECTION("it fails when the broker WebSocket URI is undefined") {
-        Configuration::Instance().set<std::string>("broker-ws-uri", "");
-        REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          Configuration::Error);
+    SECTION("it throws an UnconfiguredError when the broker WebSocket URI is undefined") {
+        HW::SetFlag<std::string>("broker-ws-uri", "");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::UnconfiguredError);
     }
 
-    SECTION("it fails when the broker WebSocket URi is invlaid") {
-        Configuration::Instance().set<std::string>("broker-ws-uri", "ws://");
-        REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          Configuration::Error);
+    SECTION("it throws an UnconfiguredError when the broker WebSocket URi is invlaid") {
+        HW::SetFlag<std::string>("broker-ws-uri", "ws://");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::UnconfiguredError);
     }
 
-    SECTION("it fails when ssl-ca-cert is undefined") {
-        Configuration::Instance().set<std::string>("ssl-ca-cert", "");
-        REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          Configuration::Error);
+    SECTION("it throws an UnconfiguredError ssl-ca-cert is undefined") {
+        HW::SetFlag<std::string>("ssl-ca-cert", "");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::UnconfiguredError);
     }
 
-    SECTION("it fails when ssl-ca-cert file cannot be found") {
-        Configuration::Instance().set<std::string>("ssl-ca-cert", "/fake/file");
-        REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          Configuration::Error);
+    SECTION("it throws an UnconfiguredError when ssl-ca-cert file cannot be found") {
+        HW::SetFlag<std::string>("ssl-ca-cert", "/fake/file");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::UnconfiguredError);
     }
 
-    SECTION("it fails when ssl-cert is undefined") {
-        Configuration::Instance().set<std::string>("ssl-cert", "");
-        REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          Configuration::Error);
+    SECTION("it throws an UnconfiguredError when ssl-cert is undefined") {
+        HW::SetFlag<std::string>("ssl-cert", "");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::UnconfiguredError);
     }
 
-    SECTION("it fails when ssl-cert file cannot be found") {
-        Configuration::Instance().set<std::string>("ssl-cert", "/fake/file");
-        REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          Configuration::Error);
+    SECTION("it throws an UnconfiguredError when ssl-cert file cannot be found") {
+        HW::SetFlag<std::string>("ssl-cert", "/fake/file");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::UnconfiguredError);
     }
 
-    SECTION("it fails when ssl-key is undefined") {
-        Configuration::Instance().set<std::string>("ssl-key", "");
-        REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          Configuration::Error);
+    SECTION("it throws an UnconfiguredError when ssl-key is undefined") {
+        HW::SetFlag<std::string>("ssl-key", "");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::UnconfiguredError);
     }
 
-    SECTION("it fails when ssl-key file cannot be found") {
-        Configuration::Instance().set<std::string>("ssl-key", "/fake/file");
-        REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
-                          Configuration::Error);
+    SECTION("it throws an UnconfiguredError when ssl-key file cannot be found") {
+        HW::SetFlag<std::string>("ssl-key", "/fake/file");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::UnconfiguredError);
     }
 
     SECTION("it fails when spool-dir is empty") {
-        Configuration::Instance().set<std::string>("spool-dir", "");
-        REQUIRE_THROWS_AS(Configuration::Instance().validateAndNormalizeConfiguration(),
+        HW::SetFlag<std::string>("spool-dir", "");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
                           Configuration::Error);
     }
+}
 
-    SECTION("it sets log level to none if foreground is unflagged and logfile is set to stdout") {
+TEST_CASE("Configuration::setupLogging", "[configuration]") {
+    lth_util::scope_exit config_cleaner { resetTest };
+    configureTest();
+    Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+    Configuration::Instance().validate();
+
+#ifndef _WIN32
+    SECTION("it sets log level to info by default") {
+        // NOTE(ale): we cannot test this on Windows because it won't
+        // allow us to delete the SPOOL_DIR while test.log is open
+        Configuration::Instance().set<std::string>("logfile", SPOOL_DIR + "/test.log");
+        Configuration::Instance().setupLogging();
+        REQUIRE(lth_log::get_level() == lth_log::log_level::info);
+    }
+
+    SECTION("it sets log level to none if foreground is unflagged and logfile "
+            "is set to stdout") {
         Configuration::Instance().set<bool>("foreground", false);
         Configuration::Instance().set<std::string>("logfile", "-");
+        Configuration::Instance().setupLogging();
 
         REQUIRE(lth_log::get_level() == lth_log::log_level::none);
     }
-
-    resetTest();
+#endif
 }
 
 }  // namespace PXPAgent

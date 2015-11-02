@@ -3,6 +3,8 @@
 #include "version-inl.hpp"
 
 #include <cpp-pcp-client/util/logging.hpp>
+#include <cpp-pcp-client/connector/client_metadata.hpp>  // validate SSL certs
+#include <cpp-pcp-client/connector/errors.hpp>
 
 #include <leatherman/locale/locale.hpp>
 
@@ -32,6 +34,10 @@ namespace lth_file = leatherman::file_util;
 namespace lth_jc = leatherman::json_container;
 namespace lth_log = leatherman::logging;
 namespace lth_loc = leatherman::locale;
+
+//
+// Default values
+//
 
 #ifdef _WIN32
     namespace lth_w = leatherman::windows;
@@ -88,14 +94,12 @@ static const std::string AGENT_CLIENT_TYPE { "agent" };
 // Public interface
 //
 
-void Configuration::reset() {
+void Configuration::initialize(
+        std::function<int(std::vector<std::string>)> start_function) {
+    // Ensure the state is reset (useful for testing)
     HW::Reset();
-    setDefaultValues();
-    initialized_ = false;
-}
+    valid_ = false;
 
-HW::ParseResult Configuration::initialize(int argc, char *argv[],
-                                          bool enable_logging) {
     // Initialize boost filesystem's locale to a UTF-8 default.
     // Logging gets setup the same way via the default 2nd argument.
 #if (!defined(__sun) && !defined(_AIX)) || !defined(__GNUC__)
@@ -105,9 +109,15 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[],
 
     setDefaultValues();
 
-    HW::DefineAction("start", 0, false, "Start the agent (Default)",
-                     "Start the agent", start_function_);
+    HW::DefineAction("start",                       // action name
+                     0,                             // arity
+                     false,                         // chainable
+                     "Start the agent (Default)",   // description
+                     "Start the agent",             // help string
+                     start_function);               // callback
+}
 
+HW::ParseResult parseArguments(const int argc, char* const argv[]) {
     // manipulate argc and v to make start the default action.
     // TODO(ploubser): Add ability to specify default action to HorseWhisperer
     int modified_argc = argc + 1;
@@ -119,7 +129,11 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[],
     }
     modified_argv[modified_argc - 1] = action;
 
-    auto parse_result = HW::Parse(modified_argc, modified_argv);
+    return HW::Parse(modified_argc, modified_argv);
+}
+
+HW::ParseResult Configuration::parseOptions(int argc, char *argv[]) {
+    auto parse_result = parseArguments(argc, argv);
 
     if (parse_result == HW::ParseResult::FAILURE
         || parse_result == HW::ParseResult::INVALID_FLAG) {
@@ -127,105 +141,134 @@ HW::ParseResult Configuration::initialize(int argc, char *argv[],
     }
 
     if (parse_result == HW::ParseResult::OK) {
-        // No further processing or user interaction are required if
-        // the parsing outcome is HW::ParseResult::HELP or VERSION
-        config_file_ = HW::GetFlag<std::string>("config-file");
-
+        config_file_ = lth_file::tilde_expand(HW::GetFlag<std::string>("config-file"));
         if (!config_file_.empty()) {
             parseConfigFile();
         }
-
-        if (enable_logging) {
-            setupLogging();
-        }
-
-        validateAndNormalizeConfiguration();
-        setAgentConfiguration();
-
-        initialized_ = true;
     }
+    // No further processing or user interaction are required if
+    // the parsing outcome is HW::ParseResult::HELP or VERSION
 
     return parse_result;
 }
 
-void Configuration::setStartFunction(
-        std::function<int(std::vector<std::string>)> start_function) {
-    start_function_ = start_function;
+static void validateLogDirPath(const std::string& logfile) {
+    auto logdir_path = fs::path(logfile).parent_path();
+
+    if (fs::exists(logdir_path)) {
+        if (!fs::is_directory(logdir_path)) {
+            throw Configuration::Error {
+                (boost::format("cannot write to the specified logfile; '%1%' is "
+                               "not a directory") % logdir_path.string()).str() };
+        }
+    } else {
+        throw Configuration::Error {
+            (boost::format("cannot write to '%1%'; its parent directory does "
+                           "not exist") % logfile).str() };
+    }
 }
 
-void Configuration::validateAndNormalizeConfiguration() {
-    // determine which of your values must be initalised
-    if (HW::GetFlag<std::string>("broker-ws-uri").empty()) {
-        throw Configuration::UnconfiguredError{ "broker-ws-uri value must be defined" };
-    } else if (HW::GetFlag<std::string>("broker-ws-uri").find("wss://") != 0) {
-        throw Configuration::UnconfiguredError { "broker-ws-uri value must start with wss://" };
-    }
+void Configuration::setupLogging() {
+    logfile_ = HW::GetFlag<std::string>("logfile");
+    auto log_on_stdout = (logfile_ == "-");
+    auto loglevel = HW::GetFlag<std::string>("loglevel");
+    std::ostream *stream = nullptr;
 
-    if (HW::GetFlag<std::string>("ssl-ca-cert").empty()) {
-        throw Configuration::UnconfiguredError { "ssl-ca-cert value must be defined" };
-    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("ssl-ca-cert"))) {
-        throw Configuration::UnconfiguredError { "ssl-ca-cert file not found" };
-    }
+    if (!log_on_stdout) {
+        // We should log on file
+        logfile_ = lth_file::tilde_expand(logfile_);
 
-    if (HW::GetFlag<std::string>("ssl-cert").empty()) {
-        throw Configuration::UnconfiguredError { "ssl-cert value must be defined" };
-    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("ssl-cert"))) {
-        throw Configuration::UnconfiguredError { "ssl-cert file not found" };
-    }
+        // NOTE(ale): we must validate the logifle path since we set
+        // up logging before calling validateAndNormalizeConfiguration
+        validateLogDirPath(logfile_);
 
-    if (HW::GetFlag<std::string>("ssl-key").empty()) {
-        throw Configuration::UnconfiguredError { "ssl-key value must be defined" };
-    } else if (!lth_file::file_readable(HW::GetFlag<std::string>("ssl-key"))) {
-        throw Configuration::UnconfiguredError { "ssl-key file not found" };
-    }
-
-    for (const auto& flag_name : std::vector<std::string> { "ssl-ca-cert",
-                                                            "ssl-cert",
-                                                            "ssl-key" }) {
-        const auto& path = HW::GetFlag<std::string>(flag_name);
-        HW::SetFlag<std::string>(flag_name, lth_file::tilde_expand(path));
-    }
-
-    if (HW::GetFlag<std::string>("spool-dir").empty())  {
-        // Unexpected, since we have a default value for spool-dir
-        throw Configuration::Error { "spool-dir must be defined" };
+        logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
+        stream = &logfile_fstream_;
     } else {
-        auto spool_dir = HW::GetFlag<std::string>("spool-dir");
-        spool_dir = lth_file::tilde_expand(spool_dir);
-
-        if (!fs::exists(spool_dir)) {
-            throw Configuration::Error { "spool-dir does not exists" };
-        } else if (!fs::is_directory(spool_dir)) {
-            throw Configuration::Error { "--spool-dir '" + spool_dir +
-                                         "' is not a directory'"};
-        }
+        stream = &boost::nowide::cout;
     }
 
 #ifndef _WIN32
-    // NOTE(ale): util/posix/daemonize.cc will ensure that the daemon
-    // is not associated with any controlling terminal. It will also
-    // redirect stdout to /dev/null, together with the other standard
-    // files. Setting log_level to none to reduce useless overhead.
-    if (!HW::GetFlag<bool>("foreground")
-            && HW::GetFlag<std::string>("logfile") == "-") {
-        lth_log::set_level(lth_log::log_level::none);
+    if (!HW::GetFlag<bool>("foreground") && log_on_stdout) {
+        // NOTE(ale): util/posix/daemonize.cc will ensure that the
+        // daemon is not associated with any controlling terminal.
+        // It will also redirect stdout to /dev/null, together
+        // with the other standard files. Set log_level to none to
+        // reduce useless overhead since logfile is set to stdout.
+        loglevel = "none";
     }
 #endif
 
-    // NOTE(ale): we validate pidfile in util/posix/pid_file.cc to
-    // enable testing in pid_file_test.cc
+    lth_log::log_level lvl = lth_log::log_level::none;
+    try {
+        // NOTE(ale): ignoring HorseWhisperer's vlevel ("-v" flag)
+        const std::map<std::string, lth_log::log_level> option_to_log_level {
+            { "none", lth_log::log_level::none },
+            { "trace", lth_log::log_level::trace },
+            { "debug", lth_log::log_level::debug },
+            { "info", lth_log::log_level::info },
+            { "warning", lth_log::log_level::warning },
+            { "error", lth_log::log_level::error },
+            { "fatal", lth_log::log_level::fatal }
+        };
+        lvl = option_to_log_level.at(loglevel);
+    } catch (const std::out_of_range& e) {
+        throw Configuration::Error { "invalid log level: '" + loglevel + "'" };
+    }
+
+
+    // Configure logging for pxp-agent
+    lth_log::setup_logging(*stream);
+    lth_log::set_level(lvl);
+#ifdef DEV_LOG_COLOR
+    // Enable colorozation anyway (development setting - it helps
+    // debugging PXP message workflow, but it will add useless shell
+    // control sequences to log entries on file)
+    lth_log::set_colorization(true);
+    bool force_colorization = true;
+#else
+    bool force_colorization = false;
+#endif  // DEV_LOG_COLOR
+
+    // Configure logging for cpp-pcp-client
+    PCPClient::Util::setupLogging(*stream, force_colorization, loglevel);
+
+    LOG_DEBUG("Logging configured");
+
+    if (!log_on_stdout) {
+        // Configure platform-specific things for file logging
+        // NB: we do that after setting up lth_log in order to log in
+        //     case of failure
+        configure_platform_file_logging();
+    }
+}
+
+void Configuration::validate() {
+    checkUnconfiguredMode();
+    validateAndNormalizeConfiguration();
+    valid_ = true;
 }
 
 const Configuration::Agent& Configuration::getAgentConfiguration() const {
+    assert(valid_);
+    agent_configuration_ = Configuration::Agent {
+        HW::GetFlag<std::string>("modules-dir"),
+        HW::GetFlag<std::string>("broker-ws-uri"),
+        HW::GetFlag<std::string>("ssl-ca-cert"),
+        HW::GetFlag<std::string>("ssl-cert"),
+        HW::GetFlag<std::string>("ssl-key"),
+        HW::GetFlag<std::string>("spool-dir"),
+        HW::GetFlag<std::string>("modules-config-dir"),
+        AGENT_CLIENT_TYPE };
     return agent_configuration_;
 }
 
-bool Configuration::isInitialized() const {
-    return initialized_;
+bool Configuration::valid() const {
+    return valid_;
 }
 
 void Configuration::reopenLogfile() const {
-    if (!logfile_.empty()) {
+    if (!logfile_.empty() && logfile_ != "-") {
         try {
             logfile_fstream_.close();
         } catch (const std::exception& e) {
@@ -243,10 +286,9 @@ void Configuration::reopenLogfile() const {
 // Private interface
 //
 
-Configuration::Configuration() : initialized_ { false },
+Configuration::Configuration() : valid_ { false },
                                  defaults_ {},
                                  config_file_ { "" },
-                                 start_function_ {},
                                  agent_configuration_ {},
                                  logfile_ { "" },
                                  logfile_fstream_ {} {
@@ -505,94 +547,97 @@ void Configuration::parseConfigFile() {
     }
 }
 
-static void validateLogDirPath(const std::string& logfile) {
-    auto logdir_path = fs::path(logfile).parent_path();
+void Configuration::checkUnconfiguredMode() {
+    if (HW::GetFlag<std::string>("broker-ws-uri").empty()) {
+        throw Configuration::UnconfiguredError{ "broker-ws-uri value must be defined" };
+    } else if (HW::GetFlag<std::string>("broker-ws-uri").find("wss://") != 0) {
+        throw Configuration::UnconfiguredError { "broker-ws-uri value must start with wss://" };
+    }
 
-    if (fs::exists(logdir_path)) {
-        if (!fs::is_directory(logdir_path)) {
-            throw Configuration::Error { "log directory is not a directory" };
+    auto ca = HW::GetFlag<std::string>("ssl-ca-cert");
+    auto cert = HW::GetFlag<std::string>("ssl-cert");
+    auto key = HW::GetFlag<std::string>("ssl-key");
+
+
+    if (ca.empty()) {
+        throw Configuration::UnconfiguredError { "ssl-ca-cert value must be defined" };
+    } else {
+        ca = lth_file::tilde_expand(ca);
+        if (!lth_file::file_readable(ca)) {
+            throw Configuration::UnconfiguredError { "ssl-ca-cert file not found" };
         }
-    } else {
-        throw Configuration::Error {
-            (boost::format("cannot write to '%1%'; its parent directory does "
-                           "not exist") % logfile).str() };
-    }
-}
-
-void Configuration::setupLogging() {
-    logfile_ = HW::GetFlag<std::string>("logfile");
-    auto log_on_stdout = (logfile_ == "-");
-    auto loglevel = HW::GetFlag<std::string>("loglevel");
-    std::ostream *stream = nullptr;
-
-    if (!log_on_stdout) {
-        // We should log on file
-        logfile_ = lth_file::tilde_expand(logfile_);
-
-        // NOTE(ale): we must validate the logifle path since we set
-        // up logging before calling validateAndNormalizeConfiguration
-        validateLogDirPath(logfile_);
-
-        logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
-        stream = &logfile_fstream_;
-    } else {
-        // Log on stdout by default
-        stream = &boost::nowide::cout;
     }
 
-    lth_log::log_level lvl = lth_log::log_level::none;
+    if (cert.empty()) {
+        throw Configuration::UnconfiguredError { "ssl-cert value must be defined" };
+    } else {
+        cert = lth_file::tilde_expand(cert);
+        if (!lth_file::file_readable(ca)) {
+            throw Configuration::UnconfiguredError { "ssl-cert file not found" };
+        }
+    }
+
+    if (key.empty()) {
+        throw Configuration::UnconfiguredError { "ssl-key value must be defined" };
+    } else {
+        key = lth_file::tilde_expand(key);
+        if (!lth_file::file_readable(key)) {
+            throw Configuration::UnconfiguredError { "ssl-key file not found" };
+        }
+    }
 
     try {
-        // NOTE(ale): ignoring HorseWhisperer's vlevel ("-v" flag)
-        const std::map<std::string, lth_log::log_level> option_to_log_level {
-            { "none", lth_log::log_level::none },
-            { "trace", lth_log::log_level::trace },
-            { "debug", lth_log::log_level::debug },
-            { "info", lth_log::log_level::info },
-            { "warning", lth_log::log_level::warning },
-            { "error", lth_log::log_level::error },
-            { "fatal", lth_log::log_level::fatal }
-        };
-        lvl = option_to_log_level.at(loglevel);
-    } catch (const std::out_of_range& e) {
-        throw Configuration::Error { "invalid log level: '" + loglevel + "'" };
+        PCPClient::getCommonNameFromCert(cert);
+        PCPClient::validatePrivateKeyCertPair(key, cert);
+    } catch (const PCPClient::connection_config_error& e) {
+        throw Configuration::UnconfiguredError { e.what() };
     }
 
-    // Configure logging for pxp-agent
-    lth_log::setup_logging(*stream);
-    lth_log::set_level(lvl);
-
-#ifdef DEV_LOG_COLOR
-    // Enable colorozation anyway (development setting - it helps
-    // debugging PXP message workflow, but it will add useless shell
-    // control sequences to log entries on file)
-    lth_log::set_colorization(true);
-    bool force_colorization = true;
-#else
-    bool force_colorization = false;
-#endif  // DEV_LOG_COLOR
-
-    // Configure logging for cpp-pcp-client
-    PCPClient::Util::setupLogging(*stream, force_colorization, loglevel);
-
-    if (!log_on_stdout) {
-        // Configure platform-specific things for file logging
-        // NB: we do that after setting up lth_log in order to log in
-        //     case of failure
-        configure_platform_file_logging();
-    }
+    HW::SetFlag<std::string>("ssl-ca-cert", ca);
+    HW::SetFlag<std::string>("ssl-cert", cert);
+    HW::SetFlag<std::string>("ssl-key", key);
 }
 
-void Configuration::setAgentConfiguration() {
-    agent_configuration_ = Configuration::Agent {
-        HW::GetFlag<std::string>("modules-dir"),
-        HW::GetFlag<std::string>("broker-ws-uri"),
-        HW::GetFlag<std::string>("ssl-ca-cert"),
-        HW::GetFlag<std::string>("ssl-cert"),
-        HW::GetFlag<std::string>("ssl-key"),
-        HW::GetFlag<std::string>("spool-dir"),
-        HW::GetFlag<std::string>("modules-config-dir"),
-        AGENT_CLIENT_TYPE };
+void Configuration::validateAndNormalizeConfiguration() {
+    if (HW::GetFlag<std::string>("spool-dir").empty()) {
+        // Unexpected, since we have a default value for spool-dir
+        throw Configuration::Error { "spool-dir must be defined" };
+    } else {
+        auto spool_dir = HW::GetFlag<std::string>("spool-dir");
+        spool_dir = lth_file::tilde_expand(spool_dir);
+
+        if (!fs::exists(spool_dir)) {
+            throw Configuration::Error { "spool-dir does not exists" };
+        } else if (!fs::is_directory(spool_dir)) {
+            throw Configuration::Error { "--spool-dir '" + spool_dir +
+                                         "' is not a directory'"};
+        }
+
+        HW::SetFlag<std::string>("spool-dir", spool_dir);
+    }
+
+#ifndef _WIN32
+    if (!HW::GetFlag<bool>("foreground")) {
+        auto pid_file = lth_file::tilde_expand(HW::GetFlag<std::string>("pidfile"));
+        if (fs::exists(pid_file) && !(fs::is_regular_file(pid_file))) {
+            throw Configuration::Error { "the PID file '" + pid_file
+                                         + "' is not a regular file" };
+        }
+
+        auto pid_dir = fs::path(pid_file).parent_path().string();
+        if (fs::exists(pid_dir)) {
+            if (!fs::is_directory(pid_dir)) {
+                throw Configuration::Error { "the PID directory '" + pid_dir
+                                             + "' is not a directory" };
+            }
+        } else {
+            throw Configuration::Error { "the PID directory'" + pid_dir + "' "
+                                         "doesn't exist; cannot create PID file" };
+        }
+
+        HW::SetFlag<std::string>("pidfile", pid_file);
+    }
+#endif
 }
 
 }  // namespace PXPAgent
