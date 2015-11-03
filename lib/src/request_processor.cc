@@ -55,21 +55,16 @@ class ResultsStorage {
 
     void write(const ActionOutcome& outcome, const std::string& exec_error,
                const std::string& duration) {
+        assert(outcome.type == ActionOutcome::Type::External);
         action_status.set<std::string>("status", "completed");
         action_status.set<std::string>("duration", duration);
         action_status.set<int>("exitcode", outcome.exitcode);
         lth_file::atomic_write_to_file(action_status.toString() + "\n", status_path);
 
         if (exec_error.empty()) {
-            if (outcome.type == ActionOutcome::Type::External) {
-                lth_file::atomic_write_to_file(outcome.std_out + "\n", out_path);
-                if (!outcome.std_err.empty()) {
-                    lth_file::atomic_write_to_file(outcome.std_err + "\n", err_path);
-                }
-            } else {
-                // ActionOutcome::Type::Internal
-                lth_file::atomic_write_to_file(outcome.results.toString()
-                                               + "\n", out_path);
+            lth_file::atomic_write_to_file(outcome.std_out + "\n", out_path);
+            if (!outcome.std_err.empty()) {
+                lth_file::atomic_write_to_file(outcome.std_err + "\n", err_path);
             }
         } else {
             lth_file::atomic_write_to_file(exec_error, err_path);
@@ -244,6 +239,12 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
         }
     } catch (std::out_of_range& e) {
         throw RequestProcessor::Error { "unknown module: " + request.module() };
+    }
+
+    // If it's an internal module, the request must be blocking
+    if (modules_.at(request.module())->type() == Module::Type::Internal) {
+        throw RequestProcessor::Error { "the module '" + request.module() + "' "
+                                        "supports only blocking PXP requests" };
     }
 
     // Validate request input params
