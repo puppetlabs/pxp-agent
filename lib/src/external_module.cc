@@ -201,7 +201,6 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
     }
 }
 
-
 ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     auto& action_name = request.action();
 
