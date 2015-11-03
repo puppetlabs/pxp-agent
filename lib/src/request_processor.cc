@@ -240,7 +240,7 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
     try {
         if (!modules_.at(request.module())->hasAction(request.action())) {
             throw RequestProcessor::Error { "unknown action '" + request.action()
-                                            + "' for module " + request.module() };
+                                            + "' for module '" + request.module() + "'" };
         }
     } catch (std::out_of_range& e) {
         throw RequestProcessor::Error { "unknown module: " + request.module() };
