@@ -32,6 +32,14 @@ static const PCPClient::ParsedChunks PARSED_CHUNKS {
                 NO_DEBUG,
                 0 };
 
+TEST_CASE("Module::type", "[modules]") {
+    Modules::Echo echo_module {};
+
+    SECTION("correctly reports its type") {
+        REQUIRE(echo_module.type() == Module::Type::Internal);
+    }
+}
+
 TEST_CASE("Module::hasAction", "[modules]") {
     Modules::Echo echo_module {};
 

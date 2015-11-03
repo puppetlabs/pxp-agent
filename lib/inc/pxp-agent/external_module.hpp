@@ -33,6 +33,9 @@ class ExternalModule : public Module {
     explicit ExternalModule(const std::string& path,
                             const lth_jc::JsonContainer& config);
 
+    /// The type of the module.
+    Module::Type type() { return Module::Type::External; }
+
     /// In case a configuration schema has been registered for this
     /// module, validate configuration data.
     /// Throw a validation_error in case the configuration schema was

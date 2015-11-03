@@ -63,6 +63,16 @@ TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
     }
 }
 
+TEST_CASE("ExternalModule::type", "[modules]") {
+    ExternalModule mod { PXP_AGENT_ROOT_PATH
+                         "/lib/tests/resources/modules/reverse_valid"
+                         EXTENSION };
+
+    SECTION("correctly reports its type") {
+        REQUIRE(mod.type() == Module::Type::External);
+    }
+}
+
 TEST_CASE("ExternalModule::hasAction", "[modules]") {
     ExternalModule mod { PXP_AGENT_ROOT_PATH
                          "/lib/tests/resources/modules/reverse_valid"
