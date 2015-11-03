@@ -20,6 +20,15 @@ static boost::format DATA_FORMAT {
     "}"
 };
 
+static boost::format NON_BLOCKING_DATA_FORMAT {
+    "{  \"transaction_id\" : %1%,"
+    "   \"module\" : %2%,"
+    "   \"action\" : %3%,"
+    "   \"params\" : %4%,"
+    "   \"notify_outcome\" : %5%"
+    "}"
+};
+
 static const std::string ENVELOPE_TXT {
     (ENVELOPE_FORMAT % "\"123456\""
                      % "\"test_message\""
