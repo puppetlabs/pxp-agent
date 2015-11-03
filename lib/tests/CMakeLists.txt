@@ -16,11 +16,12 @@ set(COMMON_TEST_SOURCES
     unit/certs.cc
     unit/configuration_test.cc
     unit/external_module_test.cc
-    unit/request_processor_test.cc
     unit/module_test.cc
+    unit/request_processor_test.cc
     unit/thread_container_test.cc
     unit/modules/ping_test.cc
     unit/modules/status_test.cc
+    unit/util/process_test.cc
 )
 
 if (UNIX)

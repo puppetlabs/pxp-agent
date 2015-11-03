@@ -30,6 +30,7 @@ if (UNIX)
     set(LIBRARY_STANDARD_SOURCES
         src/util/posix/daemonize.cc
         src/util/posix/pid_file.cc
+        src/util/posix/process.cc
         src/configuration/posix/configuration.cc
     )
 endif()
@@ -37,6 +38,7 @@ endif()
 if (WIN32)
     set(LIBRARY_STANDARD_SOURCES
         src/util/windows/daemonize.cc
+        src/util/windows/process.cc
         src/configuration/windows/configuration.cc
     )
 endif()

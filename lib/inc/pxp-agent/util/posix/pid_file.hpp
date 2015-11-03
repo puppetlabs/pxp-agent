@@ -75,10 +75,6 @@ class PIDFile {
     // Sets the flag that will trigger a cleanup() call by the dtor.
     void cleanupWhenDone();
 
-    // Checks the PID by sending NULL SIGNAL WITH kill().
-    // NB: does not consider recycled PIDs nor zombie processes.
-    static bool isProcessExecuting(pid_t pid);
-
     // Lock the file related to the specified file descriptor with the
     // specified lock type (F_RDLCK or F_WRLCK).
     // NB: the created lock will be specific to this process and the
