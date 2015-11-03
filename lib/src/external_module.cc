@@ -3,6 +3,9 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.external_module"
 #include <leatherman/logging/logging.hpp>
 #include <leatherman/execution/execution.hpp>
+#include <leatherman/file_util/file.hpp>
+
+#include <horsewhisperer/horsewhisperer.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -24,7 +27,10 @@ static const std::string ACTION_SCHEMA_NAME { "action_metadata" };
 static const std::string METADATA_CONFIGURATION_ENTRY { "configuration" };
 static const std::string METADATA_ACTIONS_ENTRY { "actions" };
 
+namespace fs = boost::filesystem;
+namespace HW = HorseWhisperer;
 namespace lth_exec = leatherman::execution;
+namespace lth_file = leatherman::file_util;
 
 //
 // Free functions
@@ -62,7 +68,7 @@ ExternalModule::ExternalModule(const std::string& path,
                                const lth_jc::JsonContainer& config)
         : path_ { path },
           config_ { config } {
-    boost::filesystem::path module_path { path };
+    fs::path module_path { path };
     module_name = module_path.stem().string();
     auto metadata = getMetadata();
 
@@ -86,7 +92,7 @@ ExternalModule::ExternalModule(const std::string& path,
 ExternalModule::ExternalModule(const std::string& path)
         : path_ { path },
           config_ { "{}" } {
-    boost::filesystem::path module_path { path };
+    fs::path module_path { path };
     module_name = module_path.stem().string();
     auto metadata = getMetadata();
 
@@ -202,8 +208,10 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
 }
 
 ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
+    // HERE(ale): using HW instead of Configuration for unit tests
+    auto results_dir_path = fs::path(HW::GetFlag<std::string>("spool-dir"))
+                            / request.transactionId();
     auto& action_name = request.action();
-
     lth_jc::JsonContainer request_input {};
     request_input.set<lth_jc::JsonContainer>("params", request.params());
     request_input.set<lth_jc::JsonContainer>("config", config_);
@@ -211,13 +219,26 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
 
     LOG_INFO("About to execute '%1% %2%' - request input: %3%",
              module_name, action_name, request_input_txt);
+
+    std::function<void(size_t)> pid_callback = nullptr;
+    if (request.type() == RequestType::NonBlocking) {
+        pid_callback = [results_dir_path](size_t pid) {
+            auto pid_file = (results_dir_path / "pid").string();
+            lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file);
+        };
+    }
+
     auto exec =
 #ifdef _WIN32
         lth_exec::execute("cmd.exe", { "/c", path_, action_name },
 #else
         lth_exec::execute(path_, { action_name },
 #endif
-            request_input_txt, 0, {lth_exec::execution_options::merge_environment});
+            request_input_txt,  // input
+            {},                 // environment
+            pid_callback,       // pid callback
+            0,                  // timeout
+            { lth_exec::execution_options::merge_environment }); // options
 
     if (exec.output.empty()) {
         LOG_DEBUG("'%1% %2%' produced no output", module_name, action_name);
