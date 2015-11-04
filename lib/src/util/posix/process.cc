@@ -2,6 +2,7 @@
 
 #include <signal.h>
 #include <errno.h>
+#include <unistd.h>         // getpid()
 
 namespace PXPAgent {
 namespace Util {
@@ -23,6 +24,10 @@ bool processExists(int pid) {
     }
 
     return true;
+}
+
+int getPid() {
+    return getpid();
 }
 
 }  // namespace Util

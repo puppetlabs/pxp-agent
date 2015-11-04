@@ -33,8 +33,8 @@ struct ActionOutcome {
     }
 
     ActionOutcome(int exitcode_,
-                  std::string& stderr_,
-                  std::string& stdout_,
+                  std::string&& stderr_,
+                  std::string&& stdout_,
                   lth_jc::JsonContainer&& results_)
             : type { Type::External },
               exitcode { exitcode_ },

@@ -42,6 +42,15 @@ class ExternalModule : public Module {
     /// not registered or in case of an invalid configuration data.
     void validateConfiguration();
 
+    /// Writes the content of the specified out/err_file in,
+    /// respectively, out/err_txt. Reads first err_file.
+    /// Throws a ProcessingError in case it fails to read out_file.
+    static void readNonBlockingOutcome(const ActionRequest& request,
+                                       const std::string& out_file,
+                                       const std::string& err_file,
+                                       std::string& out_txt,
+                                       std::string& err_txt);
+
   private:
     /// The path of the module file
     const std::string path_;
@@ -60,7 +69,26 @@ class ExternalModule : public Module {
 
     void registerAction(const lth_jc::JsonContainer& action);
 
-    ActionOutcome callAction(const ActionRequest& reqeust);
+    /// Returns a string in JSON format, containing the "params" entry
+    /// of the PXP request and the module configuration (both are
+    /// JSON objects).
+    std::string getRequestInput(const ActionRequest& request);
+
+    /// Log information about the outcome of the performed action
+    /// while checking the exit code and validating the JSON format
+    /// of the output.
+    /// Returns an ActionOutcome object.
+    /// Throws a ProcessingError in case of invalid output.
+    ActionOutcome processRequestOutcome(const ActionRequest& request,
+                                        int exit_code,
+                                        std::string& out_txt,
+                                        std::string& err_txt);
+
+    ActionOutcome callBlockingAction(const ActionRequest& request);
+
+    ActionOutcome callNonBlockingAction(const ActionRequest& request);
+
+    ActionOutcome callAction(const ActionRequest& request);
 };
 
 }  // namespace PXPAgent

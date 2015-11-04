@@ -3,11 +3,13 @@
 
 #include <pxp-agent/external_module.hpp>
 #include <pxp-agent/configuration.hpp>
+#include <pxp-agent/util/process.hpp>
 
 #include <cpp-pcp-client/protocol/chunks.hpp>       // ParsedChunks
 
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/util/scope_exit.hpp>
+#include <leatherman/file_util/file.hpp>
 
 #include <boost/filesystem/operations.hpp>
 
@@ -31,6 +33,7 @@ namespace fs = boost::filesystem;
 namespace HW = HorseWhisperer;
 namespace lth_jc = leatherman::json_container;
 namespace lth_util = leatherman::util;
+namespace lth_file = leatherman::file_util;
 
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
@@ -107,6 +110,31 @@ TEST_CASE("ExternalModule::hasAction", "[modules]") {
 
     SECTION("correctly reports true") {
         REQUIRE(mod.hasAction("string"));
+    }
+}
+
+TEST_CASE("ExternalModule::readNonBlockingOutcome", "[modules]") {
+    ActionRequest request { RequestType::NonBlocking, NON_BLOCKING_CONTENT };
+    fs::path resources_path { PXP_AGENT_ROOT_PATH "/lib/tests/resources" };
+    std::string o;
+    std::string e;
+
+    SECTION("it does read out") {
+        auto o_f = (resources_path / "delayed_result_success/stdout").string();
+        auto e_f = (resources_path / "delayed_result_success/stderr").string();
+        ExternalModule::readNonBlockingOutcome(request, o_f, e_f, o, e);
+
+        REQUIRE(o == "***OUTPUT\n");
+        REQUIRE(e.empty());
+    }
+
+    SECTION("it does read out and err") {
+        auto o_f = (resources_path / "delayed_result_success/stdout").string();
+        auto e_f = (resources_path / "delayed_result_failure/stderr").string();
+        ExternalModule::readNonBlockingOutcome(request, o_f, e_f, o, e);
+
+        REQUIRE(o == "***OUTPUT\n");
+        REQUIRE(e == "***ERROR\n");
     }
 }
 
@@ -200,6 +228,13 @@ TEST_CASE("ExternalModule::callAction - non blocking", "[modules]") {
 
         REQUIRE_NOTHROW(e_m.executeAction(request));
         REQUIRE(fs::exists(pid_path));
+
+        try {
+            auto pid_txt = lth_file::read(pid_path.string());
+            auto pid = std::stoi(pid_txt);
+        } catch (std::exception) {
+            FAIL("fail to get pid");
+        }
     }
 }
 

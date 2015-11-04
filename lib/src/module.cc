@@ -30,7 +30,10 @@ ActionOutcome Module::executeAction(const ActionRequest& request) {
             output_validator_.validate(outcome.results, request.action());
         } catch (PCPClient::validation_error) {
             std::string err_msg { "'" + module_name + " " + request.action()
-                                  + "' returned an invalid result - stderr: " };
+                                  + "' returned an invalid result" };
+            if (!outcome.std_err.empty()) {
+                err_msg += " - stderr: " + outcome.std_err;
+            }
             throw Module::ProcessingError { err_msg + outcome.std_err };
         }
 

@@ -22,5 +22,11 @@ TEST_CASE("processExists", "[util]") {
     }
 }
 
+TEST_CASE("getPid", "[util]") {
+    SECTION("can call it") {
+        REQUIRE_NOTHROW(getPid());
+    }
+}
+
 }  // namespace Util
 }  // namespace PXPAgent

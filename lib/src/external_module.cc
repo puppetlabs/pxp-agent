@@ -64,6 +64,7 @@ PCPClient::Validator getMetadataValidator() {
 //
 // Public interface
 //
+
 ExternalModule::ExternalModule(const std::string& path,
                                const lth_jc::JsonContainer& config)
         : path_ { path },
@@ -112,6 +113,40 @@ void ExternalModule::validateConfiguration() {
     } else {
         LOG_DEBUG("The '%1%' configuration will not be validated; no JSON "
                   "schema is available", module_name);
+    }
+}
+
+//
+// Static functions
+//
+
+void ExternalModule::readNonBlockingOutcome(const ActionRequest& request,
+                                            const std::string& out_file,
+                                            const std::string& err_file,
+                                            std::string& out_txt,
+                                            std::string& err_txt) {
+    if (fs::exists(err_file)) {
+        if (!lth_file::read(err_file, err_txt)) {
+            LOG_ERROR("Failed to read error file '%1%' of '%2% %3%'; will "
+                      "continue processing the output",
+                      err_file, request.module(), request.action());
+        } else {
+            LOG_TRACE("Successfully read error file '%1%'", err_file);
+        }
+    }
+
+    if (!fs::exists(out_file)) {
+        LOG_DEBUG("Output file '%1%' of '%2% %3%' does not exist",
+                  out_file, request.module(), request.action());
+    } else if (!lth_file::read(out_file, out_txt)) {
+        LOG_ERROR("Failed to read output file '%1%' of '%2% %3%'",
+                  out_file, request.module(), request.action());
+        throw Module::ProcessingError { "failed to read" };
+    } else if (out_txt.empty()) {
+        LOG_TRACE("Output file '%1%' of '%2% %3%' is empty",
+                  out_file, request.module(), request.action());
+    } else {
+        LOG_TRACE("Successfully read output file '%1%'", out_file);
     }
 }
 
@@ -207,71 +242,119 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
     }
 }
 
-ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
-    // HERE(ale): using HW instead of Configuration for unit tests
-    auto results_dir_path = fs::path(HW::GetFlag<std::string>("spool-dir"))
-                            / request.transactionId();
-    auto& action_name = request.action();
+std::string ExternalModule::getRequestInput(const ActionRequest& request) {
     lth_jc::JsonContainer request_input {};
     request_input.set<lth_jc::JsonContainer>("params", request.params());
     request_input.set<lth_jc::JsonContainer>("config", config_);
-    auto request_input_txt = request_input.toString();
+    return request_input.toString();
+}
 
-    LOG_INFO("About to execute '%1% %2%' - request input: %3%",
-             module_name, action_name, request_input_txt);
+ActionOutcome ExternalModule::processRequestOutcome(const ActionRequest& request,
+                                                    int exit_code,
+                                                    std::string& out_txt,
+                                                    std::string& err_txt) {
+    auto action_name = request.action();
 
-    std::function<void(size_t)> pid_callback = nullptr;
-    if (request.type() == RequestType::NonBlocking) {
-        pid_callback = [results_dir_path](size_t pid) {
-            auto pid_file = (results_dir_path / "pid").string();
-            lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file);
-        };
-    }
-
-    auto exec =
-#ifdef _WIN32
-        lth_exec::execute("cmd.exe", { "/c", path_, action_name },
-#else
-        lth_exec::execute(path_, { action_name },
-#endif
-            request_input_txt,  // input
-            {},                 // environment
-            pid_callback,       // pid callback
-            0,                  // timeout
-            { lth_exec::execution_options::merge_environment }); // options
-
-    if (exec.output.empty()) {
+    if (out_txt.empty()) {
         LOG_DEBUG("'%1% %2%' produced no output", module_name, action_name);
     } else {
-        LOG_DEBUG("'%1% %2%' output: %3%", module_name, action_name, exec.output);
+        LOG_DEBUG("'%1% %2%' output: %3%", module_name, action_name, out_txt);
     }
 
-    if (exec.exit_code) {
-        if (!exec.error.empty()) {
+    if (exit_code != EXIT_SUCCESS) {
+        if (!err_txt.empty()) {
             LOG_ERROR("'%1% %2%' failure, returned %3%; error: %4%",
-                      module_name, action_name, exec.exit_code, exec.error);
+                      module_name, action_name, exit_code, err_txt);
         } else {
             LOG_ERROR("'%1% %2%' failure, returned %3%",
-                      module_name, action_name, exec.exit_code);
+                      module_name, action_name, exit_code);
         }
-    } else if (!exec.error.empty()) {
-        LOG_WARNING("'%1% %2%' error: %3%", module_name, action_name, exec.error);
+    } else if (!err_txt.empty()) {
+        LOG_WARNING("'%1% %2%' error: %3%", module_name, action_name, err_txt);
     }
 
-    // Ensure output format is valid JSON by instantiating JsonContainer
-    lth_jc::JsonContainer results {};
-
     try {
-        results = lth_jc::JsonContainer { exec.output };
+        // Ensure output format is valid JSON by instantiating JsonContainer
+        lth_jc::JsonContainer results { out_txt };
+        return ActionOutcome { exit_code, err_txt, out_txt, results };
     } catch (lth_jc::data_parse_error& e) {
         LOG_ERROR("'%1% %2%' output is not valid JSON: %3%",
                   module_name, action_name, e.what());
         std::string err_msg { "'" + module_name + " " + action_name + "' "
-                              "returned invalid JSON - stderr: " + exec.error };
+                              "returned invalid JSON"  };
+        if (!err_txt.empty()) {
+            err_msg += " - stderr: " + err_txt;
+        }
         throw Module::ProcessingError { err_msg };
     }
+}
 
-    return ActionOutcome { exec.exit_code, exec.error, exec.output, results };
+ActionOutcome ExternalModule::callBlockingAction(const ActionRequest& request) {
+    auto action_name = request.action();
+    auto input_txt = getRequestInput(request);
+
+    LOG_INFO("Executing '%1% %2%' (blocking request) - request input: %3%",
+             module_name, action_name, input_txt);
+
+    auto exec = lth_exec::execute(
+#ifdef _WIN32
+        "cmd.exe", { "/c", path_, action_name },
+#else
+        path_, { action_name },
+#endif
+        input_txt,  // input
+        {},         // environment
+        0,          // timeout
+        { lth_exec::execution_options::merge_environment });  // options
+
+    return processRequestOutcome(request, exec.exit_code, exec.output, exec.error);
+}
+
+ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request) {
+    auto action_name = request.action();
+    auto input_txt = getRequestInput(request);
+
+    // HERE(ale): using HW instead of Configuration to ease unit tests
+    auto results_dir_path = fs::path(HW::GetFlag<std::string>("spool-dir"))
+                            / request.transactionId();
+    auto out_file = (results_dir_path / "stdout").string();
+    auto err_file = (results_dir_path / "stderr").string();
+
+    LOG_INFO("Starting '%1% %2%' non-blocking task (stdout and stderr will "
+             "be stored in %3%) - request input: %4%",
+             module_name, action_name, results_dir_path.string(), input_txt);
+
+    auto exec = lth_exec::execute(
+#ifdef _WIN32
+        "cmd.exe", { "/c", path_, action_name },
+#else
+        path_, { action_name },
+#endif
+        input_txt,  // input
+        out_file,   // out file
+        err_file,   // err file
+        {},         // environment
+        [results_dir_path](size_t pid) {
+            auto pid_file = (results_dir_path / "pid").string();
+            lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file);
+        },          // pid callback
+        0,          // timeout
+        { lth_exec::execution_options::merge_environment });  // options
+
+    // Stdout / stderr output is on file; read it
+    std::string out_txt;
+    std::string err_txt;
+    readNonBlockingOutcome(request, out_file, err_file, out_txt, err_txt);
+
+    return processRequestOutcome(request, exec.exit_code, out_txt, err_txt);
+}
+
+ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
+    if (request.type() == RequestType::Blocking) {
+        return callBlockingAction(request);
+    } else {
+        return callNonBlockingAction(request);
+    }
 }
 
 }  // namespace PXPAgent
