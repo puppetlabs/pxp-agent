@@ -73,7 +73,6 @@ static void configureTest() {
 }
 
 static void resetTest() {
-    // Configuration::Instance().reset();
     fs::remove_all(SPOOL_DIR);
 }
 
