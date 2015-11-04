@@ -46,43 +46,38 @@ class ResultsStorage {
     ResultsStorage(const ActionRequest& request, const std::string& results_dir)
             : module { request.module() },
               action { request.action() },
-              out_path { results_dir + "/stdout" },
-              err_path { results_dir + "/stderr" },
-              status_path { results_dir + "/status" },
-              action_status {} {
+              out_file { results_dir + "/stdout" },
+              err_file { results_dir + "/stderr" },
+              metadata_file { results_dir + "/metadata" },
+              action_metadata {} {
         initialize(request, results_dir);
     }
 
     void write(const ActionOutcome& outcome, const std::string& exec_error,
                const std::string& duration) {
-        action_status.set<std::string>("status", "completed");
-        action_status.set<std::string>("duration", duration);
-        action_status.set<int>("exitcode", outcome.exitcode);
-        lth_file::atomic_write_to_file(action_status.toString() + "\n", status_path);
+        assert(outcome.type == ActionOutcome::Type::External);
+        action_metadata.set<bool>("completed", true);
+        action_metadata.set<std::string>("duration", duration);
+        action_metadata.set<int>("exitcode", outcome.exitcode);
+        lth_file::atomic_write_to_file(action_metadata.toString() + "\n", metadata_file);
 
         if (exec_error.empty()) {
-            if (outcome.type == ActionOutcome::Type::External) {
-                lth_file::atomic_write_to_file(outcome.std_out + "\n", out_path);
-                if (!outcome.std_err.empty()) {
-                    lth_file::atomic_write_to_file(outcome.std_err + "\n", err_path);
-                }
-            } else {
-                // ActionOutcome::Type::Internal
-                lth_file::atomic_write_to_file(outcome.results.toString()
-                                               + "\n", out_path);
+            lth_file::atomic_write_to_file(outcome.std_out + "\n", out_file);
+            if (!outcome.std_err.empty()) {
+                lth_file::atomic_write_to_file(outcome.std_err + "\n", err_file);
             }
         } else {
-            lth_file::atomic_write_to_file(exec_error, err_path);
+            lth_file::atomic_write_to_file(exec_error, err_file);
         }
     }
 
   private:
     std::string module;
     std::string action;
-    std::string out_path;
-    std::string err_path;
-    std::string status_path;
-    lth_jc::JsonContainer action_status;
+    std::string out_file;
+    std::string err_file;
+    std::string metadata_file;
+    lth_jc::JsonContainer action_metadata;
 
     void initialize(const ActionRequest& request, const std::string& results_dir) {
         if (!fs::exists(results_dir)) {
@@ -97,21 +92,21 @@ class ResultsStorage {
             }
         }
 
-        action_status.set<std::string>("module", module);
-        action_status.set<std::string>("action", action);
-        action_status.set<std::string>("status", "running");
-        action_status.set<std::string>("duration", "0 s");
-        action_status.set<int>("exitcode", EXIT_SUCCESS);
+        action_metadata.set<std::string>("module", module);
+        action_metadata.set<std::string>("action", action);
+        action_metadata.set<bool>("completed", false);
+        action_metadata.set<std::string>("duration", "0 s");
+        action_metadata.set<int>("exitcode", EXIT_SUCCESS);
 
         if (!request.paramsTxt().empty()) {
-            action_status.set<std::string>("input", request.paramsTxt());
+            action_metadata.set<std::string>("input", request.paramsTxt());
         } else {
-            action_status.set<std::string>("input", "none");
+            action_metadata.set<std::string>("input", "none");
         }
 
-        lth_file::atomic_write_to_file("", out_path);
-        lth_file::atomic_write_to_file("", err_path);
-        lth_file::atomic_write_to_file(action_status.toString() + "\n", status_path);
+        lth_file::atomic_write_to_file("", out_file);
+        lth_file::atomic_write_to_file("", err_file);
+        lth_file::atomic_write_to_file(action_metadata.toString() + "\n", metadata_file);
     }
 };
 
@@ -240,10 +235,17 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
     try {
         if (!modules_.at(request.module())->hasAction(request.action())) {
             throw RequestProcessor::Error { "unknown action '" + request.action()
-                                            + "' for module " + request.module() };
+                                            + "' for module '" + request.module() + "'" };
         }
     } catch (std::out_of_range& e) {
         throw RequestProcessor::Error { "unknown module: " + request.module() };
+    }
+
+    // If it's an internal module, the request must be blocking
+    if (modules_.at(request.module())->type() == Module::Type::Internal
+        && request.type() == RequestType::NonBlocking) {
+        throw RequestProcessor::Error { "the module '" + request.module() + "' "
+                                        "supports only blocking PXP requests" };
     }
 
     // Validate request input params
