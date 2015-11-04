@@ -5,6 +5,7 @@ namespace PXPAgent {
 namespace Util {
 
 bool processExists(int pid);
+int getPid();
 
 }  // namespace Util
 }  // namespace PXPAgent

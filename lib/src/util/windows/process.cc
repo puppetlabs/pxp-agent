@@ -23,5 +23,9 @@ bool processExists(int pid) {
     return false;
 }
 
+int getPid() {
+    return GetCurrentProcessId();
+}
+
 }  // namespace Util
 }  // namespace PXPAgent

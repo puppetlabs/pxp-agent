@@ -11,6 +11,8 @@
 
 #include <horsewhisperer/horsewhisperer.h>
 
+#include <string>
+
 namespace PXPAgent {
 namespace Modules {
 
