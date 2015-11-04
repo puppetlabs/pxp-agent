@@ -103,8 +103,9 @@ ActionOutcome Status::callAction(const ActionRequest& request) {
     }
 
     if (completed_by_metadata) {
-        std::string status {
-            (exitcode == EXIT_SUCCESS ? Status::SUCCESS : Status::FAILURE) };
+        results.set<std::string>(
+            "status",
+            (exitcode == EXIT_SUCCESS ? Status::SUCCESS : Status::FAILURE));
     } else {
         // The metadata does not report the task as completed, but it
         // may be due to a previous pxp-agent crash; if the PID file

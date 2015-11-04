@@ -242,7 +242,8 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
     }
 
     // If it's an internal module, the request must be blocking
-    if (modules_.at(request.module())->type() == Module::Type::Internal) {
+    if (modules_.at(request.module())->type() == Module::Type::Internal
+        && request.type() == RequestType::NonBlocking) {
         throw RequestProcessor::Error { "the module '" + request.module() + "' "
                                         "supports only blocking PXP requests" };
     }
