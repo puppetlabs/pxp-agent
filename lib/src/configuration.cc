@@ -98,6 +98,9 @@ void Configuration::initialize(
         std::function<int(std::vector<std::string>)> start_function) {
     // Ensure the state is reset (useful for testing)
     HW::Reset();
+    HW::SetAppName("pxp-agent");
+    HW::SetHelpBanner("Usage: pxp-agent [options]");
+    HW::SetVersion(std::string { PXP_AGENT_VERSION } + "\n");
     valid_ = false;
 
     // Initialize boost filesystem's locale to a UTF-8 default.
@@ -296,10 +299,6 @@ Configuration::Configuration() : valid_ { false },
 }
 
 void Configuration::defineDefaultValues() {
-    HW::SetAppName("pxp-agent");
-    HW::SetHelpBanner("Usage: pxp-agent [options]");
-    HW::SetVersion(std::string { PXP_AGENT_VERSION } + "\n");
-
     defaults_.insert(
         Option { "config-file",
                  Base_ptr { new Entry<std::string>(
