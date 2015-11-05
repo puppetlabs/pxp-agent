@@ -11,7 +11,7 @@ namespace :ci do
       if not ENV['LAYOUT']
         puts "WARNING: LAYOUT environment variable not set. Defaulting to centos7-64mdc-windows2012r2-64a"
       end
-      layout = "centos7-64mdc-windows2012r2-64a" || ENV["LAYOUT"]
+      layout = ENV["LAYOUT"] || "centos7-64mdc-windows2012r2-64a"
       generate = "bundle exec genconfig2"
       generate += " --disable-default-role #{layout}"
       generate += " > #{host_genconfigged}"
