@@ -68,6 +68,10 @@ class Agent {
     // will send a PXP non-blocking response containing the action
     // outcome when finished.
     void nonBlockingRequestCallback(const PCPClient::ParsedChunks& parsed_chunks);
+
+    // Callback for PCPClient::Connector handling incoming PCP TTL
+    // Expired messages; it will only log the ID of the expired msg.
+    void ttlExpiredCallback(const PCPClient::ParsedChunks& parsed_chunks);
 };
 
 }  // namespace PXPAgent

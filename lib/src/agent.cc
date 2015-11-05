@@ -1,6 +1,8 @@
 #include <pxp-agent/agent.hpp>
 #include <pxp-agent/pxp_schemas.hpp>
 
+#include <cpp-pcp-client/protocol/schemas.hpp>
+
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.agent"
 #include <leatherman/logging/logging.hpp>
 
@@ -31,6 +33,12 @@ void Agent::start() {
             nonBlockingRequestCallback(parsed_chunks);
         });
 
+    connector_ptr_->registerMessageCallback(
+        PCPClient::Protocol::TTLExpiredSchema(),
+        [this](const PCPClient::ParsedChunks& parsed_chunks) {
+            ttlExpiredCallback(parsed_chunks);
+        });
+
     try {
         connector_ptr_->connect();
     } catch (const PCPClient::connection_config_error& e) {
@@ -55,14 +63,17 @@ void Agent::start() {
     }
 }
 
-void Agent::blockingRequestCallback(
-        const PCPClient::ParsedChunks& parsed_chunks) {
+void Agent::blockingRequestCallback(const PCPClient::ParsedChunks& parsed_chunks) {
     request_processor_.processRequest(RequestType::Blocking, parsed_chunks);
 }
 
-void Agent::nonBlockingRequestCallback(
-        const PCPClient::ParsedChunks& parsed_chunks) {
+void Agent::nonBlockingRequestCallback(const PCPClient::ParsedChunks& parsed_chunks) {
     request_processor_.processRequest(RequestType::NonBlocking, parsed_chunks);
+}
+
+void Agent::ttlExpiredCallback(const PCPClient::ParsedChunks& parsed_chunks) {
+    LOG_WARNING("Received TTL expired message - expired message ID: %1%",
+                parsed_chunks.data.get<std::string>("id"));
 }
 
 }  // namespace PXPAgent
