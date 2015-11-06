@@ -86,7 +86,7 @@ configuration file (see below), pxp-agent will use this value to execute the
 module instead.
 
 Note that the [transaction status module][7] is implemented natively; there is
-no external file for it.
+no external file for it. Also, `status query` [requests][6] must be *blocking*.
 
 ### Modules configuration
 

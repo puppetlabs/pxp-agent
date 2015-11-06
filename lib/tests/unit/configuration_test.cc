@@ -57,7 +57,6 @@ static void configureTest() {
         [](std::vector<std::string>) {
             return EXIT_SUCCESS;
         });
-    // Configuration::Instance().initialize(ARGC, const_cast<char**>(ARGV), false);
 }
 
 static void resetTest() {

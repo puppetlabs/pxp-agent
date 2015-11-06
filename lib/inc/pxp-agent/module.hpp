@@ -18,6 +18,8 @@ namespace lth_jc = leatherman::json_container;
 
 class Module {
   public:
+    enum class Type { Internal, External };
+
     struct Error : public std::runtime_error {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
@@ -40,6 +42,9 @@ class Module {
 
     /// Whether or not the module has the specified action.
     bool hasAction(const std::string& action_name);
+
+    /// The type of the module.
+    virtual Type type() { return Type::Internal; }
 
     /// Call the specified action.
     /// Return an ActionOutcome instance containing the action outcome.

@@ -1,4 +1,5 @@
 #include <pxp-agent/util/posix/pid_file.hpp>
+#include <pxp-agent/util/process.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -13,7 +14,7 @@
 #include <sys/file.h>       // open()
 #include <sys/stat.h>
 #include <fcntl.h>          // fcntl(), open() flags
-#include <signal.h>         // kill()
+#include <signal.h>
 #include <unistd.h>         // getpid()
 
 namespace PXPAgent {
@@ -49,9 +50,9 @@ PIDFile::~PIDFile() {
 bool PIDFile::isExecuting() {
     try {
         auto pid = PIDFile::read();
-        return isProcessExecuting(pid);
+        return processExists(pid);
     } catch (const PIDFile::Error& e) {
-        // NB: isProcessExecuting() does not throw
+        // NB: processExists() does not throw
         LOG_DEBUG("Couldn't retrieve PID from file %1%: %2%", file_path, e.what());
     }
 
@@ -144,23 +145,6 @@ void PIDFile::cleanupWhenDone() {
 }
 
 // Static function members
-
-bool PIDFile::isProcessExecuting(pid_t pid) {
-    if (kill(pid, 0)) {
-        switch (errno) {
-            case ESRCH:
-                return false;
-            case EPERM:
-                // Process exists, but we can't signal to it
-                return true;
-            default:
-                // Unexpected
-                return false;
-        }
-    }
-
-    return true;
-}
 
 static int callFcntl(int fd, int cmd, int lock_type) {
     struct flock fl;

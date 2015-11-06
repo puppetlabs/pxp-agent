@@ -436,11 +436,5 @@ TEST_CASE("PIDFile::canLockFile", "[util]") {
     fs::remove_all(SPOOL_DIR);
 }
 
-TEST_CASE("PIDFile::isProcessExecuting", "[util]") {
-    SECTION("this process is executing") {
-        REQUIRE(PIDFile::isProcessExecuting(getpid()));
-    }
-}
-
 }  // namespace Util
 }  // namespace PXPAgent
