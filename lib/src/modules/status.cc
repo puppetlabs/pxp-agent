@@ -13,6 +13,7 @@
 #include <horsewhisperer/horsewhisperer.h>
 
 #include <string>
+#include <stdexcept>
 
 namespace PXPAgent {
 namespace Modules {
@@ -39,6 +40,58 @@ Status::Status() {
     input_validator_.registerSchema(input_schema);
     output_validator_.registerSchema(output_schema);
 }
+
+class ActionMetadata {
+  public:
+    struct Error : public std::runtime_error {
+        explicit Error(std::string const& msg) : std::runtime_error(msg) {}
+    };
+
+    int exitcode;
+    bool completed;
+
+    ActionMetadata() {
+    }
+
+    ActionMetadata(const std::string& file_)
+            : exitcode {},
+              completed { false },
+              file { file_ } {
+        if (!fs::exists(file)) {
+            throw Error { "file does not exist" };
+        }
+
+        std::string txt;
+        if (!lth_file::read(file, txt)) {
+            throw Error { "failed to read" };
+        }
+
+        try {
+            lth_jc::JsonContainer entries { txt };
+
+            if (entries.includes("completed")) {
+                completed = entries.get<bool>("completed");
+            } else {
+                throw Error { "invalid content; missing 'completed' entry" };
+            }
+
+            if (completed) {
+                if (entries.includes("exitcode")) {
+                    exitcode = entries.get<int>("exitcode");
+                } else {
+                    throw Error { "invalid content; missing 'exitcode' entry" };
+                }
+            }
+        } catch (const lth_jc::data_error& e) {
+            LOG_DEBUG("Failed to parse JSON content of '%1%': %2%",
+                      file, e.what());
+            throw Error { std::string("invalid content format: ") + txt };
+        }
+    }
+
+  private:
+    std::string file;
+};
 
 //
 //                          STATUS TABLE
@@ -81,50 +134,24 @@ ActionOutcome Status::callAction(const ActionRequest& request) {
     LOG_DEBUG("Retrieving results for job %1% from %2%",
               t_id, results_dir_path.string());
 
-    std::string metadata_txt;
-    lth_jc::JsonContainer action_metadata {};
-    int exitcode {};
     auto metadata_file = (results_dir_path / "metadata").string();
-    bool completed_by_metadata { false };
-    bool valid_metadata { false };
+    ActionMetadata metadata {};
 
-    if (!fs::exists(metadata_file)) {
-        LOG_ERROR("Metadata file '%1%' does not exist", metadata_file);
-    } else if (!lth_file::read(metadata_file, metadata_txt)) {
-        LOG_ERROR("Failed to read '%1%'", metadata_file);
-    } else {
-        try {
-            action_metadata = lth_jc::JsonContainer(metadata_txt);
-
-            if (action_metadata.includes("exitcode")
-                    && action_metadata.includes("completed")) {
-                valid_metadata = true;
-                completed_by_metadata = action_metadata.get<bool>("completed");
-                if (completed_by_metadata) {
-                    exitcode = action_metadata.get<int>("exitcode");
-                }
-            } else {
-                LOG_ERROR("Invalid metadata file '%1%': missing entries: %2%",
-                          metadata_file, metadata_txt);
-            }
-        } catch (const lth_jc::data_error& e) {
-            LOG_ERROR("Metadata file '%1%' has invalid format: %2%",
-                      metadata_file, e.what());
-        }
-    }
-
-    if (!valid_metadata) {
+    try {
+        metadata = ActionMetadata(metadata_file);
+    } catch (const ActionMetadata::Error& e) {
         // The file may not exist, may not be readable, or contain
         // invalid JSON - return "unknown"
+        LOG_ERROR("Cannot retrieve metadata from %1%: %2%", metadata_file, e.what());
         return ActionOutcome { EXIT_SUCCESS, results };
     }
 
     bool not_running_by_pid { false };
 
-    if (completed_by_metadata) {
+    if (metadata.completed) {
         results.set<std::string>(
             "status",
-            (exitcode == EXIT_SUCCESS ? Status::SUCCESS : Status::FAILURE));
+            (metadata.exitcode == EXIT_SUCCESS ? Status::SUCCESS : Status::FAILURE));
     } else {
         // The metadata does not report the task as completed, but it
         // may be due to a previous pxp-agent crash; if the PID file
@@ -160,7 +187,7 @@ ActionOutcome Status::callAction(const ActionRequest& request) {
         }
     }
 
-    if (completed_by_metadata || not_running_by_pid) {
+    if (metadata.completed || not_running_by_pid) {
         // The process is either completed (state may be 'failure' or
         // 'success', depending on the exit code) or not running
         // (after checking the pid - state is 'unknown'); we can send
@@ -180,7 +207,7 @@ ActionOutcome Status::callAction(const ActionRequest& request) {
             // to the "properties" object together with the metadata
         }
 
-        results.set<int>("exitcode", exitcode);
+        results.set<int>("exitcode", metadata.exitcode);
         results.set<std::string>("stdout", o);
         results.set<std::string>("stderr", e);
     }

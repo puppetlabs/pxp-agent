@@ -118,6 +118,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     try {
         outcome = module_ptr->executeAction(request);
         assert(outcome.type == ActionOutcome::Type::External);
+        exit_code = outcome.exitcode;
 
         if (request.parsedChunks().data.get<bool>("notify_outcome")) {
             connector_ptr->sendNonBlockingResponse(request, outcome.results, job_id);
