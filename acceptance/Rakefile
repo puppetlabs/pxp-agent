@@ -11,7 +11,7 @@ namespace :ci do
       if not ENV['LAYOUT']
         puts "WARNING: LAYOUT environment variable not set. Defaulting to centos7-64mdc-windows2012r2-64a"
       end
-      layout = "centos7-64mdc-windows2012r2-64a" || ENV["LAYOUT"]
+      layout = ENV["LAYOUT"] || "centos7-64mdc-windows2012r2-64a"
       generate = "bundle exec genconfig2"
       generate += " --disable-default-role #{layout}"
       generate += " > #{host_genconfigged}"
@@ -35,9 +35,17 @@ namespace :ci do
 
       generate_host_config
 
-      sh("beaker -h #{host_genconfigged} "\
+      beaker_cmd = "beaker -h #{host_genconfigged} "\
          "--tests tests "\
-         "--options config/packages/options.rb")
+         "--options config/packages/options.rb"
+      if ENV['PRESERVE_HOSTS']
+        valid_preserve_host_values = ['never', 'always', 'onfail']
+        if not valid_preserve_host_values.include?(ENV['PRESERVE_HOSTS'])
+          fail "env variable PRESERVE_HOSTS is not set to a valid value of one on #{valid_preserve_host_values.to_s}"
+        end
+        beaker_cmd = "#{beaker_cmd} --preserve-hosts #{ENV['PRESERVE_HOSTS']}"
+      end
+      sh(beaker_cmd)
     end
   end
 
