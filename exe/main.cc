@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
 
     try {
         Configuration::Instance().setupLogging();
-        LOG_INFO("pxp-agent logging has been initialized");
+        LOG_DEBUG("pxp-agent logging has been initialized");
     } catch(const Configuration::Error& e) {
         boost::nowide::cout << "Failed to configure logging: " << e.what()
                             << "\nCannot start pxp-agent"

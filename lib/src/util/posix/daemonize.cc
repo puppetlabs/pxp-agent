@@ -201,7 +201,7 @@ std::unique_ptr<PIDFile> daemonize() {
 
     // Convert the read lock to a write lock and write PID to file
 
-    LOG_DEBUG("About to convert the read lock to write lock after second fork");
+    LOG_DEBUG("Converting the read lock to write lock after second fork");
 
     try {
         pidf_ptr->lockWrite(true);  // blocking call
