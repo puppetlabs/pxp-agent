@@ -305,7 +305,7 @@ ActionOutcome ExternalModule::callBlockingAction(const ActionRequest& request) {
         path_, { action_name },
 #endif
         input_txt,  // input
-        {},         // environment
+        std::map<std::string, std::string>(),  // environment
         0,          // timeout
         { lth_exec::execution_options::merge_environment });  // options
 
@@ -337,7 +337,7 @@ ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request
         input_txt,  // input
         out_file,   // out file
         err_file,   // err file
-        {},         // environment
+        std::map<std::string, std::string>(),  // environment
         [results_dir_path](size_t pid) {
             auto pid_file = (results_dir_path / "pid").string();
             lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file);
