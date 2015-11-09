@@ -120,6 +120,9 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
         assert(outcome.type == ActionOutcome::Type::External);
         exit_code = outcome.exitcode;
 
+        LOG_INFO("Non-blocking request %1% by %2%, transaction %3%, has completed",
+                 request.id(), request.sender(), request.transactionId());
+
         if (request.parsedChunks().data.get<bool>("notify_outcome")) {
             connector_ptr->sendNonBlockingResponse(request, outcome.results, job_id);
         }
@@ -183,7 +186,7 @@ void RequestProcessor::processRequest(const RequestType& request_type,
         // Inspect and validate the request message format
         ActionRequest request { request_type, parsed_chunks };
 
-        LOG_INFO("About to process %1% request %2% by %3%, transaction %4%",
+        LOG_INFO("Processing %1% request %2% by %3%, transaction %4%",
                  requestTypeNames[request_type], request.id(), request.sender(),
                  request.transactionId());
 
@@ -200,12 +203,18 @@ void RequestProcessor::processRequest(const RequestType& request_type,
             return;
         }
 
+        LOG_DEBUG("%1% request, transaction %2%, has been successfully validated",
+                  requestTypeNames[request_type], request.transactionId());
+
         try {
             if (request.type() == RequestType::Blocking) {
                 processBlockingRequest(request);
             } else {
                 processNonBlockingRequest(request);
             }
+            LOG_DEBUG("%1% request %2% by %3%, transaction %4%, has been "
+                      "successfully processed", requestTypeNames[request_type],
+                     request.id(), request.sender(), request.transactionId());
         } catch (std::exception& e) {
             // Process failure; send *PXP error*
             LOG_ERROR("Failed to process %1% request %2% by %3%, transaction %4%: "
@@ -266,6 +275,9 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
 void RequestProcessor::processBlockingRequest(const ActionRequest& request) {
     // Execute action; possible request errors will be propagated
     auto outcome = modules_[request.module()]->executeAction(request);
+
+    LOG_INFO("Blocking request %1% by %2%, transaction %3%, has completed",
+             request.id(), request.sender(), request.transactionId());
 
     connector_ptr_->sendBlockingResponse(request, outcome.results);
 }
@@ -339,8 +351,9 @@ void RequestProcessor::loadModulesConfiguration() {
             },
             "\\.conf$");
     } else {
-        LOG_WARNING("Directory '%1%' specified by modules-config-dir doesn't "
-                    "exist", modules_config_dir_);
+        LOG_DEBUG("Directory '%1%' specified by modules-config-dir doesn't "
+                  "exist; no module configuration file will be loaded",
+                  modules_config_dir_);
     }
 }
 
@@ -421,8 +434,8 @@ void RequestProcessor::logLoadedModules() const {
         }
 
         auto txt_suffix = lth_util::plural(module.second->actions.size());
-        LOG_INFO("Loaded '%1%' module - %2%%3%%4%",
-                 module.first, txt, txt_suffix, actions_list);
+        LOG_DEBUG("Loaded '%1%' module - %2%%3%%4%",
+                  module.first, txt, txt_suffix, actions_list);
     }
 }
 
