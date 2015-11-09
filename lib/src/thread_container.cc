@@ -161,8 +161,8 @@ void ThreadContainer::monitoringTask_() {
         // destroy them when exiting
         auto num_deletes = std::distance(detached_threads_it, threads_.end());
         if (num_deletes > 0) {
-            LOG_DEBUG("About to delete %1% thread objects that have completed "
-                      "their execution; deleted %2% threads so far",
+            LOG_DEBUG("Deleting %1% thread objects that have completed their "
+                      "execution; deleted %2% threads so far",
                       num_deletes, num_erased_threads_);
             threads_.erase(detached_threads_it, threads_.end());
             num_erased_threads_ += num_deletes;
