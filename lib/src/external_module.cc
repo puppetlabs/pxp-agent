@@ -179,7 +179,7 @@ const lth_jc::JsonContainer ExternalModule::getMetadata() {
 
     try {
         metadata_validator_.validate(metadata, METADATA_SCHEMA_NAME);
-        LOG_INFO("External module %1%: metadata validation OK", module_name);
+        LOG_DEBUG("External module %1%: metadata validation OK", module_name);
     } catch (PCPClient::validation_error& e) {
         throw Module::LoadingError { std::string { "metadata validation failure: " }
                                      + e.what() };
@@ -213,7 +213,7 @@ void ExternalModule::registerActions(const lth_jc::JsonContainer& metadata) {
 void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
     // NOTE(ale): name, input, and output are required action entries
     auto action_name = action.get<std::string>("name");
-    LOG_INFO("Validating action '%1% %2%'", module_name, action_name);
+    LOG_DEBUG("Validating action '%1% %2%'", module_name, action_name);
 
     try {
         auto input_schema_json = action.get<lth_jc::JsonContainer>("input");
@@ -223,7 +223,7 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
         PCPClient::Schema output_schema { action_name, output_schema_json };
 
         // Metadata schemas are valid JSON; store metadata
-        LOG_INFO("Action '%1% %2%' has been validated", module_name, action_name);
+        LOG_DEBUG("Action '%1% %2%' has been validated", module_name, action_name);
         actions.push_back(action_name);
         input_validator_.registerSchema(input_schema);
         output_validator_.registerSchema(output_schema);
@@ -293,8 +293,10 @@ ActionOutcome ExternalModule::callBlockingAction(const ActionRequest& request) {
     auto action_name = request.action();
     auto input_txt = getRequestInput(request);
 
-    LOG_INFO("Executing '%1% %2%' (blocking request) - request input: %3%",
-             module_name, action_name, input_txt);
+    LOG_INFO("Executing '%1% %2%' (blocking request), transaction id %3%",
+             module_name, action_name, request.transactionId());
+    LOG_TRACE("Blocking request %1% input: %2%",
+              request.transactionId(), input_txt);
 
     auto exec = lth_exec::execute(
 #ifdef _WIN32
@@ -321,8 +323,10 @@ ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request
     auto err_file = (results_dir_path / "stderr").string();
 
     LOG_INFO("Starting '%1% %2%' non-blocking task (stdout and stderr will "
-             "be stored in %3%) - request input: %4%",
-             module_name, action_name, results_dir_path.string(), input_txt);
+             "be stored in %3%), transaction id %4%", module_name, action_name,
+             results_dir_path.string(), request.transactionId());
+    LOG_TRACE("Non-blocking request %1% input: %2%",
+              request.transactionId(), input_txt);
 
     auto exec = lth_exec::execute(
 #ifdef _WIN32
