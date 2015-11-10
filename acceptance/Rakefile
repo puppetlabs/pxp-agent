@@ -1,26 +1,9 @@
-def host_genconfigged
-  'hosts.cfg'
-end
-
 namespace :ci do
 
   namespace :test do
 
-    def generate_host_config
-      puts "Generating host config using genconfig"
-      if not ENV['LAYOUT']
-        puts "WARNING: LAYOUT environment variable not set. Defaulting to centos7-64mdc-windows2012r2-64a"
-      end
-      layout = ENV["LAYOUT"] || "centos7-64mdc-windows2012r2-64a"
-      generate = "bundle exec genconfig2"
-      generate += " --disable-default-role #{layout}"
-      generate += " > #{host_genconfigged}"
-      sh generate
-      sh "cat #{host_genconfigged}"
-    end
-
     # TODO (JS) this is actually AIO testing, not packages.
-    # This can only be changed if ci-job-config is updated at the same 
+    # This can only be changed if ci-job-config is updated at the same
     task :packages do
       # Start ssh-agent, parse the env variables from its output and add them to ENV
       # The usual `eval $(ssh-agent)` does not work because
@@ -34,8 +17,6 @@ namespace :ci do
           .each {|e| ENV[e[0]] = e[1] }
         `ssh-add "${HOME}/.ssh/id_rsa"`
       end
-
-      generate_host_config
 
       if not ENV['TEST_TARGET']
         fail "TEST_TARGET environment variable must be set to the name of a host config e.g. redhat-7-x86_64"
