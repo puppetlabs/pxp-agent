@@ -561,13 +561,14 @@ void Configuration::checkUnconfiguredMode() {
     auto cert = HW::GetFlag<std::string>("ssl-cert");
     auto key = HW::GetFlag<std::string>("ssl-key");
 
-
     if (ca.empty()) {
         throw Configuration::UnconfiguredError { "ssl-ca-cert value must be defined" };
     } else {
         ca = lth_file::tilde_expand(ca);
-        if (!lth_file::file_readable(ca)) {
+        if (!fs::exists(ca)){
             throw Configuration::UnconfiguredError { "ssl-ca-cert file not found" };
+        } else if (!lth_file::file_readable(ca)) {
+            throw Configuration::UnconfiguredError { "ssl-ca-cert file not readable" };
         }
     }
 
@@ -575,8 +576,10 @@ void Configuration::checkUnconfiguredMode() {
         throw Configuration::UnconfiguredError { "ssl-cert value must be defined" };
     } else {
         cert = lth_file::tilde_expand(cert);
-        if (!lth_file::file_readable(ca)) {
+        if (!fs::exists(cert)) {
             throw Configuration::UnconfiguredError { "ssl-cert file not found" };
+        } else if (!lth_file::file_readable(cert)) {
+            throw Configuration::UnconfiguredError { "ssl-cert file not readable" };
         }
     }
 
@@ -584,8 +587,10 @@ void Configuration::checkUnconfiguredMode() {
         throw Configuration::UnconfiguredError { "ssl-key value must be defined" };
     } else {
         key = lth_file::tilde_expand(key);
-        if (!lth_file::file_readable(key)) {
+        if (!fs::exists(key)) {
             throw Configuration::UnconfiguredError { "ssl-key file not found" };
+        } else if (!lth_file::file_readable(key)) {
+            throw Configuration::UnconfiguredError { "ssl-key file not readable" };
         }
     }
 

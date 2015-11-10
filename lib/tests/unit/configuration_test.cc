@@ -228,6 +228,13 @@ TEST_CASE("Configuration::validate", "[configuration]") {
                           Configuration::UnconfiguredError);
     }
 
+    SECTION("it throws an UnconfiguredError when ssl-ca-cert file is not "
+            "readable (is a directory)") {
+        HW::SetFlag<std::string>("ssl-ca-cert", "/fake");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::UnconfiguredError);
+    }
+
     SECTION("it throws an UnconfiguredError when ssl-cert is undefined") {
         HW::SetFlag<std::string>("ssl-cert", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
@@ -236,6 +243,13 @@ TEST_CASE("Configuration::validate", "[configuration]") {
 
     SECTION("it throws an UnconfiguredError when ssl-cert file cannot be found") {
         HW::SetFlag<std::string>("ssl-cert", "/fake/file");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::UnconfiguredError);
+    }
+
+    SECTION("it throws an UnconfiguredError when ssl-cert file is not "
+            "readable (is a directory)") {
+        HW::SetFlag<std::string>("ssl-cert", "/fake");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
                           Configuration::UnconfiguredError);
     }
@@ -252,7 +266,14 @@ TEST_CASE("Configuration::validate", "[configuration]") {
                           Configuration::UnconfiguredError);
     }
 
-    SECTION("it fails when spool-dir is empty") {
+    SECTION("it throws an UnconfiguredError when ssl-key file is not "
+            "readable (is a directory)") {
+        HW::SetFlag<std::string>("ssl-key", "/fake");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::UnconfiguredError);
+    }
+
+    SECTION("it fails when --spool-dir is empty") {
         HW::SetFlag<std::string>("spool-dir", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
                           Configuration::Error);
