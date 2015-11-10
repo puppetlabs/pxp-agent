@@ -19,6 +19,8 @@ namespace :ci do
       sh "cat #{host_genconfigged}"
     end
 
+    # TODO (JS) this is actually AIO testing, not packages.
+    # This can only be changed if ci-job-config is updated at the same 
     task :packages do
       # Start ssh-agent, parse the env variables from its output and add them to ENV
       # The usual `eval $(ssh-agent)` does not work because
@@ -35,9 +37,12 @@ namespace :ci do
 
       generate_host_config
 
-      beaker_cmd = "beaker -h #{host_genconfigged} "\
+      if not ENV['TEST_TARGET']
+        fail "TEST_TARGET environment variable must be set to the name of a host config e.g. redhat-7-x86_64"
+      end
+      beaker_cmd = "beaker -h config/nodes/#{ENV['TEST_TARGET']}.yaml "\
          "--tests tests "\
-         "--options config/packages/options.rb"
+         "--options config/aio/options.rb"
       if ENV['PRESERVE_HOSTS']
         valid_preserve_host_values = ['never', 'always', 'onfail']
         if not valid_preserve_host_values.include?(ENV['PRESERVE_HOSTS'])
