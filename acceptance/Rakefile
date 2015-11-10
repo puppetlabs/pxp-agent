@@ -2,9 +2,7 @@ namespace :ci do
 
   namespace :test do
 
-    # TODO (JS) this is actually AIO testing, not packages.
-    # This can only be changed if ci-job-config is updated at the same
-    task :packages do
+    task :aio do
       # Start ssh-agent, parse the env variables from its output and add them to ENV
       # The usual `eval $(ssh-agent)` does not work because
       # the exported values will not persist after the statement completes
