@@ -1,6 +1,11 @@
 namespace :ci do
 
   namespace :test do
+   
+    # TODO (JS) - once Jenkins runs the :aio task we can safely delete the :packages task 
+    task :packages do
+      Rake::Task["ci:test:aio"].invoke
+    end
 
     task :aio do
       # Start ssh-agent, parse the env variables from its output and add them to ENV
