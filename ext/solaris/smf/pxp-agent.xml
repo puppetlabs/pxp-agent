@@ -23,7 +23,7 @@
       <service_fmri value="svc:/system/filesystem/local"/>
     </dependency>
 
-    <exec_method type="method" name="start" exec="/opt/puppetlabs/puppet/bin/pxp-agent --foreground" timeout_seconds="60"/>
+    <exec_method type="method" name="start" exec="/opt/puppetlabs/puppet/bin/pxp-agent" timeout_seconds="60"/>
 
     <exec_method type="method" name="stop" exec=":kill" timeout_seconds="60"/>
 
