@@ -10,12 +10,15 @@
 
 #include <leatherman/file_util/file.hpp>
 
+#include <leatherman/util/strings.hpp>
+
 #include <leatherman/json_container/json_container.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.configuration"
 #include <leatherman/logging/logging.hpp>
 
 #include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 
 #include <boost/nowide/iostream.hpp>
 
@@ -34,6 +37,7 @@ namespace lth_file = leatherman::file_util;
 namespace lth_jc = leatherman::json_container;
 namespace lth_log = leatherman::logging;
 namespace lth_loc = leatherman::locale;
+namespace lth_util = leatherman::util;
 
 //
 // Default values
@@ -602,17 +606,38 @@ void Configuration::validateAndNormalizeConfiguration() {
         // Unexpected, since we have a default value for spool-dir
         throw Configuration::Error { "spool-dir must be defined" };
     } else {
-        auto spool_dir = HW::GetFlag<std::string>("spool-dir");
-        spool_dir = lth_file::tilde_expand(spool_dir);
+        auto spool_dir_path = fs::path {
+            lth_file::tilde_expand(HW::GetFlag<std::string>("spool-dir")) };
 
-        if (!fs::exists(spool_dir)) {
+        if (!fs::exists(spool_dir_path)) {
             throw Configuration::Error { "spool-dir does not exists" };
-        } else if (!fs::is_directory(spool_dir)) {
-            throw Configuration::Error { "--spool-dir '" + spool_dir +
-                                         "' is not a directory'"};
+        } else if (!fs::is_directory(spool_dir_path)) {
+            throw Configuration::Error { "--spool-dir '"
+                + spool_dir_path.string() + "' is not a directory" };
         }
 
-        HW::SetFlag<std::string>("spool-dir", spool_dir);
+        fs::path tmp_path;
+        do {
+            tmp_path = spool_dir_path / lth_util::get_UUID();
+        } while (fs::exists(tmp_path));
+
+        bool is_writable { false };
+        try {
+            if (fs::create_directories(tmp_path)) {
+                is_writable = true;
+                fs::remove_all(tmp_path);
+            }
+        } catch (const std::exception& e) {
+            LOG_DEBUG("Failed to create the test dir in spool path during"
+                      "configuration validation: %1%", e.what());
+        }
+
+        if (!is_writable) {
+            throw Configuration::Error { "--spool-dir '"
+                + spool_dir_path.string() + "' is not writable" };
+        }
+
+        HW::SetFlag<std::string>("spool-dir", spool_dir_path.string());
     }
 
 #ifndef _WIN32
