@@ -1,25 +1,13 @@
-def host_genconfigged
-  'hosts.cfg'
-end
-
 namespace :ci do
 
   namespace :test do
-
-    def generate_host_config
-      puts "Generating host config using genconfig"
-      if not ENV['LAYOUT']
-        puts "WARNING: LAYOUT environment variable not set. Defaulting to centos7-64mdc-windows2012r2-64a"
-      end
-      layout = ENV["LAYOUT"] || "centos7-64mdc-windows2012r2-64a"
-      generate = "bundle exec genconfig2"
-      generate += " --disable-default-role #{layout}"
-      generate += " > #{host_genconfigged}"
-      sh generate
-      sh "cat #{host_genconfigged}"
+   
+    # TODO (JS) - once Jenkins runs the :aio task we can safely delete the :packages task 
+    task :packages do
+      Rake::Task["ci:test:aio"].invoke
     end
 
-    task :packages do
+    task :aio do
       # Start ssh-agent, parse the env variables from its output and add them to ENV
       # The usual `eval $(ssh-agent)` does not work because
       # the exported values will not persist after the statement completes
@@ -33,11 +21,12 @@ namespace :ci do
         `ssh-add "${HOME}/.ssh/id_rsa"`
       end
 
-      generate_host_config
-
-      beaker_cmd = "beaker -h #{host_genconfigged} "\
+      if not ENV['TEST_TARGET']
+        fail "TEST_TARGET environment variable must be set to the name of a host config e.g. redhat-7-x86_64"
+      end
+      beaker_cmd = "beaker -h config/nodes/#{ENV['TEST_TARGET']}.yaml "\
          "--tests tests "\
-         "--options config/packages/options.rb"
+         "--options config/aio/options.rb"
       if ENV['PRESERVE_HOSTS']
         valid_preserve_host_values = ['never', 'always', 'onfail']
         if not valid_preserve_host_values.include?(ENV['PRESERVE_HOSTS'])
