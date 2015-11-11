@@ -1,4 +1,5 @@
 {
+  :log_level     => 'debug',
   :type          => 'packages',
   :forge_host    => 'forge-aio01-petest.puppetlabs.com',
   :load_path     => './lib/',
