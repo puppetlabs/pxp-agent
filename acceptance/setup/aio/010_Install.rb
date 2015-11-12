@@ -20,12 +20,10 @@ end
 
 PACKAGES = {
   :redhat => [
-    'puppet',
-    'rsync'
+    'puppet'
   ],
   :debian => [
-    'puppet',
-    'rsync'
+    'puppet'
   ],
 }
 
