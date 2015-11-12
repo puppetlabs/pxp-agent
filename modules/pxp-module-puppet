@@ -27,15 +27,6 @@ def is_win?
   return !!File::ALT_SEPARATOR
 end
 
-def quote(s)
-  quoted = (s[0] == '"' || s[0] == "'")
-  if !quoted && s.include?(' ')
-    '"'+s+'"'
-  else
-    s
-  end
-end
-
 def last_run_result(exitcode)
   return {"kind"             => "unknown",
           "time"             => "unknown",
@@ -47,8 +38,8 @@ def last_run_result(exitcode)
 end
 
 def check_config_print(cli_arg, config)
-  command = "#{quote(config["puppet_bin"])} agent --configprint #{cli_arg}"
-  process_output = Puppet::Util::Execution.execute(command)
+  command_array = [config["puppet_bin"], "agent", "--configprint", cli_arg]
+  process_output = Puppet::Util::Execution.execute(command_array)
   return process_output.to_s.chomp
 end
 
@@ -71,7 +62,7 @@ def make_environment_hash(params)
 end
 
 def make_command_array(config, params)
-  cmd_array = [quote(config["puppet_bin"]), "agent"]
+  cmd_array = [config["puppet_bin"], "agent"]
   cmd_array +=  params["flags"]
   return cmd_array
 end
