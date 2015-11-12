@@ -1,6 +1,6 @@
 step 'Copy test certs to agents'
 agents.each do |agent|
-  rsync_to(agent, '../test-resources', '~/test-resources')
+  scp_to(agent, '../test-resources', 'test-resources')
 end
 
 step 'Create config file'
