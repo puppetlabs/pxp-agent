@@ -1,11 +1,10 @@
 {
-  :log_level     => 'debug',
+  :log_level     => 'info',
   :type          => 'packages',
   :forge_host    => 'forge-aio01-petest.puppetlabs.com',
   :load_path     => './lib/',
   :repo_proxy    => true,
   :add_el_extras => true,
-  #:preserve_hosts => 'always',
   :'puppetserver-confdir' => '/etc/puppetserver/conf.d',
   :pre_suite     => [
     'setup/aio/010_Install.rb',
