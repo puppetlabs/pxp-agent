@@ -24,6 +24,7 @@ fi
 
 git clone https://github.com/puppetlabs/cpp-pcp-client
 cd cpp-pcp-client
+git checkout stable
 git submodule update --init --recursive
 cmake -DCMAKE_INSTALL_PREFIX=$USERDIR .
 make install -j2
