@@ -2,11 +2,6 @@ namespace :ci do
 
   namespace :test do
    
-    # TODO (JS) - once Jenkins runs the :aio task we can safely delete the :packages task 
-    task :packages do
-      Rake::Task["ci:test:aio"].invoke
-    end
-
     task :aio do
       if not ENV['TEST_TARGET']
         fail "TEST_TARGET environment variable must be set to the name of a host config e.g. redhat-7-x86_64"
