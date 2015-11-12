@@ -552,7 +552,7 @@ void Configuration::parseConfigFile() {
 
 void Configuration::checkUnconfiguredMode() {
     if (HW::GetFlag<std::string>("broker-ws-uri").empty()) {
-        throw Configuration::UnconfiguredError{ "broker-ws-uri value must be defined" };
+        throw Configuration::UnconfiguredError { "broker-ws-uri value must be defined" };
     } else if (HW::GetFlag<std::string>("broker-ws-uri").find("wss://") != 0) {
         throw Configuration::UnconfiguredError { "broker-ws-uri value must start with wss://" };
     }
@@ -565,10 +565,12 @@ void Configuration::checkUnconfiguredMode() {
         throw Configuration::UnconfiguredError { "ssl-ca-cert value must be defined" };
     } else {
         ca = lth_file::tilde_expand(ca);
-        if (!fs::exists(ca)){
-            throw Configuration::UnconfiguredError { "ssl-ca-cert file not found" };
+        if (!fs::exists(ca)) {
+            throw Configuration::UnconfiguredError {
+                (boost::format("ssl-ca-cert file '%1%' not found") % ca).str() };
         } else if (!lth_file::file_readable(ca)) {
-            throw Configuration::UnconfiguredError { "ssl-ca-cert file not readable" };
+            throw Configuration::UnconfiguredError {
+                (boost::format("ssl-ca-cert file '%1%' not readable") % ca).str() };
         }
     }
 
@@ -577,9 +579,11 @@ void Configuration::checkUnconfiguredMode() {
     } else {
         cert = lth_file::tilde_expand(cert);
         if (!fs::exists(cert)) {
-            throw Configuration::UnconfiguredError { "ssl-cert file not found" };
+            throw Configuration::UnconfiguredError {
+                (boost::format("ssl-cert file '%1%' not found") % cert).str() };
         } else if (!lth_file::file_readable(cert)) {
-            throw Configuration::UnconfiguredError { "ssl-cert file not readable" };
+            throw Configuration::UnconfiguredError {
+                (boost::format("ssl-cert file '%1%' not readable") % cert).str() };
         }
     }
 
@@ -588,9 +592,11 @@ void Configuration::checkUnconfiguredMode() {
     } else {
         key = lth_file::tilde_expand(key);
         if (!fs::exists(key)) {
-            throw Configuration::UnconfiguredError { "ssl-key file not found" };
+            throw Configuration::UnconfiguredError {
+                (boost::format("ssl-key file '%1%' not found") % key).str() };
         } else if (!lth_file::file_readable(key)) {
-            throw Configuration::UnconfiguredError { "ssl-key file not readable" };
+            throw Configuration::UnconfiguredError {
+                (boost::format("ssl-key file '%1%' not readable") % key).str() };
         }
     }
 

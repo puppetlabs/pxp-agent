@@ -34,9 +34,19 @@ on(agent1, "sed -i 's/\\(.*\\\"ssl-cert\\\".*test-resources.*\\)ssl/\\1ssl#{sed_
 on(agent1, "sed -i 's/\\(.*\\\"ssl-cert\\\".*\\)client01.example.com.pem/\\1client01.alt.example.com.pem/g' #{conf_dir}/pxp-agent.conf")
 
 step 'C94730 - Attempt to run pxp-agent with mismatching SSL cert and private key'
+expected_private_key_error='failed to load private key'
 on agent1, puppet('resource service pxp-agent ensure=running')
-retry_on(agent1, "grep 'failed to load private key' #{log_file}", {:max_retries => 30,
-                                                                   :retry_interval => 1})
+# If the expected error does not appear in log within 30 seconds, then do an
+# explicit assertion so we see the log contents in the test failure output 
+begin
+  retry_on(agent1, "grep '#{expected_private_key_error}' #{log_file}", {:max_retries => 30,
+                                                                        :retry_interval => 1})
+rescue
+  on(agent1, "cat #{log_file}") do |result|
+    assert_match(expected_private_key_error, result.stdout,
+                "Expected error '#{expected_private_key_error}' did not appear in pxp-agent.log")
+  end
+end
 assert(on(agent1, "grep 'pxp-agent will start unconfigured' #{log_file}"),
        "pxp-agent should log that is will start unconfigured")
 on agent1, puppet('resource service pxp-agent') do |result|

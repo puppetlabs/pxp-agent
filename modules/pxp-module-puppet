@@ -38,8 +38,8 @@ def last_run_result(exitcode)
 end
 
 def check_config_print(cli_arg, config)
-  command = "#{config["puppet_bin"]} agent --configprint #{cli_arg}"
-  process_output = Puppet::Util::Execution.execute(command)
+  command_array = [config["puppet_bin"], "agent", "--configprint", cli_arg]
+  process_output = Puppet::Util::Execution.execute(command_array)
   return process_output.to_s.chomp
 end
 

@@ -26,8 +26,8 @@ describe "pxp-module-puppet" do
 
   describe "check_config_print" do
     it "returns the result of configprint" do
-      cli_str = "puppet agent --configprint value"
-      expect(Puppet::Util::Execution).to receive(:execute).with(cli_str).and_return("value\n")
+      cli_vec = ["puppet", "agent", "--configprint", "value"]
+      expect(Puppet::Util::Execution).to receive(:execute).with(cli_vec).and_return("value\n")
       expect(check_config_print("value", default_config)).to be == "value"
     end
   end
