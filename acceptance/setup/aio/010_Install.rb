@@ -4,9 +4,12 @@ require 'beaker/dsl/install_utils'
 extend Beaker::DSL::InstallUtils
 
 test_name "Install Packages"
+if (ENV['SHA']) && (not ENV['SUITE_COMMIT'])
+  ENV['SUITE_COMMIT'] = ENV['SHA']
+end
 sha = ENV['SUITE_COMMIT']
 unless (sha) then
-  fail('SUITE_COMMIT environment variable must be set to the SHA of the puppet-agent package to test')
+  fail('SUITE_COMMIT or SHA environment variable must be set to the SHA of the puppet-agent package to test')
 end
 
 step "Install repositories on target machines..." do
