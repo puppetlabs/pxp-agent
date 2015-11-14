@@ -11,6 +11,7 @@
 #include <leatherman/file_util/directory.hpp>
 #include <leatherman/util/strings.hpp>
 #include <leatherman/util/timer.hpp>
+#include <leatherman/util/scope_exit.hpp>
 
 #include <cpp-pcp-client/util/thread.hpp>
 
@@ -18,6 +19,7 @@
 #include <leatherman/logging/logging.hpp>
 
 #include <boost/filesystem/operations.hpp>
+#include <boost/interprocess/sync/named_mutex.hpp>
 
 #include <vector>
 #include <atomic>
@@ -27,6 +29,7 @@
 namespace PXPAgent {
 
 namespace fs = boost::filesystem;
+namespace ip = boost::interprocess;
 namespace lth_jc = leatherman::json_container;
 namespace lth_file = leatherman::file_util;
 namespace lth_util = leatherman::util;
@@ -105,7 +108,7 @@ class ResultsStorage {
 
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ActionRequest request,
-                           std::string job_id,
+                           std::string transaction_id,
                            ResultsStorage results_storage,
                            std::shared_ptr<PXPConnector> connector_ptr,
                            std::shared_ptr<std::atomic<bool>> done) {
@@ -114,9 +117,24 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     ActionOutcome outcome {};
     int exit_code { EXIT_FAILURE };
     lth_jc::JsonContainer results {};
+    bool completed { false };
+    // NOTE(ale): an interprocesse_exception is thrown if the entire
+    // transaction id is used as the name; it's too long
+    ip::named_mutex mtx { ip::open_or_create,
+                          transaction_id.substr(0, 8).c_str() };
+    lth_util::scope_exit task_cleaner {
+        [&]() {
+            // Ensure we unlock only after locking
+            if (completed) mtx.unlock();
+            // Flag the end of execution, for the thread container
+            *done = true;
+        }
+    };
 
     try {
         outcome = module_ptr->executeAction(request);
+        mtx.lock();
+        completed = true;
         assert(outcome.type == ActionOutcome::Type::External);
         exit_code = outcome.exitcode;
 
@@ -124,32 +142,39 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                  request.id(), request.sender(), request.transactionId());
 
         if (request.parsedChunks().data.get<bool>("notify_outcome")) {
-            connector_ptr->sendNonBlockingResponse(request, outcome.results, job_id);
+            connector_ptr->sendNonBlockingResponse(request, outcome.results,
+                                                   transaction_id);
         }
     } catch (const Module::ProcessingError& e) {
-        connector_ptr->sendPXPError(request, e.what());
         exec_error = std::string("Failed to execute: ") + e.what() + "\n";
-        LOG_ERROR("Failed to execute '%1% %2%': %3%",
-                  request.module(), request.action(), e.what());
-    } catch (PCPClient::connection_error& e) {
+        LOG_ERROR("Failed to execute '%1% %2%' %3%: %4%",
+                  request.module(), request.action(), transaction_id, e.what());
+        try {
+            connector_ptr->sendPXPError(request, e.what());
+        } catch (const PCPClient::connection_error& e) {
+            LOG_ERROR("Failed to send PXP Error for (failed) '%1% %2%' %3%: %4%",
+                      request.module(), request.action(), transaction_id, e.what());
+        }
+    } catch (const PCPClient::connection_error& e) {
         exec_error = std::string("Failed to send non blocking response: ")
                      + e.what() + "\n";
-        LOG_ERROR("Failed to send non blocking response for '%1% %2%': %3%",
-                  request.module(), request.action(), e.what());
+        LOG_ERROR("Failed to send non blocking response for '%1% %2%' %3%: %4%",
+                  request.module(), request.action(), transaction_id, e.what());
+    } catch (const boost::interprocess::interprocess_exception& e) {
+        exec_error = std::string("Failed to lock the metadata file: ")
+                     + e.what() + "\n";
+        LOG_ERROR("Failed to lock metadata file for '%1% %2%' %3%: %4%",
+                  request.module(), request.action(), transaction_id, e.what());
     }
 
     // Store metadata on disk
     auto duration = std::to_string(timer.elapsed_seconds()) + " s";
     try {
-        // Catch possible write error to ensure signalling we're done
         results_storage.writeMetadata(exit_code, exec_error, duration);
-    } catch (const std::exception& e) {
+    } catch (const ResultsStorage::Error& e) {
         LOG_ERROR("Failed to write metadata of non blocking request %1%: %2%",
-                  job_id, e.what());
+                  transaction_id, e.what());
     }
-
-    // Flag end of processing
-    *done = true;
 }
 
 //
@@ -203,7 +228,7 @@ void RequestProcessor::processRequest(const RequestType& request_type,
             return;
         }
 
-        LOG_DEBUG("%1% request, transaction %2%, has been successfully validated",
+        LOG_DEBUG("The %1% request, transaction %2%, has been successfully validated",
                   requestTypeNames[request_type], request.transactionId());
 
         try {
@@ -212,7 +237,7 @@ void RequestProcessor::processRequest(const RequestType& request_type,
             } else {
                 processNonBlockingRequest(request);
             }
-            LOG_DEBUG("%1% request %2% by %3%, transaction %4%, has been "
+            LOG_DEBUG("The %1% request %2% by %3%, transaction %4%, has been "
                       "successfully processed", requestTypeNames[request_type],
                      request.id(), request.sender(), request.transactionId());
         } catch (std::exception& e) {
