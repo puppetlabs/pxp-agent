@@ -1,4 +1,5 @@
 #include <pxp-agent/request_processor.hpp>
+#include <pxp-agent/results_mutex.hpp>
 #include <pxp-agent/action_outcome.hpp>
 #include <pxp-agent/pxp_schemas.hpp>
 #include <pxp-agent/external_module.hpp>
@@ -11,6 +12,7 @@
 #include <leatherman/file_util/directory.hpp>
 #include <leatherman/util/strings.hpp>
 #include <leatherman/util/timer.hpp>
+#include <leatherman/util/scope_exit.hpp>
 
 #include <cpp-pcp-client/util/thread.hpp>
 
@@ -23,6 +25,7 @@
 #include <atomic>
 #include <functional>
 #include <stdexcept>  // out_of_range
+#include <memory>
 
 namespace PXPAgent {
 
@@ -30,6 +33,7 @@ namespace fs = boost::filesystem;
 namespace lth_jc = leatherman::json_container;
 namespace lth_file = leatherman::file_util;
 namespace lth_util = leatherman::util;
+namespace pcp_util = PCPClient::Util;
 
 //
 // Results Storage
@@ -96,6 +100,15 @@ class ResultsStorage {
 
         lth_file::atomic_write_to_file(action_metadata.toString() + "\n",
                                        metadata_file);
+
+        ResultsMutex::LockGuard a_l { ResultsMutex::Instance().access_mtx };
+        if (ResultsMutex::Instance().exists(request.transactionId())) {
+            // Mutex already exists; unexpected
+            LOG_DEBUG("Mutex for transaction ID %1% is already cached",
+                      request.transactionId());
+        } else {
+            ResultsMutex::Instance().add(request.transactionId());
+        }
     }
 };
 
@@ -105,7 +118,7 @@ class ResultsStorage {
 
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ActionRequest request,
-                           std::string job_id,
+                           std::string transaction_id,
                            ResultsStorage results_storage,
                            std::shared_ptr<PXPConnector> connector_ptr,
                            std::shared_ptr<std::atomic<bool>> done) {
@@ -114,9 +127,61 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     ActionOutcome outcome {};
     int exit_code { EXIT_FAILURE };
     lth_jc::JsonContainer results {};
+    bool completed { false };
+    ResultsMutex::Mutex_Ptr mtx_ptr;
+    std::unique_ptr<ResultsMutex::Lock> lck_ptr;
+
+    try {
+        ResultsMutex::LockGuard a_l { ResultsMutex::Instance().access_mtx };
+        mtx_ptr = ResultsMutex::Instance().get(transaction_id);
+        lck_ptr.reset(new ResultsMutex::Lock(*mtx_ptr, pcp_util::defer_lock));
+    } catch (const ResultsMutex::Error& e) {
+        // This is unexpected
+        LOG_ERROR("Failed to obtain the mutex pointer for transaction %1%: %2%",
+                  transaction_id, e.what());
+    }
+
+    lth_util::scope_exit task_cleaner {
+        [&]() {
+            if (lck_ptr != nullptr) {
+                // Lock and remove the mutex for this non-blocking
+                // transaction
+                if (!completed) {
+                    LOG_TRACE("Locking transaction mutex %1% - the action did "
+                              "not complete successfully", transaction_id);
+                    lck_ptr->lock();
+                }
+                try {
+                    ResultsMutex::LockGuard a_l {
+                        ResultsMutex::Instance().access_mtx };  // RAII
+                    ResultsMutex::Instance().remove(transaction_id);
+                } catch (const ResultsMutex::Error& e) {
+                    // Unexpected; if we have a lock pointer it means
+                    // that the mutex was cached
+                    LOG_ERROR("Failed to remove the mutex pointer for "
+                              "transaction %1%: %2%", transaction_id, e.what());
+                }
+                lck_ptr->unlock();
+                LOG_TRACE("Unlocked transaction mutex %1%", transaction_id);
+            }
+
+            // Flag the end of execution, for the thread container
+            *done = true;
+        }
+    };
 
     try {
         outcome = module_ptr->executeAction(request);
+        if (lck_ptr != nullptr) {
+            LOG_TRACE("Locking transaction mutex %1%", transaction_id);
+            lck_ptr->lock();
+        } else {
+            // This is unexpected
+            LOG_TRACE("We previously failed to obtain the mutex pointer for "
+                      "transaction %1%; we will not lock the access to the "
+                      "metadata file", request.transactionId());
+        }
+        completed = true;
         assert(outcome.type == ActionOutcome::Type::External);
         exit_code = outcome.exitcode;
 
@@ -124,32 +189,34 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                  request.id(), request.sender(), request.transactionId());
 
         if (request.parsedChunks().data.get<bool>("notify_outcome")) {
-            connector_ptr->sendNonBlockingResponse(request, outcome.results, job_id);
+            connector_ptr->sendNonBlockingResponse(request, outcome.results,
+                                                   transaction_id);
         }
     } catch (const Module::ProcessingError& e) {
-        connector_ptr->sendPXPError(request, e.what());
         exec_error = std::string("Failed to execute: ") + e.what() + "\n";
-        LOG_ERROR("Failed to execute '%1% %2%': %3%",
-                  request.module(), request.action(), e.what());
-    } catch (PCPClient::connection_error& e) {
+        LOG_ERROR("Failed to execute '%1% %2%' %3%: %4%",
+                  request.module(), request.action(), transaction_id, e.what());
+        try {
+            connector_ptr->sendPXPError(request, e.what());
+        } catch (const PCPClient::connection_error& e) {
+            LOG_ERROR("Failed to send PXP Error for (failed) '%1% %2%' %3%: %4%",
+                      request.module(), request.action(), transaction_id, e.what());
+        }
+    } catch (const PCPClient::connection_error& e) {
         exec_error = std::string("Failed to send non blocking response: ")
                      + e.what() + "\n";
-        LOG_ERROR("Failed to send non blocking response for '%1% %2%': %3%",
-                  request.module(), request.action(), e.what());
+        LOG_ERROR("Failed to send non blocking response for '%1% %2%' %3%: %4%",
+                  request.module(), request.action(), transaction_id, e.what());
     }
 
     // Store metadata on disk
     auto duration = std::to_string(timer.elapsed_seconds()) + " s";
     try {
-        // Catch possible write error to ensure signalling we're done
         results_storage.writeMetadata(exit_code, exec_error, duration);
-    } catch (const std::exception& e) {
+    } catch (const ResultsStorage::Error& e) {
         LOG_ERROR("Failed to write metadata of non blocking request %1%: %2%",
-                  job_id, e.what());
+                  transaction_id, e.what());
     }
-
-    // Flag end of processing
-    *done = true;
 }
 
 //
@@ -295,13 +362,13 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
         // Flag to enable signaling from task to thread_container
         auto done = std::make_shared<std::atomic<bool>>(false);
 
-        thread_container_.add(PCPClient::Util::thread(&nonBlockingActionTask,
-                                                      modules_[request.module()],
-                                                      request,
-                                                      request.transactionId(),
-                                                      ResultsStorage { request, results_dir },
-                                                      connector_ptr_,
-                                                      done),
+        thread_container_.add(pcp_util::thread(&nonBlockingActionTask,
+                                               modules_[request.module()],
+                                               request,
+                                               request.transactionId(),
+                                               ResultsStorage { request, results_dir },
+                                               connector_ptr_,
+                                               done),
                               done);
     } catch (ResultsStorage::Error& e) {
         // Failed to instantiate ResultsStorage
