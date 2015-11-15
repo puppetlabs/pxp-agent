@@ -203,7 +203,7 @@ void RequestProcessor::processRequest(const RequestType& request_type,
             return;
         }
 
-        LOG_DEBUG("%1% request, transaction %2%, has been successfully validated",
+        LOG_DEBUG("The %1% request, transaction %2%, has been successfully validated",
                   requestTypeNames[request_type], request.transactionId());
 
         try {
@@ -212,7 +212,7 @@ void RequestProcessor::processRequest(const RequestType& request_type,
             } else {
                 processNonBlockingRequest(request);
             }
-            LOG_DEBUG("%1% request %2% by %3%, transaction %4%, has been "
+            LOG_DEBUG("The %1% request %2% by %3%, transaction %4%, has been "
                       "successfully processed", requestTypeNames[request_type],
                      request.id(), request.sender(), request.transactionId());
         } catch (std::exception& e) {
