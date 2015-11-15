@@ -15,15 +15,16 @@ set(LIBRARY_COMMON_SOURCES
     src/action_request.cc
     src/agent.cc
     src/configuration.cc
-    src/pxp_connector.cc
     src/external_module.cc
     src/module.cc
+    src/pxp_connector.cc
+    src/pxp_schemas.cc
+    src/request_processor.cc
+    src/results_mutex.cc
+    src/thread_container.cc
     src/modules/echo.cc
     src/modules/ping.cc
     src/modules/status.cc
-    src/request_processor.cc
-    src/pxp_schemas.cc
-    src/thread_container.cc
 )
 
 if (UNIX)
