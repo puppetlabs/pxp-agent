@@ -4,6 +4,9 @@ require 'json'
 PXP_CONFIG_DIR_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/etc/'
 PXP_CONFIG_DIR_POSIX = '/etc/puppetlabs/pxp-agent/'
 
+PXP_LOG_FILE_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/var/log/pxp-agent.log'
+PXP_LOG_FILE_POSIX = '/var/log/puppetlabs/pxp-agent/pxp-agent.log'
+
 PCP_BROKER_PORT = 8142
 
 SSL_BASE_DIR_WINDOWS = "C:\\\\cygwin64\\\\home\\\\Administrator\\\\test-resources\\\\ssl\\\\"
@@ -113,6 +116,14 @@ end
 # @return the broker-ws-uri config string
 def broker_ws_uri(broker_host)
   "wss://#{master}:#{PCP_BROKER_PORT}/pcp/"
+end
+
+# @param host the beaker host you want the path to the log file on
+# @return The path to the log file on the host. For Windows, a cygpath is returned
+def logfile(host)
+  windows?(host)?
+    PXP_LOG_FILE_CYGPATH :
+    PXP_LOG_FILE_POSIX
 end
 
 # @param host the beaker host (to determine the correct path for the OS)
