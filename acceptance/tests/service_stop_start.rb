@@ -1,15 +1,13 @@
+require 'pxp-agent/config_helper.rb'
+
 test_name 'Service Start stop/start, with configuration)'
 @agent1 = agents[0]
-@pxp_conf_file = '/etc/puppetlabs/pxp-agent/pxp-agent.conf'
-if @agent1.platform.start_with?('windows')
-  @pxp_conf_file = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/etc/pxp-agent.conf'
-end
 @pxp_temp_file = '~/pxp-agent.conf'
 
 # On teardown, restore configuration file
 teardown do
   if @agent1.file_exist?(@pxp_temp_file)
-    on(@agent1, "mv #{@pxp_temp_file} #{@pxp_conf_file}")
+    on(@agent1, "mv #{@pxp_temp_file} #{pxp_agent_config_file(@agent1)}")
   end
 end
 
@@ -47,7 +45,7 @@ assert_stopped
 
 step 'Remove configuration'
 stop_service
-on(@agent1, "mv #{@pxp_conf_file} #{@pxp_temp_file}")
+on(@agent1, "mv #{pxp_agent_config_file(@agent1)} #{@pxp_temp_file}")
 
 step 'C94686 - Service Start (from stopped, un-configured)'
 start_service
@@ -58,4 +56,4 @@ stop_service
 assert_stopped
 
 step 'Restore configuration'
-on(@agent1, "mv #{@pxp_temp_file} #{@pxp_conf_file}")
+on(@agent1, "mv #{@pxp_temp_file} #{pxp_agent_config_file(@agent1)}")
