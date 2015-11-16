@@ -1,3 +1,4 @@
+require 'json'
 # This file contains common strings and functions for pxp-agent acceptance tests to use
 
 PXP_CONFIG_DIR_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/etc/'
@@ -26,6 +27,86 @@ end
 
 def windows?(host)
   host.platform.upcase.start_with?('WINDOWS')
+end
+
+# @param broker the host that runs pcp-broker
+# @param agent the agent machine that this config is for
+# @param client_number which client cert 01-05 to use
+# @return pxp-agent config as a JSON object
+def pxp_config_json(broker, agent, client_number)
+  pxp_config_hash(broker, agent, client_number).to_json
+end
+
+# @param broker the host that runs pcp-broker
+# @param agent the agent machine that this config is for
+# @param client_number which client cert 01-05 to use
+# @return pxp-agent config as a hash
+def pxp_config_hash(broker, agent, client_number)
+  { "broker-ws-uri" => "#{broker_ws_uri(broker)}",
+    "ssl-key" => "#{ssl_key_file(agent, client_number)}",
+    "ssl-ca-cert" => "#{ssl_ca_file(agent)}",
+    "ssl-cert" => "#{ssl_cert_file(agent, client_number)}"
+  }
+end
+
+# @param broker the host that runs pcp-broker
+# @param agent the agent machine that this config is for
+# @param client_number which alternative client cert 01-05 to use
+# @return pxp-agent config, using the alternative set of ssl certs, as a JSON object
+def pxp_alternative_ssl_config_json(broker, agent, client_number)
+  pxp_alternative_ssl_config_hash(broker, agent, client_number).to_json
+end
+
+# @param broker the host that runs pcp-broker
+# @param agent the agent machine that this config is for
+# @param client_number which alternative client cert 01-05 to use
+# @return pxp-agent config, using the alternative set of ssl certs, as a hash
+def pxp_alternative_ssl_config_hash(broker, agent, client_number)
+  { "broker-ws-uri" => "#{broker_ws_uri(broker)}",
+    "ssl-key" => "#{alt_ssl_key_file(agent, client_number)}",
+    "ssl-ca-cert" => "#{alt_ssl_ca_file(agent)}",
+    "ssl-cert" => "#{alt_ssl_cert_file(agent, client_number)}"
+  }
+end
+
+# @param broker the host that runs pcp-broker
+# @param agent the agent machine that this config is for
+# @param client_number which client cert 01-05 to use
+# @return pxp-agent config, with intentionally mismatching ssl cert and key, as a JSON object
+def pxp_invalid_config_mismatching_keys_json(broker, agent, client_number)
+  pxp_invalid_config_mismatching_keys_hash(broker, agent, client_number).to_json
+end
+
+# @param broker the host that runs pcp-broker
+# @param agent the agent machine that this config is for
+# @param client_number which client cert 01-05 to use
+# @return pxp-agent config, with intentionally mismatching ssl cert and key, as a hash
+def pxp_invalid_config_mismatching_keys_hash(broker, agent, client_number)
+  { "broker-ws-uri" => "#{broker_ws_uri(broker)}",
+    "ssl-key" => "#{ssl_key_file(agent, client_number)}",
+    "ssl-ca-cert" => "#{ssl_ca_file(agent)}",
+    "ssl-cert" => "#{alt_ssl_cert_file(agent, client_number)}"
+  }
+end
+
+# @param broker the host that runs pcp-broker
+# @param agent the agent machine that this config is for
+# @param client_number which client cert 01-05 to use
+# @return pxp-agent config, with ssl ca cert intentionally not matching its ssl cert and key, as a JSON object
+def pxp_invalid_config_wrong_ca_json(broker, agent, client_number)
+  pxp_invalid_config_wrong_ca_hash(broker, agent, client_number).to_json
+end
+
+# @param broker the host that runs pcp-broker
+# @param agent the agent machine that this config is for
+# @param client_number which client cert 01-05 to use
+# @return pxp-agent config, with ssl ca cert intentionally not matching its ssl cert and key, as a hash
+def pxp_invalid_config_wrong_ca_hash(broker, agent, client_number)
+  { "broker-ws-uri" => "#{broker_ws_uri(broker)}",
+    "ssl-key" => "#{alt_ssl_key_file(agent, client_number)}",
+    "ssl-ca-cert" => "#{ssl_ca_file(agent)}",
+    "ssl-cert" => "#{alt_ssl_cert_file(agent, client_number)}"
+  }
 end
 
 # @param broker_host the host name or beaker host object for the pcp-broker host
