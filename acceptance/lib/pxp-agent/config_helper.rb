@@ -9,6 +9,7 @@ PXP_LOG_FILE_POSIX = '/var/log/puppetlabs/pxp-agent/pxp-agent.log'
 
 PCP_BROKER_PORT = 8142
 
+# SSL directories and files for our standard set of test certs
 SSL_BASE_DIR_WINDOWS = "C:\\\\cygwin64\\\\home\\\\Administrator\\\\test-resources\\\\ssl\\\\"
 SSL_BASE_DIR_POSIX = "/root/test-resources/ssl/"
 ALT_SSL_BASE_DIR_WINDOWS = "C:\\\\cygwin64\\\\home\\\\Administrator\\\\test-resources\\\\ssl\\\\alternative\\\\"
@@ -20,6 +21,8 @@ SSL_CA_FILE_DIR_POSIX = "ca/"
 SSL_CERT_FILE_DIR_WINDOWS = "certs\\\\"
 SSL_CERT_FILE_DIR_POSIX = "certs/"
 
+# Our standard set of test certs use two digits in the filename
+# so we need to pad with zero if a single digit number was passed
 def left_pad_with_zero(number)
   if (number.to_s.length == 1)
     "0#{number}"
@@ -32,19 +35,44 @@ def windows?(host)
   host.platform.upcase.start_with?('WINDOWS')
 end
 
-# @param broker the host that runs pcp-broker
-# @param agent the agent machine that this config is for
-# @param client_number which client cert 01-05 to use
-# @return pxp-agent config as a JSON object
-def pxp_config_json(broker, agent, client_number)
-  pxp_config_hash(broker, agent, client_number).to_json
+# @param broker hostname or beaker host object of the machine running pcp-broker
+# @param agent beaker host object of the agent machine that will receive this config
+# @param ssl_config hash of strings for the config keys
+#                   :broker_ws_uri - the pcp-broker uri (optional, will default using the broker hostname if not set)
+#                   :ssl_key - the private key file (mandatory)
+#                   :ssl_ca_cert - the ca file for the ssl keys (mandatory)
+#                   :ssl_cert - the public cert file (mandatory)
+# @return JSON object with pxp-agent config
+# @raise ArgumentError if one of the mandatory config keys is not passed into the method
+def pxp_config_json(broker, agent, ssl_config = {})
+  mandatory_config_keys = [:ssl_key, :ssl_ca_cert, :ssl_cert]
+  missing_config = mandatory_config_keys - ssl_config.keys
+  if (missing_config != [])
+    raise ArgumentError.new("Mandatory SSL config values are missing from ssl_config passsed into method: #{missing_config.to_s}")
+  end
+  if not ssl_config[:broker_ws_uri]
+    ssl_config[:broker_ws_uri] = broker_ws_uri(broker)
+  end
+  { "broker-ws-uri" => ssl_config[:broker_ws_uri],
+    "ssl-key" => ssl_config[:ssl_key],
+    "ssl-ca-cert" => ssl_config[:ssl_ca_cert],
+    "ssl-cert" => ssl_config[:ssl_cert]
+  }.to_json
 end
 
 # @param broker the host that runs pcp-broker
 # @param agent the agent machine that this config is for
-# @param client_number which client cert 01-05 to use
-# @return pxp-agent config as a hash
-def pxp_config_hash(broker, agent, client_number)
+# @param client_number which client cert 01-05 from our standard test certs to use
+# @return pxp-agent config as a JSON object, using our standard test cert files
+def pxp_config_json_using_test_certs(broker, agent, client_number)
+  pxp_config_hash_using_test_certs(broker, agent, client_number).to_json
+end
+
+# @param broker the host that runs pcp-broker
+# @param agent the agent machine that this config is for
+# @param client_number which client cert 01-05 from our standard test certs to use
+# @return pxp-agent config as a hash, using our standard test cert files
+def pxp_config_hash_using_test_certs(broker, agent, client_number)
   { "broker-ws-uri" => "#{broker_ws_uri(broker)}",
     "ssl-key" => "#{ssl_key_file(agent, client_number)}",
     "ssl-ca-cert" => "#{ssl_ca_file(agent)}",
@@ -52,70 +80,10 @@ def pxp_config_hash(broker, agent, client_number)
   }
 end
 
-# @param broker the host that runs pcp-broker
-# @param agent the agent machine that this config is for
-# @param client_number which alternative client cert 01-05 to use
-# @return pxp-agent config, using the alternative set of ssl certs, as a JSON object
-def pxp_alternative_ssl_config_json(broker, agent, client_number)
-  pxp_alternative_ssl_config_hash(broker, agent, client_number).to_json
-end
-
-# @param broker the host that runs pcp-broker
-# @param agent the agent machine that this config is for
-# @param client_number which alternative client cert 01-05 to use
-# @return pxp-agent config, using the alternative set of ssl certs, as a hash
-def pxp_alternative_ssl_config_hash(broker, agent, client_number)
-  { "broker-ws-uri" => "#{broker_ws_uri(broker)}",
-    "ssl-key" => "#{alt_ssl_key_file(agent, client_number)}",
-    "ssl-ca-cert" => "#{alt_ssl_ca_file(agent)}",
-    "ssl-cert" => "#{alt_ssl_cert_file(agent, client_number)}"
-  }
-end
-
-# @param broker the host that runs pcp-broker
-# @param agent the agent machine that this config is for
-# @param client_number which client cert 01-05 to use
-# @return pxp-agent config, with intentionally mismatching ssl cert and key, as a JSON object
-def pxp_invalid_config_mismatching_keys_json(broker, agent, client_number)
-  pxp_invalid_config_mismatching_keys_hash(broker, agent, client_number).to_json
-end
-
-# @param broker the host that runs pcp-broker
-# @param agent the agent machine that this config is for
-# @param client_number which client cert 01-05 to use
-# @return pxp-agent config, with intentionally mismatching ssl cert and key, as a hash
-def pxp_invalid_config_mismatching_keys_hash(broker, agent, client_number)
-  { "broker-ws-uri" => "#{broker_ws_uri(broker)}",
-    "ssl-key" => "#{ssl_key_file(agent, client_number)}",
-    "ssl-ca-cert" => "#{ssl_ca_file(agent)}",
-    "ssl-cert" => "#{alt_ssl_cert_file(agent, client_number)}"
-  }
-end
-
-# @param broker the host that runs pcp-broker
-# @param agent the agent machine that this config is for
-# @param client_number which client cert 01-05 to use
-# @return pxp-agent config, with ssl ca cert intentionally not matching its ssl cert and key, as a JSON object
-def pxp_invalid_config_wrong_ca_json(broker, agent, client_number)
-  pxp_invalid_config_wrong_ca_hash(broker, agent, client_number).to_json
-end
-
-# @param broker the host that runs pcp-broker
-# @param agent the agent machine that this config is for
-# @param client_number which client cert 01-05 to use
-# @return pxp-agent config, with ssl ca cert intentionally not matching its ssl cert and key, as a hash
-def pxp_invalid_config_wrong_ca_hash(broker, agent, client_number)
-  { "broker-ws-uri" => "#{broker_ws_uri(broker)}",
-    "ssl-key" => "#{alt_ssl_key_file(agent, client_number)}",
-    "ssl-ca-cert" => "#{ssl_ca_file(agent)}",
-    "ssl-cert" => "#{alt_ssl_cert_file(agent, client_number)}"
-  }
-end
-
 # @param broker_host the host name or beaker host object for the pcp-broker host
 # @return the broker-ws-uri config string
 def broker_ws_uri(broker_host)
-  "wss://#{master}:#{PCP_BROKER_PORT}/pcp/"
+  "wss://#{broker_host}:#{PCP_BROKER_PORT}/pcp/"
 end
 
 # @param host the beaker host you want the path to the log file on

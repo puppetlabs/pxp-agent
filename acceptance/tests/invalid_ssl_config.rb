@@ -7,7 +7,7 @@ agent1 = agents[0]
 # On teardown, restore valid config file
 teardown do
   on agent1, puppet('resource service pxp-agent ensure=stopped')
-  create_remote_file(agent1, pxp_agent_config_file(agent1), pxp_config_json(master, agent1, 1).to_s)
+  create_remote_file(agent1, pxp_agent_config_file(agent1), pxp_config_json_using_test_certs(master, agent1, 1).to_s)
   on agent1, puppet('resource service pxp-agent ensure=running')
 end
 
@@ -18,7 +18,11 @@ step "Setup - Wipe pxp-agent log"
 on(agent1, "rm -rf #{logfile(agent1)}")
 
 step "Setup - Change pxp-agent config to use a cert that doesn't match private key"
-create_remote_file(agent1, pxp_agent_config_file(agent1), pxp_invalid_config_mismatching_keys_json(master, agent1, 1).to_s)
+invalid_config_mismatching_keys = {:broker_ws_uri => broker_ws_uri(master),
+                                   :ssl_key => ssl_key_file(agent1, 1),
+                                   :ssl_ca_cert => ssl_ca_file(agent1),
+                                   :ssl_cert => alt_ssl_cert_file(agent1, 1)}
+create_remote_file(agent1, pxp_agent_config_file(agent1), pxp_config_json(master, agent1, invalid_config_mismatching_keys).to_s)
 
 step 'C94730 - Attempt to run pxp-agent with mismatching SSL cert and private key'
 expected_private_key_error='failed to load private key'
@@ -45,7 +49,11 @@ on agent1, puppet('resource service pxp-agent ensure=stopped')
 on(agent, "rm -rf #{logfile(agent1)}")
 
 step "Change pxp-agent config so the cert and key match but they are of a different ca than the broker"
-create_remote_file(agent1, pxp_agent_config_file(agent1), pxp_invalid_config_wrong_ca_json(master, agent1, 1).to_s)
+invalid_config_wrong_ca = {:broker_ws_uri => broker_ws_uri(master),
+                           :ssl_key => alt_ssl_key_file(agent1, 1),
+                           :ssl_ca_cert => ssl_ca_file(agent1),
+                           :ssl_cert => alt_ssl_cert_file(agent1, 1)}
+create_remote_file(agent1, pxp_agent_config_file(agent1), pxp_config_json(master, agent1, invalid_config_wrong_ca).to_s)
 
 step 'C94729 - Attempt to run pxp-agent with SSL keypair from a different ca'
 on agent1, puppet('resource service pxp-agent ensure=running')
