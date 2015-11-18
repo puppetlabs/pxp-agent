@@ -4,13 +4,10 @@ require 'beaker/dsl/install_utils'
 extend Beaker::DSL::InstallUtils
 
 test_name "Install Packages"
+
 sha = ENV['SUITE_COMMIT']
-unless (sha) then
-  fail('SUITE_COMMIT environment variable must be set to the SHA of the puppet-agent package to test')
-end
 
 step "Install repositories on target machines..." do
-
   repo_configs_dir = 'repo_configs'
   logger.debug('about to install repo for puppet-agent from ' + sha.to_s + ' ' + repo_configs_dir.to_s)
   hosts.each do |host|

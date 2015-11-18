@@ -94,6 +94,9 @@ void PXPConnector::sendBlockingResponse(const ActionRequest& request,
              DEFAULT_MSG_TIMEOUT_SEC,
              response_data,
              debug);
+        LOG_INFO("Sent response for blocking request %1% by %2%, "
+                 "transaction %3%", request.id(), request.sender(),
+                 request.transactionId());
     } catch (PCPClient::connection_error& e) {
         LOG_ERROR("Failed to reply to blocking request %1% from %2%, "
                   "transaction %3%: %4%", request.id(), request.sender(),
