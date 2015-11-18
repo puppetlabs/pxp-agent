@@ -16,7 +16,7 @@ install:
 
   - git clone https://github.com/puppetlabs/cpp-pcp-client
   - cd cpp-pcp-client
-  - git checkout 1.0.2
+  - git checkout 1.0.1
   - git submodule update --init --recursive
   - ps: mv "C:\Program Files (x86)\Git\bin\sh.exe" "C:\Program Files (x86)\Git\bin\shxx.exe"
   - ps: cmake -G "MinGW Makefiles" -DBOOST_ROOT="C:\tools\boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh" -DBOOST_STATIC=ON -DBOOST_NOWIDE_SKIP_TESTS=ON -Wno-dev -DCMAKE_INSTALL_PREFIX=C:\tools .
