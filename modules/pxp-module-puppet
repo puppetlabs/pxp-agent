@@ -75,8 +75,7 @@ def make_error_result(exitcode, error_type, error_message)
 end
 
 def get_result_from_report(exitcode, config, start_time)
-  last_run_report = File.join(check_config_print("statedir",config),
-                              "last_run_report.yaml")
+  last_run_report = check_config_print("lastrunreport",config)
 
   if !File.exist?(last_run_report)
     return make_error_result(exitcode, Errors::NoLastRunReport,

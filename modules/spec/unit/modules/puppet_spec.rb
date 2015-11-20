@@ -104,7 +104,7 @@ describe "pxp-module-puppet" do
   describe "get_result_from_report" do
     it "doesn't process the last_run_report if the file doens't exist" do
       allow(File).to receive(:exist?).and_return(false)
-      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/")
+      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
       expect(get_result_from_report(0, default_config, Time.now)).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
@@ -119,7 +119,7 @@ describe "pxp-module-puppet" do
 
     it "doesn't process the last_run_report if the file cant be loaded" do
       allow(File).to receive(:exist?).and_return(true)
-      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/")
+      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
       allow(YAML).to receive(:load_file).and_raise("error")
       expect(get_result_from_report(0, default_config, Time.now)).to be ==
           {"kind"             => "unknown",
@@ -145,7 +145,7 @@ describe "pxp-module-puppet" do
       allow(last_run_report).to receive(:status).and_return("changed")
 
       allow(File).to receive(:exist?).and_return(true)
-      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/")
+      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
       allow(YAML).to receive(:load_file).and_return(last_run_report)
 
       expect(get_result_from_report(-1, default_config, start_time)).to be ==
@@ -172,7 +172,7 @@ describe "pxp-module-puppet" do
       allow(last_run_report).to receive(:status).and_return("changed")
 
       allow(File).to receive(:exist?).and_return(true)
-      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/")
+      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
       allow(YAML).to receive(:load_file).and_return(last_run_report)
 
       expect(get_result_from_report(-1, default_config, start_time)).to be ==
@@ -199,7 +199,7 @@ describe "pxp-module-puppet" do
       allow(last_run_report).to receive(:status).and_return("changed")
 
       allow(File).to receive(:exist?).and_return(true)
-      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/")
+      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
       allow(YAML).to receive(:load_file).and_return(last_run_report)
 
       expect(get_result_from_report(0, default_config, start_time)).to be ==
