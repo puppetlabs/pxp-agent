@@ -20,7 +20,7 @@ PACKAGES = {
     'puppet'
   ],
   :debian => [
-    'puppet'
+    'puppet-agent'
   ],
 }
 
