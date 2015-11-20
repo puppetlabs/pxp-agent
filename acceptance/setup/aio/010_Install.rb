@@ -36,6 +36,9 @@ agents.each do |agent|
     on(agent, puppet('resource service puppet ensure=stopped enable=false'))
     logger.info 'Vendored Ruby needs to be on PATH for pxp-agent to load libraries'
     # export needs sed'd to first line as bashrc exits for non-interaction shells near top of file
-    on(agent, "sed -i '1iexport\ PATH=\$PATH\":\/cygdrive\/c\/Program\ Files\/Puppet\ Labs\/Puppet\/sys\/ruby\/bin\"' ~/.bashrc")
+    (agent.is_x86_64? && (agent[:ruby_arch] == "x86")) ?
+      export_path = "\$PATH\":\/cygdrive\/c\/Program\ Files\ \(x86\)\/Puppet\ Labs\/Puppet\/sys\/ruby\/bin\"" :
+      export_path = "\$PATH\":\/cygdrive\/c\/Program\ Files\/Puppet\ Labs\/Puppet\/sys\/ruby\/bin\""
+    on(agent, "sed -i '1iexport\ PATH=#{export_path}' ~/.bashrc")
   end
 end
