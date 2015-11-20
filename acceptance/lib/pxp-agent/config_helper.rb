@@ -7,6 +7,10 @@ PXP_CONFIG_DIR_POSIX = '/etc/puppetlabs/pxp-agent/'
 PXP_LOG_FILE_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/var/log/pxp-agent.log'
 PXP_LOG_FILE_POSIX = '/var/log/puppetlabs/pxp-agent/pxp-agent.log'
 
+PXP_EXE_DIR_CYGPATH = "/cygdrive/c/Program\\ Files/Puppet\\ Labs/Puppet/pxp-agent/bin"
+PXP_EXE_DIR_CYGPATH_x86 = "/cygdrive/c/Program\\ Files\\ \\(x86\\)/Puppet\\ Labs/Puppet/pxp-agent/bin"
+PXP_EXE_DIR_POSIX = "/opt/puppetlabs/puppet/bin"
+
 PCP_BROKER_PORT = 8142
 
 # SSL directories and files for our standard set of test certs
@@ -33,6 +37,19 @@ end
 
 def windows?(host)
   host.platform.upcase.start_with?('WINDOWS')
+end
+
+# @param host the beaker host object you want the path on
+# @return the path to the directory that pxp-agent is located in. A cygpath is returned in the case of Windows.
+def pxp_agent_dir(host)
+  if (windows?(host))
+    # If 32bit Puppet on 64bit Windows then Puppet will be in Program Files (x86)
+    if((host.is_x86_64?) && (host[:ruby_arch] == "x86"))
+      return PXP_EXE_DIR_CYGPATH_x86
+    end
+    return PXP_EXE_DIR_CYGPATH
+  end
+  PXP_EXE_DIR_POSIX
 end
 
 # @param broker hostname or beaker host object of the machine running pcp-broker
