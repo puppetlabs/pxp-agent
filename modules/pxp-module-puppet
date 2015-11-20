@@ -115,25 +115,59 @@ def start_run(config, params)
   env = make_environment_hash(params)
   start_time = Time.now
 
-  run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false,
-                                                     :custom_environment => env})
+  agent_disabled_lockfile = check_config_print("agent_disabled_lockfile",config)
+  agent_disabled_lockfile_pxp = agent_disabled_lockfile + '.pxp'
+  agent_catalog_run_lockfile = check_config_print("agent_catalog_run_lockfile",config)
 
-  if !run_result
-    return make_error_result(exitcode, Errors::FailedToStart,
-                             "Failed to start Puppet agent")
+  if File.exist?(agent_disabled_lockfile)
+    return make_error_result(1, Errors::Disabled,
+                             "Puppet agent disabled (lockfile #{agent_disabled_lockfile} exists)")
   end
 
-  exitcode = run_result.exitstatus
+  begin
+    File.open(agent_disabled_lockfile, 'w') {|f| f.write('{"disabled_message":"pxp-agent puppet run in progress"}') }     
 
-  if disabled?(run_result.to_s)
-    return make_error_result(exitcode, Errors::Disabled,
-                             "Puppet agent is disabled")
-  elsif running?(run_result.to_s)
-    return make_error_result(exitcode, Errors::AlreadyRunning,
-                             "Puppet agent is already performing a run")
+    # ensure the lockfile we create gets deleted if somebody presses ctrl-c
+    # "rescue Interrupt => e" does not catch it (ruby 2.1.6p336)
+    Signal.trap("INT") do
+      File.unlink(agent_disabled_lockfile)
+      exit
+    end
+
+    # This should be a configurable setting
+    wait_until = Time.now + 60
+    while Time.now < wait_until
+      unless File.exist?(agent_catalog_run_lockfile)
+        break
+      end
+      sleep 1
+    end
+
+    run_result = Puppet::Util::Execution.execute(cmd << "--agent_disabled_lockfile '#{agent_disabled_lockfile_pxp}'", 
+                                                  {:failonfail => false,
+						   :custom_environment => env})
+
+    if !run_result
+      return make_error_result(exitcode, Errors::FailedToStart,
+			       "Failed to start Puppet agent")
+    end
+
+    exitcode = run_result.exitstatus
+
+    if disabled?(run_result.to_s)
+      return make_error_result(exitcode, Errors::Disabled,
+			       "Puppet agent is disabled")
+    elsif running?(run_result.to_s)
+      return make_error_result(exitcode, Errors::AlreadyRunning,
+			       "Puppet agent is already performing a run")
+    end
+
+    return get_result_from_report(exitcode, config, start_time)
+  ensure
+    if File.exist?(agent_disabled_lockfile)
+      File.unlink(agent_disabled_lockfile)
+    end
   end
-
-  return get_result_from_report(exitcode, config, start_time)
 end
 
 def metadata()
