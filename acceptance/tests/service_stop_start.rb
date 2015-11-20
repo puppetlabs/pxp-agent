@@ -39,6 +39,18 @@ assert_stopped
 start_service
 assert_running
 
+step 'C94777 - Service enabled and started' do
+  step 'Enable and start service' do
+    on(@agent1, puppet('resource service pxp-agent ensure=running enable=true'))
+  end
+  step 'validate that service is enabled and running' do
+    on(@agent1, puppet('resource service pxp-agent')) do |result|
+      assert_running
+      assert_match(/enable\s+=>\s+'true'/, result.stdout, 'pxp-agent failed to enable')
+    end
+  end
+end
+
 step 'C93069 - Service Stop (from running, with configuration)'
 stop_service
 assert_stopped
