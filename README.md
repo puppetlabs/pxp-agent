@@ -191,6 +191,12 @@ default location is:
 
 Don't become a daemon and execute on foreground on the associated terminal.
 
+** connection-timeout (optional flag) **
+
+Maximum amount of time that may elapse when trying to establish a connection to
+the broker in seconds. Setting the value to 0 will disable the timeout.
+Defaults to 5 seconds.
+
 **pidfile (optional; only on *nix platforms)**
 
 The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*

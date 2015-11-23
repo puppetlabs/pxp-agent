@@ -37,7 +37,8 @@ static const Configuration::Agent agent_configuration { MODULES,
                                                         KEY,
                                                         SPOOL,
                                                         "",  // modules config dir
-                                                        "test_agent" };
+                                                        "test_agent",
+                                                        5000 };
 
 TEST_CASE("RequestProcessor::RequestProcessor", "[agent]") {
     auto c_ptr = std::make_shared<PXPConnector>(agent_configuration);

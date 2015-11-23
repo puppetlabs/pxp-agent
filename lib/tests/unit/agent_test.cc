@@ -26,7 +26,8 @@ TEST_CASE("Agent::Agent", "[agent]") {
                                                getKeyPath(),
                                                SPOOL,
                                                "",  // modules config dir
-                                               "test_agent" };
+                                               "test_agent",
+                                               5000 };
 
     SECTION("does not throw if it fails to find the external modules directory") {
         agent_configuration.modules_dir = MODULES + "/fake_dir";

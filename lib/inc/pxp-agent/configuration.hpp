@@ -131,6 +131,7 @@ class Configuration {
         std::string spool_dir;
         std::string modules_config_dir;
         std::string client_type;
+        long connection_timeout;
     };
 
     /// Reset the HorseWhisperer singleton.

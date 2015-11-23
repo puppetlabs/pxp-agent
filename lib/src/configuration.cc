@@ -266,7 +266,8 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const {
         HW::GetFlag<std::string>("ssl-key"),
         HW::GetFlag<std::string>("spool-dir"),
         HW::GetFlag<std::string>("modules-config-dir"),
-        AGENT_CLIENT_TYPE };
+        AGENT_CLIENT_TYPE,
+        HW::GetFlag<int>("connection-timeout") * 1000};
     return agent_configuration_;
 }
 
@@ -408,6 +409,15 @@ void Configuration::defineDefaultValues() {
                     "Don't daemonize, default: false",
                     Types::Bool,
                     false) } });
+
+    defaults_.insert(
+        Option { "connection-timeout",
+                 Base_ptr { new Entry<int>(
+                    "connection-timeout",
+                    "",
+                    "Timeout (in seconds) for establishing a websocket connection. 0 disables, default: 5",
+                    Types::Integer,
+                    5) } });
 
 #ifndef _WIN32
     // NOTE(ale): we don't daemonize on Windows; we rely NSSM to start
