@@ -32,8 +32,6 @@ agents.each do |agent|
   if agent.platform.start_with?('windows')
     logger.info "Installing Puppet agent msi #{sha} on #{agent}"
     install_puppet_agent_dev_repo_on(agent, :version => sha)
-    logger.info 'Prevent Puppet Service from Running'
-    on(agent, puppet('resource service puppet ensure=stopped enable=false'))
     logger.info 'Add vendored Ruby to PATH so that pxp-agent can be run as an executable at command line'
     (agent.is_x86_64? && (agent[:ruby_arch] == "x86")) ?
       export_path = "\$PATH\":\/cygdrive\/c\/Program\ Files\ \(x86\)\/Puppet\ Labs\/Puppet\/sys\/ruby\/bin\"" :
