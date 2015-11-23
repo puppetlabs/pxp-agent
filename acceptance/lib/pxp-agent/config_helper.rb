@@ -35,6 +35,19 @@ def windows?(host)
   host.platform.upcase.start_with?('WINDOWS')
 end
 
+# @param host the beaker host object you want the path on
+# @return the path to the directory that pxp-agent is located in. A cygpath is returned in the case of Windows.
+def pxp_agent_dir(host)
+  if (windows?(host))
+    # If 32bit Puppet on 64bit Windows then Puppet will be in Program Files (x86)
+    if((host.is_x86_64?) && (host[:ruby_arch] == "x86"))
+      return "/cygdrive/c/Program\\ Files\\ \\(x86\\)/Puppet\\ Labs/Puppet/pxp-agent/bin"
+    end
+    return "/cygdrive/c/Program\\ Files/Puppet\\ Labs/Puppet/pxp-agent/bin"
+  end
+  "/opt/puppetlabs/puppet/bin"
+end
+
 # @param broker hostname or beaker host object of the machine running pcp-broker
 # @param agent beaker host object of the agent machine that will receive this config
 # @param ssl_config hash of strings for the config keys
