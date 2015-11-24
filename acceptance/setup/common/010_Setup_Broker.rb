@@ -3,7 +3,7 @@ pcp_broker_minutes_to_start = 2
 
 step 'Clone pcp-broker to master' do
   clone_git_repo_on(master, '/opt/puppet-git-repos',
-      extract_repo_info_from(build_git_url('pcp-broker', nil, nil, 'git')))
+      extract_repo_info_from(build_git_url('pcp-broker', nil, nil, 'https')))
 end
 
 step 'Download lein bootstrap' do

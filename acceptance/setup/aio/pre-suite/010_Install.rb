@@ -57,14 +57,3 @@ step 'Install build dependencies on master' do
   }
   install_packages_on(master, MASTER_PACKAGES, :check_if_exists => true)
 end
-
-step 'Confirm SSH Forwarding Enabled on master' do
-  ssh_auth_sock = on(master, 'echo $SSH_AUTH_SOCK').stdout.chomp
-  if ssh_auth_sock.nil? || ssh_auth_sock.empty?
-    fail_test('SSH forwarding not configured properly - check ~/.ssh/config for ForwardAgent settings')
-  end
-end
-
-step 'Allow git clones via ssh to "unknown" host at github.com; required to clone private repos.' do
-  on master, "echo #{GitHubSig} >> $HOME/.ssh/known_hosts"
-end
