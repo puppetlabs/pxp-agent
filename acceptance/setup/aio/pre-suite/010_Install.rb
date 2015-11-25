@@ -13,23 +13,25 @@ step "Install repositories on target machines..." do
   end
 end
 
-PACKAGES = {
-  :redhat => [
-    'puppet-agent',
-  ],
-  :debian => [
-    'puppet-agent',
-  ],
-}
+step "Install puppet-agent on hosts" do
+  PACKAGES = {
+    :redhat => [
+      'puppet-agent',
+    ],
+    :debian => [
+      'puppet-agent',
+    ],
+  }
 
-install_packages_on(hosts, PACKAGES)
+  install_packages_on(hosts, PACKAGES)
 
-# make sure install is sane, beaker has already added puppet and ruby
-# to PATH in ~/.ssh/environment
-agents.each do |agent|
-  on agent, puppet('--version')
-  ruby = Puppet::Acceptance::CommandUtils.ruby_command(agent)
-  on agent, "#{ruby} --version"
+  # make sure install is sane, beaker has already added puppet and ruby
+  # to PATH in ~/.ssh/environment
+  agents.each do |agent|
+    on agent, puppet('--version')
+    ruby = Puppet::Acceptance::CommandUtils.ruby_command(agent)
+    on agent, "#{ruby} --version"
+  end
 end
 
 # This step is unique to pxp-agent
@@ -43,4 +45,15 @@ step 'Add path for pxp-agent.exe on Windows' do
       on(agent, "sed -i '1iexport\ PATH=#{export_path}' ~/.bashrc")
     end
   end
+end
+
+step 'Install build dependencies on master' do
+
+ MASTER_PACKAGES = {
+    :redhat => [
+      'git',
+      'java-1.8.0-openjdk-devel',
+    ],
+  }
+  install_packages_on(master, MASTER_PACKAGES, :check_if_exists => true)
 end
