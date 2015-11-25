@@ -43,17 +43,24 @@ step 'C93069 - Service Stop (from running, with configuration)'
 stop_service
 assert_stopped
 
-step 'Remove configuration'
-stop_service
-on(@agent1, "mv #{pxp_agent_config_file(@agent1)} #{@pxp_temp_file}")
+# Solaris service administration will prevent the service from starting
+# if it is un-configured because it has been defined as required.
+# See: https://github.com/puppetlabs/pxp-agent/blob/stable/ext/solaris/smf/pxp-agent.xml#L10-L12
+#
+# Therefore, the un-configured test steps need to be skipped on Solaris
+unless (@agent1['platform'] =~ /solaris/) then
+  step 'Remove configuration'
+  stop_service
+  on(@agent1, "mv #{pxp_agent_config_file(@agent1)} #{@pxp_temp_file}")
 
-step 'C94686 - Service Start (from stopped, un-configured)'
-start_service
-assert_running
+  step 'C94686 - Service Start (from stopped, un-configured)'
+  start_service
+  assert_running
 
-step 'C94687 - Service Stop (from running, un-configured)'
-stop_service
-assert_stopped
+  step 'C94687 - Service Stop (from running, un-configured)'
+  stop_service
+  assert_stopped
 
-step 'Restore configuration'
-on(@agent1, "mv #{@pxp_temp_file} #{pxp_agent_config_file(@agent1)}")
+  step 'Restore configuration'
+  on(@agent1, "mv #{@pxp_temp_file} #{pxp_agent_config_file(@agent1)}")
+end
