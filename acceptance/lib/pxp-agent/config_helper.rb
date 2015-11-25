@@ -13,9 +13,8 @@ PCP_BROKER_PORT = 8142
 SSL_BASE_DIR_WINDOWS = "C:\\\\cygwin64\\\\home\\\\Administrator\\\\test-resources\\\\ssl\\\\"
 SSL_BASE_DIR_POSIX = "/root/test-resources/ssl/"
 SSL_BASE_DIR_OSX = "/var/root/test-resources/ssl/"
-ALT_SSL_BASE_DIR_WINDOWS = "C:\\\\cygwin64\\\\home\\\\Administrator\\\\test-resources\\\\ssl\\\\alternative\\\\"
-ALT_SSL_BASE_DIR_POSIX = "/root/test-resources/ssl/alternative/"
-ALT_SSL_BASE_DIR_OSX = "/var/root/test-resources/ssl/alternative/"
+ALT_SUFFIX_WINDOWS = "alternative\\\\"
+ALT_SUFFIX_POSIX = "alternative/"
 SSL_KEY_FILE_DIR_WINDOWS = "private_keys\\\\"
 SSL_KEY_FILE_DIR_POSIX = "private_keys/"
 SSL_CA_FILE_DIR_WINDOWS = "ca\\\\"
@@ -119,89 +118,55 @@ end
 
 # @param host a beaker host (to determine the correct path for the OS)
 # @param client_number which client 01-05 you want the key file for
+# @param [boolean] use_alt_path Use alternative test ssl file if true, otherwise use standard test ssl file
 # @return the path to the client ssl key file on this host
-def ssl_key_file(host, client_number)
+def ssl_key_file(host, client_number, use_alt_path=false)
+  alt_str = use_alt_path ? '.alt' : ''
+  alt_suffix = use_alt_path ? ALT_SUFFIX_POSIX : ''
   client_number = left_pad_with_zero(client_number)
   case host['platform']
   when /windows/
-    "#{SSL_BASE_DIR_WINDOWS}#{SSL_KEY_FILE_DIR_WINDOWS}client#{client_number}.example.com.pem"
+    alt_suffix = use_alt_path ? ALT_SUFFIX_WINDOWS : ''
+    "#{SSL_BASE_DIR_WINDOWS}#{alt_suffix}#{SSL_KEY_FILE_DIR_WINDOWS}client#{client_number}#{alt_str}.example.com.pem"
   when /osx/
-    "#{SSL_BASE_DIR_OSX}#{SSL_KEY_FILE_DIR_POSIX}client#{client_number}.example.com.pem"
+    "#{SSL_BASE_DIR_OSX}#{alt_suffix}#{SSL_KEY_FILE_DIR_POSIX}client#{client_number}#{alt_str}.example.com.pem"
   else
-    "#{SSL_BASE_DIR_POSIX}#{SSL_KEY_FILE_DIR_POSIX}client#{client_number}.example.com.pem"
+    "#{SSL_BASE_DIR_POSIX}#{alt_suffix}#{SSL_KEY_FILE_DIR_POSIX}client#{client_number}#{alt_str}.example.com.pem"
   end
 end
 
 # @param host the beaker host (to determine the correct path for the OS)
-# @param client_number which client 01-05 you want the key file for
-# @return the path to the alternative client ssl key file on this host
-def alt_ssl_key_file(host, client_number)
-  client_number = left_pad_with_zero(client_number)
-  case host['platform']
-  when /windows/
-    "#{ALT_SSL_BASE_DIR_WINDOWS}#{SSL_KEY_FILE_DIR_WINDOWS}client#{client_number}.alt.example.com.pem"
-  when /osx/
-    "#{ALT_SSL_BASE_DIR_OSX}#{SSL_KEY_FILE_DIR_POSIX}client#{client_number}.alt.example.com.pem"
-  else
-    "#{ALT_SSL_BASE_DIR_POSIX}#{SSL_KEY_FILE_DIR_POSIX}client#{client_number}.alt.example.com.pem"
-  end
-end
-
-# @param host the beaker host (to determine the correct path for the OS)
+# @param [boolean] use_alt_path Use alternative test ssl file if true, otherwise use standard test ssl file
 # @return the path to the ssl ca file on this host
-def ssl_ca_file(host)
+def ssl_ca_file(host, use_alt_path=false)
+  alt_str = use_alt_path ? '.alt' : ''
+  alt_suffix = use_alt_path ? ALT_SUFFIX_POSIX : ''
   case host['platform']
   when /windows/
-    "#{SSL_BASE_DIR_WINDOWS}#{SSL_CA_FILE_DIR_WINDOWS}ca_crt.pem"
+    alt_suffix = use_alt_path ? ALT_SUFFIX_WINDOWS : ''
+    "#{SSL_BASE_DIR_WINDOWS}#{alt_suffix}#{SSL_CA_FILE_DIR_WINDOWS}ca_crt.pem"
   when /osx/
-    "#{SSL_BASE_DIR_OSX}#{SSL_CA_FILE_DIR_POSIX}ca_crt.pem"
+    "#{SSL_BASE_DIR_OSX}#{alt_suffix}#{SSL_CA_FILE_DIR_POSIX}ca_crt.pem"
   else
-    "#{SSL_BASE_DIR_POSIX}#{SSL_CA_FILE_DIR_POSIX}ca_crt.pem"
-  end
-end
-
-# @param host the beaker host (to determine the correct path for the OS)
-# @return the path to the alternative ssl ca file on this host
-def alt_ssl_ca_file(host)
-  windows?(host)?
-    alt_ssl_ca_file_windows :
-    alt_ssl_ca_file_posix
-  case host['platform']
-  when /windows/
-    "#{ALT_SSL_BASE_DIR_WINDOWS}#{SSL_CA_FILE_DIR_WINDOWS}ca_crt.pem"
-  when /osx/
-    "#{ALT_SSL_BASE_DIR_OSX}#{SSL_CA_FILE_DIR_POSIX}ca_crt.pem"
-  else
-    "#{ALT_SSL_BASE_DIR_POSIX}#{SSL_CA_FILE_DIR_POSIX}ca_crt.pem"
+    "#{SSL_BASE_DIR_POSIX}#{alt_suffix}#{SSL_CA_FILE_DIR_POSIX}ca_crt.pem"
   end
 end
 
 # @param host the beaker host (to determine the correct path for the OS)
 # @param client_number which client 01-05 you want the key file for
+# @param [boolean] use_alt_path Use alternative test ssl file if true, otherwise use standard test ssl file
 # @return the path to the ssl cert for this client on this host
-def ssl_cert_file(host, client_number)
+def ssl_cert_file(host, client_number, use_alt_path=false)
+  alt_str = use_alt_path ? '.alt' : ''
+  alt_suffix = use_alt_path ? ALT_SUFFIX_POSIX : ''
   client_number = left_pad_with_zero(client_number)
   case host['platform']
   when /windows/
-    "#{SSL_BASE_DIR_WINDOWS}#{SSL_CERT_FILE_DIR_WINDOWS}client#{client_number}.example.com.pem"
+    alt_suffix = use_alt_path ? ALT_SUFFIX_WINDOWS : ''
+    "#{SSL_BASE_DIR_WINDOWS}#{alt_suffix}#{SSL_CERT_FILE_DIR_WINDOWS}client#{client_number}#{alt_str}.example.com.pem"
   when /osx/
-    "#{SSL_BASE_DIR_OSX}#{SSL_CERT_FILE_DIR_POSIX}client#{client_number}.example.com.pem"
+    "#{SSL_BASE_DIR_OSX}#{alt_suffix}#{SSL_CERT_FILE_DIR_POSIX}client#{client_number}#{alt_str}.example.com.pem"
   else
-    "#{SSL_BASE_DIR_POSIX}#{SSL_CERT_FILE_DIR_POSIX}client#{client_number}.example.com.pem"
-  end
-end
-
-# @param host the beaker host (to determine the correct path for the OS)
-# @param client_number which client 01-05 you want the key file for
-# @return the path to the alternative ssl cert for this client on this host
-def alt_ssl_cert_file(host, client_number)
-  client_number = left_pad_with_zero(client_number)
-  case host['platform']
-  when /windows/
-    "#{ALT_SSL_BASE_DIR_WINDOWS}#{SSL_CERT_FILE_DIR_WINDOWS}client#{client_number}.alt.example.com.pem"
-  when /osx/
-    "#{ALT_SSL_BASE_DIR_OSX}#{SSL_CERT_FILE_DIR_POSIX}client#{client_number}.alt.example.com.pem"
-  else
-    "#{ALT_SSL_BASE_DIR_POSIX}#{SSL_CERT_FILE_DIR_POSIX}client#{client_number}.alt.example.com.pem"
+    "#{SSL_BASE_DIR_POSIX}#{alt_suffix}#{SSL_CERT_FILE_DIR_POSIX}client#{client_number}#{alt_str}.example.com.pem"
   end
 end
