@@ -4,6 +4,5 @@
     'setup/common/000-delete-puppet-when-none.rb',
     'setup/aio/pre-suite/010_Install.rb',
     'setup/common/010_Setup_Broker.rb',
-    'setup/common/020_Configure_Pxp_Agents.rb',
   ],
 }

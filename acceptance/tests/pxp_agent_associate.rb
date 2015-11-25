@@ -2,6 +2,9 @@ test_name 'C93807 - Associate pxp-agent with a PCP broker'
 
 agent1 = agents[0]
 
+cert_dir = configure_std_certs_on_host(agent1)
+create_remote_file(agent1, pxp_agent_config_file(agent1), pxp_config_json_using_test_certs(master, agent1, 1, cert_dir).to_s)
+
 step 'Stop pxp-agent if it is currently running'
 on agent1, puppet('resource service pxp-agent ensure=stopped')
 
