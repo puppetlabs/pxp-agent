@@ -120,7 +120,7 @@ end
 # @param client_number which client 01-05 you want the key file for
 # @param [boolean] use_alt_path Use alternative test ssl file if true, otherwise use standard test ssl file
 # @return the path to the client ssl key file on this host
-def ssl_key_file(host, client_number, use_alt_path: false)
+def ssl_key_file(host, client_number, use_alt_path=false)
   alt_str = use_alt_path ? '.alt' : ''
   alt_suffix = use_alt_path ? ALT_SUFFIX_POSIX : ''
   client_number = left_pad_with_zero(client_number)
@@ -138,7 +138,7 @@ end
 # @param host the beaker host (to determine the correct path for the OS)
 # @param [boolean] use_alt_path Use alternative test ssl file if true, otherwise use standard test ssl file
 # @return the path to the ssl ca file on this host
-def ssl_ca_file(host, use_alt_path: false)
+def ssl_ca_file(host, use_alt_path=false)
   alt_str = use_alt_path ? '.alt' : ''
   alt_suffix = use_alt_path ? ALT_SUFFIX_POSIX : ''
   case host['platform']
@@ -156,7 +156,7 @@ end
 # @param client_number which client 01-05 you want the key file for
 # @param [boolean] use_alt_path Use alternative test ssl file if true, otherwise use standard test ssl file
 # @return the path to the ssl cert for this client on this host
-def ssl_cert_file(host, client_number, use_alt_path: false)
+def ssl_cert_file(host, client_number, use_alt_path=false)
   alt_str = use_alt_path ? '.alt' : ''
   alt_suffix = use_alt_path ? ALT_SUFFIX_POSIX : ''
   client_number = left_pad_with_zero(client_number)
