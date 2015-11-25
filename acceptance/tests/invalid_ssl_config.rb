@@ -21,7 +21,7 @@ step "Setup - Change pxp-agent config to use a cert that doesn't match private k
 invalid_config_mismatching_keys = {:broker_ws_uri => broker_ws_uri(master),
                                    :ssl_key => ssl_key_file(agent1, 1),
                                    :ssl_ca_cert => ssl_ca_file(agent1),
-                                   :ssl_cert => ssl_cert_file(agent1, 1, use_alt_path=true)}
+                                   :ssl_cert => ssl_cert_file(agent1, 1, true)}
 create_remote_file(agent1, pxp_agent_config_file(agent1), pxp_config_json(master, agent1, invalid_config_mismatching_keys).to_s)
 
 step 'C94730 - Attempt to run pxp-agent with mismatching SSL cert and private key'
@@ -50,9 +50,9 @@ on(agent, "rm -rf #{logfile(agent1)}")
 
 step "Change pxp-agent config so the cert and key match but they are of a different ca than the broker"
 invalid_config_wrong_ca = {:broker_ws_uri => broker_ws_uri(master),
-                           :ssl_key => ssl_key_file(agent1, 1, use_alt_path=true),
+                           :ssl_key => ssl_key_file(agent1, 1, true),
                            :ssl_ca_cert => ssl_ca_file(agent1),
-                           :ssl_cert => ssl_cert_file(agent1, 1, use_alt_path=true)}
+                           :ssl_cert => ssl_cert_file(agent1, 1, true)}
 create_remote_file(agent1, pxp_agent_config_file(agent1), pxp_config_json(master, agent1, invalid_config_wrong_ca).to_s)
 
 step 'C94729 - Attempt to run pxp-agent with SSL keypair from a different ca'
