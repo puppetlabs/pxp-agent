@@ -36,15 +36,17 @@ def assert_running
   end
 end
 
-step 'C93070 - Service Start (from stopped, with configuration)'
-stop_service
-assert_stopped
-start_service
-assert_running
+step 'C93070 - Service Start (from stopped, with configuration)' do
+  stop_service
+  assert_stopped
+  start_service
+  assert_running
+end
 
-step 'C93069 - Service Stop (from running, with configuration)'
-stop_service
-assert_stopped
+step 'C93069 - Service Stop (from running, with configuration)' do
+  stop_service
+  assert_stopped
+end
 
 # Solaris service administration will prevent the service from starting
 # if it is un-configured because it has been defined as required.
@@ -52,18 +54,22 @@ assert_stopped
 #
 # Therefore, the un-configured test steps need to be skipped on Solaris
 unless (@agent1['platform'] =~ /solaris/) then
-  step 'Remove configuration'
-  stop_service
-  on(@agent1, "mv #{pxp_agent_config_file(@agent1)} #{@pxp_temp_file}")
+  step 'Remove configuration' do
+    stop_service
+    on(@agent1, "mv #{pxp_agent_config_file(@agent1)} #{@pxp_temp_file}")
+  end
 
-  step 'C94686 - Service Start (from stopped, un-configured)'
-  start_service
-  assert_running
+  step 'C94686 - Service Start (from stopped, un-configured)' do
+    start_service
+    assert_running
+  end
 
-  step 'C94687 - Service Stop (from running, un-configured)'
-  stop_service
-  assert_stopped
+  step 'C94687 - Service Stop (from running, un-configured)' do
+    stop_service
+    assert_stopped
+  end
 
-  step 'Restore configuration'
-  on(@agent1, "mv #{@pxp_temp_file} #{pxp_agent_config_file(@agent1)}")
+  step 'Restore configuration' do
+    on(@agent1, "mv #{@pxp_temp_file} #{pxp_agent_config_file(@agent1)}")
+  end
 end
