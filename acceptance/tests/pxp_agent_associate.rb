@@ -1,3 +1,5 @@
+require 'pxp-agent/test_helper.rb'
+
 test_name 'C93807 - Associate pxp-agent with a PCP broker'
 
 agent1 = agents[0]
@@ -14,19 +16,9 @@ on(agent1, "rm -rf #{logfile(agent1)}")
 step 'Start pxp-agent service'
 on agent1, puppet('resource service pxp-agent ensure=running')
 
-step 'Allow 10 seconds after service start-up for association to complete'
-sleep(10)
-
-websocket_success = /INFO.*Successfully established a WebSocket connection with the PCP broker.*/
-association_success = /INFO.*Received associate session response.*success/
-on(agent1, "cat #{logfile(agent1)}") do |result|
-  log_contents = result.stdout
-  step 'Check pxp-agent.log for websocket connection'
-  assert_match(websocket_success, log_contents,
-               "Did not match expected websocket connection message '#{websocket_success.to_s}' " \
-               "in actual pxp-agent.log contents '#{log_contents}'")
-  step 'Check pxp-agent.log for successful association response'
-  assert_match(association_success, log_contents,
-               "Did not match expected association success message '#{association_success.to_s}' " \
-               "in actual pxp-agent.log contents '#{log_contents}'")
+step 'Check that within 60 seconds, log file contains entry for WebSocket connection being established' do
+  expect_file_on_host_to_contain(agent1, logfile(agent1), 'INFO.*Successfully established a WebSocket connection with the PCP broker.*', 60)
+end
+step 'Check that log file contains entry that association has succeeded' do
+  expect_file_on_host_to_contain(agent1, logfile(agent1), 'INFO.*Received associate session response.*success')
 end

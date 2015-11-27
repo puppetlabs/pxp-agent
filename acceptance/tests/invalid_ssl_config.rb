@@ -1,4 +1,5 @@
 require 'pxp-agent/config_helper.rb'
+require 'pxp-agent/test_helper.rb'
 
 test_name 'Attempt to start pxp-agent with invalid SSL config'
 
@@ -27,19 +28,8 @@ invalid_config_mismatching_keys = {:broker_ws_uri => broker_ws_uri(master),
 create_remote_file(agent1, pxp_agent_config_file(agent1), pxp_config_json(master, agent1, invalid_config_mismatching_keys).to_s)
 
 step 'C94730 - Attempt to run pxp-agent with mismatching SSL cert and private key'
-expected_private_key_error='failed to load private key'
 on agent1, puppet('resource service pxp-agent ensure=running')
-# If the expected error does not appear in log within 30 seconds, then do an
-# explicit assertion so we see the log contents in the test failure output
-begin
-  retry_on(agent1, "grep '#{expected_private_key_error}' #{logfile(agent1)}", {:max_retries => 30,
-                                                                        :retry_interval => 1})
-rescue
-  on(agent1, "cat #{logfile(agent1)}") do |result|
-    assert_match(expected_private_key_error, result.stdout,
-                "Expected error '#{expected_private_key_error}' did not appear in pxp-agent.log")
-  end
-end
+expect_file_on_host_to_contain(agent1, logfile(agent1), 'failed to load private key')
 assert(on(agent1, "grep 'pxp-agent will start unconfigured' #{logfile(agent1)}"),
        "pxp-agent should log that is will start unconfigured")
 on agent1, puppet('resource service pxp-agent') do |result|
@@ -59,10 +49,8 @@ create_remote_file(agent1, pxp_agent_config_file(agent1), pxp_config_json(master
 
 step 'C94729 - Attempt to run pxp-agent with SSL keypair from a different ca'
 on agent1, puppet('resource service pxp-agent ensure=running')
-retry_on(agent1, "grep 'TLS handshake failed' #{logfile(agent1)}", {:max_retries => 30,
-                                                             :retry_interval => 1})
-retry_on(agent1, "grep 'retrying in' #{logfile(agent1)}", {:max_retries => 10,
-                                                             :retry_interval => 1})
+expect_file_on_host_to_contain(agent1, logfile(agent1), 'TLS handshake failed')
+expect_file_on_host_to_contain(agent1, logfile(agent1), 'retrying in')
 on agent1, puppet('resource service pxp-agent') do |result|
   assert_match(/running/, result.stdout, "pxp-agent service should be running (failing handshake)")
 end
