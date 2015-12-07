@@ -37,14 +37,12 @@ agents.each_with_index do |agent, i|
   step 'C94730 - Attempt to run pxp-agent with mismatching SSL cert and private key' do
     on agent, puppet('resource service pxp-agent ensure=running')
     expect_file_on_host_to_contain(agent, logfile(agent), 'failed to load private key')
-    assert(on(agent, "grep 'pxp-agent will start unconfigured' #{logfile(agent)}"),
-         "pxp-agent should log that is will start unconfigured")
     on agent, puppet('resource service pxp-agent') do |result|
-      assert_match(/running/, result.stdout, "pxp-agent service should be running (unconfigured)")
+      assert_match(/stopped/, result.stdout, "pxp-agent service should not be running due to invalid SSL config")
     end
   end
 
-  step "Stop pxp-agent service and wipe log" do
+  step "Ensure pxp-agent service is stopped, and wipe log" do
     on agent, puppet('resource service pxp-agent ensure=stopped')
     on(agent, "rm -rf #{logfile(agent)}")
   end
