@@ -19,8 +19,6 @@ Agent::Agent(const Configuration::Agent& agent_configuration)
 }
 
 void Agent::start() {
-    // TODO(ale): add associate response callback
-
     connector_ptr_->registerMessageCallback(
         PXPSchemas::BlockingRequestSchema(),
         [this](const PCPClient::ParsedChunks& parsed_chunks) {
