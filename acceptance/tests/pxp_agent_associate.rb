@@ -20,10 +20,10 @@ agents.each_with_index do |agent, i|
   end
 
   step 'Check that within 60 seconds, log file contains entry for WebSocket connection being established' do
-    expect_file_on_host_to_contain(agent, logfile(agent), 'INFO.*Successfully established a WebSocket connection with the PCP broker.*', 60)
+    expect_file_on_host_to_contain(agent, logfile(agent), PXP_AGENT_LOG_ENTRY_WEBSOCKET_SUCCESS, 60)
   end
 
   step 'Check that log file contains entry that association has succeeded' do
-    expect_file_on_host_to_contain(agent, logfile(agent), 'INFO.*Received associate session response.*success')
+    expect_file_on_host_to_contain(agent, logfile(agent), PXP_AGENT_LOG_ENTRY_ASSOCIATION_SUCCESS)
   end
 end

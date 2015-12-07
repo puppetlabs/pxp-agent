@@ -1,5 +1,4 @@
-pcp_broker_port = 8142
-pcp_broker_minutes_to_start = 2
+require 'pxp-agent/test_helper.rb'
 
 step 'Clone pcp-broker to master' do
   on master, puppet('resource package git ensure=present')
@@ -25,9 +24,6 @@ step 'Run lein deps to download dependencies' do
   on master, 'cd ~/pcp-broker; export LEIN_ROOT=ok; lein deps'
 end
 
-step "Run pcp-broker in trapperkeeper in background and wait for port #{pcp_broker_port.to_s}" do
-  on master, 'cd ~/pcp-broker; export LEIN_ROOT=ok; lein tk </dev/null >/var/log/pcp-broker.log 2>&1 &'
-  assert(port_open_within?(master, pcp_broker_port, 60 * pcp_broker_minutes_to_start),
-         "pcp-broker port #{pcp_broker_port.to_s} not open within " \
-         "#{pcp_broker_minutes_to_start.to_s} minutes of starting the broker")
+step "Run pcp-broker in trapperkeeper in background and wait for port" do
+  run_pcp_broker(master)
 end
