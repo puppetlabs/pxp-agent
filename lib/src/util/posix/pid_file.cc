@@ -31,8 +31,8 @@ PIDFile::PIDFile(const std::string& file_path_)
     pidfile_fd = open(file_path.data(), O_RDWR | O_CREAT, 0640);
 
     if (pidfile_fd == -1) {
-        LOG_ERROR("Failed to open PID file '%1%'; errno=%2%", file_path, errno);
-        std::string msg { "failed to open PID file" };
+        std::string msg { "failed to open PID file '" };
+        msg += file_path + "'; errno=" + std::to_string(errno);
         throw PIDFile::Error { msg };
     }
 }
