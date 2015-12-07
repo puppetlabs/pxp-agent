@@ -113,10 +113,6 @@ class Configuration {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
 
-    struct UnconfiguredError : public Error {
-        explicit UnconfiguredError(std::string const& msg) : Error(msg) {}
-    };
-
     static Configuration& Instance() {
         static Configuration instance {};
         return instance;
@@ -158,18 +154,15 @@ class Configuration {
 
     /// Ensure all required values are valid. If necessary, expand
     /// file paths to the expected format.
-    /// Throw a Configuration::UnconfiguredError in case any of the
-    /// options needed for configure the WebSocket connection is
-    /// missing or invalid.
-    /// Throw a Configuration::Error: if any of the remaining options
-    /// is invalid.
+    /// Throw a Configuration::Error in case an option is set to an
+    /// invalid value.
     void validate();
 
-    /// If Configuration was already initialized, return the value
+    /// If Configuration was already validated, return the value
     /// set for the specified flag (NB: the value can be a default);
     /// throw a Configuration::Error such flag is unknown.
-    /// If Configuration was not initialized so far, but the
-    /// requested flag is known, return the default value; throw a
+    /// If Configuration was not validated so far, return the default
+    /// value in case nd the requested flag is known or throw a
     /// Configuration::Error otherwise.
     template <typename T>
     T get(std::string flagname) {
@@ -213,11 +206,8 @@ class Configuration {
         }
     }
 
-    /// Return the whole agent configuration
+    /// Return an object containing all agent configuration options
     const Agent& getAgentConfiguration() const;
-
-    /// Returns true if the agent was successfuly validated
-    bool valid() const;
 
     /// Try to close the log file stream,  then try to open the log
     /// file in append mode and associate it to the log file stream.
@@ -238,7 +228,7 @@ class Configuration {
     // Function that starts the pxp-agent service
     std::function<int(std::vector<std::string>)> start_function_;
 
-    // Cache agent configuration parameters
+    // Cache for agent configuration parameters
     mutable Agent agent_configuration_;
 
     // Path to the logfile
@@ -254,8 +244,8 @@ class Configuration {
     void setDefaultValues();
     void setStartAction();
     void parseConfigFile();
-    void checkUnconfiguredMode();
-    void validateAndNormalizeConfiguration();
+    void validateAndNormalizeWebsocketSettings();
+    void validateAndNormalizeOtherSettings();
     void setAgentConfiguration();
 };
 

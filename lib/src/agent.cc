@@ -39,24 +39,21 @@ void Agent::start() {
 
     try {
         connector_ptr_->connect();
+
+        // The agent is now connected and the request handlers are
+        // set; we can now call the monitoring method that will block
+        // this thread of execution.
+        // Note that, in case the underlying connection drops, the
+        // connector will keep trying to re-establish it indefinitely
+        // (the max_connect_attempts is 0 by default).
+        LOG_DEBUG("PCP connection established; about to start monitoring it");
+        connector_ptr_->monitorConnection();
     } catch (const PCPClient::connection_config_error& e) {
         // Failed to configure WebSocket on our end
         throw Agent::WebSocketConfigurationError { e.what() };
     } catch (const PCPClient::connection_fatal_error& e) {
-        // Unexpected, as we didn't set max num retries
-        throw Agent::FatalError { e.what() };
-    }
-
-    // The agent is now connected and the request handlers are set;
-    // we can now call the monitoring method that will block this
-    // thread of execution.
-    // Note that, in case the underlying connection drops, the
-    // connector will keep trying to re-establish it indefinitely
-    // (the max_connect_attempts is 0 by default).
-    try {
-        connector_ptr_->monitorConnection();
-    } catch (const PCPClient::connection_fatal_error& e) {
-        // Unexpected, as we didn't set max num retries
+        // Unexpected, as we're not limiting the num retries, for
+        // both connect() and monitorConnection() calls
         throw Agent::FatalError { e.what() };
     }
 }
