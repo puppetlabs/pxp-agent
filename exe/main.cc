@@ -35,6 +35,9 @@ static int PXP_AGENT_PARSING_FAILURE = 2;
 // Exit code returned after invalid configuration
 static int PXP_AGENT_CONFIGURATION_FAILURE = 3;
 
+// Exit code returned after daemonization failure (only on POSIX)
+static int PXP_AGENT_DAEMONIZATION_FAILURE = 4;
+
 int startAgent(std::vector<std::string> arguments) {
 #ifndef _WIN32
     std::unique_ptr<Util::PIDFile> pidf_ptr;
@@ -52,10 +55,10 @@ int startAgent(std::vector<std::string> arguments) {
         }
     } catch (const std::exception& e) {
         LOG_ERROR("Failed to daemonize: %1%", e.what());
-        return PXP_AGENT_GENERAL_FAILURE;
+        return PXP_AGENT_DAEMONIZATION_FAILURE;
     } catch (...) {
         LOG_ERROR("Failed to daemonize");
-        return PXP_AGENT_GENERAL_FAILURE;
+        return PXP_AGENT_DAEMONIZATION_FAILURE;
     }
 
     int exit_code { PXP_AGENT_SUCCESS };
