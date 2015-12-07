@@ -204,73 +204,73 @@ TEST_CASE("Configuration::validate", "[configuration]") {
     configureTest();
     Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
 
-    SECTION("it throws an UnconfiguredError when the broker WebSocket URI is undefined") {
+    SECTION("it throws an Error when the broker WebSocket URI is undefined") {
         HW::SetFlag<std::string>("broker-ws-uri", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::UnconfiguredError);
+                          Configuration::Error);
     }
 
-    SECTION("it throws an UnconfiguredError when the broker WebSocket URi is invlaid") {
+    SECTION("it throws an Error when the broker WebSocket URi is invlaid") {
         HW::SetFlag<std::string>("broker-ws-uri", "ws://");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::UnconfiguredError);
+                          Configuration::Error);
     }
 
-    SECTION("it throws an UnconfiguredError ssl-ca-cert is undefined") {
+    SECTION("it throws an Error ssl-ca-cert is undefined") {
         HW::SetFlag<std::string>("ssl-ca-cert", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::UnconfiguredError);
+                          Configuration::Error);
     }
 
-    SECTION("it throws an UnconfiguredError when ssl-ca-cert file cannot be found") {
+    SECTION("it throws an Error when ssl-ca-cert file cannot be found") {
         HW::SetFlag<std::string>("ssl-ca-cert", "/fake/file");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::UnconfiguredError);
+                          Configuration::Error);
     }
 
-    SECTION("it throws an UnconfiguredError when ssl-ca-cert file is not "
+    SECTION("it throws an Error when ssl-ca-cert file is not "
             "readable (is a directory)") {
         HW::SetFlag<std::string>("ssl-ca-cert", "/fake");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::UnconfiguredError);
+                          Configuration::Error);
     }
 
-    SECTION("it throws an UnconfiguredError when ssl-cert is undefined") {
+    SECTION("it throws an Error when ssl-cert is undefined") {
         HW::SetFlag<std::string>("ssl-cert", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::UnconfiguredError);
+                          Configuration::Error);
     }
 
-    SECTION("it throws an UnconfiguredError when ssl-cert file cannot be found") {
+    SECTION("it throws an Error when ssl-cert file cannot be found") {
         HW::SetFlag<std::string>("ssl-cert", "/fake/file");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::UnconfiguredError);
+                          Configuration::Error);
     }
 
-    SECTION("it throws an UnconfiguredError when ssl-cert file is not "
+    SECTION("it throws an Error when ssl-cert file is not "
             "readable (is a directory)") {
         HW::SetFlag<std::string>("ssl-cert", "/fake");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::UnconfiguredError);
+                          Configuration::Error);
     }
 
-    SECTION("it throws an UnconfiguredError when ssl-key is undefined") {
+    SECTION("it throws an Error when ssl-key is undefined") {
         HW::SetFlag<std::string>("ssl-key", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::UnconfiguredError);
+                          Configuration::Error);
     }
 
-    SECTION("it throws an UnconfiguredError when ssl-key file cannot be found") {
+    SECTION("it throws an Error when ssl-key file cannot be found") {
         HW::SetFlag<std::string>("ssl-key", "/fake/file");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::UnconfiguredError);
+                          Configuration::Error);
     }
 
-    SECTION("it throws an UnconfiguredError when ssl-key file is not "
+    SECTION("it throws an Error when ssl-key file is not "
             "readable (is a directory)") {
         HW::SetFlag<std::string>("ssl-key", "/fake");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::UnconfiguredError);
+                          Configuration::Error);
     }
 
     SECTION("it fails when --spool-dir is empty") {
