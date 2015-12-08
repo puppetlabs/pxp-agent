@@ -33,8 +33,8 @@ class Agent {
     //  - instantiating PXPConnector;
     //  - instantiating a RequestProcessor.
     //
-    // Throw an Agent::Error in case it fails to determine the agent
-    // identity by inspecting the certificate.
+    // Throw an Agent::WebSocketConfigurationError in case it fails to
+    // determine the agent identity by inspecting the SSL certificate.
     Agent(const Configuration::Agent& agent_configuration);
 
     // Start the agent and loop indefinitely, by:
@@ -43,8 +43,10 @@ class Agent {
     //  - monitoring the state of the connection;
     //  - re-establishing the connection when requested.
     //
-    // Throw an Agent::Error in case of unexpected failures; errors
-    // such as message sending failures are only logged.
+    // Throw an Agent::WebSocketConfigurationError in case it fails to
+    // set up the Websocket connection on this end (ex. TLS layer
+    // error) or an Agent::FatelError in case of unexpected failures;
+    // errors such as message sending failures are only logged.
     void start();
 
   private:

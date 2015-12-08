@@ -32,17 +32,11 @@ static int PXP_AGENT_GENERAL_FAILURE = 1;
 // Exit code returned after a parsing failure
 static int PXP_AGENT_PARSING_FAILURE = 2;
 
-// Start a thread that just busy waits to facilitate acceptance testing
-void loopIdly() {
-    PCPClient::Util::thread idle_thread {
-        []() {
-            for (;;) {
-                PCPClient::Util::this_thread::sleep_for(
-                    PCPClient::Util::chrono::milliseconds(5000));
-            }
-        } };
-    idle_thread.join();
-}
+// Exit code returned after invalid configuration
+static int PXP_AGENT_CONFIGURATION_FAILURE = 3;
+
+// Exit code returned after daemonization failure (only on POSIX)
+static int PXP_AGENT_DAEMONIZATION_FAILURE = 4;
 
 int startAgent(std::vector<std::string> arguments) {
 #ifndef _WIN32
@@ -50,8 +44,7 @@ int startAgent(std::vector<std::string> arguments) {
 #endif
 
     try {
-        // Using HW because configuration may not be initialized at this point
-        if (!HW::GetFlag<bool>("foreground")) {
+        if (!Configuration::Instance().get<bool>("foreground")) {
 #ifdef _WIN32
             Util::daemonize();
 #else
@@ -62,41 +55,46 @@ int startAgent(std::vector<std::string> arguments) {
         }
     } catch (const std::exception& e) {
         LOG_ERROR("Failed to daemonize: %1%", e.what());
-        return PXP_AGENT_GENERAL_FAILURE;
+        return PXP_AGENT_DAEMONIZATION_FAILURE;
     } catch (...) {
         LOG_ERROR("Failed to daemonize");
-        return PXP_AGENT_GENERAL_FAILURE;
+        return PXP_AGENT_DAEMONIZATION_FAILURE;
     }
 
     int exit_code { PXP_AGENT_SUCCESS };
-    if (!Configuration::Instance().valid()) {
-        // pxp-agent will execute in uncofigured mode
-        loopIdly();
-    } else {
-        try {
-            Agent agent { Configuration::Instance().getAgentConfiguration() };
-            agent.start();
-        } catch (const Agent::WebSocketConfigurationError& e) {
-            LOG_ERROR("WebSocket configuration error (%1%) - pxp-agent will "
-                      "continue executing, but will not attempt to connect to "
-                      "the PCP broker again", e.what());
-            loopIdly();
-        } catch (const Agent::FatalError& e) {
-            exit_code = PXP_AGENT_GENERAL_FAILURE;
-            LOG_ERROR("Fatal error: %1%", e.what());
-        } catch (const std::exception& e) {
-            exit_code = PXP_AGENT_GENERAL_FAILURE;
-            LOG_ERROR("Unexpected error: %1%", e.what());
-        } catch (...) {
-            exit_code = PXP_AGENT_GENERAL_FAILURE;
-            LOG_ERROR("Unexpected error");
-        }
+
+    try {
+        Agent agent { Configuration::Instance().getAgentConfiguration() };
+        agent.start();
+    } catch (const Agent::WebSocketConfigurationError& e) {
+        exit_code = PXP_AGENT_CONFIGURATION_FAILURE;
+        LOG_ERROR("WebSocket configuration  rror: %1%", e.what());
+    } catch (const Agent::Error& e) {
+        exit_code = PXP_AGENT_GENERAL_FAILURE;
+        LOG_ERROR("Fatal error: %1%", e.what ());
+    } catch (const std::exception& e) {
+        exit_code = PXP_AGENT_GENERAL_FAILURE;
+        LOG_ERROR("Unexpected error: %1%", e.what());
+    } catch (...) {
+        exit_code = PXP_AGENT_GENERAL_FAILURE;
+        LOG_ERROR("Unexpected error");
     }
 
 #ifdef _WIN32
     Util::daemon_cleanup();
 #endif
+
     return exit_code;
+}
+
+static void tryLogError(const std::string& err_msg) {
+    try {
+        // Try to set up logging with default settings
+        Configuration::Instance().setupLogging();
+        LOG_ERROR(err_msg);
+    } catch(Configuration::Error) {
+        // pass
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -122,13 +120,7 @@ int main(int argc, char *argv[]) {
         err_msg = e.what();
     }
     if (!err_msg.empty()) {
-        // Try to set up logging with default settings
-        try {
-            Configuration::Instance().setupLogging();
-            LOG_ERROR(err_msg);
-        } catch(Configuration::Error) {
-            // pass
-        }
+        tryLogError(err_msg);
         boost::nowide::cout << err_msg
                             << "\nCannot start pxp-agent"
                             << std::endl;
@@ -146,12 +138,16 @@ int main(int argc, char *argv[]) {
             HW::ShowVersion();
             return PXP_AGENT_SUCCESS;
         default:
+            // Unexpected; return the parsing failure exit code, since
+            // pxp-agent was not configured
+            err_msg = "Invalid parse result";
+            tryLogError(err_msg);
             boost::nowide::cout << "An unexpected code was returned when trying "
                                 << "to parse command line arguments - "
                                 << static_cast<int>(parse_result)
                                 << "\nCannot start pxp-agent"
                                 << std::endl;
-            return PXP_AGENT_GENERAL_FAILURE;
+            return PXP_AGENT_PARSING_FAILURE;
     }
 
     // Set up logging
@@ -163,7 +159,7 @@ int main(int argc, char *argv[]) {
         boost::nowide::cout << "Failed to configure logging: " << e.what()
                             << "\nCannot start pxp-agent"
                             << std::endl;
-        return PXP_AGENT_GENERAL_FAILURE;
+        return PXP_AGENT_CONFIGURATION_FAILURE;
     }
 
     // Validate options
@@ -171,13 +167,10 @@ int main(int argc, char *argv[]) {
     try {
         Configuration::Instance().validate();
         LOG_INFO("pxp-agent configuration has been validated");
-    } catch(const Configuration::UnconfiguredError& e) {
-        LOG_ERROR("WebSocket configuration error (%1%); pxp-agent will start "
-                  "unconfigured and no connection will be attempted", e.what());
     } catch(const Configuration::Error& e) {
         LOG_ERROR("Fatal configuration error: %1%; cannot start pxp-agent",
                   e.what());
-        return PXP_AGENT_GENERAL_FAILURE;
+        return PXP_AGENT_CONFIGURATION_FAILURE;
     }
 
     return HW::Start();

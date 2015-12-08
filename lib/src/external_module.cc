@@ -304,9 +304,9 @@ ActionOutcome ExternalModule::callBlockingAction(const ActionRequest& request) {
 #else
         path_, { action_name },
 #endif
-        input_txt,  // input
+        input_txt,                             // input
         std::map<std::string, std::string>(),  // environment
-        0,          // timeout
+        0,                                     // timeout
         { lth_exec::execution_options::merge_environment });  // options
 
     return processRequestOutcome(request, exec.exit_code, exec.output, exec.error);

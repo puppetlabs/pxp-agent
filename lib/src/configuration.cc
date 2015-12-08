@@ -251,8 +251,8 @@ void Configuration::setupLogging() {
 }
 
 void Configuration::validate() {
-    checkUnconfiguredMode();
-    validateAndNormalizeConfiguration();
+    validateAndNormalizeWebsocketSettings();
+    validateAndNormalizeOtherSettings();
     valid_ = true;
 }
 
@@ -268,10 +268,6 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const {
         HW::GetFlag<std::string>("modules-config-dir"),
         AGENT_CLIENT_TYPE };
     return agent_configuration_;
-}
-
-bool Configuration::valid() const {
-    return valid_;
 }
 
 void Configuration::reopenLogfile() const {
@@ -550,11 +546,11 @@ void Configuration::parseConfigFile() {
     }
 }
 
-void Configuration::checkUnconfiguredMode() {
+void Configuration::validateAndNormalizeWebsocketSettings() {
     if (HW::GetFlag<std::string>("broker-ws-uri").empty()) {
-        throw Configuration::UnconfiguredError { "broker-ws-uri value must be defined" };
+        throw Configuration::Error { "broker-ws-uri value must be defined" };
     } else if (HW::GetFlag<std::string>("broker-ws-uri").find("wss://") != 0) {
-        throw Configuration::UnconfiguredError { "broker-ws-uri value must start with wss://" };
+        throw Configuration::Error { "broker-ws-uri value must start with wss://" };
     }
 
     auto ca = HW::GetFlag<std::string>("ssl-ca-cert");
@@ -562,40 +558,40 @@ void Configuration::checkUnconfiguredMode() {
     auto key = HW::GetFlag<std::string>("ssl-key");
 
     if (ca.empty()) {
-        throw Configuration::UnconfiguredError { "ssl-ca-cert value must be defined" };
+        throw Configuration::Error { "ssl-ca-cert value must be defined" };
     } else {
         ca = lth_file::tilde_expand(ca);
         if (!fs::exists(ca)) {
-            throw Configuration::UnconfiguredError {
+            throw Configuration::Error {
                 (boost::format("ssl-ca-cert file '%1%' not found") % ca).str() };
         } else if (!lth_file::file_readable(ca)) {
-            throw Configuration::UnconfiguredError {
+            throw Configuration::Error {
                 (boost::format("ssl-ca-cert file '%1%' not readable") % ca).str() };
         }
     }
 
     if (cert.empty()) {
-        throw Configuration::UnconfiguredError { "ssl-cert value must be defined" };
+        throw Configuration::Error { "ssl-cert value must be defined" };
     } else {
         cert = lth_file::tilde_expand(cert);
         if (!fs::exists(cert)) {
-            throw Configuration::UnconfiguredError {
+            throw Configuration::Error {
                 (boost::format("ssl-cert file '%1%' not found") % cert).str() };
         } else if (!lth_file::file_readable(cert)) {
-            throw Configuration::UnconfiguredError {
+            throw Configuration::Error {
                 (boost::format("ssl-cert file '%1%' not readable") % cert).str() };
         }
     }
 
     if (key.empty()) {
-        throw Configuration::UnconfiguredError { "ssl-key value must be defined" };
+        throw Configuration::Error { "ssl-key value must be defined" };
     } else {
         key = lth_file::tilde_expand(key);
         if (!fs::exists(key)) {
-            throw Configuration::UnconfiguredError {
+            throw Configuration::Error {
                 (boost::format("ssl-key file '%1%' not found") % key).str() };
         } else if (!lth_file::file_readable(key)) {
-            throw Configuration::UnconfiguredError {
+            throw Configuration::Error {
                 (boost::format("ssl-key file '%1%' not readable") % key).str() };
         }
     }
@@ -604,7 +600,7 @@ void Configuration::checkUnconfiguredMode() {
         PCPClient::getCommonNameFromCert(cert);
         PCPClient::validatePrivateKeyCertPair(key, cert);
     } catch (const PCPClient::connection_config_error& e) {
-        throw Configuration::UnconfiguredError { e.what() };
+        throw Configuration::Error { e.what() };
     }
 
     HW::SetFlag<std::string>("ssl-ca-cert", ca);
@@ -612,7 +608,7 @@ void Configuration::checkUnconfiguredMode() {
     HW::SetFlag<std::string>("ssl-key", key);
 }
 
-void Configuration::validateAndNormalizeConfiguration() {
+void Configuration::validateAndNormalizeOtherSettings() {
     if (HW::GetFlag<std::string>("spool-dir").empty()) {
         // Unexpected, since we have a default value for spool-dir
         throw Configuration::Error { "spool-dir must be defined" };

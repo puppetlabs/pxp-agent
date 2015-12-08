@@ -49,17 +49,18 @@ pxp-agent relies on [nssm][9] to execute as a service. In case `--foreground` is
 unflagged, a mutex-based mechanism will prevent multiple instances of pxp-agent.
 Note that no PID file will be created.
 
-### Starting unconfigured
-
-If no broker WebSocket URI, SSL key, ca or cert value is supplied, the agent
-will still be able to start in unconfigured mode. In this mode no connection
-will be established but the process will not terminate.
-
 ### Exit code
 
-On success, pxp-agent returns 0. In case of it fails to parse the command line
-options or the configuration file, it returns 2. For all other failures,
-including invalid options, it returns 1.
+In POSIX, when the daemon is successfully instantiated, the parent process
+returns 0. In case of a daemonization failure, it returns 4.
+
+In case of it fails to parse the command line options or the configuration file,
+pxp-agent returns 2.
+
+In case of invalid configuration, say an option is set to an invalid value, it
+returns 3.
+
+For all other failures it returns 1.
 
 ## Modules
 
