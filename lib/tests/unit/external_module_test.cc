@@ -76,7 +76,7 @@ TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
         ExternalModule mod { PXP_AGENT_ROOT_PATH
                              "/lib/tests/resources/modules/failures_test"
                              EXTENSION };
-        REQUIRE(mod.actions.size() == 2);
+        REQUIRE(mod.actions.size() == 2u);
     }
 
     SECTION("throw a Module::LoadingError in case the module has an invalid "

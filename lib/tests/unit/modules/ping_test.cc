@@ -127,7 +127,7 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
         auto hops = result.get<std::vector<lth_jc::JsonContainer>>(
                         "request_hops");
 
-        REQUIRE(hops.size() == 4);
+        REQUIRE(hops.size() == 4u);
         REQUIRE(hops[3].get<std::string>("time") == "007");
     }
 }
