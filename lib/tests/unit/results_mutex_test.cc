@@ -27,9 +27,8 @@ TEST_CASE("ResultsMutex::get", "[async]") {
     SECTION("can lock with the returned mutex pointer") {
         ResultsMutex::Instance().add("spam");
         ResultsMutex::Mutex_Ptr mtx_ptr;
-        // TODO(ale): update defer_lock to cpp-pcp-client const
         ResultsMutex::Lock lck { ResultsMutex::Instance().access_mtx,
-                                 ResultsMutex::defer_lock() };
+                                 PCPClient::Util::defer_lock };
         REQUIRE_FALSE(lck.owns_lock());
         lck.lock();
         REQUIRE(lck.owns_lock());
