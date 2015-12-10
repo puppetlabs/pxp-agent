@@ -16,7 +16,6 @@ install:
 
   - git clone https://github.com/puppetlabs/cpp-pcp-client
   - cd cpp-pcp-client
-  - git checkout 1.0.1
   - git submodule update --init --recursive
   - ps: mv "C:\Program Files\Git\usr\bin\sh.exe" "C:\Program Files\Git\usr\bin\shxx.exe"
   - ps: mv "C:\Program Files\Git\bin\sh.exe" "C:\Program Files\Git\bin\shxx.exe"
