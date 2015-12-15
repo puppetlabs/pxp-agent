@@ -33,11 +33,6 @@ class ResultsMutex {
     using Lock = PCPClient::Util::unique_lock<PCPClient::Util::mutex>;
     using LockGuard = PCPClient::Util::lock_guard<PCPClient::Util::mutex>;
 
-    // TODO(ale): update this as soon as we have tagged cpp-pcp-client
-    static constexpr boost::defer_lock_t defer_lock() {
-        return boost::defer_lock_t();
-    };
-
     // Singleton users should lock this class mutex before accessing
     // the cache.
     // Note that the singleton caches shared_ptrs to mutexes; because

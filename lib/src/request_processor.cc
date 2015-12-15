@@ -134,8 +134,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     try {
         ResultsMutex::LockGuard a_l { ResultsMutex::Instance().access_mtx };
         mtx_ptr = ResultsMutex::Instance().get(transaction_id);
-        // TODO(ale): update defer_lock to cpp-pcp-client const
-        lck_ptr.reset(new ResultsMutex::Lock(*mtx_ptr, ResultsMutex::defer_lock()));
+        lck_ptr.reset(new ResultsMutex::Lock(*mtx_ptr, pcp_util::defer_lock));
     } catch (const ResultsMutex::Error& e) {
         // This is unexpected
         LOG_ERROR("Failed to obtain the mutex pointer for transaction %1%: %2%",
