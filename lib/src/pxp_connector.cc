@@ -35,7 +35,8 @@ PXPConnector::PXPConnector(const Configuration::Agent& agent_configuration)
                                  agent_configuration.client_type,
                                  agent_configuration.ca,
                                  agent_configuration.crt,
-                                 agent_configuration.key } {
+                                 agent_configuration.key,
+                                 agent_configuration.connection_timeout} {
 }
 
 void PXPConnector::sendPCPError(const std::string& request_id,
