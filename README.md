@@ -151,6 +151,11 @@ Specify which config file to use.
 The WebSocket URI of the PXP broker you wish to connect the agent to, example
 *wss://192.168.0.1:8142/pxp/*
 
+**connection-timeout (optional flag)**
+
+Maximum amount of time that may elapse when trying to establish a connection to
+the broker in seconds. Defaults to 5 seconds.
+
 **ssl-ca-cert (required to connect)**
 
 The location of your SSL Certificate Authority certificate, example
@@ -192,12 +197,6 @@ default location is:
 
 Don't become a daemon and execute on foreground on the associated terminal.
 
-** connection-timeout (optional flag) **
-
-Maximum amount of time that may elapse when trying to establish a connection to
-the broker in seconds. Setting the value to 0 will disable the timeout.
-Defaults to 5 seconds.
-
 **pidfile (optional; only on *nix platforms)**
 
 The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
@@ -205,7 +204,7 @@ The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 [1]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/README.md
 [2]: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/README.md
 [3]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/actions.md
-[4]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/pxp-module-puppet
+[4]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/README.md
 [5]: https://github.com/puppetlabs/pxp-agent/blob/master/lib/tests/resources/modules/reverse_valid
 [6]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
 [7]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md

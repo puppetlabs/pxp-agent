@@ -71,7 +71,7 @@ int startAgent(std::vector<std::string> arguments) {
         LOG_ERROR("WebSocket configuration  rror: %1%", e.what());
     } catch (const Agent::Error& e) {
         exit_code = PXP_AGENT_GENERAL_FAILURE;
-        LOG_ERROR("Fatal error: %1%", e.what ());
+        LOG_ERROR("Fatal error: %1%", e.what());
     } catch (const std::exception& e) {
         exit_code = PXP_AGENT_GENERAL_FAILURE;
         LOG_ERROR("Unexpected error: %1%", e.what());
