@@ -205,7 +205,7 @@ The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 [1]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/README.md
 [2]: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/README.md
 [3]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/actions.md
-[4]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/pxp-module-puppet
+[4]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/README.md
 [5]: https://github.com/puppetlabs/pxp-agent/blob/master/lib/tests/resources/modules/reverse_valid
 [6]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
 [7]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md
