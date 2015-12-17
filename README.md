@@ -195,8 +195,7 @@ Don't become a daemon and execute on foreground on the associated terminal.
 ** connection-timeout (optional flag) **
 
 Maximum amount of time that may elapse when trying to establish a connection to
-the broker in seconds. Setting the value to 0 will disable the timeout.
-Defaults to 5 seconds.
+the broker in seconds. Defaults to 5 seconds.
 
 **pidfile (optional; only on *nix platforms)**
 

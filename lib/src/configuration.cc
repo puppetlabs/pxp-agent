@@ -411,7 +411,8 @@ void Configuration::defineDefaultValues() {
                  Base_ptr { new Entry<int>(
                     "connection-timeout",
                     "",
-                    "Timeout (in seconds) for establishing a websocket connection. 0 disables, default: 5",
+                    "Timeout (in seconds) for establishing a WebSocket "
+                    "connection, default: 5",
                     Types::Integer,
                     5) } });
 
