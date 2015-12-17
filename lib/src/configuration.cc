@@ -319,6 +319,16 @@ void Configuration::defineDefaultValues() {
                     "") } });
 
     defaults_.insert(
+        Option { "connection-timeout",
+                 Base_ptr { new Entry<int>(
+                    "connection-timeout",
+                    "",
+                    "Timeout (in seconds) for establishing a WebSocket "
+                    "connection, default: 5",
+                    Types::Integer,
+                    5) } });
+
+    defaults_.insert(
         Option { "ssl-ca-cert",
                  Base_ptr { new Entry<std::string>(
                     "ssl-ca-cert",
@@ -405,16 +415,6 @@ void Configuration::defineDefaultValues() {
                     "Don't daemonize, default: false",
                     Types::Bool,
                     false) } });
-
-    defaults_.insert(
-        Option { "connection-timeout",
-                 Base_ptr { new Entry<int>(
-                    "connection-timeout",
-                    "",
-                    "Timeout (in seconds) for establishing a WebSocket "
-                    "connection, default: 5",
-                    Types::Integer,
-                    5) } });
 
 #ifndef _WIN32
     // NOTE(ale): we don't daemonize on Windows; we rely NSSM to start

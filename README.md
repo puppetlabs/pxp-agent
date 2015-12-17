@@ -151,6 +151,11 @@ Specify which config file to use.
 The WebSocket URI of the PXP broker you wish to connect the agent to, example
 *wss://192.168.0.1:8142/pxp/*
 
+**connection-timeout (optional flag)**
+
+Maximum amount of time that may elapse when trying to establish a connection to
+the broker in seconds. Defaults to 5 seconds.
+
 **ssl-ca-cert (required to connect)**
 
 The location of your SSL Certificate Authority certificate, example
@@ -191,11 +196,6 @@ default location is:
 **foreground (optional flag)**
 
 Don't become a daemon and execute on foreground on the associated terminal.
-
-** connection-timeout (optional flag) **
-
-Maximum amount of time that may elapse when trying to establish a connection to
-the broker in seconds. Defaults to 5 seconds.
 
 **pidfile (optional; only on *nix platforms)**
 
