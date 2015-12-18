@@ -14,8 +14,8 @@ on agent1, puppet('resource service pxp-agent ensure=running')
 step 'Allow 10 seconds after service start-up for association to complete'
 sleep(10)
 
-websocket_success = /INFO.*Successfully established a WebSocket connection with the PCP broker.*/
-association_success = /INFO.*Received associate session response.*success/
+websocket_success = /INFO.*Successfully established a WebSocket connection with the PCP broker.*/i
+association_success = /INFO.*Received associate session response.*success/i
 on(agent1, "cat #{logfile(agent1)}") do |result|
   log_contents = result.stdout
   step 'Check pxp-agent.log for websocket connection'
