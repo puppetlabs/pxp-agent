@@ -57,10 +57,18 @@ create_remote_file(agent1, pxp_agent_config_file(agent1), pxp_config_json(master
 
 step 'C94729 - Attempt to run pxp-agent with SSL keypair from a different ca'
 on agent1, puppet('resource service pxp-agent ensure=running')
-retry_on(agent1, "grep 'TLS handshake failed' #{logfile(agent1)}", {:max_retries => 30,
+begin
+  retry_on(agent1, "grep 'TLS handshake failed' #{logfile(agent1)}", {:max_retries => 30,
                                                              :retry_interval => 1})
-assert(on(agent1, "grep 'retrying in' #{logfile(agent1)}"),
-       "pxp-agent should log that it will retry connection")
+rescue
+  fail("Failed to find 'TLS handshake failed' entry in pxp-agent.log after 30 seconds")
+end
+begin
+  retry_on(agent1, "grep 'retrying in' #{logfile(agent1)}", {:max_retries => 30,
+                                                             :retry_interval => 1})
+rescue
+  fail("Failed to find 'retrying in X seconds' entry in pxp-agent.log after 30 seconds")
+end
 on agent1, puppet('resource service pxp-agent') do |result|
   assert_match(/running/, result.stdout, "pxp-agent service should be running (failing handshake)")
 end
