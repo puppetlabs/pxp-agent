@@ -235,19 +235,15 @@ end
 
 def config
   if (ENV['TEST_TARGET']) && (not ENV['CONFIG'])
-    if ENV['TEST_TARGET'][-1,1] == 'a'
-      if !ENV['TEST_TARGET'].start_with?('redhat7-64m')
-        ENV['TEST_TARGET'] = "redhat7-64m-#{ENV['TEST_TARGET']}"
-        puts "Adding EL7 master to ENV['TEST_TARGET']. Value is now '#{ENV['TEST_TARGET']}'"
-      end
-      cli = BeakerHostGenerator::CLI.new([ENV['TEST_TARGET'], '--disable-default-role'])
-      ENV['CONFIG'] = "tmp/#{ENV['TEST_TARGET']}-#{SecureRandom.uuid}.yaml"
-      FileUtils.mkdir_p('tmp')
-      File.open(config, 'w') do |fh|
-        fh.print(cli.execute)
-      end
-    else
-      ENV['CONFIG'] = "config/nodes/#{ENV['TEST_TARGET']}.yaml"
+    if !ENV['TEST_TARGET'].start_with?('redhat7-64m')
+      ENV['TEST_TARGET'] = "redhat7-64m-#{ENV['TEST_TARGET']}"
+      puts "Adding EL7 master to ENV['TEST_TARGET']. Value is now '#{ENV['TEST_TARGET']}'"
+    end
+    cli = BeakerHostGenerator::CLI.new([ENV['TEST_TARGET'], '--disable-default-role'])
+    ENV['CONFIG'] = "tmp/#{ENV['TEST_TARGET']}-#{SecureRandom.uuid}.yaml"
+    FileUtils.mkdir_p('tmp')
+    File.open(config, 'w') do |fh|
+      fh.print(cli.execute)
     end
   end
   ENV['CONFIG']
@@ -264,7 +260,7 @@ namespace :ci do
 
     USAGE = <<-EOS
 SUITE_COMMIT or SHA environment variable must be set to the SHA of the puppet-agent package to test.
-TEST_TARGET environment variable must be set to the name of a static host config file e.g. redhat-7-x86_64, or to a valid beaker-hostgenerator string e.g. redhat7-64m-ubuntu1404-64a (rake will assume beaker-hostgenerator if TEST_TARGET ends with 'a')
+TEST_TARGET environment variable must be set to a valid beaker-hostgenerator string e.g. redhat7-64m-ubuntu1404-64a
   Also must set CONFIG=config/nodes/foo.yaml or include it in an options.rb for Beaker.
 You may set TESTS=path/to/test,and/more/tests.
 You may set additional Beaker OPTIONS='--more --options'
