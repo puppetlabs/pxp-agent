@@ -233,16 +233,19 @@ def sha
   ENV['SHA']
 end
 
+# Return the host config file for beaker to use
+# If TEST_TARGET is set, pass it to beaker-hostgenerator to generate a file
+# else, assume CONFIG is set to the path of an existing host config file
 def config
-  if (ENV['TEST_TARGET']) && (not ENV['CONFIG'])
+  if (ENV['TEST_TARGET'])
     if !ENV['TEST_TARGET'].start_with?('redhat7-64m')
       ENV['TEST_TARGET'] = "redhat7-64m-#{ENV['TEST_TARGET']}"
-      puts "Adding EL7 master to ENV['TEST_TARGET']. Value is now '#{ENV['TEST_TARGET']}'"
+      puts "Adding Redhat 7 master to ENV['TEST_TARGET']. Value is now '#{ENV['TEST_TARGET']}'"
     end
     cli = BeakerHostGenerator::CLI.new([ENV['TEST_TARGET'], '--disable-default-role'])
     ENV['CONFIG'] = "tmp/#{ENV['TEST_TARGET']}-#{SecureRandom.uuid}.yaml"
     FileUtils.mkdir_p('tmp')
-    File.open(config, 'w') do |fh|
+    File.open(ENV['CONFIG'], 'w') do |fh|
       fh.print(cli.execute)
     end
   end
