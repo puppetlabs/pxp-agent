@@ -33,7 +33,7 @@ begin
   retry_on(agent1, "grep '#{expected_private_key_error}' #{logfile(agent1)}", {:max_retries => 30,
                                                                         :retry_interval => 1})
 rescue
-  on(agent1, "cat #{log_file}") do |result|
+  on(agent1, "cat #{logfile(agent1)}") do |result|
     assert_match(expected_private_key_error, result.stdout,
                 "Expected error '#{expected_private_key_error}' did not appear in pxp-agent.log")
   end
