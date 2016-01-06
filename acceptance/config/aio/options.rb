@@ -8,6 +8,7 @@
   :'puppetserver-confdir' => '/etc/puppetserver/conf.d',
   :pre_suite     => [
     'setup/aio/010_Install.rb',
+    'setup/aio/021_InstallAristaModule.rb',
     'setup/common/010_Setup_Broker.rb',
     'setup/common/020_Configure_Pxp_Agents.rb',],
   :ssh           => {
