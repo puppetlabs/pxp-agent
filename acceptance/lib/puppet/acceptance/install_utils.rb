@@ -73,64 +73,6 @@ module Puppet
         end
       end
 
-      def install_repos_on(host, project, sha, repo_configs_dir)
-        platform = host['platform'].with_version_codename
-        tld     = sha == 'nightly' ? 'nightlies.puppetlabs.com' : 'builds.puppetlabs.lan'
-        project = sha == 'nightly' ? project + '-latest'        :  project
-        sha     = sha == 'nightly' ? nil                        :  sha
-
-        case platform
-        when /^(fedora|el|centos)-(\d+)-(.+)$/
-          variant = (($1 == 'centos') ? 'el' : $1)
-          fedora_prefix = ((variant == 'fedora') ? 'f' : '')
-          version = $2
-          arch = $3
-
-          # install repo so deps can be fulfilled when required
-          # todo: this should be moved outside of here so we don't reinstall with each repos installed
-          puppetlabs_repo_url = "http://yum.puppetlabs.com/puppetlabs-release-%s-%s.noarch.rpm" % [variant, version]
-          on host, "rpm -Uvh --force #{puppetlabs_repo_url}"
-
-          # grab the repo for SHA of project
-          repo_filename = "pl-%s%s%s-%s-%s%s-%s.repo" % [
-            project,
-            sha ? '-' + sha : '',
-            project =~ /xnode-service/ ? '-repos-pe' : '',
-            variant,
-            fedora_prefix,
-            version,
-            arch
-          ]
-          repo_url = "http://%s/%s/%s/repo_configs/rpm/%s" % [tld, project, sha, repo_filename]
-
-          on host, "curl -o /etc/yum.repos.d/#{repo_filename} #{repo_url}"
-        when /^(debian|ubuntu)-([^-]+)-(.+)$/
-          variant = $1
-          version = $2
-          arch = $3
-
-          # install repo so deps can be fulfilled when required
-          # todo: this should be moved outside of here so we don't reinstall with each repos installed
-          deb_filename = "puppetlabs-release-#{version}.deb"
-          puppetlabs_repo_url = "http://apt.puppetlabs.com/#{deb_filename}"
-          puppetlabs_repo_path = "/tmp/#{deb_filename}"
-          on host, "curl -o #{puppetlabs_repo_path} #{puppetlabs_repo_url}"
-          on host, "dpkg -i --force-all #{puppetlabs_repo_path}"
-
-          list_filename = "pl-%s%s-%s.list" % [
-            project,
-            sha ? '-' + sha : '',
-            version
-          ]
-          list_url = "http://%s/%s/%s/repo_configs/deb/%s" % [tld, project, sha, list_filename]
-
-          on host, "curl -o /etc/apt/sources.list.d/#{list_filename} #{list_url}"
-          on host, 'apt-get update'
-        else
-          host.logger.notify("No repository installation step for #{platform} yet...")
-        end
-      end
-
       # Configures gem sources on hosts to use a mirror, if specified
       # This is a duplicate of the Gemfile logic.
       def configure_gem_mirror(hosts)
