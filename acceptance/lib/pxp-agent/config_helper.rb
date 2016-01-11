@@ -1,25 +1,16 @@
 require 'json'
-# This file contains common strings and functions for pxp-agent acceptance tests to use
+# This file contains common strings and functions for working with pxp-agent's config file
 
 PXP_CONFIG_DIR_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/etc/'
 PXP_CONFIG_DIR_POSIX = '/etc/puppetlabs/pxp-agent/'
 
-PXP_LOG_FILE_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/var/log/pxp-agent.log'
-PXP_LOG_FILE_POSIX = '/var/log/puppetlabs/pxp-agent/pxp-agent.log'
-
 PCP_BROKER_PORT = 8142
 
 # SSL directories and files for our standard set of test certs
-SSL_BASE_DIR_WINDOWS = "C:\\\\cygwin64\\\\home\\\\Administrator\\\\test-resources\\\\ssl\\\\"
-SSL_BASE_DIR_POSIX = "/root/test-resources/ssl/"
-ALT_SSL_BASE_DIR_WINDOWS = "C:\\\\cygwin64\\\\home\\\\Administrator\\\\test-resources\\\\ssl\\\\alternative\\\\"
-ALT_SSL_BASE_DIR_POSIX = "/root/test-resources/ssl/alternative/"
-SSL_KEY_FILE_DIR_WINDOWS = "private_keys\\\\"
-SSL_KEY_FILE_DIR_POSIX = "private_keys/"
-SSL_CA_FILE_DIR_WINDOWS = "ca\\\\"
-SSL_CA_FILE_DIR_POSIX = "ca/"
-SSL_CERT_FILE_DIR_WINDOWS = "certs\\\\"
-SSL_CERT_FILE_DIR_POSIX = "certs/"
+ALT_SUFFIX = "alternative"
+SSL_KEY_FILE_DIR = "private_keys"
+SSL_CA_FILE_DIR = "ca"
+SSL_CERT_FILE_DIR = "certs"
 
 # Our standard set of test certs use two digits in the filename
 # so we need to pad with zero if a single digit number was passed
@@ -33,6 +24,19 @@ end
 
 def windows?(host)
   host.platform.upcase.start_with?('WINDOWS')
+end
+
+# @param host the beaker host object you want the path on
+# @return the path to the directory that pxp-agent is located in. A cygpath is returned in the case of Windows.
+def pxp_agent_dir(host)
+  if (windows?(host))
+    # If 32bit Puppet on 64bit Windows then Puppet will be in Program Files (x86)
+    if((host.is_x86_64?) && (host[:ruby_arch] == "x86"))
+      return "/cygdrive/c/Program\\ Files\\ \\(x86\\)/Puppet\\ Labs/Puppet/pxp-agent/bin"
+    end
+    return "/cygdrive/c/Program\\ Files/Puppet\\ Labs/Puppet/pxp-agent/bin"
+  end
+  "/opt/puppetlabs/puppet/bin"
 end
 
 # @param broker hostname or beaker host object of the machine running pcp-broker
@@ -63,20 +67,22 @@ end
 # @param broker the host that runs pcp-broker
 # @param agent the agent machine that this config is for
 # @param client_number which client cert 01-05 from our standard test certs to use
+# @param base_path the base path on the host of the ssl certs to use in configuration
 # @return pxp-agent config as a JSON object, using our standard test cert files
-def pxp_config_json_using_test_certs(broker, agent, client_number)
-  pxp_config_hash_using_test_certs(broker, agent, client_number).to_json
+def pxp_config_json_using_test_certs(broker, agent, client_number, base_path)
+  pxp_config_hash_using_test_certs(broker, agent, client_number, base_path).to_json
 end
 
 # @param broker the host that runs pcp-broker
 # @param agent the agent machine that this config is for
 # @param client_number which client cert 01-05 from our standard test certs to use
+# @param base_path the base path on the host of the ssl certs to use in configuration
 # @return pxp-agent config as a hash, using our standard test cert files
-def pxp_config_hash_using_test_certs(broker, agent, client_number)
+def pxp_config_hash_using_test_certs(broker, agent, client_number, base_path)
   { "broker-ws-uri" => "#{broker_ws_uri(broker)}",
-    "ssl-key" => "#{ssl_key_file(agent, client_number)}",
-    "ssl-ca-cert" => "#{ssl_ca_file(agent)}",
-    "ssl-cert" => "#{ssl_cert_file(agent, client_number)}"
+    "ssl-key" => "#{ssl_key_file(agent, client_number, base_path)}",
+    "ssl-ca-cert" => "#{ssl_ca_file(agent, base_path)}",
+    "ssl-cert" => "#{ssl_cert_file(agent, client_number, base_path)}"
   }
 end
 
@@ -84,14 +90,6 @@ end
 # @return the broker-ws-uri config string
 def broker_ws_uri(broker_host)
   "wss://#{broker_host}:#{PCP_BROKER_PORT}/pcp/"
-end
-
-# @param host the beaker host you want the path to the log file on
-# @return The path to the log file on the host. For Windows, a cygpath is returned
-def logfile(host)
-  windows?(host)?
-    PXP_LOG_FILE_CYGPATH :
-    PXP_LOG_FILE_POSIX
 end
 
 # @param host the beaker host (to determine the correct path for the OS)
@@ -102,110 +100,51 @@ def pxp_agent_config_file(host)
     "#{PXP_CONFIG_DIR_POSIX}pxp-agent.conf"
 end
 
-def ssl_key_file_windows(client_number)
-  client_number = left_pad_with_zero(client_number)
-  "#{SSL_BASE_DIR_WINDOWS}#{SSL_KEY_FILE_DIR_WINDOWS}client#{client_number}.example.com.pem"
-end
-
-def ssl_key_file_posix(client_number)
-  client_number = left_pad_with_zero(client_number)
-  "#{SSL_BASE_DIR_POSIX}#{SSL_KEY_FILE_DIR_POSIX}client#{client_number}.example.com.pem"
-end
-
 # @param host a beaker host (to determine the correct path for the OS)
 # @param client_number which client 01-05 you want the key file for
+# @param base_path the base path on the host of the ssl certs to use in configuration
+# @param [boolean] use_alt_path Use alternative test ssl file if true, otherwise use standard test ssl file
 # @return the path to the client ssl key file on this host
-def ssl_key_file(host, client_number)
-  windows?(host)?
-    ssl_key_file_windows(client_number) :
-    ssl_key_file_posix(client_number)
-end
-
-def alt_ssl_key_file_windows(client_number)
+def ssl_key_file(host, client_number, base_path, use_alt_path=false)
+  alt_str = use_alt_path ? '.alt' : ''
+  alt_suffix = use_alt_path ? ALT_SUFFIX : ''
   client_number = left_pad_with_zero(client_number)
-  "#{ALT_SSL_BASE_DIR_WINDOWS}#{SSL_KEY_FILE_DIR_WINDOWS}client#{client_number}.alt.example.com.pem"
-end
-
-def alt_ssl_key_file_posix(client_number)
-  client_number = left_pad_with_zero(client_number)
-  "#{ALT_SSL_BASE_DIR_POSIX}#{SSL_KEY_FILE_DIR_POSIX}client#{client_number}.alt.example.com.pem"
+  file = File.join(base_path, alt_suffix, SSL_KEY_FILE_DIR, "client#{client_number}#{alt_str}.example.com.pem")
+  windows?(host) ? file.gsub('/', '\\') : file
 end
 
 # @param host the beaker host (to determine the correct path for the OS)
-# @param client_number which client 01-05 you want the key file for
-# @return the path to the alternative client ssl key file on this host
-def alt_ssl_key_file(host, client_number)
-  windows?(host)?
-    alt_ssl_key_file_windows(client_number) :
-    alt_ssl_key_file_posix(client_number)
-end
-
-def ssl_ca_file_windows
-  "#{SSL_BASE_DIR_WINDOWS}#{SSL_CA_FILE_DIR_WINDOWS}ca_crt.pem"
-end
-
-def ssl_ca_file_posix
-  "#{SSL_BASE_DIR_POSIX}#{SSL_CA_FILE_DIR_POSIX}ca_crt.pem"
-end
-
-# @param host the beaker host (to determine the correct path for the OS)
+# @param base_path the base path on the host of the ssl certs to use in configuration
+# @param [boolean] use_alt_path Use alternative test ssl file if true, otherwise use standard test ssl file
 # @return the path to the ssl ca file on this host
-def ssl_ca_file(host)
-  windows?(host)?
-    ssl_ca_file_windows :
-    ssl_ca_file_posix
-end
-
-def alt_ssl_ca_file_windows
-  "#{ALT_SSL_BASE_DIR_WINDOWS}#{SSL_CA_FILE_DIR_WINDOWS}ca_crt.pem"
-end
-
-def alt_ssl_ca_file_posix
-  "#{ALT_SSL_BASE_DIR_POSIX}#{SSL_CA_FILE_DIR_POSIX}ca_crt.pem"
-end
-
-# @param host the beaker host (to determine the correct path for the OS)
-# @return the path to the alternative ssl ca file on this host
-def alt_ssl_ca_file(host)
-  windows?(host)?
-    alt_ssl_ca_file_windows :
-    alt_ssl_ca_file_posix
-end
-
-def ssl_cert_file_windows(client_number)
-  client_number = left_pad_with_zero(client_number)
-  "#{SSL_BASE_DIR_WINDOWS}#{SSL_CERT_FILE_DIR_WINDOWS}client#{client_number}.example.com.pem"
-end
-
-def ssl_cert_file_posix(client_number)
-  client_number = left_pad_with_zero(client_number)
-  "#{SSL_BASE_DIR_POSIX}#{SSL_CERT_FILE_DIR_POSIX}client#{client_number}.example.com.pem"
+def ssl_ca_file(host, base_path, use_alt_path=false)
+  alt_str = use_alt_path ? '.alt' : ''
+  alt_suffix = use_alt_path ? ALT_SUFFIX : ''
+  file = File.join(base_path, alt_suffix, SSL_CA_FILE_DIR, "ca_crt.pem")
+  windows?(host) ? file.gsub('/', '\\') : file
 end
 
 # @param host the beaker host (to determine the correct path for the OS)
 # @param client_number which client 01-05 you want the key file for
+# @param base_path the base path on the host of the ssl certs to use in configuration
+# @param [boolean] use_alt_path Use alternative test ssl file if true, otherwise use standard test ssl file
 # @return the path to the ssl cert for this client on this host
-def ssl_cert_file(host, client_number)
-  windows?(host)?
-    ssl_cert_file_windows(client_number) :
-    ssl_cert_file_posix(client_number)
-end
-
-def alt_ssl_cert_file_windows(client_number)
+def ssl_cert_file(host, client_number, base_path, use_alt_path=false)
+  alt_str = use_alt_path ? '.alt' : ''
+  alt_suffix = use_alt_path ? ALT_SUFFIX : ''
   client_number = left_pad_with_zero(client_number)
-  "#{ALT_SSL_BASE_DIR_WINDOWS}#{SSL_CERT_FILE_DIR_WINDOWS}client#{client_number}.alt.example.com.pem"
+  file = File.join(base_path, alt_suffix, SSL_CERT_FILE_DIR, "client#{client_number}#{alt_str}.example.com.pem")
+  windows?(host) ? file.gsub('/', '\\') : file
 end
 
-def alt_ssl_cert_file_posix(client_number)
-  client_number = left_pad_with_zero(client_number)
-  "#{ALT_SSL_BASE_DIR_POSIX}#{SSL_CERT_FILE_DIR_POSIX}client#{client_number}.alt.example.com.pem"
-end
-
-# @param host the beaker host (to determine the correct path for the OS)
-# @param client_number which client 01-05 you want the key file for
-# @return the path to the alternative ssl cert for this client on this host
-def alt_ssl_cert_file(host, client_number)
-  windows?(host)?
-    alt_ssl_cert_file_windows(client_number) :
-    alt_ssl_cert_file_posix(client_number)
+# @param host the beaker host
+# @return the path to the std ssl dir on the host
+def configure_std_certs_on_host(host)
+  cert_dir = host.tmpdir('test-ssl')
+  scp_to(host, '../test-resources/ssl', cert_dir)
+  cert_dir = File.join(cert_dir, 'ssl')
+  if windows?(host)
+    on host, "chmod -R 744 #{cert_dir.gsub('C:/cygwin64', '')}"
+  end
+  return cert_dir
 end

@@ -1,29 +1,29 @@
+require 'pxp-agent/test_helper.rb'
+
 test_name 'C93807 - Associate pxp-agent with a PCP broker'
 
-agent1 = agents[0]
+agents.each_with_index do |agent, i|
 
-step 'Stop pxp-agent if it is currently running'
-on agent1, puppet('resource service pxp-agent ensure=stopped')
+  cert_dir = configure_std_certs_on_host(agent)
+  create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_test_certs(master, agent, i + 1, cert_dir).to_s)
 
-step 'Clear existing logs so we don\'t match an existing association entry'
-on(agent1, "rm -rf #{logfile(agent1)}")
+  step 'Stop pxp-agent if it is currently running' do
+    on agent, puppet('resource service pxp-agent ensure=stopped')
+  end
 
-step 'Start pxp-agent service'
-on agent1, puppet('resource service pxp-agent ensure=running')
+  step 'Clear existing logs so we don\'t match an existing association entry' do
+    on(agent, "rm -rf #{logfile(agent)}")
+  end
 
-step 'Allow 10 seconds after service start-up for association to complete'
-sleep(10)
+  step 'Start pxp-agent service' do
+    on agent, puppet('resource service pxp-agent ensure=running')
+  end
 
-websocket_success = /INFO.*Successfully established a WebSocket connection with the PCP broker.*/i
-association_success = /INFO.*Received associate session response.*success/i
-on(agent1, "cat #{logfile(agent1)}") do |result|
-  log_contents = result.stdout
-  step 'Check pxp-agent.log for websocket connection'
-  assert_match(websocket_success, log_contents,
-               "Did not match expected websocket connection message '#{websocket_success.to_s}' " \
-               "in actual pxp-agent.log contents '#{log_contents}'")
-  step 'Check pxp-agent.log for successful association response'
-  assert_match(association_success, log_contents,
-               "Did not match expected association success message '#{association_success.to_s}' " \
-               "in actual pxp-agent.log contents '#{log_contents}'")
+  step 'Check that within 60 seconds, log file contains entry for WebSocket connection being established' do
+    expect_file_on_host_to_contain(agent, logfile(agent), PXP_AGENT_LOG_ENTRY_WEBSOCKET_SUCCESS, 60)
+  end
+
+  step 'Check that log file contains entry that association has succeeded' do
+    expect_file_on_host_to_contain(agent, logfile(agent), PXP_AGENT_LOG_ENTRY_ASSOCIATION_SUCCESS)
+  end
 end
