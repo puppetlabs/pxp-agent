@@ -613,42 +613,58 @@ void Configuration::checkUnconfiguredMode() {
 }
 
 void Configuration::validateAndNormalizeConfiguration() {
-    if (HW::GetFlag<std::string>("spool-dir").empty()) {
-        // Unexpected, since we have a default value for spool-dir
+    // Normalize
+    std::vector<std::string> options { "modules-dir", "modules-config-dir",
+                                       "spool-dir" };
+
+    for (const auto& option : options) {
+        auto val = HW::GetFlag<std::string>(option);
+
+        if (val.empty()) {
+            continue;
+        }
+
+        fs::path val_path { lth_file::tilde_expand(val) };
+
+        if (!fs::exists(val_path)) {
+            throw Configuration::Error { option + " '" + val_path.string()
+                + "'' does not exists" };
+        } else if (!fs::is_directory(val_path)) {
+            throw Configuration::Error { option + " '" + val_path.string()
+                + "' is not a directory" };
+        }
+
+        HW::SetFlag<std::string>(option, val_path.string());
+    }
+
+    // Ensure spool-dir is defined and we can write in it
+    const auto spool_dir = HW::GetFlag<std::string>("spool-dir");
+
+    if (spool_dir.empty()) {
         throw Configuration::Error { "spool-dir must be defined" };
-    } else {
-        auto spool_dir_path = fs::path {
-            lth_file::tilde_expand(HW::GetFlag<std::string>("spool-dir")) };
+    }
 
-        if (!fs::exists(spool_dir_path)) {
-            throw Configuration::Error { "spool-dir does not exists" };
-        } else if (!fs::is_directory(spool_dir_path)) {
-            throw Configuration::Error { "--spool-dir '"
-                + spool_dir_path.string() + "' is not a directory" };
+    fs::path spool_dir_path { spool_dir };
+    fs::path tmp_path;
+
+    do {
+        tmp_path = spool_dir_path / lth_util::get_UUID();
+    } while (fs::exists(tmp_path));
+
+    bool is_writable { false };
+    try {
+        if (fs::create_directories(tmp_path)) {
+            is_writable = true;
+            fs::remove_all(tmp_path);
         }
+    } catch (const std::exception& e) {
+        LOG_DEBUG("Failed to create the test dir in spool path during"
+                  "configuration validation: %1%", e.what());
+    }
 
-        fs::path tmp_path;
-        do {
-            tmp_path = spool_dir_path / lth_util::get_UUID();
-        } while (fs::exists(tmp_path));
-
-        bool is_writable { false };
-        try {
-            if (fs::create_directories(tmp_path)) {
-                is_writable = true;
-                fs::remove_all(tmp_path);
-            }
-        } catch (const std::exception& e) {
-            LOG_DEBUG("Failed to create the test dir in spool path during"
-                      "configuration validation: %1%", e.what());
-        }
-
-        if (!is_writable) {
-            throw Configuration::Error { "--spool-dir '"
-                + spool_dir_path.string() + "' is not writable" };
-        }
-
-        HW::SetFlag<std::string>("spool-dir", spool_dir_path.string());
+    if (!is_writable) {
+        throw Configuration::Error { "--spool-dir '"
+            + spool_dir_path.string() + "' is not writable" };
     }
 
 #ifndef _WIN32
@@ -666,7 +682,7 @@ void Configuration::validateAndNormalizeConfiguration() {
                                              + "' is not a directory" };
             }
         } else {
-            throw Configuration::Error { "the PID directory'" + pid_dir + "' "
+            throw Configuration::Error { "the PID directory '" + pid_dir + "' "
                                          "doesn't exist; cannot create PID file" };
         }
 
