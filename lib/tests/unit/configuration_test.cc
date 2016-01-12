@@ -32,7 +32,7 @@ static const std::string CA { getCaPath() };
 static const std::string CERT { getCertPath() };
 static const std::string KEY { getKeyPath() };
 static const std::string MODULES_DIR { std::string { PXP_AGENT_ROOT_PATH }
-                                       + "/lib/tests/resources/test_modules/" };
+                                       + "/lib/tests/resources/modules/" };
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
 
