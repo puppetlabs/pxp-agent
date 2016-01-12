@@ -666,7 +666,7 @@ void Configuration::validateAndNormalizeConfiguration() {
                                              + "' is not a directory" };
             }
         } else {
-            throw Configuration::Error { "the PID directory'" + pid_dir + "' "
+            throw Configuration::Error { "the PID directory '" + pid_dir + "' "
                                          "doesn't exist; cannot create PID file" };
         }
 
