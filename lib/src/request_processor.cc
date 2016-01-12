@@ -402,8 +402,8 @@ void RequestProcessor::loadModulesConfiguration() {
                 try {
                     fs::path s_path { s };
                     auto file_name = s_path.stem().string();
-                    // NB: cfg suffix guaranteed by each_file()
-                    auto pos_suffix = file_name.find(".cfg");
+                    // NB: ".conf" suffix guaranteed by each_file()
+                    auto pos_suffix = file_name.find(".conf");
                     auto module_name = file_name.substr(0, pos_suffix);
                     modules_config_[module_name] =
                         lth_jc::JsonContainer(lth_file::read(s));
@@ -414,7 +414,7 @@ void RequestProcessor::loadModulesConfiguration() {
                                 "contains invalid json: %2%", s, e.what());
                 }
                 return true;
-                // naming convention for config files are .cfg. Don't
+                // naming convention for config files suffixes; don't
                 // process files that don't end in this extension
             },
             "\\.conf$");
