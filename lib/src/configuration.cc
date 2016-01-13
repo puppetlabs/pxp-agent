@@ -628,7 +628,7 @@ void Configuration::validateAndNormalizeConfiguration() {
 
         if (!fs::exists(val_path)) {
             throw Configuration::Error { option + " '" + val_path.string()
-                + "'' does not exists" };
+                + "'' does not exist" };
         } else if (!fs::is_directory(val_path)) {
             throw Configuration::Error { option + " '" + val_path.string()
                 + "' is not a directory" };
@@ -683,7 +683,7 @@ void Configuration::validateAndNormalizeConfiguration() {
             }
         } else {
             throw Configuration::Error { "the PID directory '" + pid_dir + "' "
-                                         "doesn't exist; cannot create PID file" };
+                                         "does not exist; cannot create PID file" };
         }
 
         HW::SetFlag<std::string>("pidfile", pid_file);
