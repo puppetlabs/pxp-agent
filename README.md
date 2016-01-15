@@ -86,9 +86,7 @@ the format of the input arguments and the output results. Please refer to
 To run a given action, pxp-agent invokes the module with the action
 name. The input specified in the [PXP request][6] and other parameters will be
 then passed to the module via stdin. Normally pxp-agent invokes a module
-directly, as an executable. When the `interpreter` entry is specified in the
-configuration file (see below), pxp-agent will use this value to execute the
-module instead.
+directly, as an executable.
 
 Note that the [transaction status module][7] is implemented natively; there is
 no module file for it. Also, as a side note, `status query` requests must
