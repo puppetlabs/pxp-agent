@@ -2,9 +2,13 @@
 
 This is the agent for the PCP Execution Protocol [(PXP)][1], based on the
 the Puppet Communications Protocol [(PCP)][2]. It enables the execution of
-[actions][3] on remote nodes, via PXP. The pxp-agent needs to be connected to a
-[PCP broker][8] in order to be used; please refer to the documentation below
-for how to do that.
+[actions][3] on remote nodes, via PXP.
+
+The PCP interface is provided by [cpp-pcp-client][10] which, in turn, relies on
+[websocket++][11].
+
+pxp-agent needs to be connected to a [PCP broker][8] to operate; please refer to
+the documentation below for how to do that.
 
 ## Building from source
 
@@ -210,3 +214,5 @@ The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 [7]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md
 [8]: https://github.com/puppetlabs/pcp-broker
 [9]: https://nssm.cc
+[10]: https://github.com/puppetlabs/cpp-pcp-client
+[11]: https://github.com/zaphoyd/websocketpp
