@@ -69,36 +69,37 @@ For all other failures it returns 1.
 ## Modules
 
 [Actions][3] are grouped in modules, by which they can be loaded and configured
-within pxp-agent. An example of module is given by the [Puppet module][4].
+within pxp-agent. An example of module is given by the [Puppet module][4];
+a trivial one is the [reverse module][5] that is used for testing.
 
 ### Modules interface
 
-A module is a file that provides the module metadata and an interface to
-execute its actions.
+A module is a file that provides an interface to retrieve information about
+its actions (we call such information metadata - it's a set of JSON schemas) and
+to execute actions.
 
-The module metadata is a JSON object containing the following entries:
- - `configuration`: an object that specifies options that may be included in a separate configuration file (see below);
- - `actions`: a JSON array containing specifications for the `input` and `output` of each action.
+The metadata is used by pxp-agent to acquire knowledge about the module's
+actions and validate itss configuration. For each action, the metadata specifies
+the format of the input arguments and the output results. Please refer to
+[this document][12] for more details on requirements for modules.
 
-For a trivial example of module, please refer to the [reverse module][5] used
-for testing.
-
-pxp-agent will execute a module to retrieve its metadata (by passing no
-argument) and to run a given action (by invoking the action with the input
-specified in the [PXP request][6]). Normally when pxp-agent calls a module it
-must be executable. When the `interpreter` field is specified in the
+To run a given action, pxp-agent invokes the module with the action
+name. The input specified in the [PXP request][6] and other parameters will be
+then passed to the module via stdin. Normally pxp-agent invokes a module
+directly, as an executable. When the `interpreter` entry is specified in the
 configuration file (see below), pxp-agent will use this value to execute the
 module instead.
 
 Note that the [transaction status module][7] is implemented natively; there is
-no external file for it. Also, `status query` [requests][6] must be *blocking*.
+no module file for it. Also, as a side note, `status query` requests must
+be of [blocking][6].
 
 ### Modules configuration
 
 Modules can be configured by placing a configuration file in the
-`--modules-config-dir`. Config options must be specified in the module metadata
-(see above). Module config files are named like `module_name.conf`.
-
+`--modules-config-dir` named like `<module_name>.conf`. The content of a
+configuration file must be in JSON format and conform with the `configuration`
+entry of the module's metadata.
 
 ## Configuring the agent
 
@@ -208,7 +209,7 @@ The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 [1]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/README.md
 [2]: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/README.md
 [3]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/actions.md
-[4]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/README.md
+[4]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/pxp-modules-puppet.md
 [5]: https://github.com/puppetlabs/pxp-agent/blob/master/lib/tests/resources/modules/reverse_valid
 [6]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
 [7]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md
@@ -216,3 +217,4 @@ The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 [9]: https://nssm.cc
 [10]: https://github.com/puppetlabs/cpp-pcp-client
 [11]: https://github.com/zaphoyd/websocketpp
+[12]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/README.md
