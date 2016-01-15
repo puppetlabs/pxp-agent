@@ -2,7 +2,7 @@
 
 This is the agent for the PCP Execution Protocol [(PXP)][1], based on the
 the Puppet Communications Protocol [(PCP)][2]. It enables the execution of
-[actions][3] on remote nodes, via PXP.
+[actions][3] on remote nodes.
 
 The PCP interface is provided by [cpp-pcp-client][10] which, in turn, relies on
 [websocket++][11].
@@ -79,14 +79,20 @@ its actions (we call such information metadata - it's a set of JSON schemas) and
 to execute actions.
 
 The metadata is used by pxp-agent to acquire knowledge about the module's
-actions and validate itss configuration. For each action, the metadata specifies
+actions and validate its configuration. For each action, the metadata specifies
 the format of the input arguments and the output results. Please refer to
 [this document][12] for more details on requirements for modules.
 
 To run a given action, pxp-agent invokes the module with the action
 name. The input specified in the [PXP request][6] and other parameters will be
-then passed to the module via stdin. Normally pxp-agent invokes a module
-directly, as an executable.
+then passed to the module via stdin.
+
+pxp-agent invokes modules directly, as executables. For determining the paths of
+the executables, pxp-agent will inspect the `--modules-dir` directory and
+look for:
+
+ - **POSIX**: files without any suffix;
+ - **Windows**: files with ".bat" extension.
 
 Note that the [transaction status module][7] is implemented natively; there is
 no module file for it. Also, as a side note, `status query` requests must
