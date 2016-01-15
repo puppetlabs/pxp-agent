@@ -3,17 +3,20 @@
 ## Installation
 
 Place `modules/pxp-module-puppet` in your pxp-agent's `modules-dir`. This can either be
-configured in `/etc/puppetlabs/pxp-agent/pxp-agent.cfg` or by starting the agent
-from the cli and specifying `--modules-dir`. Make sure that the module is executable.
+configured in pxp-agent's configuration file, by default located in
+`/etc/puppetlabs/pxp-agent/pxp-agent.conf`, or by starting the agent from the
+cli and specifying `--modules-dir`. Make sure that the module is executable.
 
 ## Configuration
 
-The module is configured by placing a `puppet.cfg` file in your pxp-agent's
-`modules-config-dir`. This can either be configured in
-`/etc/puppetlabs/pxp-agent/pxp-agent.cfg` or by starting the agent from the cli
+The module is configured by placing a `pxp-module-puppet.conf` file in your
+pxp-agent's `modules-config-dir`. Note that pxp-agent requires that modules'
+configuration files are named as `<module name>.conf`. Also, the
+`modules-config-dir` path can either be configured in
+`/etc/puppetlabs/pxp-agent/pxp-agent.conf` or by starting the agent from the cli
 and specifying `--modules-config-dir`.
 
-The configuration file will have one field:
+The configuration file should have one field:
 
 * `puppet_bin` : The location of the puppet executable on the system pxp-agent is running on.
 
