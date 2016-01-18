@@ -1,14 +1,14 @@
 # PXP Agent
 
-This is the agent for the PCP Execution Protocol [(PXP)][1], based on the
-the Puppet Communications Protocol [(PCP)][2]. It enables the execution of
-[actions][3] on remote nodes.
+This is the agent for the PCP Execution Protocol [(PXP)][pxp_specs_root], based
+on the the Puppet Communications Protocol [(PCP)][pcp_specs_root]. It enables
+the execution of [actions][pxp_specs_actions] on remote nodes.
 
-The PCP interface is provided by [cpp-pcp-client][10] which, in turn, relies on
-[websocket++][11].
+The PCP interface is provided by [cpp-pcp-client][cpp-pcp-client] which, in
+turn, relies on [websocket++][websocketpp].
 
-pxp-agent needs to be connected to a [PCP broker][8] to operate; please refer to
-the documentation below for how to do that.
+pxp-agent needs to be connected to a [PCP broker][pcp-broker] to operate; please
+refer to the documentation below for how to do that.
 
 ## Building from source
 
@@ -49,9 +49,9 @@ signals.
 
 ### Windows
 
-pxp-agent relies on [nssm][9] to execute as a service. In case `--foreground` is
-unflagged, a mutex-based mechanism will prevent multiple instances of pxp-agent.
-Note that no PID file will be created.
+pxp-agent relies on [nssm][nssm] to execute as a service. In case `--foreground`
+is unflagged, a mutex-based mechanism will prevent multiple instances of
+pxp-agent. Note that no PID file will be created.
 
 ### Exit code
 
@@ -68,9 +68,10 @@ For all other failures it returns 1.
 
 ## Modules
 
-[Actions][3] are grouped in modules, by which they can be loaded and configured
-within pxp-agent. An example of module is given by the [Puppet module][4];
-a trivial one is the [reverse module][5] that is used for testing.
+[Actions][pxp_specs_actions] are grouped in modules, by which they can be loaded
+and configured within pxp-agent. An example of module is given by the
+[Puppet module][pxp-module-puppet_script]; a trivial one is the
+[reverse module][pxp-module-puppet_docs] that is used for testing.
 
 ### Modules interface
 
@@ -81,11 +82,11 @@ to execute actions.
 The metadata is used by pxp-agent to acquire knowledge about the module's
 actions and validate its configuration. For each action, the metadata specifies
 the format of the input arguments and the output results. Please refer to
-[this document][12] for more details on requirements for modules.
+[this document][modules_docs] for more details on requirements for modules.
 
 To run a given action, pxp-agent invokes the module with the action
-name. The input specified in the [PXP request][6] and other parameters will be
-then passed to the module via stdin.
+name. The input specified in the [PXP request][pxp_specs_request_response] and
+other parameters will be then passed to the module via stdin.
 
 pxp-agent invokes modules directly, as executables. For determining the paths of
 the executables, pxp-agent will inspect the `--modules-dir` directory and
@@ -94,9 +95,9 @@ look for:
  - **POSIX**: files without any suffix;
  - **Windows**: files with ".bat" extension.
 
-Note that the [transaction status module][7] is implemented natively; there is
-no module file for it. Also, as a side note, `status query` requests must
-be of [blocking][6].
+Note that the [transaction status module][pxp_specs_transaction_status] is
+implemented natively; there is no module file for it. Also, as a side note,
+`status query` requests must be of [blocking][pxp_specs_request_response].
 
 ### Modules configuration
 
@@ -128,9 +129,9 @@ single JSON object. Example:
 }
 ```
 
-Note that you have to specify the WebSocket secure URL of the [PCP broker][8]
-in order to establish the WebSocket connection on top of which the PCP
-communication will take place.
+Note that you have to specify the WebSocket secure URL of the
+[PCP broker][pcp-broker] in order to establish the WebSocket connection on top
+of which the PCP communication will take place.
 
 ### Logging
 
@@ -210,15 +211,16 @@ Don't become a daemon and execute on foreground on the associated terminal.
 
 The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 
-[1]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/README.md
-[2]: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/README.md
-[3]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/actions.md
-[4]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/pxp-modules-puppet.md
-[5]: https://github.com/puppetlabs/pxp-agent/blob/master/lib/tests/resources/modules/reverse_valid
-[6]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
-[7]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md
-[8]: https://github.com/puppetlabs/pcp-broker
-[9]: https://nssm.cc
-[10]: https://github.com/puppetlabs/cpp-pcp-client
-[11]: https://github.com/zaphoyd/websocketpp
-[12]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/README.md
+[cpp-pcp-client]: https://github.com/puppetlabs/cpp-pcp-client
+[leatherman]: https://github.com/puppetlabs/leatherman
+[nssm]: https://nssm.cc
+[modules_docs]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/README.md
+[pcp-broker]: https://github.com/puppetlabs/pcp-broker
+[pcp_specs_root]: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/README.md
+[pxp-module-puppet_docs]: https://github.com/puppetlabs/pxp-agent/blob/master/lib/tests/resources/modules/reverse_valid
+[pxp-module-puppet_script]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/pxp-modules-puppet.md
+[pxp_specs_actions]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/actions.md
+[pxp_specs_request_response]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
+[pxp_specs_root]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/README.md
+[pxp_specs_transaction_status]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md
+[websocketpp]: https://github.com/zaphoyd/websocketpp
