@@ -61,7 +61,7 @@ end
 # @param action which action in the PXP module to call, default run
 # @param params params to send to the module. e.g for pxp-module-puppet:
 #               {:env => [], :flags => ['--noop', '--onetime', '--no-daemonize']}
-# @return RPC request response message as a hash
+# @return hash of responses, with target identities as keys, and value being the response message for that identity as a hash
 # @raise String indicating something went wrong, test case can use to fail
 def rpc_blocking_request(broker, targets,
                          pxp_module = 'pxp-module-puppet', action = 'run',
@@ -72,7 +72,7 @@ def rpc_blocking_request(broker, targets,
 
   mutex = Mutex.new
   have_response = ConditionVariable.new
-  response = nil
+  responses = Hash.new
 
   client = PCP::Client.new({
     :server => broker_ws_uri(broker),
@@ -87,7 +87,8 @@ def rpc_blocking_request(broker, targets,
         :data     => JSON.load(message.data),
         :debug    => JSON.load(message.debug)
       }
-      response = resp
+      responses[resp[:envelope][:sender]] = resp
+      print resp
       have_response.signal
     end
   end
@@ -121,21 +122,31 @@ def rpc_blocking_request(broker, targets,
       loop do
         mutex.synchronize do
           have_response.wait(mutex)
-          if response
-            done = true
-          end
+          done = have_all_rpc_responses?(targets, responses)
         end
         break if done
       end
     end
   rescue Timeout::Error
-    if !response
-      raise "No PCP response received when requesting puppet run on #{targets}"
+    mutex.synchronize do
+      if !have_all_rpc_responses?
+        raise "Didn't receive all PCP responses when requesting puppet run on #{targets}. Responses received were: #{responses.to_s}"
+      end
     end
   end # wait for message
 
   em.exit
 
-  response
+  responses
 
+end
+
+# Quick test of RPC targets vs RPC responses to check if we have them all yet
+def have_all_rpc_responses?(targets, responses)
+  targets.each do |target|
+    if !responses.has_key?(target)
+      return false
+    end
+  end
+  return true
 end
