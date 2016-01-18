@@ -1,6 +1,0 @@
-[submodule "vendor/leatherman"]
-	path = vendor/leatherman
-	url = https://github.com/puppetlabs/leatherman.git
-[submodule "vendor/cpp-pcp-client"]
-	path = vendor/cpp-pcp-client
-	url = https://github.com/puppetlabs/cpp-pcp-client.git
