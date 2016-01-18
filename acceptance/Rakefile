@@ -72,7 +72,7 @@ module HarnessOptions
   end
 end
 
-def beaker_test(mode = :packages, options = {})
+def beaker_test(mode = :aio, options = {})
   final_options = HarnessOptions.options(mode, options)
 
   if mode == :git
@@ -222,7 +222,7 @@ def print_preserved(preserved)
 end
 
 def beaker_run_type
-  type = ENV['TYPE'] || :packages
+  type = ENV['TYPE'] || :aio
   type = type.to_sym
 end
 
@@ -273,14 +273,6 @@ If there is a Beaker options hash in a ./local_options.rb, it will be included. 
 EOS
 
     desc <<-EOS
-Run the acceptance tests through Beaker and install packages on the configuration targets.
-#{USAGE}
-EOS
-    task :packages => 'ci:check_env' do
-      beaker_test
-    end
-
-    desc <<-EOS
 Run the acceptance tests through Beaker and install packages as part of the AIO puppet-agent installation.
 #{USAGE}
 EOS
@@ -304,7 +296,7 @@ EOS
 
   desc <<-EOS
 Run an acceptance test for a given node configuration and preserve the hosts.
-Defaults to a packages run, but you can set it to 'git' with TYPE='git'.
+Defaults to an AIO run, but you can set it to 'git' with TYPE='git'.
 #{USAGE}
   EOS
   task :test_and_preserve_hosts => 'ci:check_env'  do
