@@ -18,6 +18,8 @@ refer to the documentation below for how to do that.
  - cmake
  - boost
  - ruby (2.0 and newer)
+ - [leatherman][leatherman](0.3.5 or newer)
+ - [cpp-pcp-client][cpp-pcp-client] (master)
 
 Build with make and make install
 

@@ -11,7 +11,7 @@ all: ./build/Makefile
 
 ./build/Makefile: Makefile CMakeLists.txt exe/CMakeLists.txt lib/CMakeLists.txt lib/tests/CMakeLists.txt
 	@ mkdir build || true
-	@ (cd build >/dev/null 2>&1 && cmake -DCMAKE_BUILD_TYPE=Debug -DEXTERNAL_CPP_PCP_CLIENT=OFF ..)
+	@ (cd build >/dev/null 2>&1 && cmake -DCMAKE_BUILD_TYPE=Debug ..)
 
 distclean:
 	@- (cd build >/dev/null 2>&1 && cmake .. >/dev/null 2>&1)

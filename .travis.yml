@@ -11,7 +11,6 @@ addons:
       - gcc-4.8
       - g++-4.8
       - libboost-filesystem1.55-dev
-      - libboost-program-options1.55-dev
       - libboost-regex1.55-dev
       - libboost-date-time1.55-dev
       - libboost-thread1.55-dev
@@ -26,6 +25,9 @@ before_install:
   # grab a pre-built cmake 3.2.3
   - wget --no-check-certificate https://www.cmake.org/files/v3.2/cmake-3.2.3-Linux-x86_64.tar.gz
   - tar xzvf cmake-3.2.3-Linux-x86_64.tar.gz --strip 1 -C $USERDIR
+  # Install pxp-agent's dependencies
+  - wget https://github.com/puppetlabs/leatherman/releases/download/${LEATHERMAN_VERSION}/leatherman.tar.gz
+  - tar xzvf leatherman.tar.gz -C $USERDIR
 
 script:
   - ./.travis_target.sh
@@ -36,6 +38,8 @@ env:
     - PYTHONUSERBASE=$USERDIR
     - PATH=$USERDIR/bin:$PATH
     - LD_LIBRARY_PATH=$USERDIR/lib:$LD_LIBRARY_PATH
+    - LEATHERMAN_VERSION=0.3.5
+    - CPP_PCP_CLIENT_VERSION=master
   matrix:
     - TRAVIS_TARGET=CPPCHECK
     - TRAVIS_TARGET=RELEASE
