@@ -13,29 +13,37 @@ step 'Ensure each agent host has pxp-agent running and associated' do
   end
 end
 
-agents.each_with_index do |agent, i|
-  step "Send an rpc_blocking_request to #{agent}" do
-    response = nil # Declare here so not local to begin/rescue below
-    begin
-      response = rpc_blocking_request(master, ["pcp://client0#{i+1}.example.com/agent"],
-                                      'pxp-module-puppet', 'run',
-                                      {:env => [], :flags => ['--noop',
-                                                              '--onetime',
-                                                              '--no-daemonize']
-                                      })
-    rescue => exception
-      fail("Exception occurred when trying to run Puppet on #{agent}: #{exception.message}")
-    end
-    assert(response.has_key?(:envelope), "Response from PCP is missing :envelope")
-    assert(response[:envelope].has_key?(:message_type), "Response from PCP is missing "\
-                                                        ":message_type in :envelope")
-    assert_equal('http://puppetlabs.com/rpc_blocking_response',
-                 response[:envelope][:message_type],
-                 "Received a message from pcp-broker but it wasn't of "\
-                 "type http://puppetlabs.com/rpc_blocking_response")
-    assert_equal("pcp://client0#{i+1}.example.com/agent",
-                 response[:envelope][:sender],
-                 "Received the expected rpc_blocking_response "\
-                 "but not from the expected agent")
-  end # test step for this agent
-end # iterating on every agent
+step "Send an rpc_blocking_request to all agents" do
+  target_identities = []
+  agents.each_with_index do |agent, i|
+    target_identities << "pcp://client0#{i+1}.example.com/agent"
+  end
+  responses = nil # Declare here so not local to begin/rescue below
+  begin
+    responses = rpc_blocking_request(master, target_identities,
+                                    'pxp-module-puppet', 'run',
+                                    {:env => [], :flags => ['--noop',
+                                                            '--onetime',
+                                                            '--no-daemonize']
+                                    })
+  rescue => exception
+    fail("Exception occurred when trying to run Puppet on all agents: #{exception.message}")
+  end
+  agents.each_with_index do |agent, i|
+    step "Check Run Puppet response for #{agent}" do
+      identity = "pcp://client0#{i+1}.example.com/agent"
+      response = responses[identity]
+      assert(response.has_key?(:envelope), "Response from PCP for #{agent} is missing :envelope")
+      assert(response[:envelope].has_key?(:message_type), "Response from PCP for #{agent} is missing "\
+                                                          ":message_type in :envelope")
+      assert_equal('http://puppetlabs.com/rpc_blocking_response',
+                   response[:envelope][:message_type],
+                   "Received a message from pcp-broker for #{agent} but it wasn't of "\
+                   "type http://puppetlabs.com/rpc_blocking_response")
+      assert_equal(identity,
+                   response[:envelope][:sender],
+                   "Received the expected rpc_blocking_response for #{agent} "\
+                   "but not from the expected identity")
+    end # Step for this agent
+  end # iterating on each agent
+end
