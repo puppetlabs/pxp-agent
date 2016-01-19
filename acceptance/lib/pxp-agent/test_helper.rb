@@ -127,7 +127,7 @@ def rpc_blocking_request(broker, targets,
       end
     end
   rescue Timeout::Error
-    if !have_all_responses?
+    if !have_all_rpc_responses?
       raise "Didn't receive all PCP responses when requesting puppet run on #{targets}. Responses received were: #{responses.to_s}"
     end
   end # wait for message
