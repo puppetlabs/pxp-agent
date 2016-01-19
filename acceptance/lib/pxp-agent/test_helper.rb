@@ -88,6 +88,7 @@ def rpc_blocking_request(broker, targets,
         :debug    => JSON.load(message.debug)
       }
       responses[resp[:envelope][:sender]] = resp
+      print resp
       have_response.signal
     end
   end
@@ -127,8 +128,10 @@ def rpc_blocking_request(broker, targets,
       end
     end
   rescue Timeout::Error
-    if !have_all_rpc_responses?
-      raise "Didn't receive all PCP responses when requesting puppet run on #{targets}. Responses received were: #{responses.to_s}"
+    mutex.synchronize do
+      if !have_all_rpc_responses?
+        raise "Didn't receive all PCP responses when requesting puppet run on #{targets}. Responses received were: #{responses.to_s}"
+      end
     end
   end # wait for message
 
