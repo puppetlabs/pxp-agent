@@ -1,9 +1,12 @@
-install:
-  - git submodule update --init --recursive
+environment:
+  LEATHERMAN_VERSION: 0.3.5
 
+install:
   - choco install -y mingw-w64 -Version 4.8.3 -source https://www.myget.org/F/puppetlabs
   - choco install -y cmake -Version 3.2.2 -source https://www.myget.org/F/puppetlabs
   - SET PATH=C:\tools\mingw64\bin;%PATH%
+  - ps: $env:PATH = $env:PATH.Replace("Git\bin", "Git\cmd")
+  - ps: $env:PATH = $env:PATH.Replace("Git\usr\bin", "Git\cmd")
 
   - ps: wget 'https://s3.amazonaws.com/kylo-pl-bucket/boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh.7z' -OutFile "$pwd\boost.7z"
   - ps: 7z.exe x boost.7z -oC:\tools | FIND /V "ing  "
@@ -14,26 +17,22 @@ install:
   - SET OPENSSL_ROOT_DIR=C:\tools
   - SET PATH=C:\tools\bin;%PATH%
 
+  - ps: wget 'https://s3.amazonaws.com/kylo-pl-bucket/curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh.7z' -OutFile "$pwd\curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh.7z"
+  - ps: 7z.exe x "curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh.7z" -oC:\tools | FIND /V "ing "
+
+  - ps: wget "https://github.com/puppetlabs/leatherman/releases/download/$env:LEATHERMAN_VERSION/leatherman.7z" -OutFile "$pwd\leatherman.7z"
+  - ps: 7z.exe x leatherman.7z -oC:\tools | FIND /V "ing "
+
   - git clone https://github.com/puppetlabs/cpp-pcp-client
   - cd cpp-pcp-client
-  - git checkout 1.0.3
-  - git submodule update --init --recursive
-  - ps: mv "C:\Program Files\Git\usr\bin\sh.exe" "C:\Program Files\Git\usr\bin\shxx.exe"
-  - ps: mv "C:\Program Files\Git\bin\sh.exe" "C:\Program Files\Git\bin\shxx.exe"
-  - ps: cmake -G "MinGW Makefiles" -DBOOST_ROOT="C:\tools\boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh" -DBOOST_STATIC=ON -DBOOST_NOWIDE_SKIP_TESTS=ON -Wno-dev -DCMAKE_INSTALL_PREFIX=C:\tools .
-  - ps: mv "C:\Program Files\Git\usr\bin\shxx.exe" "C:\Program Files\Git\usr\bin\sh.exe"
-  - ps: mv "C:\Program Files\Git\bin\shxx.exe" "C:\Program Files\Git\bin\sh.exe"
+  - git checkout master
+  - ps: cmake -G "MinGW Makefiles" -DBOOST_ROOT="C:\tools\boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh" -DBOOST_STATIC=ON -DCURL_STATIC=ON -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh" -Wno-dev -DCMAKE_INSTALL_PREFIX=C:\tools .
   - ps: mingw32-make install
   - cd ..
 
 build_script:
-  - ps: mv "C:\Program Files\Git\usr\bin\sh.exe" "C:\Program Files\Git\usr\bin\shxx.exe"
-  - ps: mv "C:\Program Files\Git\bin\sh.exe" "C:\Program Files\Git\bin\shxx.exe"
-  - ps: cmake -G "MinGW Makefiles" -DBOOST_ROOT="C:\tools\boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh" -DBOOST_STATIC=ON -DBOOST_NOWIDE_SKIP_TESTS=ON -Wno-dev -DCMAKE_PREFIX_PATH=C:\tools -DCMAKE_INSTALL_PREFIX=C:\tools .
-  - ps: mv "C:\Program Files\Git\usr\bin\shxx.exe" "C:\Program Files\Git\usr\bin\sh.exe"
-  - ps: mv "C:\Program Files\Git\bin\shxx.exe" "C:\Program Files\Git\bin\sh.exe"
+  - ps: cmake -G "MinGW Makefiles" -DBOOST_ROOT="C:\tools\boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh" -DBOOST_STATIC=ON -DCURL_STATIC=ON -Wno-dev -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh;C:\tools;C:\tools\bin" -DCMAKE_INSTALL_PREFIX=C:\tools .
   - ps: mingw32-make install
 
 test_script:
   - ps: ctest -V 2>&1 | %{ if ($_ -is [System.Management.Automation.ErrorRecord]) { $_ | c++filt } else { $_ } }
-
