@@ -1,9 +1,11 @@
 pcp_broker_port = 8142
 pcp_broker_minutes_to_start = 2
 
-step 'Clone pcp-broker to master'
-on master, puppet('resource package git ensure=present')
-on master, 'git clone https://github.com/puppetlabs/pcp-broker.git'
+step 'Clone pcp-broker to master' do
+  on master, puppet('resource package git ensure=present')
+  on master, 'git clone https://github.com/puppetlabs/pcp-broker.git'
+  on master, 'cd ~/pcp-broker ; git checkout 602c003'
+end
 
 step 'Install Java'
 on master, puppet('resource package java ensure=present')
