@@ -3,6 +3,7 @@ require 'pxp-agent/test_helper.rb'
 step 'Clone pcp-broker to master' do
   on master, puppet('resource package git ensure=present')
   on master, 'git clone https://github.com/puppetlabs/pcp-broker.git'
+  on master, 'cd ~/pcp-broker ; git checkout 602c003'
 end
 
 step 'Install Java' do
