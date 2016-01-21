@@ -66,6 +66,11 @@ agents.each_with_index do |agent, i|
 
     step 'C94686 - Service Start (from stopped, un-configured)' do
       start_service
+      assert_running
+    end
+
+    step 'C94687 - Service Stop (from running, un-configured)' do
+      stop_service
       assert_stopped
     end
 

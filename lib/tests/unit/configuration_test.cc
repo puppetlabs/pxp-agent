@@ -32,7 +32,9 @@ static const std::string CA { getCaPath() };
 static const std::string CERT { getCertPath() };
 static const std::string KEY { getKeyPath() };
 static const std::string MODULES_DIR { std::string { PXP_AGENT_ROOT_PATH }
-                                       + "/lib/tests/resources/test_modules/" };
+                                       + "/lib/tests/resources/modules/" };
+static const std::string MODULES_CONFIG_DIR { std::string { PXP_AGENT_ROOT_PATH }
+                                       + "/lib/tests/resources/modules_config" };
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
 
@@ -44,14 +46,18 @@ static const char* ARGV[] = {
     "--ssl-cert", CERT.data(),
     "--ssl-key", KEY.data(),
     "--modules-dir", MODULES_DIR.data(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.data(),
     "--spool-dir", SPOOL_DIR.data(),
     "--foreground=true",
     nullptr };
-static const int ARGC = 16;
+static const int ARGC = 18;
 
 static void configureTest() {
     if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR)) {
         FAIL("Failed to create the results directory");
+    }
+    if (!fs::exists(MODULES_CONFIG_DIR) && !fs::create_directories(MODULES_CONFIG_DIR)) {
+        FAIL("Failed to create the modules configuration directory");
     }
     Configuration::Instance().initialize(
         [](std::vector<std::string>) {
@@ -62,6 +68,9 @@ static void configureTest() {
 static void resetTest() {
     if (fs::exists(SPOOL_DIR)) {
         fs::remove_all(SPOOL_DIR);
+    }
+    if (fs::exists(MODULES_CONFIG_DIR)) {
+        fs::remove_all(MODULES_CONFIG_DIR);
     }
 }
 
@@ -171,8 +180,8 @@ TEST_CASE("Configuration::get", "[configuration]") {
         }
 
         SECTION("return the default value if the flag was not set") {
-            // NB: ignoring --foreground in ARGV since argc is set to 15
-            Configuration::Instance().parseOptions(15, const_cast<char**>(ARGV));
+            // NB: ignoring --foreground in ARGV since argc is set to 17
+            Configuration::Instance().parseOptions(17, const_cast<char**>(ARGV));
 #ifndef _WIN32
             HW::SetFlag<std::string>("pidfile", SPOOL_DIR + "/test.pid");
 #endif
