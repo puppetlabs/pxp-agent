@@ -13,7 +13,8 @@ ActionRequest::ActionRequest(RequestType type,
           notify_outcome_ { true },
           parsed_chunks_ { parsed_chunks },
           params_ { "{}" },
-          params_txt_ { "" } {
+          params_txt_ {},
+          results_dir_ {} {
     init();
 }
 
@@ -23,8 +24,13 @@ ActionRequest::ActionRequest(RequestType type,
           notify_outcome_ { true },
           parsed_chunks_ { parsed_chunks },
           params_ { "{}" },
-          params_txt_ { "" } {
+          params_txt_ {},
+          results_dir_ {} {
     init();
+}
+
+void ActionRequest::setResultsDir(const std::string& results_dir) const {
+    results_dir_ = results_dir;
 }
 
 const RequestType& ActionRequest::type() const { return type_; }
@@ -38,6 +44,8 @@ const bool& ActionRequest::notifyOutcome() const { return notify_outcome_; }
 const PCPClient::ParsedChunks& ActionRequest::parsedChunks() const {
     return parsed_chunks_;
 }
+
+const std::string& ActionRequest::resultsDir() const { return results_dir_; }
 
 const lth_jc::JsonContainer& ActionRequest::params() const {
     if (params_.empty() && parsed_chunks_.data.includes("params")) {
