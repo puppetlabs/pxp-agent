@@ -52,9 +52,9 @@ class RequestProcessor {
     /// PXP Connector pointer
     std::shared_ptr<PXPConnector> connector_ptr_;
 
-    /// Where the directories for non-blocking actions results will
-    /// be created
-    const std::string spool_dir_;
+    /// Where the directories that will store the outcome of
+    /// non-blocking actions will be created
+    const boost::filesystem::path spool_dir_path_;
 
     /// Modules
     std::map<std::string, std::shared_ptr<Module>> modules_;

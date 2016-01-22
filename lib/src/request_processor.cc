@@ -47,12 +47,13 @@ class ResultsStorage {
 
     // Throw a ResultsStorage::Error in case of failure while writing
     // to any of result files
-    ResultsStorage(const ActionRequest& request, const std::string& results_dir)
+    ResultsStorage(const ActionRequest& request)
             : module { request.module() },
               action { request.action() },
-              metadata_file { (fs::path(results_dir) / "metadata").string() },
+              metadata_file { (fs::path(request.resultsDir()) / "metadata").string() },
               action_metadata {} {
-        initialize(request, results_dir);
+
+        initialize(request);
     }
 
     void writeMetadata(const int exit_code,
@@ -74,13 +75,13 @@ class ResultsStorage {
     std::string metadata_file;
     lth_jc::JsonContainer action_metadata;
 
-    void initialize(const ActionRequest& request, const std::string& results_dir) {
-        if (!fs::exists(results_dir)) {
+    void initialize(const ActionRequest& request) {
+        if (!fs::exists(request.resultsDir())) {
             LOG_DEBUG("Creating results directory for '%1% %2%', transaction "
                        "%3%, in '%4%'", request.module(), request.action(),
-                       request.transactionId(), results_dir);
+                       request.transactionId(), request.resultsDir());
             try {
-                fs::create_directories(results_dir);
+                fs::create_directories(request.resultsDir());
             } catch (const fs::filesystem_error& e) {
                 std::string err_msg { "failed to create results directory: " };
                 throw Error { err_msg + e.what() };
@@ -118,7 +119,6 @@ class ResultsStorage {
 
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ActionRequest request,
-                           std::string transaction_id,
                            ResultsStorage results_storage,
                            std::shared_ptr<PXPConnector> connector_ptr,
                            std::shared_ptr<std::atomic<bool>> done) {
@@ -133,12 +133,12 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 
     try {
         ResultsMutex::LockGuard a_l { ResultsMutex::Instance().access_mtx };
-        mtx_ptr = ResultsMutex::Instance().get(transaction_id);
+        mtx_ptr = ResultsMutex::Instance().get(request.transactionId());
         lck_ptr.reset(new ResultsMutex::Lock(*mtx_ptr, pcp_util::defer_lock));
     } catch (const ResultsMutex::Error& e) {
         // This is unexpected
         LOG_ERROR("Failed to obtain the mutex pointer for transaction %1%: %2%",
-                  transaction_id, e.what());
+                  request.transactionId(), e.what());
     }
 
     lth_util::scope_exit task_cleaner {
@@ -148,21 +148,21 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                 // transaction
                 if (!completed) {
                     LOG_TRACE("Locking transaction mutex %1% - the action did "
-                              "not complete successfully", transaction_id);
+                              "not complete successfully", request.transactionId());
                     lck_ptr->lock();
                 }
                 try {
                     ResultsMutex::LockGuard a_l {
                         ResultsMutex::Instance().access_mtx };  // RAII
-                    ResultsMutex::Instance().remove(transaction_id);
+                    ResultsMutex::Instance().remove(request.transactionId());
                 } catch (const ResultsMutex::Error& e) {
                     // Unexpected; if we have a lock pointer it means
                     // that the mutex was cached
                     LOG_ERROR("Failed to remove the mutex pointer for "
-                              "transaction %1%: %2%", transaction_id, e.what());
+                              "transaction %1%: %2%", request.transactionId(), e.what());
                 }
                 lck_ptr->unlock();
-                LOG_TRACE("Unlocked transaction mutex %1%", transaction_id);
+                LOG_TRACE("Unlocked transaction mutex %1%", request.transactionId());
             }
 
             // Flag the end of execution, for the thread container
@@ -173,7 +173,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     try {
         outcome = module_ptr->executeAction(request);
         if (lck_ptr != nullptr) {
-            LOG_TRACE("Locking transaction mutex %1%", transaction_id);
+            LOG_TRACE("Locking transaction mutex %1%", request.transactionId());
             lck_ptr->lock();
         } else {
             // This is unexpected
@@ -190,23 +190,23 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 
         if (request.parsedChunks().data.get<bool>("notify_outcome")) {
             connector_ptr->sendNonBlockingResponse(request, outcome.results,
-                                                   transaction_id);
+                                                   request.transactionId());
         }
     } catch (const Module::ProcessingError& e) {
         exec_error = std::string("Failed to execute: ") + e.what() + "\n";
         LOG_ERROR("Failed to execute '%1% %2%' %3%: %4%",
-                  request.module(), request.action(), transaction_id, e.what());
+                  request.module(), request.action(), request.transactionId(), e.what());
         try {
             connector_ptr->sendPXPError(request, e.what());
         } catch (const PCPClient::connection_error& e) {
             LOG_ERROR("Failed to send PXP Error for (failed) '%1% %2%' %3%: %4%",
-                      request.module(), request.action(), transaction_id, e.what());
+                      request.module(), request.action(), request.transactionId(), e.what());
         }
     } catch (const PCPClient::connection_error& e) {
         exec_error = std::string("Failed to send non blocking response: ")
                      + e.what() + "\n";
         LOG_ERROR("Failed to send non blocking response for '%1% %2%' %3%: %4%",
-                  request.module(), request.action(), transaction_id, e.what());
+                  request.module(), request.action(), request.transactionId(), e.what());
     }
 
     // Store metadata on disk
@@ -215,7 +215,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
         results_storage.writeMetadata(exit_code, exec_error, duration);
     } catch (const ResultsStorage::Error& e) {
         LOG_ERROR("Failed to write metadata of non blocking request %1%: %2%",
-                  transaction_id, e.what());
+                  request.transactionId(), e.what());
     }
 }
 
@@ -227,11 +227,11 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
                                    const Configuration::Agent& agent_configuration)
         : thread_container_ { "Action Executer" },
           connector_ptr_ { connector_ptr },
-          spool_dir_ { agent_configuration.spool_dir },
+          spool_dir_path_ { agent_configuration.spool_dir },
           modules_ {},
           modules_config_dir_ { agent_configuration.modules_config_dir },
           modules_config_ {} {
-    assert(!spool_dir_.empty());
+    assert(!spool_dir_path_.string().empty());
     loadModulesConfiguration();
     loadInternalModules();
 
@@ -350,8 +350,8 @@ void RequestProcessor::processBlockingRequest(const ActionRequest& request) {
 }
 
 void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
-    fs::path spool_path { spool_dir_ };
-    std::string results_dir { (spool_path / request.transactionId()).string() };
+    request.setResultsDir(
+        std::move((spool_dir_path_ / request.transactionId()).string()));
     std::string err_msg {};
 
     LOG_DEBUG("Starting '%1% %2%' job with ID %3% for non-blocking request %4% "
@@ -365,8 +365,7 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
         thread_container_.add(pcp_util::thread(&nonBlockingActionTask,
                                                modules_[request.module()],
                                                request,
-                                               request.transactionId(),
-                                               ResultsStorage { request, results_dir },
+                                               ResultsStorage { request },
                                                connector_ptr_,
                                                done),
                               done);
