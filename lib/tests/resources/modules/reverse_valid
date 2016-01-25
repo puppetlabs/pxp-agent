@@ -32,7 +32,7 @@ def action_metadata
           },
           :required => [ :argument ],
         },
-        :output => {
+        :results => {
           :type => "object",
           :properties => {
             :output => {
@@ -53,7 +53,7 @@ def action_metadata
           },
           :required => [ :input ],
         },
-        :output => {
+        :results => {
           :type => "object",
           :properties => {
             :input => {
@@ -73,14 +73,14 @@ def action_metadata
 end
 
 def action_string
-  params = JSON.load($stdin)["params"]
-  output = { :output => params['argument'].reverse }
-  puts output.to_json
+  input_args = JSON.load($stdin)["input"]
+  results = { :output => input_args['argument'].reverse }
+  puts results.to_json
 end
 
 def action_hash
-  hash = JSON.load($stdin)["params"]
-  hash['output'] = hash['input'].reverse
+  input_args = JSON.load($stdin)["input"]
+  hash['output'] = input_args['input'].reverse
   puts hash.to_json
 end
 

@@ -16,7 +16,7 @@ def action_metadata
           },
           :required => [ :argument ],
         },
-        :output => {
+        :results => {
           :type => "object",
           :properties => {
             :output => {
@@ -37,7 +37,7 @@ def action_metadata
           },
           :required => [ :argument ],
         },
-        :output => {
+        :results => {
           :type => "object",
           :properties => {
             :output => {

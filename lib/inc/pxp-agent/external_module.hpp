@@ -69,10 +69,15 @@ class ExternalModule : public Module {
 
     void registerAction(const lth_jc::JsonContainer& action);
 
-    /// Returns a string in JSON format, containing the "params" entry
-    /// of the PXP request and the module configuration (both are
-    /// JSON objects).
-    std::string getRequestInput(const ActionRequest& request);
+    /// Returns a string containing the arguments, in JSON format, for
+    /// the requested action.
+    /// The arguments of the PXP request will be added to an "input"
+    /// entry.
+    /// In case a configuration file was previously loaded for this
+    /// action, its content will be added to a "configuration" entry.
+    /// If the request's type is RequestType::NonBlocking, the paths
+    /// to the output files will be added to an "output_files" entry.
+    std::string getActionArguments(const ActionRequest& request);
 
     /// Log information about the outcome of the performed action
     /// while checking the exit code and validating the JSON format

@@ -136,8 +136,10 @@ TEST_CASE("Modules::Status::executeAction", "[modules]") {
 
             fs::path dest { SPOOL_DIR };
             dest /= symlink_name;
+            request.setResultsDir(dest.string());
+
             if (!fs::exists(dest) && !fs::create_directories(dest)) {
-                FAIL("Failed to create test directory");
+                FAIL("Failed to create the results directory");
             }
 
             try {
