@@ -237,6 +237,58 @@ def get_action_input(args)
 end
 
 
+def tee(io, *tees)
+  unbound = []
+
+  singleton = class << io; self; end
+
+  singleton.class_exec(unbound, tees) do |unbound, tees|
+    # unbind & redefine all public instance methods defined in the IO class
+    IO.public_instance_methods(false).each do |name|
+      name = name.to_sym
+
+      # unbind the original method and save it
+      method = instance_method(name)
+      unbound << method
+
+      # skip "reopen" - it is redefined below as a special case
+      next if name == :reopen
+
+      # redefine the method
+      define_method(name) do |*args|
+        begin
+          # call the original method
+          rv = method.bind(self).call(*args)
+        rescue => e
+        end
+
+        # call the same method for all the tees
+        tees.each do |tee|
+          tee.send(name, *args) rescue nil
+        end
+
+        raise e if e
+        rv
+      end
+    end
+
+    define_method(:reopen) do |*args|
+      singleton = class << self; self; end
+
+      # re-bind the original methods
+      singleton.class_exec(unbound) do |unbound|
+        unbound.each do |method|
+          define_method(method.original_name, method)
+        end
+      end
+
+      # call the original reopen method
+      reopen(*args)
+    end
+  end
+end
+
+
 if __FILE__ == $0
   action = ARGV.shift || 'metadata'
 
@@ -251,16 +303,43 @@ if __FILE__ == $0
       exit 1
     end
 
+    output_files = args["output_files"]
+    if output_files
+      begin
+        tee($stdout, File.open(output_files["stdout"], 'w'))
+      rescue
+      end
+      begin
+        $stderr.reopen(File.open(output_files["stderr"], 'w'))
+      rescue
+      end
+
+      at_exit do
+        status = if $!.nil?
+          0
+        elsif $!.is_a?(SystemExit)
+          $!.status
+        else
+          1
+        end
+
+        begin
+          File.open(output_files["exitcode"], 'w') { |f|
+            f.print(status)
+          }
+        rescue
+        end
+      end
+    end
+
     config = get_configuration(args)
     action_input = get_action_input(args)
 
     # TODO(ale): retrieve action_output instead of action_results,
     # that should contain "results", "error", and "exitcode" entries
 
-    # TODO(ale): write output to file if args conatin "output_files"
-
     action_results = run(config, action_input)
-    puts action_results.to_json
+    print action_results.to_json
 
     if !action_results["error"].nil?
       exit 1
