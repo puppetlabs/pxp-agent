@@ -115,4 +115,23 @@ TEST_CASE("ActionRequest getters", "[request]") {
     }
 }
 
+TEST_CASE("ActionRequest results_dir setter / getter", "[request]") {
+    lth_jc::JsonContainer envelope { ENVELOPE_TXT };
+    lth_jc::JsonContainer data { pxp_data_txt };
+    std::vector<lth_jc::JsonContainer> debug {};
+    const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
+    ActionRequest a_r { RequestType::Blocking, p_c };
+
+    SECTION("getter returns an empty string without a previous setter call") {
+        auto results_dir = a_r.resultsDir();
+        REQUIRE(results_dir == std::string());
+    }
+
+    SECTION("correctly sets and gets the results_dir on a const instance") {
+        std::string results_dir { "/tmp/beans" };
+        a_r.setResultsDir(results_dir);
+        REQUIRE(a_r.resultsDir() == results_dir);
+    }
+}
+
 }  // namespace PXPAgent
