@@ -45,7 +45,7 @@ Status::Status() {
                                true);
     PCPClient::Schema output_schema { QUERY };
     input_validator_.registerSchema(input_schema);
-    output_validator_.registerSchema(output_schema);
+    results_validator_.registerSchema(output_schema);
 }
 
 class ActionMetadata {

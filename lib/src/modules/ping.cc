@@ -23,7 +23,7 @@ Ping::Ping() {
     PCPClient::Schema output_schema { PING };
 
     input_validator_.registerSchema(input_schema);
-    output_validator_.registerSchema(output_schema);
+    results_validator_.registerSchema(output_schema);
 }
 
 lth_jc::JsonContainer Ping::ping(const ActionRequest& request) {

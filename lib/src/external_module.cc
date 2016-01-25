@@ -226,7 +226,7 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
         LOG_DEBUG("Action '%1% %2%' has been validated", module_name, action_name);
         actions.push_back(action_name);
         input_validator_.registerSchema(input_schema);
-        output_validator_.registerSchema(output_schema);
+        results_validator_.registerSchema(results_schema);
     } catch (PCPClient::schema_error& e) {
         LOG_ERROR("Failed to parse metadata schemas of action '%1% %2%': %3%",
                   module_name, action_name, e.what());

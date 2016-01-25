@@ -10,7 +10,7 @@ namespace PXPAgent {
 
 Module::Module()
         : input_validator_ {},
-          output_validator_ {} {
+          results_validator_ {} {
 }
 
 bool Module::hasAction(const std::string& action_name) {
@@ -27,7 +27,7 @@ ActionOutcome Module::executeAction(const ActionRequest& request) {
         LOG_DEBUG("Validating the result output for '%1% %2%'",
                   module_name, request.action());
         try {
-            output_validator_.validate(outcome.results, request.action());
+            results_validator_.validate(outcome.results, request.action());
         } catch (PCPClient::validation_error) {
             std::string err_msg { "'" + module_name + " " + request.action()
                                   + "' returned an invalid result" };
