@@ -27,6 +27,8 @@ static const std::string ACTION_SCHEMA_NAME { "action_metadata" };
 static const std::string METADATA_CONFIGURATION_ENTRY { "configuration" };
 static const std::string METADATA_ACTIONS_ENTRY { "actions" };
 
+static const int EXTERNAL_MODULE_FILE_ERROR_EC { 5 };
+
 namespace fs = boost::filesystem;
 namespace HW = HorseWhisperer;
 namespace lth_exec = leatherman::execution;
@@ -343,8 +345,6 @@ ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request
         path_, { action_name },
 #endif
         input_txt,  // input
-        out_file,   // out file
-        err_file,   // err file
         std::map<std::string, std::string>(),  // environment
         [results_dir_path](size_t pid) {
             auto pid_file = (results_dir_path / "pid").string();
@@ -352,6 +352,15 @@ ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request
         },          // pid callback
         0,          // timeout
         { lth_exec::execution_options::merge_environment });  // options
+
+    if (exec.exit_code == EXTERNAL_MODULE_FILE_ERROR_EC) {
+        LOG_DEBUG("The '%1% %2%' non-blocking task %3% failed to write its "
+                  "output on file%4%%5%",
+                  module_name, action_name, request.transactionId(),
+                  (exec.output.empty() ? "" : std::string("; output: ") + exec.output),
+                  (exec.output.empty() ? "" : std::string("; error: ") + exec.error));
+        throw Module::ProcessingError { "failed to write output to files" };
+    }
 
     // Stdout / stderr output is on file; read it
     std::string out_txt;

@@ -91,6 +91,8 @@ class ExternalModule : public Module {
 
     ActionOutcome callBlockingAction(const ActionRequest& request);
 
+    /// Throws a ProcessingError in case the module fails to write
+    /// the action output to file.
     ActionOutcome callNonBlockingAction(const ActionRequest& request);
 
     ActionOutcome callAction(const ActionRequest& request);

@@ -100,6 +100,8 @@ class ActionMetadata {
     std::string file;
 };
 
+// TODO(ale): take advantage of the exitcode file (PCP-208)
+
 //
 //                          STATUS TABLE
 //
