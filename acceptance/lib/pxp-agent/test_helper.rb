@@ -93,7 +93,10 @@ def rpc_blocking_request(broker, targets,
     end
   end
 
-  client.connect()
+  if !client.connect(5)
+    raise "Controller PCP client failed to connect with pcp-broker on #{broker}"
+  end
+  
   if !client.associated?
     raise "Controller PCP client failed to associate with pcp-broker on #{broker}"
   end
