@@ -238,7 +238,7 @@ end
 
 
 def tee(io, *tees)
-  unbound = []
+  unbound = {}
 
   singleton = class << io; self; end
 
@@ -249,7 +249,7 @@ def tee(io, *tees)
 
       # unbind the original method and save it
       method = instance_method(name)
-      unbound << method
+      unbound[name] = method
 
       # skip "reopen" - it is redefined below as a special case
       next if name == :reopen
@@ -277,8 +277,8 @@ def tee(io, *tees)
 
       # re-bind the original methods
       singleton.class_exec(unbound) do |unbound|
-        unbound.each do |method|
-          define_method(method.original_name, method)
+        unbound.each do |name, method|
+          define_method(name, method)
         end
       end
 
