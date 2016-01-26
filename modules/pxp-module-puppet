@@ -289,6 +289,48 @@ def tee(io, *tees)
 end
 
 
+def action_run(args)
+  if !args
+    return make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
+                             "Invalid json parsed on STDIN. Cannot start run action")
+  end
+
+  output_files = args["output_files"]
+  if output_files
+    begin
+      tee($stdout, File.open(output_files["stdout"], 'w'))
+    rescue
+    end
+    begin
+      $stderr.reopen(File.open(output_files["stderr"], 'w'))
+    rescue
+    end
+
+    at_exit do
+      status = if $!.nil?
+        0
+      elsif $!.is_a?(SystemExit)
+        $!.status
+      else
+        1
+      end
+
+      begin
+        File.open(output_files["exitcode"], 'w') { |f|
+          f.print(status)
+        }
+      rescue
+      end
+    end
+  end
+
+  config = get_configuration(args)
+  action_input = get_action_input(args)
+
+  run(config, action_input)
+end
+
+
 if __FILE__ == $0
   action = ARGV.shift || 'metadata'
 
@@ -297,52 +339,12 @@ if __FILE__ == $0
   else
     args = JSON.parse($stdin.read.chomp) rescue nil
 
-    if !args
-      print make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
-                              "Invalid json parsed on STDIN. Cannot start run action")
-      exit 1
-    end
-
-    output_files = args["output_files"]
-    if output_files
-      begin
-        tee($stdout, File.open(output_files["stdout"], 'w'))
-      rescue
-      end
-      begin
-        $stderr.reopen(File.open(output_files["stderr"], 'w'))
-      rescue
-      end
-
-      at_exit do
-        status = if $!.nil?
-          0
-        elsif $!.is_a?(SystemExit)
-          $!.status
-        else
-          1
-        end
-
-        begin
-          File.open(output_files["exitcode"], 'w') { |f|
-            f.print(status)
-          }
-        rescue
-        end
-      end
-    end
-
-    config = get_configuration(args)
-    action_input = get_action_input(args)
-
     # TODO(ale): retrieve action_output instead of action_results,
     # that should contain "results", "error", and "exitcode" entries
 
-    action_results = run(config, action_input)
+    action_results = action_run(args)
     print action_results.to_json
 
-    if !action_results["error"].nil?
-      exit 1
-    end
+    exit 1 unless action_results["error"].nil?
   end
 end
