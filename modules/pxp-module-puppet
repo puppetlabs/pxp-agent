@@ -76,6 +76,10 @@ end
 
 def get_result_from_report(exitcode, config, start_time)
   last_run_report = check_config_print("lastrunreport",config)
+  if last_run_report.empty?
+    return make_error_result(exitcode, Errors::NoLastRunReport,
+                             "could not find the location of the last run report")
+  end
 
   if !File.exist?(last_run_report)
     return make_error_result(exitcode, Errors::NoLastRunReport,
@@ -91,12 +95,9 @@ def get_result_from_report(exitcode, config, start_time)
                              "#{last_run_report} could not be loaded: #{e}")
   end
 
-  run_result = last_run_result(exitcode)
-
-  if exitcode != 0
-    run_result = make_error_result(exitcode, Errors::NonZeroExit,
-                                   "Puppet agent exited with a non 0 exitcode")
-  end
+  run_result = exitcode == 0 ?  last_run_result(exitcode)
+    : make_error_result(exitcode, Errors::NonZeroExit,
+                        "Puppet agent exited with a non 0 exitcode")
 
   if start_time.to_i < last_run_report_yaml.time.to_i
     run_result["kind"] = last_run_report_yaml.kind
@@ -109,10 +110,10 @@ def get_result_from_report(exitcode, config, start_time)
   return run_result
 end
 
-def start_run(config, params)
+def start_run(config, action_input)
   exitcode = DEFAULT_EXITCODE
-  cmd = make_command_array(config, params)
-  env = make_environment_hash(params)
+  cmd = make_command_array(config, action_input)
+  env = make_environment_hash(action_input)
   start_time = Time.now
 
   run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false,
@@ -124,11 +125,12 @@ def start_run(config, params)
   end
 
   exitcode = run_result.exitstatus
+  output = run_result.to_s
 
-  if disabled?(run_result.to_s)
+  if disabled?(output)
     return make_error_result(exitcode, Errors::Disabled,
                              "Puppet agent is disabled")
-  elsif running?(run_result.to_s)
+  elsif running?(output)
     return make_error_result(exitcode, Errors::AlreadyRunning,
                              "Puppet agent is already performing a run")
   end
@@ -154,7 +156,7 @@ def metadata()
           },
           :required => [:env, :flags]
         },
-        :output => {
+        :results => {
           :type => "object",
           :properties => {
             :kind => {
@@ -201,15 +203,18 @@ def metadata()
   }
 end
 
-def run(params_and_config)
-  if !params_and_config
-    return make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
-                             "Invalid json parsed on STDIN. Cannot start run action")
+def run(config, action_input)
+  if !File.exist?(config["puppet_bin"])
+    return make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
+                             "Puppet executable '#{config["puppet_bin"]}' does not exist")
   end
 
-  params = params_and_config["params"]
-  config = params_and_config["config"]
-  params["flags"] = params["flags"] | ["--onetime", "--no-daemonize", "--verbose"]
+  return start_run(config, action_input)
+end
+
+
+def get_configuration(args)
+  config = args["configuration"] || {}
 
   if config["puppet_bin"].nil? || config["puppet_bin"].empty?
     if !is_win?
@@ -221,13 +226,110 @@ def run(params_and_config)
     end
   end
 
-  if !File.exist?(config["puppet_bin"])
-    return make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
-                             "Puppet executable '#{config["puppet_bin"]}' does not exist")
+  config
+end
+
+
+def get_action_input(args)
+  action_input = args["input"]
+  action_input["flags"] = action_input["flags"] | ["--onetime", "--no-daemonize", "--verbose"]
+  action_input
+end
+
+
+def tee(io, *tees)
+  unbound = {}
+
+  singleton = class << io; self; end
+
+  singleton.class_exec(unbound, tees) do |unbound, tees|
+    # unbind & redefine all public instance methods defined in the IO class
+    IO.public_instance_methods(false).each do |name|
+      name = name.to_sym
+
+      # unbind the original method and save it
+      method = instance_method(name)
+      unbound[name] = method
+
+      # skip "reopen" - it is redefined below as a special case
+      next if name == :reopen
+
+      # redefine the method
+      define_method(name) do |*args|
+        begin
+          # call the original method
+          rv = method.bind(self).call(*args)
+        rescue => e
+        end
+
+        # call the same method for all the tees
+        tees.each do |tee|
+          tee.send(name, *args) rescue nil
+        end
+
+        raise e if e
+        rv
+      end
+    end
+
+    define_method(:reopen) do |*args|
+      singleton = class << self; self; end
+
+      # re-bind the original methods
+      singleton.class_exec(unbound) do |unbound|
+        unbound.each do |name, method|
+          define_method(name, method)
+        end
+      end
+
+      # call the original reopen method
+      reopen(*args)
+    end
+  end
+end
+
+
+def action_run(args)
+  if !args
+    return make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
+                             "Invalid json parsed on STDIN. Cannot start run action")
   end
 
-  return start_run(config, params)
+  output_files = args["output_files"]
+  if output_files
+    begin
+      tee($stdout, File.open(output_files["stdout"], 'w'))
+    rescue
+    end
+    begin
+      $stderr.reopen(File.open(output_files["stderr"], 'w'))
+    rescue
+    end
+
+    at_exit do
+      status = if $!.nil?
+        0
+      elsif $!.is_a?(SystemExit)
+        $!.status
+      else
+        1
+      end
+
+      begin
+        File.open(output_files["exitcode"], 'w') { |f|
+          f.print(status)
+        }
+      rescue
+      end
+    end
+  end
+
+  config = get_configuration(args)
+  action_input = get_action_input(args)
+
+  run(config, action_input)
 end
+
 
 if __FILE__ == $0
   action = ARGV.shift || 'metadata'
@@ -235,13 +337,14 @@ if __FILE__ == $0
   if action == 'metadata'
     puts metadata.to_json
   else
-    params_and_config = JSON.parse($stdin.read.chomp) rescue nil
+    args = JSON.parse($stdin.read.chomp) rescue nil
 
-    run_result = run(params_and_config)
-    puts run_result.to_json
+    # TODO(ale): retrieve action_output instead of action_results,
+    # that should contain "results", "error", and "exitcode" entries
 
-    if !run_result["error"].nil?
-      exit 1
-    end
+    action_results = action_run(args)
+    print action_results.to_json
+
+    exit 1 unless action_results["error"].nil?
   end
 end
