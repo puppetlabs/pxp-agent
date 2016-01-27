@@ -1,4 +1,5 @@
 #!/usr/bin/env rspec
+require 'stringio'
 
 load File.join(File.dirname(__FILE__), "../", "../", "../", "pxp-module-puppet")
 
@@ -367,6 +368,132 @@ describe "pxp-module-puppet" do
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
       expect_any_instance_of(Object).to receive(:start_run)
       action_run({"configuration" => default_configuration, "input" => default_input})
+    end
+  end
+
+  describe "tee" do
+    let(:teed) { StringIO.new }
+    let(:tee1) { StringIO.new }
+    let(:tee2) { StringIO.new }
+    let(:singleton) { class << teed; self; end }
+
+    it "bails out if the object to be teed doesn't implement `reopen'" do
+      expect{ tee(Object.new, tee1) }.to raise_error(ArgumentError, / must at least respond to `reopen'$/)
+    end
+
+    it "redefines methods defined in standard modules/classes" do
+      orig_puts = singleton.instance_method(:puts)
+
+      tee(teed, tee1)
+
+      # expect the method to be redefined
+      expect(singleton.instance_method(:puts)).not_to be == orig_puts
+    end
+
+    it "redefines methods defined in singleton classes" do
+      orig_puts = singleton.instance_method(:puts)
+
+      def teed.puts(*args)
+        super(*args)
+      end
+
+      redef_puts = singleton.instance_method(:puts)
+
+      # check that the method is really redefined
+      expect(redef_puts).not_to be == orig_puts
+
+      tee(teed, tee1)
+
+      # expect the method to be redefined
+      expect(singleton.instance_method(:puts)).not_to be == orig_puts
+      expect(singleton.instance_method(:puts)).not_to be == redef_puts
+    end
+
+    it "ensures that methods defined in standard modules/classes are reset on reopen" do
+      orig_puts = singleton.instance_method(:puts)
+
+      tee(teed, tee1)
+      teed.reopen(tee1)
+
+      # expect the methods be the same as before the tee was called
+      expect(singleton.instance_method(:puts)).to be == orig_puts
+    end
+
+    it "ensures that methods defined in singleton classes are reset on reopen" do
+      orig_puts = singleton.instance_method(:puts)
+
+      def teed.puts(*args)
+        super(*args)
+      end
+
+      redef_puts = singleton.instance_method(:puts)
+
+      # check that the method is really redefined
+      expect(redef_puts).not_to be == orig_puts
+
+      tee(teed, tee1)
+      teed.reopen(tee1)
+
+      # expect the methods be the same as before the tee was called
+      expect(singleton.instance_method(:puts)).to be == redef_puts
+    end
+
+    it "has the desired effect" do
+      teed.print(0)
+      tee1.print(1)
+      tee2.print(2)
+
+      tee(teed, tee1, tee2)
+      teed.print 'Hi'
+      teed.puts '!'
+
+      expect(teed.string).to be == "0Hi!\n"
+      expect(tee1.string).to be == "1Hi!\n"
+      expect(tee2.string).to be == "2Hi!\n"
+    end
+
+    it "ensures the tee effect is discarded on reopen" do
+      tee1.print(1)
+      tee2.print(2)
+
+      tee(teed, tee1, tee2)
+      teed.print 'Hi'
+      teed.puts '!'
+
+      teed.reopen(tee1)
+      teed.puts 'Hello.'
+
+      # note that "teed" shares the underlying string with "tee1" at this point
+      # as that's what StringIO#reopen does
+      expect(teed.string).to be == "1Hi!\nHello.\n"
+      expect(tee1.string).to be == "1Hi!\nHello.\n"
+      expect(tee2.string).to be == "2Hi!\n"
+    end
+
+    it "works as expected even in presence of overriden methods" do
+      def teed.print(*args)
+        args.unshift(0)
+        super # calls the StringIO#print
+      end
+
+      tee1.print(1)
+      tee2.print(2)
+
+      tee(teed, tee1, tee2)
+      teed.puts 'Hi!'
+
+      teed.reopen(tee1)
+      teed.print 'Hello.'
+      teed.puts
+
+      tee1.print 'Hey'
+      tee1.puts '!'
+
+      # note that "teed" shares the underlying string with "tee1" at this point
+      # as that's what StringIO#reopen does
+      expect(teed.string).to be == "1Hi!\n0Hello.\nHey!\n"
+      expect(tee1.string).to be == "1Hi!\n0Hello.\nHey!\n"
+      expect(tee2.string).to be == "2Hi!\n"
     end
   end
 end
