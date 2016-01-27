@@ -1,14 +1,15 @@
 #!/usr/bin/env rspec
+require 'stringio'
 
 load File.join(File.dirname(__FILE__), "../", "../", "../", "pxp-module-puppet")
 
 describe "pxp-module-puppet" do
 
-  let(:default_params) {
+  let(:default_input) {
     {"env" => [], "flags" => []}
   }
 
-  let(:default_config) {
+  let(:default_configuration) {
     {"puppet_bin" => "puppet"}
   }
 
@@ -28,7 +29,7 @@ describe "pxp-module-puppet" do
     it "returns the result of configprint" do
       cli_vec = ["puppet", "agent", "--configprint", "value"]
       expect(Puppet::Util::Execution).to receive(:execute).with(cli_vec).and_return("value\n")
-      expect(check_config_print("value", default_config)).to be == "value"
+      expect(check_config_print("value", default_configuration)).to be == "value"
     end
   end
 
@@ -64,24 +65,24 @@ describe "pxp-module-puppet" do
 
   describe "make_environment_hash" do
     it "should correctly add the env entries" do
-      params = default_params
-      params["env"] = ["FOO=bar", "BAR=foo"]
-      expect(make_environment_hash(params)).to be ==
+      input = default_input
+      input["env"] = ["FOO=bar", "BAR=foo"]
+      expect(make_environment_hash(input)).to be ==
         {"FOO" => "bar", "BAR" => "foo"}
     end
   end
 
   describe "make_command_array" do
     it "should correctly append the executable and action" do
-      params = default_params
-      expect(make_command_array(default_config, params)).to be ==
+      input = default_input
+      expect(make_command_array(default_configuration, input)).to be ==
         ["puppet", "agent"]
     end
 
     it "should correctly append any flags" do
-      params = default_params
-      params["flags"] = ["--noop", "--verbose"]
-      expect(make_command_array(default_config, params)).to be ==
+      input = default_input
+      input["flags"] = ["--noop", "--verbose"]
+      expect(make_command_array(default_configuration, input)).to be ==
         ["puppet", "agent", "--noop", "--verbose"]
     end
   end
@@ -105,7 +106,7 @@ describe "pxp-module-puppet" do
     it "doesn't process the last_run_report if the file doens't exist" do
       allow(File).to receive(:exist?).and_return(false)
       allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
-      expect(get_result_from_report(0, default_config, Time.now)).to be ==
+      expect(get_result_from_report(0, default_configuration, Time.now)).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
            "transaction_uuid" => "unknown",
@@ -121,7 +122,7 @@ describe "pxp-module-puppet" do
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
       allow(YAML).to receive(:load_file).and_raise("error")
-      expect(get_result_from_report(0, default_config, Time.now)).to be ==
+      expect(get_result_from_report(0, default_configuration, Time.now)).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
            "transaction_uuid" => "unknown",
@@ -148,7 +149,7 @@ describe "pxp-module-puppet" do
       allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
       allow(YAML).to receive(:load_file).and_return(last_run_report)
 
-      expect(get_result_from_report(-1, default_config, start_time)).to be ==
+      expect(get_result_from_report(-1, default_configuration, start_time)).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
            "transaction_uuid" => "unknown",
@@ -175,7 +176,7 @@ describe "pxp-module-puppet" do
       allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
       allow(YAML).to receive(:load_file).and_return(last_run_report)
 
-      expect(get_result_from_report(-1, default_config, start_time)).to be ==
+      expect(get_result_from_report(-1, default_configuration, start_time)).to be ==
           {"kind"             => "apply",
            "time"             => run_time,
            "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
@@ -202,7 +203,7 @@ describe "pxp-module-puppet" do
       allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
       allow(YAML).to receive(:load_file).and_return(last_run_report)
 
-      expect(get_result_from_report(0, default_config, start_time)).to be ==
+      expect(get_result_from_report(0, default_configuration, start_time)).to be ==
           {"kind"             => "apply",
            "time"             => run_time,
            "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
@@ -221,21 +222,21 @@ describe "pxp-module-puppet" do
     it "populates output when it terminated normally" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(0)
-      expect_any_instance_of(Object).to receive(:get_result_from_report).with(0, default_config, anything)
-      start_run(default_config, default_params)
+      expect_any_instance_of(Object).to receive(:get_result_from_report).with(0, default_configuration, anything)
+      start_run(default_configuration, default_input)
     end
 
     it "populates output when it terminated with a non 0 code" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(1)
-      expect_any_instance_of(Object).to receive(:get_result_from_report).with(1, default_config, anything)
-      start_run(default_config, default_params)
+      expect_any_instance_of(Object).to receive(:get_result_from_report).with(1, default_configuration, anything)
+      start_run(default_configuration, default_input)
     end
 
     it "populates output when it couldn't start" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(nil)
       expect_any_instance_of(Object).to receive(:make_error_result).with(-1, Errors::FailedToStart, anything)
-      start_run(default_config, default_params)
+      start_run(default_configuration, default_input)
     end
 
     it "populates the output if puppet is disabled" do
@@ -243,7 +244,7 @@ describe "pxp-module-puppet" do
       allow(runoutcome).to receive(:exitstatus).and_return(1)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(true)
       expect_any_instance_of(Object).to receive(:make_error_result).with(1, Errors::Disabled, anything)
-      start_run(default_config, default_params)
+      start_run(default_configuration, default_input)
     end
 
     it "populates the output when puppet is alreaady running" do
@@ -252,7 +253,7 @@ describe "pxp-module-puppet" do
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
       allow_any_instance_of(Object).to receive(:running?).and_return(true)
       expect_any_instance_of(Object).to receive(:make_error_result).with(1, Errors::AlreadyRunning, anything)
-      start_run(default_config, default_params)
+      start_run(default_configuration, default_input)
     end
   end
 
@@ -275,7 +276,7 @@ describe "pxp-module-puppet" do
               },
               :required => [:env, :flags]
             },
-            :output => {
+            :results => {
               :type => "object",
               :properties => {
                 :kind => {
@@ -323,42 +324,42 @@ describe "pxp-module-puppet" do
     end
   end
 
-  describe "run" do
+  describe "action_run" do
     it "fails when puppet_bin doesn't exist" do
       allow(File).to receive(:exist?).and_return(false)
-      expect(run({"config" => default_config, "params" => default_params})["error"]).to be ==
+      expect(action_run({"configuration" => default_configuration, "input" => default_input})["error"]).to be ==
           "Puppet executable 'puppet' does not exist"
     end
 
     it "fails when invalid json is passed" do
       # JSON is parsed when the action is invoked. Any invalid json will call run
       # with nil
-      expect(run(nil)["error"]).to be ==
+      expect(action_run(nil)["error"]).to be ==
           "Invalid json parsed on STDIN. Cannot start run action"
     end
 
     it "populates flags with the correct defaults" do
-      expected_params = {"env" => [],
-                         "flags" => ["--onetime", "--no-daemonize", "--verbose"]}
+      expected_input = {"env" => [],
+                        "flags" => ["--onetime", "--no-daemonize", "--verbose"]}
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
-      expect_any_instance_of(Object).to receive(:start_run).with(default_config,
-                                                                 expected_params)
-      run({"config" => default_config, "params" => default_params})
+      expect_any_instance_of(Object).to receive(:start_run).with(default_configuration,
+                                                                 expected_input)
+      action_run({"configuration" => default_configuration, "input" => default_input})
     end
 
     it "does not add flag defaults if they have been passed" do
-      expected_params = {"env" => [],
-                         "flags" => ["--squirrels", "--onetime", "--no-daemonize", "--verbose"]}
-      passed_params = {"env" => [],
-                       "flags" => ["--squirrels", "--onetime", "--no-daemonize"]}
+      expected_input = {"env" => [],
+                        "flags" => ["--squirrels", "--onetime", "--no-daemonize", "--verbose"]}
+      passed_input = {"env" => [],
+                      "flags" => ["--squirrels", "--onetime", "--no-daemonize"]}
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
-      expect_any_instance_of(Object).to receive(:start_run).with(default_config,
-                                                                 expected_params)
-      run({"config" => default_config, "params" => passed_params})
+      expect_any_instance_of(Object).to receive(:start_run).with(default_configuration,
+                                                                 expected_input)
+      action_run({"configuration" => default_configuration, "input" => passed_input})
     end
 
     it "starts the run" do
@@ -366,7 +367,133 @@ describe "pxp-module-puppet" do
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
       expect_any_instance_of(Object).to receive(:start_run)
-      run({"config" => default_config, "params" => default_params})
+      action_run({"configuration" => default_configuration, "input" => default_input})
+    end
+  end
+
+  describe "tee" do
+    let(:teed) { StringIO.new }
+    let(:tee1) { StringIO.new }
+    let(:tee2) { StringIO.new }
+    let(:singleton) { class << teed; self; end }
+
+    it "bails out if the object to be teed doesn't implement `reopen'" do
+      expect{ tee(Object.new, tee1) }.to raise_error(ArgumentError, / must at least respond to `reopen'$/)
+    end
+
+    it "redefines methods defined in standard modules/classes" do
+      orig_puts = singleton.instance_method(:puts)
+
+      tee(teed, tee1)
+
+      # expect the method to be redefined
+      expect(singleton.instance_method(:puts)).not_to be == orig_puts
+    end
+
+    it "redefines methods defined in singleton classes" do
+      orig_puts = singleton.instance_method(:puts)
+
+      def teed.puts(*args)
+        super(*args)
+      end
+
+      redef_puts = singleton.instance_method(:puts)
+
+      # check that the method is really redefined
+      expect(redef_puts).not_to be == orig_puts
+
+      tee(teed, tee1)
+
+      # expect the method to be redefined
+      expect(singleton.instance_method(:puts)).not_to be == orig_puts
+      expect(singleton.instance_method(:puts)).not_to be == redef_puts
+    end
+
+    it "ensures that methods defined in standard modules/classes are reset on reopen" do
+      orig_puts = singleton.instance_method(:puts)
+
+      tee(teed, tee1)
+      teed.reopen(tee1)
+
+      # expect the methods be the same as before the tee was called
+      expect(singleton.instance_method(:puts)).to be == orig_puts
+    end
+
+    it "ensures that methods defined in singleton classes are reset on reopen" do
+      orig_puts = singleton.instance_method(:puts)
+
+      def teed.puts(*args)
+        super(*args)
+      end
+
+      redef_puts = singleton.instance_method(:puts)
+
+      # check that the method is really redefined
+      expect(redef_puts).not_to be == orig_puts
+
+      tee(teed, tee1)
+      teed.reopen(tee1)
+
+      # expect the methods be the same as before the tee was called
+      expect(singleton.instance_method(:puts)).to be == redef_puts
+    end
+
+    it "has the desired effect" do
+      teed.print(0)
+      tee1.print(1)
+      tee2.print(2)
+
+      tee(teed, tee1, tee2)
+      teed.print 'Hi'
+      teed.puts '!'
+
+      expect(teed.string).to be == "0Hi!\n"
+      expect(tee1.string).to be == "1Hi!\n"
+      expect(tee2.string).to be == "2Hi!\n"
+    end
+
+    it "ensures the tee effect is discarded on reopen" do
+      tee1.print(1)
+      tee2.print(2)
+
+      tee(teed, tee1, tee2)
+      teed.print 'Hi'
+      teed.puts '!'
+
+      teed.reopen(tee1)
+      teed.puts 'Hello.'
+
+      # note that "teed" shares the underlying string with "tee1" at this point
+      # as that's what StringIO#reopen does
+      expect(teed.string).to be == "1Hi!\nHello.\n"
+      expect(tee1.string).to be == "1Hi!\nHello.\n"
+      expect(tee2.string).to be == "2Hi!\n"
+    end
+
+    it "works as expected even in presence of overriden methods" do
+      def teed.print(*args)
+        args.unshift(0)
+        super # calls the StringIO#print
+      end
+
+      tee1.print(1)
+      tee2.print(2)
+
+      tee(teed, tee1, tee2)
+      teed.puts 'Hi!'
+
+      teed.reopen(tee1)
+      teed.print 'Hello.'
+      teed.puts
+
+      tee1.print 'Hey'
+      tee1.puts '!'
+
+      # note that "teed" shares the underlying string with "tee1" at this point
+      # as that's what StringIO#reopen does
+      expect(teed.string).to be == "1Hi!\n0Hello.\nHey!\n"
+      expect(tee1.string).to be == "1Hi!\n0Hello.\nHey!\n"
+      expect(tee2.string).to be == "2Hi!\n"
     end
   end
 end
