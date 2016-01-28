@@ -3,7 +3,7 @@
 ### Metadata
 
 The `metadata` of a module is a JSON object that contains a number of JSON
-schemas for specifying configuration options and actions. It contains:
+schemas for specifying its configuration options and actions. It contains:
 
  - **configuration**: (optional) schema that describes the module configuration format;
  - **actions**: an array where each item is an object that describes an action implemented by the module (please, refer to the below schema).
@@ -105,7 +105,7 @@ stdout.
 When a module is invoked by passing the name of an action listed in the
 `metadata`, such action must be executed.
 
-### Input / output
+### Input
 
 When an action is executed, its input arguments should be parsed from stdin.
 Actions should expect in input a JSON object with the following format:
@@ -153,16 +153,40 @@ that the `configuration` schema is optional; in case it's not included in the
 `metadata`, the content of the configuration file will be included in the input
 object if its format is valid JSON.
 
-Each action should write its processing results on stdout. Error messages should
-go on stderr.
-
-If the input object parsed from stdin contains the `output_files` object, the
-action must ALSO write its results, error messages, and exit code in the
-specified files (respectively: `stdout`, `stderr`, and `exitcode`). In this
-case, pxp-agent guarantees that those files will be read only after the
-`exitcode` file is created; the existence of `exitcode` will be used to indicate
-the action completion.
+### Output
 
 Once an action completes its execution, its results will be validated by
-pxp-agent by using the relative `results` schema contained in the `metadata`.
-The output on stderr will be treated as free format text.
+pxp-agent. That will be done by using the action's `results` schema contained in
+the `metadata`. Instead, any error message provided by the module will be
+treated as free format text.
+
+##### Results and error messages on stdout and stderr
+
+In case the input object parsed from stdin does not contain the `output_files`
+entry, the action must write its processing results on stdout. Error messages
+must go on stderr.
+
+##### Results, error messages, and exit code on file
+
+If the `output_files` object is present in the input, the action must write its
+results, error messages, and exit code, in the specified files, respectively:
+`stdout`, `stderr`, and `exitcode`.
+
+In this case, pxp-agent guarantees that those files will be read only after the
+`exitcode` file is created; the existence of `exitcode` will be used to indicate
+the processing completion.
+
+Also, in this case, pxp-agent will discard the output on stdout and stderr
+streams.
+
+##### Exit code
+
+pxp-agent will interpret an exit code different than 0 as an indication of a
+processing failure.
+
+The module can use any exit code it wishes to communicate to the requester via
+the [PXP Transaction Response][transaction_status]. The only reserved code is
+`5`; such code should be used in case the `output_files` entry was included, but
+the module failed to write the action's results on file.
+
+[transaction_status]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md
