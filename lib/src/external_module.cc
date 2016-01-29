@@ -27,6 +27,8 @@ static const std::string ACTION_SCHEMA_NAME { "action_metadata" };
 static const std::string METADATA_CONFIGURATION_ENTRY { "configuration" };
 static const std::string METADATA_ACTIONS_ENTRY { "actions" };
 
+static const int EXTERNAL_MODULE_FILE_ERROR_EC { 5 };
+
 namespace fs = boost::filesystem;
 namespace HW = HorseWhisperer;
 namespace lth_exec = leatherman::execution;
@@ -52,7 +54,7 @@ PCPClient::Validator getMetadataValidator() {
     action_schema.addConstraint("description", T_C::String, false);
     action_schema.addConstraint("name", T_C::String, true);
     action_schema.addConstraint("input", T_C::Object, true);
-    action_schema.addConstraint("output", T_C::Object, true);
+    action_schema.addConstraint("results", T_C::Object, true);
 
     metadata_schema.addConstraint(METADATA_ACTIONS_ENTRY, action_schema, false);
 
@@ -158,7 +160,6 @@ void ExternalModule::readNonBlockingOutcome(const ActionRequest& request,
 const PCPClient::Validator ExternalModule::metadata_validator_ {
         getMetadataValidator() };
 
-
 // Retrieve and validate the module metadata
 const lth_jc::JsonContainer ExternalModule::getMetadata() {
     auto exec =
@@ -219,14 +220,14 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
         auto input_schema_json = action.get<lth_jc::JsonContainer>("input");
         PCPClient::Schema input_schema { action_name, input_schema_json };
 
-        auto output_schema_json = action.get<lth_jc::JsonContainer>("output");
-        PCPClient::Schema output_schema { action_name, output_schema_json };
+        auto results_schema_json = action.get<lth_jc::JsonContainer>("results");
+        PCPClient::Schema results_schema { action_name, results_schema_json };
 
         // Metadata schemas are valid JSON; store metadata
         LOG_DEBUG("Action '%1% %2%' has been validated", module_name, action_name);
         actions.push_back(action_name);
         input_validator_.registerSchema(input_schema);
-        output_validator_.registerSchema(output_schema);
+        results_validator_.registerSchema(results_schema);
     } catch (PCPClient::schema_error& e) {
         LOG_ERROR("Failed to parse metadata schemas of action '%1% %2%': %3%",
                   module_name, action_name, e.what());
@@ -242,11 +243,23 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
     }
 }
 
-std::string ExternalModule::getRequestInput(const ActionRequest& request) {
-    lth_jc::JsonContainer request_input {};
-    request_input.set<lth_jc::JsonContainer>("params", request.params());
-    request_input.set<lth_jc::JsonContainer>("config", config_);
-    return request_input.toString();
+std::string ExternalModule::getActionArguments(const ActionRequest& request) {
+    lth_jc::JsonContainer action_args {};
+    action_args.set<lth_jc::JsonContainer>("input", request.params());
+
+    if (!config_.empty())
+        action_args.set<lth_jc::JsonContainer>("configuration", config_);
+
+    if (request.type() == RequestType::NonBlocking) {
+        fs::path r_d_p { request.resultsDir() };
+        lth_jc::JsonContainer output_files {};
+        output_files.set<std::string>("stdout", (r_d_p / "stdout").string());
+        output_files.set<std::string>("stderr", (r_d_p / "stderr").string());
+        output_files.set<std::string>("exitcode", (r_d_p / "exitcode").string());
+        action_args.set<lth_jc::JsonContainer>("output_files", output_files);
+    }
+
+    return action_args.toString();
 }
 
 ActionOutcome ExternalModule::processRequestOutcome(const ActionRequest& request,
@@ -291,12 +304,12 @@ ActionOutcome ExternalModule::processRequestOutcome(const ActionRequest& request
 
 ActionOutcome ExternalModule::callBlockingAction(const ActionRequest& request) {
     auto action_name = request.action();
-    auto input_txt = getRequestInput(request);
+    auto action_args = getActionArguments(request);
 
     LOG_INFO("Executing '%1% %2%' (blocking request), transaction id %3%",
              module_name, action_name, request.transactionId());
     LOG_TRACE("Blocking request %1% input: %2%",
-              request.transactionId(), input_txt);
+              request.transactionId(), action_args);
 
     auto exec = lth_exec::execute(
 #ifdef _WIN32
@@ -304,7 +317,7 @@ ActionOutcome ExternalModule::callBlockingAction(const ActionRequest& request) {
 #else
         path_, { action_name },
 #endif
-        input_txt,                             // input
+        action_args,                           // args
         std::map<std::string, std::string>(),  // environment
         0,                                     // timeout
         { lth_exec::execution_options::merge_environment });  // options
@@ -314,17 +327,14 @@ ActionOutcome ExternalModule::callBlockingAction(const ActionRequest& request) {
 
 ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request) {
     auto action_name = request.action();
-    auto input_txt = getRequestInput(request);
-
-    // HERE(ale): using HW instead of Configuration to ease unit tests
-    auto results_dir_path = fs::path(HW::GetFlag<std::string>("spool-dir"))
-                            / request.transactionId();
+    auto input_txt = getActionArguments(request);
+    fs::path results_dir_path { request.resultsDir() };
     auto out_file = (results_dir_path / "stdout").string();
     auto err_file = (results_dir_path / "stderr").string();
 
     LOG_INFO("Starting '%1% %2%' non-blocking task (stdout and stderr will "
              "be stored in %3%), transaction id %4%", module_name, action_name,
-             results_dir_path.string(), request.transactionId());
+             request.resultsDir(), request.transactionId());
     LOG_TRACE("Non-blocking request %1% input: %2%",
               request.transactionId(), input_txt);
 
@@ -335,8 +345,6 @@ ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request
         path_, { action_name },
 #endif
         input_txt,  // input
-        out_file,   // out file
-        err_file,   // err file
         std::map<std::string, std::string>(),  // environment
         [results_dir_path](size_t pid) {
             auto pid_file = (results_dir_path / "pid").string();
@@ -344,6 +352,15 @@ ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request
         },          // pid callback
         0,          // timeout
         { lth_exec::execution_options::merge_environment });  // options
+
+    if (exec.exit_code == EXTERNAL_MODULE_FILE_ERROR_EC) {
+        LOG_DEBUG("The '%1% %2%' non-blocking task %3% failed to write its "
+                  "output on file%4%%5%",
+                  module_name, action_name, request.transactionId(),
+                  (exec.output.empty() ? "" : std::string("; output: ") + exec.output),
+                  (exec.output.empty() ? "" : std::string("; error: ") + exec.error));
+        throw Module::ProcessingError { "failed to write output to files" };
+    }
 
     // Stdout / stderr output is on file; read it
     std::string out_txt;
@@ -357,6 +374,8 @@ ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
     if (request.type() == RequestType::Blocking) {
         return callBlockingAction(request);
     } else {
+        // Guranteed by Configuration
+        assert(!request.resultsDir().empty());
         return callNonBlockingAction(request);
     }
 }

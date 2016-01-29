@@ -14,7 +14,7 @@ Echo::Echo() {
     PCPClient::Schema output_schema { ECHO };
 
     input_validator_.registerSchema(input_schema);
-    output_validator_.registerSchema(output_schema);
+    results_validator_.registerSchema(output_schema);
 }
 
 ActionOutcome Echo::callAction(const ActionRequest& request) {

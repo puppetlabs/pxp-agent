@@ -13,8 +13,6 @@
 
 #include <boost/filesystem/operations.hpp>
 
-#include <horsewhisperer/horsewhisperer.h>
-
 #include <catch.hpp>
 
 #include <string>
@@ -30,7 +28,6 @@
 namespace PXPAgent {
 
 namespace fs = boost::filesystem;
-namespace HW = HorseWhisperer;
 namespace lth_jc = leatherman::json_container;
 namespace lth_util = leatherman::util;
 namespace lth_file = leatherman::file_util;
@@ -146,7 +143,6 @@ static void configureTest() {
         [](std::vector<std::string>) {
             return EXIT_SUCCESS;
         });
-    HW::SetFlag<std::string>("spool-dir", SPOOL_DIR);
 }
 
 static void resetTest() {
@@ -223,7 +219,9 @@ TEST_CASE("ExternalModule::callAction - non blocking", "[modules]") {
                              EXTENSION };
         ActionRequest request { RequestType::NonBlocking, NON_BLOCKING_CONTENT };
         fs::path spool_path { SPOOL_DIR };
-        fs::create_directories(spool_path / request.transactionId());
+        auto results_dir = (spool_path / request.transactionId()).string();
+        fs::create_directories(results_dir);
+        request.setResultsDir(results_dir);
         auto pid_path = spool_path / request.transactionId() / "pid";
 
         REQUIRE_NOTHROW(e_m.executeAction(request));

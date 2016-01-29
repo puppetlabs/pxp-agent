@@ -36,7 +36,7 @@ class Module {
     std::vector<std::string> actions;
     PCPClient::Validator config_validator_;
     PCPClient::Validator input_validator_;
-    PCPClient::Validator output_validator_;
+    PCPClient::Validator results_validator_;
 
     Module();
 

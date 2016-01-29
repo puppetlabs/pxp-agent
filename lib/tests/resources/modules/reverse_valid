@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 require 'json'
+require_relative './check_output'
 
 def action_metadata
    metadata = {
@@ -32,7 +33,7 @@ def action_metadata
           },
           :required => [ :argument ],
         },
-        :output => {
+        :results => {
           :type => "object",
           :properties => {
             :output => {
@@ -47,19 +48,19 @@ def action_metadata
         :input => {
           :type => "object",
           :properties => {
-            :input => {
+            :the_input => {
               :type => 'string',
             },
           },
           :required => [ :input ],
         },
-        :output => {
+        :results => {
           :type => "object",
           :properties => {
-            :input => {
+            :the_input => {
               :type => 'string',
             },
-            :output => {
+            :the_output => {
               :type => 'string',
             },
           },
@@ -73,15 +74,19 @@ def action_metadata
 end
 
 def action_string
-  params = JSON.load($stdin)["params"]
-  output = { :output => params['argument'].reverse }
-  puts output.to_json
+  args = JSON.load($stdin)
+  check_output_files(args)
+  input_args = args['input']
+  results = { :output => input_args['argument'].reverse }
+  puts results.to_json
 end
 
 def action_hash
-  hash = JSON.load($stdin)["params"]
-  hash['output'] = hash['input'].reverse
-  puts hash.to_json
+  args = JSON.load($stdin)
+  check_output_files(args)
+  input_args = args['input']
+  input_args['the_output'] = input_args['the_input'].reverse
+  puts input_args.to_json
 end
 
 action = ARGV.shift || 'metadata'

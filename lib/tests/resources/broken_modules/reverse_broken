@@ -10,7 +10,7 @@ def action_metadata
         :input => {
           :type => "string",
         },
-        :output => {
+        :results => {
           :type => "string",
         },
       },

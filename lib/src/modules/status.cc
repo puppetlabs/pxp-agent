@@ -45,7 +45,7 @@ Status::Status() {
                                true);
     PCPClient::Schema output_schema { QUERY };
     input_validator_.registerSchema(input_schema);
-    output_validator_.registerSchema(output_schema);
+    results_validator_.registerSchema(output_schema);
 }
 
 class ActionMetadata {
@@ -99,6 +99,8 @@ class ActionMetadata {
   private:
     std::string file;
 };
+
+// TODO(ale): take advantage of the exitcode file (PCP-208)
 
 //
 //                          STATUS TABLE
