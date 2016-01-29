@@ -52,7 +52,6 @@ class ResultsStorage {
               action { request.action() },
               metadata_file { (fs::path(request.resultsDir()) / "metadata").string() },
               action_metadata {} {
-
         initialize(request);
     }
 
