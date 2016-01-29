@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 require 'json'
+require_relative './check_output'
 
 def action_metadata
    metadata = {
@@ -54,10 +55,15 @@ def action_metadata
 end
 
 def action_get_an_invalid_result
+  args = JSON.load($stdin)
+  check_output_files(args)
   puts "not valid JSON - it will not be parsed successfully!"
 end
 
 def action_broken_action
+  args = JSON.load($stdin)
+  check_output_files(args)
+  $stderr.puts "we failed, sorry :("
   raise "ops, we failed!"
 end
 
