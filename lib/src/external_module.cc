@@ -288,7 +288,8 @@ ActionOutcome ExternalModule::processRequestOutcome(const ActionRequest& request
 
     try {
         // Ensure output format is valid JSON by instantiating JsonContainer
-        lth_jc::JsonContainer results { out_txt };
+        // NB: JsonContainer's ctor does not accept empty strings
+        lth_jc::JsonContainer results { (out_txt.empty() ? "null" : out_txt) };
         return ActionOutcome { exit_code, err_txt, out_txt, results };
     } catch (lth_jc::data_parse_error& e) {
         LOG_ERROR("'%1% %2%' output is not valid JSON: %3%",
