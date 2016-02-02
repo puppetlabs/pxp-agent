@@ -175,7 +175,15 @@ const lth_jc::JsonContainer ExternalModule::getMetadata() {
         throw Module::LoadingError { "failed to load external module metadata" };
     }
 
-    lth_jc::JsonContainer metadata { exec.output };
+    lth_jc::JsonContainer metadata;
+
+    try {
+        metadata = lth_jc::JsonContainer { exec.output };
+        LOG_DEBUG("External module %1%: metadata is valid JSON", module_name);
+    } catch (PCPClient::validation_error& e) {
+        throw Module::LoadingError { std::string { "metadata is not in a valid "
+                                        "JSON format: " } + e.what() };
+    }
 
     try {
         metadata_validator_.validate(metadata, METADATA_SCHEMA_NAME);
