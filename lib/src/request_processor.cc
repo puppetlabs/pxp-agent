@@ -396,19 +396,23 @@ void RequestProcessor::loadModulesConfiguration() {
         lth_file::each_file(
             modules_config_dir_,
             [this](std::string const& s) -> bool {
+                fs::path s_path { s };
+                auto file_name = s_path.stem().string();
+                // NB: ".conf" suffix guaranteed by each_file()
+                auto pos_suffix = file_name.find(".conf");
+                auto module_name = file_name.substr(0, pos_suffix);
+
                 try {
-                    fs::path s_path { s };
-                    auto file_name = s_path.stem().string();
-                    // NB: ".conf" suffix guaranteed by each_file()
-                    auto pos_suffix = file_name.find(".conf");
-                    auto module_name = file_name.substr(0, pos_suffix);
-                    modules_config_[module_name] =
-                        lth_jc::JsonContainer(lth_file::read(s));
+                    auto config_json = lth_jc::JsonContainer(lth_file::read(s));
+                    modules_config_[module_name] = std::move(config_json);
                     LOG_DEBUG("Loaded module configuration for module '%1%' "
                               "from %2%", module_name, s);
                 } catch (lth_jc::data_parse_error& e) {
-                    LOG_WARNING("Cannot load module config file '%1%'. File "
-                                "contains invalid json: %2%", s, e.what());
+                    LOG_WARNING("Cannot load module config file '%1%'; invalid "
+                                "JSON format. If the module's metadata contains "
+                                "the 'configuration' entry, the module won't be "
+                                "loaded. Error: '%2%'", s, e.what());
+                    modules_config_[module_name] = lth_jc::JsonContainer { "null" };
                 }
                 return true;
                 // naming convention for config files suffixes; don't

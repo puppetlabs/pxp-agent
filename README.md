@@ -106,7 +106,8 @@ implemented natively; there is no module file for it. Also, as a side note,
 Modules can be configured by placing a configuration file in the
 `--modules-config-dir` named like `<module_name>.conf`. The content of a
 configuration file must be in JSON format and conform with the `configuration`
-entry of the module's metadata.
+schema provided by the module's metadata, otherwise the module will not be
+loaded.
 
 ## Configuring the agent
 
