@@ -1,4 +1,4 @@
-#include "certs.hpp"
+#include "../common/certs.hpp"
 #include "root_path.hpp"
 
 #include <pxp-agent/configuration.hpp>

@@ -1,5 +1,5 @@
 #include "root_path.hpp"
-#include "content_format.hpp"
+#include "../common/content_format.hpp"
 
 #include <pxp-agent/external_module.hpp>
 #include <pxp-agent/configuration.hpp>
@@ -80,7 +80,7 @@ TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
             "metadata schema") {
         REQUIRE_THROWS_AS(
             ExternalModule(PXP_AGENT_ROOT_PATH
-                           "/lib/tests/resources/broken_modules/reverse_broken"
+                           "/lib/tests/resources/modules_broken/reverse_broken"
                            EXTENSION),
             Module::LoadingError);
     }

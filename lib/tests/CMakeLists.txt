@@ -11,9 +11,9 @@ include_directories(
 
 set(COMMON_TEST_SOURCES
     main.cc
+    common/certs.cc
     unit/action_request_test.cc
     unit/agent_test.cc
-    unit/certs.cc
     unit/configuration_test.cc
     unit/external_module_test.cc
     unit/module_test.cc
