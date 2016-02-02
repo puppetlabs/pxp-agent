@@ -23,7 +23,6 @@ namespace PXPAgent {
 static const std::string METADATA_SCHEMA_NAME { "external_module_metadata" };
 static const std::string ACTION_SCHEMA_NAME { "action_metadata" };
 
-// TODO(ale): move this to cpp_pxp_client lib
 static const std::string METADATA_CONFIGURATION_ENTRY { "configuration" };
 static const std::string METADATA_ACTIONS_ENTRY { "actions" };
 
