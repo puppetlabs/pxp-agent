@@ -31,7 +31,7 @@ install:
   - cd ..
 
 build_script:
-  - ps: cmake -G "MinGW Makefiles" -DBOOST_ROOT="C:\tools\boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh" -DBOOST_STATIC=ON -DCURL_STATIC=ON -Wno-dev -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh;C:\tools;C:\tools\bin" -DCMAKE_INSTALL_PREFIX=C:\tools .
+  - ps: cmake -G "MinGW Makefiles" -DBOOST_ROOT="C:\tools\boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh" -DBOOST_STATIC=ON -DCURL_STATIC=ON -Wno-dev -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh;C:\tools;C:\tools\bin" -DCMAKE_INSTALL_PREFIX=C:\tools -DTEST_VIRTUAL=ON .
   - ps: mingw32-make install
 
 test_script:
