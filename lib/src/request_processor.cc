@@ -439,10 +439,9 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
             if (!fs::is_directory(f->status())) {
                 auto f_p = fs::canonical(f->path());
                 auto extension = f_p.extension();
-                auto module_name = f_p.stem();
 
-                // valid module have no extension on *nix, .bat extensions on
-                // Windows
+                // valid module have no extension on *nix, .bat
+                // extensions on Windows
 #ifndef _WIN32
                 if (extension == "") {
 #else
@@ -450,8 +449,7 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
 #endif
                     try {
                         ExternalModule* e_m;
-                        auto config_itr = modules_config_.find(
-                            f_p.stem().string());
+                        auto config_itr = modules_config_.find(f_p.stem().string());
 
                         if (config_itr != modules_config_.end()) {
                             e_m = new ExternalModule(f_p.string(), config_itr->second);
