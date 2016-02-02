@@ -65,9 +65,8 @@ include(options)
 include(cflags)
 leatherman_logging_line_numbers()
 
-# Set compiler flags
-set(PXP_AGENT_FLAGS "")
-set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS} ${PXP_AGENT_FLAGS}")
+# Set leatherman's flags
+set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS}")
 add_definitions(${LEATHERMAN_DEFINITIONS})
 
 if(DEV_LOG_COLOR)
