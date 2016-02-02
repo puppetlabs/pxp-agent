@@ -36,10 +36,9 @@ class ExternalModule : public Module {
     /// The type of the module.
     Module::Type type() { return Module::Type::External; }
 
-    /// In case a configuration schema has been registered for this
-    /// module, validate configuration data.
-    /// Throw a validation_error in case the configuration schema was
-    /// not registered or in case of an invalid configuration data.
+    /// If a configuration schema has been registered for this module,
+    /// validate configuration data. In that case, throw a
+    /// PCPClient::validation_error for invalid configuration data.
     void validateConfiguration();
 
     /// Writes the content of the specified out/err_file in,
