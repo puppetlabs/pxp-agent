@@ -299,6 +299,23 @@ void RequestProcessor::processRequest(const RequestType& request_type,
     }
 }
 
+
+bool RequestProcessor::hasModule(const std::string& module_name) const {
+    return modules_.find(module_name) != modules_.end();
+}
+
+bool RequestProcessor::hasModuleConfig(const std::string& module_name) const {
+    return modules_config_.find(module_name) != modules_config_.end();
+}
+
+std::string RequestProcessor::getModuleConfig(const std::string& module_name) const {
+    if (!hasModuleConfig(module_name))
+        throw RequestProcessor::Error { std::string("no configuration loaded for ")
+                                        + module_name };
+
+    return modules_config_.at(module_name).toString();
+}
+
 //
 // Private interface
 //

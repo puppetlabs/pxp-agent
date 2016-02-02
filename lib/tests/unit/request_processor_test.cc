@@ -56,6 +56,79 @@ TEST_CASE("RequestProcessor::RequestProcessor", "[agent]") {
     boost::filesystem::remove_all(SPOOL);
 }
 
+TEST_CASE("RequestProcessor::hasModule", "[agent]") {
+    AGENT_CONFIGURATION.modules_config_dir = VALID_MODULES_CONFIG;
+    auto c_ptr = std::make_shared<MockConnector>();
+    RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
+
+    SECTION("returns true if the requested module was loaded") {
+        REQUIRE(r_p.hasModule("reverse_valid"));
+    }
+
+    SECTION("returns false if the requested module was not loaded") {
+        REQUIRE_FALSE(r_p.hasModule("this_module_here_does_not_exist"));
+    }
+}
+
+TEST_CASE("RequestProcessor::hasModuleConfig", "[agent]") {
+    SECTION("valid module configuration") {
+        AGENT_CONFIGURATION.modules_config_dir = VALID_MODULES_CONFIG;
+        auto c_ptr = std::make_shared<MockConnector>();
+        RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
+
+        REQUIRE(r_p.hasModuleConfig("reverse_valid"));
+    }
+
+    SECTION("badly formatted module configuration") {
+        AGENT_CONFIGURATION.modules_config_dir = BAD_FORMAT_MODULES_CONFIG;
+        auto c_ptr = std::make_shared<MockConnector>();
+        RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
+
+        REQUIRE(r_p.hasModuleConfig("reverse_valid"));
+    }
+
+    SECTION("non existent module configuration") {
+        AGENT_CONFIGURATION.modules_config_dir = VALID_MODULES_CONFIG;
+        auto c_ptr = std::make_shared<MockConnector>();
+        RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
+
+        REQUIRE_FALSE(r_p.hasModuleConfig("this_module_here_does_not_exist"));
+    }
+}
+
+TEST_CASE("RequestProcessor::getModuleConfig", "[agent]") {
+    SECTION("valid module configuration") {
+        AGENT_CONFIGURATION.modules_config_dir = VALID_MODULES_CONFIG;
+        auto c_ptr = std::make_shared<MockConnector>();
+        RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
+        auto json_txt = r_p.getModuleConfig("reverse_valid");
+
+        try {
+            lth_jc::JsonContainer json { json_txt };
+            REQUIRE(json.type() == lth_jc::Object);
+        } catch (const lth_jc::data_error&) {
+            FAIL("expected configuration in a valid JSON format");
+        }
+    }
+
+    SECTION("badly formatted module configuration") {
+        AGENT_CONFIGURATION.modules_config_dir = BAD_FORMAT_MODULES_CONFIG;
+        auto c_ptr = std::make_shared<MockConnector>();
+        RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
+
+        REQUIRE(r_p.getModuleConfig("reverse_valid") ==  "null");
+    }
+
+    SECTION("non existent module configuration") {
+        AGENT_CONFIGURATION.modules_config_dir = VALID_MODULES_CONFIG;
+        auto c_ptr = std::make_shared<MockConnector>();
+        RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
+
+        REQUIRE_THROWS_AS(r_p.getModuleConfig("this_module_here_does_not_exist"),
+                          RequestProcessor::Error);
+    }
+}
+
 #ifdef TEST_VIRTUAL
 
 static std::string valid_envelope_txt {

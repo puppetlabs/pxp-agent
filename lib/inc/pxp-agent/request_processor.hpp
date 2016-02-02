@@ -45,6 +45,17 @@ class RequestProcessor {
     void processRequest(const RequestType& request_type,
                         const PCPClient::ParsedChunks& parsed_chunks);
 
+    /// Whether the specified module was loaded
+    bool hasModule(const std::string& module_name) const;
+
+    /// Whether the specified module was loaded together with a valid
+    /// configuration from file
+    bool hasModuleConfig(const std::string& module_name) const;
+
+    /// Throw an Error in case no configuration was loaded for the
+    /// specified module
+    std::string getModuleConfig(const std::string& module_name) const;
+
   private:
     /// Manages the lifecycle of non-blocking action jobs
     ThreadContainer thread_container_;
