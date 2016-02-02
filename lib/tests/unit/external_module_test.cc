@@ -236,4 +236,127 @@ TEST_CASE("ExternalModule::callAction - non blocking", "[modules]") {
     }
 }
 
+TEST_CASE("ExternalModule::getMetadata", "[modules][metadata]") {
+    configureTest();
+    lth_util::scope_exit config_cleaner { resetTest };
+
+    SECTION("gets a list of actions when module returns valid metadata") {
+        REQUIRE_NOTHROW(
+            ExternalModule { PXP_AGENT_ROOT_PATH
+                             "/lib/tests/resources/modules/reverse_valid"
+                             EXTENSION }
+        );
+        REQUIRE(
+            (ExternalModule { PXP_AGENT_ROOT_PATH
+                              "/lib/tests/resources/modules/reverse_valid"
+                              EXTENSION }.actions
+             == std::vector<std::string> { "string", "hash" })
+        );
+    }
+
+    SECTION("throws exception when module resturns no metadata") {
+        REQUIRE_THROWS_AS(
+            ExternalModule { PXP_AGENT_ROOT_PATH
+                             "/lib/tests/resources/broken_modules/reverse_no_metadata"
+                             EXTENSION },
+            lth_jc::data_parse_error
+        );
+    }
+
+    SECTION("throws exception when module resturns invalid JSON") {
+        REQUIRE_THROWS_AS(
+            ExternalModule { PXP_AGENT_ROOT_PATH
+                             "/lib/tests/resources/broken_modules/reverse_bad_json_format"
+                             EXTENSION },
+            lth_jc::data_parse_error
+        );
+    }
+
+    SECTION("throws exception when module resturns invalid metadata") {
+        REQUIRE_THROWS_AS(
+            ExternalModule { PXP_AGENT_ROOT_PATH
+                             "/lib/tests/resources/broken_modules/reverse_broken"
+                             EXTENSION },
+            Module::LoadingError
+        );
+    }
+}
+
+TEST_CASE("ExternalModule::validateConfiguration", "[modules][configuration]") {
+    configureTest();
+    lth_util::scope_exit config_cleaner { resetTest };
+
+    SECTION("succeeds when presented with a valid configuration") {
+        ExternalModule e_m {
+            PXP_AGENT_ROOT_PATH
+            "/lib/tests/resources/modules/convert_test"
+            EXTENSION,
+            lth_jc::JsonContainer(
+                "{ \"rate\" : 1.1, \"fee_percent\" : 0.1, \"fee_max\" : 10 }") };
+
+        REQUIRE_NOTHROW(e_m.validateConfiguration());
+    }
+
+    SECTION("throws exception when presented with an invalid configuration") {
+        ExternalModule e_m {
+            PXP_AGENT_ROOT_PATH
+            "/lib/tests/resources/modules/convert_test"
+            EXTENSION,
+            lth_jc::JsonContainer(
+                "{ \"rate\" : 1.1, \"fee_percent\" : 0.1, \"foo_max\" : 10 }") };
+
+        REQUIRE_THROWS_AS(e_m.validateConfiguration(),
+                          PCPClient::validation_error);
+    }
+}
+
+TEST_CASE("ExternalModule::executeAction", "[modules][output]") {
+    configureTest();
+    lth_util::scope_exit config_cleaner { resetTest };
+
+    SECTION("gets the action output") {
+        ExternalModule e_m {
+            PXP_AGENT_ROOT_PATH
+            "/lib/tests/resources/modules/convert_test"
+            EXTENSION,
+            lth_jc::JsonContainer(
+                "{ \"rate\" : 1.1, \"fee_percent\" : 0.1, \"fee_max\" : 10 }") };
+        auto convert_txt = (DATA_FORMAT % "\"0632\""
+                                        % "\"convert_test\""
+                                        % "\"convert\""
+                                        % "{\"amount\" : 1000}").str();
+        PCPClient::ParsedChunks convert_content {
+            lth_jc::JsonContainer(ENVELOPE_TXT),
+            lth_jc::JsonContainer(convert_txt),
+            NO_DEBUG,
+            0 };
+        ActionRequest request { RequestType::Blocking, convert_content };
+
+        REQUIRE_NOTHROW(e_m.executeAction(request));
+        REQUIRE(e_m.executeAction(request).results.get<double>("amount") == 1098.9);
+    }
+
+    SECTION("validates the action output") {
+        ExternalModule e_m {
+            PXP_AGENT_ROOT_PATH
+            "/lib/tests/resources/modules/convert_test"
+            EXTENSION,
+            lth_jc::JsonContainer(
+                "{ \"rate\" : 1.1, \"fee_percent\" : 0.1, \"fee_max\" : 10 }") };
+        auto convert_txt = (DATA_FORMAT % "\"0633\""
+                                        % "\"convert_test\""
+                                        % "\"convert2\""
+                                        % "{\"amount\" : 10000}").str();
+        PCPClient::ParsedChunks convert_content {
+            lth_jc::JsonContainer(ENVELOPE_TXT),
+            lth_jc::JsonContainer(convert_txt),
+            NO_DEBUG,
+            0 };
+        ActionRequest request { RequestType::Blocking, convert_content };
+
+        REQUIRE_THROWS_AS(e_m.executeAction(request),
+                          Module::ProcessingError);
+    }
+}
+
 }  // namespace PXPAgent
