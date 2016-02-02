@@ -241,44 +241,39 @@ TEST_CASE("ExternalModule::getMetadata", "[modules][metadata]") {
     lth_util::scope_exit config_cleaner { resetTest };
 
     SECTION("gets a list of actions when module returns valid metadata") {
-        REQUIRE_NOTHROW(
-            ExternalModule { PXP_AGENT_ROOT_PATH
-                             "/lib/tests/resources/modules/reverse_valid"
-                             EXTENSION }
-        );
-        REQUIRE(
-            (ExternalModule { PXP_AGENT_ROOT_PATH
-                              "/lib/tests/resources/modules/reverse_valid"
-                              EXTENSION }.actions
-             == std::vector<std::string> { "string", "hash" })
-        );
+        try {
+            ExternalModule e_m { PXP_AGENT_ROOT_PATH
+                                 "/lib/tests/resources/modules/reverse_valid"
+                                 EXTENSION };
+            std::vector<std::string> expected_actions { "string", "hash" };
+            REQUIRE(e_m.actions == expected_actions);
+        } catch (const std::exception& e) {
+            FAIL(std::string { "failed to initialize: " } + e.what());
+        }
     }
 
-    SECTION("throws exception when module resturns no metadata") {
+    SECTION("throws Module::LoadingError when module returns no metadata") {
         REQUIRE_THROWS_AS(
             ExternalModule { PXP_AGENT_ROOT_PATH
                              "/lib/tests/resources/broken_modules/reverse_no_metadata"
                              EXTENSION },
-            lth_jc::data_parse_error
-        );
+            Module::LoadingError);
     }
 
-    SECTION("throws exception when module resturns invalid JSON") {
+    SECTION("throws Module::LoadingError when module returns invalid JSON") {
         REQUIRE_THROWS_AS(
             ExternalModule { PXP_AGENT_ROOT_PATH
                              "/lib/tests/resources/broken_modules/reverse_bad_json_format"
                              EXTENSION },
-            lth_jc::data_parse_error
-        );
+            Module::LoadingError);
     }
 
-    SECTION("throws exception when module resturns invalid metadata") {
+    SECTION("throws Module::LoadingError when module returns invalid metadata") {
         REQUIRE_THROWS_AS(
             ExternalModule { PXP_AGENT_ROOT_PATH
                              "/lib/tests/resources/broken_modules/reverse_broken"
                              EXTENSION },
-            Module::LoadingError
-        );
+            Module::LoadingError);
     }
 }
 

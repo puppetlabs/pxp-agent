@@ -12,6 +12,8 @@ include_directories(
 set(COMMON_TEST_SOURCES
     main.cc
     common/certs.cc
+    common/mock_connector.cc
+    component/external_modules_interface_test.cc
     unit/action_request_test.cc
     unit/agent_test.cc
     unit/configuration_test.cc
