@@ -299,6 +299,23 @@ void RequestProcessor::processRequest(const RequestType& request_type,
     }
 }
 
+
+bool RequestProcessor::hasModule(const std::string& module_name) const {
+    return modules_.find(module_name) != modules_.end();
+}
+
+bool RequestProcessor::hasModuleConfig(const std::string& module_name) const {
+    return modules_config_.find(module_name) != modules_config_.end();
+}
+
+std::string RequestProcessor::getModuleConfig(const std::string& module_name) const {
+    if (!hasModuleConfig(module_name))
+        throw RequestProcessor::Error { std::string("no configuration loaded for ")
+                                        + module_name };
+
+    return modules_config_.at(module_name).toString();
+}
+
 //
 // Private interface
 //
@@ -396,19 +413,23 @@ void RequestProcessor::loadModulesConfiguration() {
         lth_file::each_file(
             modules_config_dir_,
             [this](std::string const& s) -> bool {
+                fs::path s_path { s };
+                auto file_name = s_path.stem().string();
+                // NB: ".conf" suffix guaranteed by each_file()
+                auto pos_suffix = file_name.find(".conf");
+                auto module_name = file_name.substr(0, pos_suffix);
+
                 try {
-                    fs::path s_path { s };
-                    auto file_name = s_path.stem().string();
-                    // NB: ".conf" suffix guaranteed by each_file()
-                    auto pos_suffix = file_name.find(".conf");
-                    auto module_name = file_name.substr(0, pos_suffix);
-                    modules_config_[module_name] =
-                        lth_jc::JsonContainer(lth_file::read(s));
+                    auto config_json = lth_jc::JsonContainer(lth_file::read(s));
+                    modules_config_[module_name] = std::move(config_json);
                     LOG_DEBUG("Loaded module configuration for module '%1%' "
                               "from %2%", module_name, s);
                 } catch (lth_jc::data_parse_error& e) {
-                    LOG_WARNING("Cannot load module config file '%1%'. File "
-                                "contains invalid json: %2%", s, e.what());
+                    LOG_WARNING("Cannot load module config file '%1%'; invalid "
+                                "JSON format. If the module's metadata contains "
+                                "the 'configuration' entry, the module won't be "
+                                "loaded. Error: '%2%'", s, e.what());
+                    modules_config_[module_name] = lth_jc::JsonContainer { "null" };
                 }
                 return true;
                 // naming convention for config files suffixes; don't
@@ -439,10 +460,9 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
             if (!fs::is_directory(f->status())) {
                 auto f_p = fs::canonical(f->path());
                 auto extension = f_p.extension();
-                auto module_name = f_p.stem();
 
-                // valid module have no extension on *nix, .bat extensions on
-                // Windows
+                // valid module have no extension on *nix, .bat
+                // extensions on Windows
 #ifndef _WIN32
                 if (extension == "") {
 #else
@@ -450,8 +470,7 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
 #endif
                     try {
                         ExternalModule* e_m;
-                        auto config_itr = modules_config_.find(
-                            f_p.stem().string());
+                        auto config_itr = modules_config_.find(f_p.stem().string());
 
                         if (config_itr != modules_config_.end()) {
                             e_m = new ExternalModule(f_p.string(), config_itr->second);

@@ -1,6 +1,6 @@
-#include "../certs.hpp"
+#include "../../common/certs.hpp"
+#include "../../common/content_format.hpp"          // ENVELOPE_TXT
 #include "root_path.hpp"
-#include "../content_format.hpp"                    // ENVELOPE_TXT
 
 #include <pxp-agent/modules/status.hpp>
 #include <pxp-agent/configuration.hpp>

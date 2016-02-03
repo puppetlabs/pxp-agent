@@ -23,7 +23,6 @@ namespace PXPAgent {
 static const std::string METADATA_SCHEMA_NAME { "external_module_metadata" };
 static const std::string ACTION_SCHEMA_NAME { "action_metadata" };
 
-// TODO(ale): move this to cpp_pxp_client lib
 static const std::string METADATA_CONFIGURATION_ENTRY { "configuration" };
 static const std::string METADATA_ACTIONS_ENTRY { "actions" };
 
@@ -176,7 +175,15 @@ const lth_jc::JsonContainer ExternalModule::getMetadata() {
         throw Module::LoadingError { "failed to load external module metadata" };
     }
 
-    lth_jc::JsonContainer metadata { exec.output };
+    lth_jc::JsonContainer metadata;
+
+    try {
+        metadata = lth_jc::JsonContainer { exec.output };
+        LOG_DEBUG("External module %1%: metadata is valid JSON", module_name);
+    } catch (lth_jc::data_error& e) {
+        throw Module::LoadingError { std::string { "metadata is not in a valid "
+                                        "JSON format: " } + e.what() };
+    }
 
     try {
         metadata_validator_.validate(metadata, METADATA_SCHEMA_NAME);

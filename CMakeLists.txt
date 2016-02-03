@@ -10,6 +10,14 @@ endif()
 option(TEST_VIRTUAL "ON - certain class member functions became virtual to enable mocking for unit tests" OFF)
 option(DEV_LOG_COLOR "Enable colorization for logging (development setting)" OFF)
 
+if(TEST_VIRTUAL)
+    add_definitions(-DTEST_VIRTUAL)
+endif()
+
+if(DEV_LOG_COLOR)
+    add_definitions(-DDEV_LOG_COLOR)
+endif()
+
 # Project Output Paths
 set(MODULES_INSTALL_PATH pxp-agent/modules CACHE STRING  "Location to install core modules. Can be an absolute path, or relative path from CMAKE_INSTALL_PREFIX.")
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
@@ -65,14 +73,9 @@ include(options)
 include(cflags)
 leatherman_logging_line_numbers()
 
-# Set compiler flags
-set(PXP_AGENT_FLAGS "")
-set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS} ${PXP_AGENT_FLAGS}")
+# Set leatherman's flags
+set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS}")
 add_definitions(${LEATHERMAN_DEFINITIONS})
-
-if(DEV_LOG_COLOR)
-    add_definitions(-DDEV_LOG_COLOR)
-endif()
 
 # Display a summary of the features
 include(FeatureSummary)
@@ -88,10 +91,6 @@ install(FILES modules/pxp-module-puppet
         PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 # Add the test suite
-if(TEST_VIRTUAL)
-    add_definitions(-DTEST_VIRTUAL)
-endif()
-
 enable_testing()
 
 add_test(

@@ -1,4 +1,4 @@
-#include "content_format.hpp"
+#include "../common/content_format.hpp"
 
 #include <pxp-agent/action_request.hpp>
 
