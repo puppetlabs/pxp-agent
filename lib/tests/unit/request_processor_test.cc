@@ -42,7 +42,7 @@ TEST_CASE("RequestProcessor::RequestProcessor", "[agent]") {
 
 TEST_CASE("RequestProcessor::hasModule", "[agent]") {
     AGENT_CONFIGURATION.modules_config_dir = VALID_MODULES_CONFIG;
-    auto c_ptr = std::make_shared<MockConnector>();
+    auto c_ptr = std::make_shared<PXPConnector>(AGENT_CONFIGURATION);
     RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
 
     SECTION("returns true if the requested module was loaded") {
@@ -57,7 +57,7 @@ TEST_CASE("RequestProcessor::hasModule", "[agent]") {
 TEST_CASE("RequestProcessor::hasModuleConfig", "[agent]") {
     SECTION("valid module configuration") {
         AGENT_CONFIGURATION.modules_config_dir = VALID_MODULES_CONFIG;
-        auto c_ptr = std::make_shared<MockConnector>();
+        auto c_ptr = std::make_shared<PXPConnector>(AGENT_CONFIGURATION);
         RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
 
         REQUIRE(r_p.hasModuleConfig("reverse_valid"));
@@ -65,7 +65,7 @@ TEST_CASE("RequestProcessor::hasModuleConfig", "[agent]") {
 
     SECTION("badly formatted module configuration") {
         AGENT_CONFIGURATION.modules_config_dir = BAD_FORMAT_MODULES_CONFIG;
-        auto c_ptr = std::make_shared<MockConnector>();
+        auto c_ptr = std::make_shared<PXPConnector>(AGENT_CONFIGURATION);
         RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
 
         REQUIRE(r_p.hasModuleConfig("reverse_valid"));
@@ -73,7 +73,7 @@ TEST_CASE("RequestProcessor::hasModuleConfig", "[agent]") {
 
     SECTION("non existent module configuration") {
         AGENT_CONFIGURATION.modules_config_dir = VALID_MODULES_CONFIG;
-        auto c_ptr = std::make_shared<MockConnector>();
+        auto c_ptr = std::make_shared<PXPConnector>(AGENT_CONFIGURATION);
         RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
 
         REQUIRE_FALSE(r_p.hasModuleConfig("this_module_here_does_not_exist"));
@@ -83,7 +83,7 @@ TEST_CASE("RequestProcessor::hasModuleConfig", "[agent]") {
 TEST_CASE("RequestProcessor::getModuleConfig", "[agent]") {
     SECTION("valid module configuration") {
         AGENT_CONFIGURATION.modules_config_dir = VALID_MODULES_CONFIG;
-        auto c_ptr = std::make_shared<MockConnector>();
+        auto c_ptr = std::make_shared<PXPConnector>(AGENT_CONFIGURATION);
         RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
         auto json_txt = r_p.getModuleConfig("reverse_valid");
 
@@ -97,7 +97,7 @@ TEST_CASE("RequestProcessor::getModuleConfig", "[agent]") {
 
     SECTION("badly formatted module configuration") {
         AGENT_CONFIGURATION.modules_config_dir = BAD_FORMAT_MODULES_CONFIG;
-        auto c_ptr = std::make_shared<MockConnector>();
+        auto c_ptr = std::make_shared<PXPConnector>(AGENT_CONFIGURATION);
         RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
 
         REQUIRE(r_p.getModuleConfig("reverse_valid") ==  "null");
@@ -105,7 +105,7 @@ TEST_CASE("RequestProcessor::getModuleConfig", "[agent]") {
 
     SECTION("non existent module configuration") {
         AGENT_CONFIGURATION.modules_config_dir = VALID_MODULES_CONFIG;
-        auto c_ptr = std::make_shared<MockConnector>();
+        auto c_ptr = std::make_shared<PXPConnector>(AGENT_CONFIGURATION);
         RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
 
         REQUIRE_THROWS_AS(r_p.getModuleConfig("this_module_here_does_not_exist"),
@@ -114,6 +114,9 @@ TEST_CASE("RequestProcessor::getModuleConfig", "[agent]") {
 }
 
 #ifdef TEST_VIRTUAL
+
+// NOTE(ale): the following tests require the MockConnector since they
+// trigger WebSocket functions.
 
 TEST_CASE("RequestProcessor::processRequest", "[agent]") {
     auto c_ptr = std::make_shared<MockConnector>();
