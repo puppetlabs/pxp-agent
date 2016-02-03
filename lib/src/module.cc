@@ -24,32 +24,31 @@ ActionOutcome Module::executeAction(const ActionRequest& request) {
         auto outcome = callAction(request);
 
         // Validate action output
-        LOG_DEBUG("Validating the result output for '%1% %2%'",
-                  module_name, request.action());
+        LOG_DEBUG("Validating the result output for the %1%", request.prettyLabel());
         try {
             results_validator_.validate(outcome.results, request.action());
         } catch (PCPClient::validation_error) {
-            std::string err_msg { "'" + module_name + " " + request.action()
-                                  + "' returned an invalid result" };
-            if (!outcome.std_err.empty()) {
-                err_msg += " - stderr: " + outcome.std_err;
-            }
-            throw Module::ProcessingError { err_msg + outcome.std_err };
+            throw Module::ProcessingError {
+                (boost::format("The task executed for the %1% returned %2% "
+                               "results on stdout%3% - stderr:%4%")
+                    % request.prettyLabel()
+                    % (outcome.std_out.empty() ? "no" : "invalid")
+                    % (outcome.std_out.empty() ? "" : ": " + outcome.std_out)
+                    % (outcome.std_err.empty() ? " (empty)" : '\n' + outcome.std_err))
+                .str() };
         }
 
         return outcome;
     } catch (Module::ProcessingError) {
         throw;
     } catch (std::exception& e) {
-        LOG_ERROR("Faled to execute '%1% %2%': %3%",
-                  module_name, request.action(), e.what());
-        throw Module::ProcessingError { "failed to execute '" + module_name
-                                        + " " + request.action() + "'" };
+        LOG_ERROR("Failed to execute the task for the %1%: %2%",
+                  request.prettyLabel(), e.what());
+        throw Module::ProcessingError { "failed to execute " + request.prettyLabel() };
     } catch (...) {
-        LOG_ERROR("Failed to execute '%1% %2%' - unexpected exception",
-                  module_name, request.action());
-        throw Module::ProcessingError { "failed to execute '" + module_name
-                                        + " " + request.action() + "'" };
+        LOG_ERROR("Failed to execute the task for the %1% - unexpected exception",
+                  request.prettyLabel());
+        throw Module::ProcessingError { "failed to execute " + request.prettyLabel() };
     }
 }
 

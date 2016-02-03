@@ -273,24 +273,21 @@ ActionOutcome ExternalModule::processRequestOutcome(const ActionRequest& request
                                                     int exit_code,
                                                     std::string& out_txt,
                                                     std::string& err_txt) {
-    auto action_name = request.action();
-
     if (out_txt.empty()) {
-        LOG_DEBUG("'%1% %2%' produced no output", module_name, action_name);
+        LOG_TRACE("Obtained no results on stdout for the %1%",
+                  request.prettyLabel());
     } else {
-        LOG_DEBUG("'%1% %2%' output: %3%", module_name, action_name, out_txt);
+        LOG_TRACE("Results on stdout for the %1%: %2%",
+                  request.prettyLabel(), out_txt);
     }
 
     if (exit_code != EXIT_SUCCESS) {
-        if (!err_txt.empty()) {
-            LOG_ERROR("'%1% %2%' failure, returned %3%; error: %4%",
-                      module_name, action_name, exit_code, err_txt);
-        } else {
-            LOG_ERROR("'%1% %2%' failure, returned %3%",
-                      module_name, action_name, exit_code);
-        }
+        LOG_TRACE("Execution failure (exit code %1%) for the %2%%3%",
+                  exit_code, request.prettyLabel(),
+                  (err_txt.empty() ? "" : "; stderr:\n" + err_txt));
     } else if (!err_txt.empty()) {
-        LOG_WARNING("'%1% %2%' error: %3%", module_name, action_name, err_txt);
+        LOG_TRACE("Output on stderr for the %1%:\n%2%",
+                  request.prettyLabel(), err_txt);
     }
 
     try {
@@ -299,13 +296,23 @@ ActionOutcome ExternalModule::processRequestOutcome(const ActionRequest& request
         lth_jc::JsonContainer results { (out_txt.empty() ? "null" : out_txt) };
         return ActionOutcome { exit_code, err_txt, out_txt, results };
     } catch (lth_jc::data_parse_error& e) {
-        LOG_ERROR("'%1% %2%' output is not valid JSON: %3%",
-                  module_name, action_name, e.what());
-        std::string err_msg { "'" + module_name + " " + action_name + "' "
-                              "returned invalid JSON"  };
-        if (!err_txt.empty()) {
-            err_msg += " - stderr: " + err_txt;
+        boost::format err_format;
+
+        if (out_txt.empty()) {
+            LOG_DEBUG("Obtained no output on stdout for the %1%",
+                      request.prettyLabel());
+            err_format = boost::format { "The task executed for the %1% returned "
+                                         "no output on stdout - stderr:%2%" };
+        } else {
+            LOG_DEBUG("Obtained invalid JSON on stdout for the %1%; "
+                      "(validation error: %2%); stdout:\n%3%",
+                      request.prettyLabel(), e.what(), out_txt);
+            err_format = boost::format { "The task executed for the %1% returned "
+                                         "invalid JSON on stdout - stderr:%2%" };
         }
+        auto err_msg = (err_format % request.prettyLabel()
+                                   % (err_txt.empty() ? " (empty)" : '\n' + err_txt))
+                        .str();
         throw Module::ProcessingError { err_msg };
     }
 }
@@ -314,10 +321,8 @@ ActionOutcome ExternalModule::callBlockingAction(const ActionRequest& request) {
     auto action_name = request.action();
     auto action_args = getActionArguments(request);
 
-    LOG_INFO("Executing '%1% %2%' (blocking request), transaction id %3%",
-             module_name, action_name, request.transactionId());
-    LOG_TRACE("Blocking request %1% input: %2%",
-              request.transactionId(), action_args);
+    LOG_INFO("Executing the %1%", request.prettyLabel());
+    LOG_TRACE("Input for the %1%: %2%", request.prettyLabel(), action_args);
 
     auto exec = lth_exec::execute(
 #ifdef _WIN32
@@ -340,11 +345,9 @@ ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request
     auto out_file = (results_dir_path / "stdout").string();
     auto err_file = (results_dir_path / "stderr").string();
 
-    LOG_INFO("Starting '%1% %2%' non-blocking task (stdout and stderr will "
-             "be stored in %3%), transaction id %4%", module_name, action_name,
-             request.resultsDir(), request.transactionId());
-    LOG_TRACE("Non-blocking request %1% input: %2%",
-              request.transactionId(), input_txt);
+    LOG_INFO("Starting a task for the %1%; stdout and stderr will be stored in %2%",
+             request.prettyLabel(), request.resultsDir());
+    LOG_TRACE("Input for the %1%: %2%", request.prettyLabel(), input_txt);
 
     auto exec = lth_exec::execute(
 #ifdef _WIN32
@@ -362,12 +365,14 @@ ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request
         { lth_exec::execution_options::merge_environment });  // options
 
     if (exec.exit_code == EXTERNAL_MODULE_FILE_ERROR_EC) {
-        LOG_DEBUG("The '%1% %2%' non-blocking task %3% failed to write its "
-                  "output on file%4%%5%",
-                  module_name, action_name, request.transactionId(),
-                  (exec.output.empty() ? "" : std::string("; output: ") + exec.output),
-                  (exec.output.empty() ? "" : std::string("; error: ") + exec.error));
-        throw Module::ProcessingError { "failed to write output to files" };
+        // This is unexpected. The outcome of the task will not be
+        // available for future transaction status requests
+        LOG_WARNING("The task process failed to write output on file for the %1%; "
+                    "stdout: %2%; stderr: %3%",
+                    request.prettyLabel(),
+                    (exec.output.empty() ? "(empty)" : exec.output),
+                    (exec.error.empty() ? "(empty)" : exec.error));
+        throw Module::ProcessingError { "failed to write output on file" };
     }
 
     // Stdout / stderr output is on file; read it
