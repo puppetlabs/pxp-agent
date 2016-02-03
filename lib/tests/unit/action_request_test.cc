@@ -112,6 +112,10 @@ TEST_CASE("ActionRequest getters", "[request]") {
         SECTION("paramsTxt") {
             REQUIRE(a_r.paramsTxt() == params.toString());
         }
+
+        SECTION("can call prettyLabel") {
+            REQUIRE_NOTHROW(a_r.prettyLabel());
+        }
     }
 }
 

@@ -71,14 +71,12 @@ void PXPConnector::sendPXPError(const ActionRequest& request,
              PXPSchemas::PXP_ERROR_MSG_TYPE,
              DEFAULT_MSG_TIMEOUT_SEC,
              pxp_error_data);
-        LOG_INFO("Replied to %1% request %2% by %3%, transaction %4%, with "
-                 "an PXP error message", requestTypeNames[request.type()],
-                 request.id(), request.sender(), request.transactionId());
+        LOG_INFO("Replied to %1% by %2%, request ID %3%, with a PXP error message",
+                 request.prettyLabel(), request.sender(), request.id());
     } catch (PCPClient::connection_error& e) {
-        LOG_ERROR("Failed to send PXP error message for %1% request %2% by "
-                  "%3%, transaction %4% (no further sending attempts): %5%",
-                  requestTypeNames[request.type()], request.id(),
-                  request.sender(), request.transactionId(), description);
+        LOG_ERROR("Failed to send a PXP error message for the %1% by %2% "
+                  "(no further sending attempts will be made): %3%",
+                  request.prettyLabel(), request.sender(), description);
     }
 }
 
@@ -95,13 +93,11 @@ void PXPConnector::sendBlockingResponse(const ActionRequest& request,
              DEFAULT_MSG_TIMEOUT_SEC,
              response_data,
              debug);
-        LOG_INFO("Sent response for blocking request %1% by %2%, "
-                 "transaction %3%", request.id(), request.sender(),
-                 request.transactionId());
+        LOG_INFO("Sent response for the %1% by %2%",
+                 request.prettyLabel(), request.sender());
     } catch (PCPClient::connection_error& e) {
-        LOG_ERROR("Failed to reply to blocking request %1% from %2%, "
-                  "transaction %3%: %4%", request.id(), request.sender(),
-                  request.transactionId(), e.what());
+        LOG_ERROR("Failed to reply to the %1% by %2%: %3%",
+                  request.prettyLabel(), request.sender(), e.what());
     }
 }
 
@@ -119,14 +115,12 @@ void PXPConnector::sendNonBlockingResponse(const ActionRequest& request,
              PXPSchemas::NON_BLOCKING_RESPONSE_TYPE,
              DEFAULT_MSG_TIMEOUT_SEC,
              response_data);
-        LOG_INFO("Sent response for non-blocking request %1% by %2%, "
-                 "transaction %3%", request.id(), request.sender(),
-                 request.transactionId());
+        LOG_INFO("Sent response for the %1% by %2%",
+                 request.prettyLabel(), request.sender());
     } catch (PCPClient::connection_error& e) {
-        LOG_ERROR("Failed to reply to non-blocking request %1% by %2%, "
-                  "transaction %3% (no further attempts): %4%",
-                  request.id(), request.sender(), request.transactionId(),
-                  e.what());
+        LOG_ERROR("Failed to reply to %1% by %2%, (no further attempts will "
+                  "be made): %3%",
+                  request.prettyLabel(), request.sender(), e.what());
     }
 }
 
@@ -141,13 +135,12 @@ void PXPConnector::sendProvisionalResponse(const ActionRequest& request) {
              DEFAULT_MSG_TIMEOUT_SEC,
              provisional_data,
              debug);
-        LOG_INFO("Sent provisional response for request %1% by %2%, "
-                 "transaction %3%", request.id(), request.sender(),
-                 request.transactionId());
+        LOG_INFO("Sent provisional response for the %1% by %2%",
+                 request.prettyLabel(), request.sender());
     } catch (PCPClient::connection_error& e) {
-        LOG_ERROR("Failed to send provisional response for request %1% by "
-                  "%2%, transaction %3% (no further attempts): %4%",
-                  request.id(), request.sender(), request.transactionId(), e.what());
+        LOG_ERROR("Failed to send provisional response for the %1% by %2% "
+                  "(no further attempts will be made): %3%",
+                  request.prettyLabel(), request.sender(), e.what());
     }
 }
 

@@ -49,6 +49,7 @@ class ActionRequest {
     // in the request, an empty JsonContainer object is returned
     const lth_jc::JsonContainer& params() const;
     const std::string& paramsTxt() const;
+    const std::string& prettyLabel() const;
 
   private:
     RequestType type_;
@@ -63,6 +64,7 @@ class ActionRequest {
     // Lazy initialized; no setter is available
     mutable lth_jc::JsonContainer params_;
     mutable std::string params_txt_;
+    mutable std::string pretty_label_;
 
     // This has its own setter - it's not part of request's state
     mutable std::string results_dir_;

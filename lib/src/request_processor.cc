@@ -76,9 +76,8 @@ class ResultsStorage {
 
     void initialize(const ActionRequest& request) {
         if (!fs::exists(request.resultsDir())) {
-            LOG_DEBUG("Creating results directory for '%1% %2%', transaction "
-                       "%3%, in '%4%'", request.module(), request.action(),
-                       request.transactionId(), request.resultsDir());
+            LOG_DEBUG("Creating results directory for the %1% in '%2%'",
+                      request.prettyLabel(), request.resultsDir());
             try {
                 fs::create_directories(request.resultsDir());
             } catch (const fs::filesystem_error& e) {
@@ -171,6 +170,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 
     try {
         outcome = module_ptr->executeAction(request);
+
         if (lck_ptr != nullptr) {
             LOG_TRACE("Locking transaction mutex %1%", request.transactionId());
             lck_ptr->lock();
@@ -180,32 +180,33 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                       "transaction %1%; we will not lock the access to the "
                       "metadata file", request.transactionId());
         }
+
         completed = true;
         assert(outcome.type == ActionOutcome::Type::External);
         exit_code = outcome.exitcode;
-
-        LOG_INFO("Non-blocking request %1% by %2%, transaction %3%, has completed",
-                 request.id(), request.sender(), request.transactionId());
+        LOG_INFO("The task for the %1%, by %2%, has completed",
+                 request.prettyLabel(), request.sender());
 
         if (request.parsedChunks().data.get<bool>("notify_outcome")) {
             connector_ptr->sendNonBlockingResponse(request, outcome.results,
                                                    request.transactionId());
         }
     } catch (const Module::ProcessingError& e) {
-        exec_error = std::string("Failed to execute: ") + e.what() + "\n";
-        LOG_ERROR("Failed to execute '%1% %2%' %3%: %4%",
-                  request.module(), request.action(), request.transactionId(), e.what());
+        exec_error = std::string { e.what() } + "\n";
+        LOG_ERROR("Execution failure for the task of the %1% (will send a "
+                  "PXP Error: %2%",
+                  request.prettyLabel(), e.what());
         try {
             connector_ptr->sendPXPError(request, e.what());
         } catch (const PCPClient::connection_error& e) {
-            LOG_ERROR("Failed to send PXP Error for (failed) '%1% %2%' %3%: %4%",
-                      request.module(), request.action(), request.transactionId(), e.what());
+            LOG_ERROR("Failed to send PXP Error after the failed task for %1%: %2%",
+                      request.prettyLabel(), e.what());
         }
     } catch (const PCPClient::connection_error& e) {
         exec_error = std::string("Failed to send non blocking response: ")
                      + e.what() + "\n";
-        LOG_ERROR("Failed to send non blocking response for '%1% %2%' %3%: %4%",
-                  request.module(), request.action(), request.transactionId(), e.what());
+        LOG_ERROR("Failed to send non blocking response for the %1%: %2%",
+                  request.prettyLabel(), e.what());
     }
 
     // Store metadata on disk
@@ -252,25 +253,22 @@ void RequestProcessor::processRequest(const RequestType& request_type,
         // Inspect and validate the request message format
         ActionRequest request { request_type, parsed_chunks };
 
-        LOG_INFO("Processing %1% request %2% by %3%, transaction %4%",
-                 requestTypeNames[request_type], request.id(), request.sender(),
-                 request.transactionId());
+        LOG_INFO("Processing %1%, request ID %2%, by %3%",
+                 request.prettyLabel(), request.id(), request.sender());
 
         try {
             // We can access the request content; validate it
             validateRequestContent(request);
         } catch (RequestProcessor::Error& e) {
             // Invalid request; send *PXP error*
-
-            LOG_ERROR("Invalid %1% request %2% by %3%, transaction %4%: %5%",
-                      requestTypeNames[request_type], request.id(),
-                      request.sender(), request.transactionId(), e.what());
+            LOG_ERROR("Invalid %1%, request ID %2% by %3%. Will reply with a "
+                      "PXP error; %4%",
+                      request.prettyLabel(), request.id(), request.sender(), e.what());
             connector_ptr_->sendPXPError(request, e.what());
             return;
         }
 
-        LOG_DEBUG("The %1% request, transaction %2%, has been successfully validated",
-                  requestTypeNames[request_type], request.transactionId());
+        LOG_DEBUG("The %1% has been successfully validated", request.prettyLabel());
 
         try {
             if (request.type() == RequestType::Blocking) {
@@ -278,14 +276,13 @@ void RequestProcessor::processRequest(const RequestType& request_type,
             } else {
                 processNonBlockingRequest(request);
             }
-            LOG_DEBUG("The %1% request %2% by %3%, transaction %4%, has been "
-                      "successfully processed", requestTypeNames[request_type],
-                     request.id(), request.sender(), request.transactionId());
+            LOG_DEBUG("The %1%, request ID %2% by %3%, has been successfully processed",
+                      request.prettyLabel(), request.id(), request.sender());
         } catch (std::exception& e) {
             // Process failure; send *PXP error*
-            LOG_ERROR("Failed to process %1% request %2% by %3%, transaction %4%: "
-                      "%5%", requestTypeNames[request.type()], request.id(),
-                      request.sender(), request.transactionId(), e.what());
+            LOG_ERROR("Failed to process %1%, request ID %2% by %3%. Will reply "
+                      "with a PXP error; %4%",
+                      request.prettyLabel(), request.id(), request.sender(), e.what());
             connector_ptr_->sendPXPError(request, e.what());
         }
     } catch (ActionRequest::Error& e) {
@@ -294,7 +291,9 @@ void RequestProcessor::processRequest(const RequestType& request_type,
         auto id = parsed_chunks.envelope.get<std::string>("id");
         auto sender = parsed_chunks.envelope.get<std::string>("sender");
         std::vector<std::string> endpoints { sender };
-        LOG_ERROR("Invalid %1% request by %2%: %3%", id, sender, e.what());
+        LOG_ERROR("Invalid request with ID %1% by %2%. Will reply with a PCP "
+                  "error; %3%",
+                  id, sender, e.what());
         connector_ptr_->sendPCPError(id, e.what(), endpoints);
     }
 }
@@ -340,18 +339,16 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
 
     // Validate request input params
     try {
-        LOG_DEBUG("Validating input for parameters of '%1% %2%' request %3% "
-                  "by %4%, transaction %5%", request.module(), request.action(),
-                  request.id(), request.sender(), request.transactionId());
+        LOG_DEBUG("Validating input parameters of the %1%, request ID %2% by %3%",
+                  request.prettyLabel(), request.id(), request.sender());
 
         // NB: the registred schemas have the same name as the action
         auto& validator = modules_.at(request.module())->input_validator_;
         validator.validate(request.params(), request.action());
     } catch (PCPClient::validation_error& e) {
-        LOG_DEBUG("Invalid '%1% %2%' request %3%: %4%", request.module(),
-                  request.action(), request.id(), e.what());
-        throw RequestProcessor::Error { "invalid input for '" + request.module()
-                                        + " " + request.action() + "'" };
+        LOG_DEBUG("Invalid input parameters of the %1%, request ID %2% by %3%: %4%",
+                  request.prettyLabel(), request.id(), request.sender(), e.what());
+        throw RequestProcessor::Error { "invalid input for " + request.prettyLabel() };
     }
 }
 
@@ -359,8 +356,8 @@ void RequestProcessor::processBlockingRequest(const ActionRequest& request) {
     // Execute action; possible request errors will be propagated
     auto outcome = modules_[request.module()]->executeAction(request);
 
-    LOG_INFO("Blocking request %1% by %2%, transaction %3%, has completed",
-             request.id(), request.sender(), request.transactionId());
+    LOG_INFO("The %1%, request ID %2% by %3%, has completed",
+             request.prettyLabel(), request.id(), request.sender());
 
     connector_ptr_->sendBlockingResponse(request, outcome.results);
 }
@@ -370,9 +367,9 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
         std::move((spool_dir_path_ / request.transactionId()).string()));
     std::string err_msg {};
 
-    LOG_DEBUG("Starting '%1% %2%' job with ID %3% for non-blocking request %4% "
-              "by %5%", request.module(), request.action(),
-              request.transactionId(), request.id(), request.sender());
+    LOG_DEBUG("Preparing the task for the %1%, request ID %2% by %3% (using the "
+              "transaction ID as identifier)",
+              request.prettyLabel(), request.id(), request.sender());
 
     try {
         // Flag to enable signaling from task to thread_container
@@ -387,14 +384,12 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
                               done);
     } catch (ResultsStorage::Error& e) {
         // Failed to instantiate ResultsStorage
-        LOG_ERROR("Failed to initialize the result files for '%1% %2%' action "
-                  "job with ID %3%: %4%", request.module(), request.action(),
-                  request.transactionId(), e.what());
+        LOG_ERROR("Failed to initialize the result files for the %1%; error: %2%",
+                  request.prettyLabel(), e.what());
         err_msg = std::string { "failed to initialize result files: " } + e.what();
     } catch (std::exception& e) {
-        LOG_ERROR("Failed to spawn '%1% %2%' action job with ID %3%: %4%",
-                  request.module(), request.action(), request.transactionId(),
-                  e.what());
+        LOG_ERROR("Failed to spawn the action job for the %1%; error: %2%",
+                  request.prettyLabel(), e.what());
         err_msg = std::string { "failed to start action task: " } + e.what();
     }
 
