@@ -14,6 +14,7 @@ ActionRequest::ActionRequest(RequestType type,
           parsed_chunks_ { parsed_chunks },
           params_ { "{}" },
           params_txt_ {},
+          pretty_label_ {},
           results_dir_ {} {
     init();
 }
@@ -25,6 +26,7 @@ ActionRequest::ActionRequest(RequestType type,
           parsed_chunks_ { parsed_chunks },
           params_ { "{}" },
           params_txt_ {},
+          pretty_label_ {},
           results_dir_ {} {
     init();
 }
@@ -48,17 +50,29 @@ const PCPClient::ParsedChunks& ActionRequest::parsedChunks() const {
 const std::string& ActionRequest::resultsDir() const { return results_dir_; }
 
 const lth_jc::JsonContainer& ActionRequest::params() const {
-    if (params_.empty() && parsed_chunks_.data.includes("params")) {
+    if (params_.empty() && parsed_chunks_.data.includes("params"))
         params_ = parsed_chunks_.data.get<lth_jc::JsonContainer>("params");
-    }
+
     return params_;
 }
 
 const std::string& ActionRequest::paramsTxt() const {
-    if (params_txt_.empty()) {
+    if (params_txt_.empty())
         params_txt_ = params().toString();
-    }
+
     return params_txt_;
+}
+
+const std::string& ActionRequest::prettyLabel() const {
+    if (pretty_label_.empty())
+        pretty_label_ =
+            (boost::format("%1% '%2% %3%' request (transaction %4%)")
+             % requestTypeNames[type_]
+             % module_
+             % action_
+             % transaction_id_).str();
+
+    return pretty_label_;
 }
 
 // Private interface
@@ -76,22 +90,18 @@ void ActionRequest::init() {
     module_ = parsed_chunks_.data.get<std::string>("module");
     action_ = parsed_chunks_.data.get<std::string>("action");
 
-    if (type_ == RequestType::NonBlocking) {
+    if (type_ == RequestType::NonBlocking)
         notify_outcome_ = parsed_chunks_.data.get<bool>("notify_outcome");
-    }
 }
 
 void ActionRequest::validateFormat() {
-    if (!parsed_chunks_.has_data) {
+    if (!parsed_chunks_.has_data)
         throw ActionRequest::Error { "no data" };
-    }
-    if (parsed_chunks_.invalid_data) {
+    if (parsed_chunks_.invalid_data)
         throw ActionRequest::Error { "invalid data" };
-    }
     // NOTE(ale): currently, we don't support ContentType::Binary
-    if (parsed_chunks_.data_type != PCPClient::ContentType::Json) {
+    if (parsed_chunks_.data_type != PCPClient::ContentType::Json)
         throw ActionRequest::Error { "data is not in JSON format" };
-    }
 }
 
 }  // namespace PXPAgent
