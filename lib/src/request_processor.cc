@@ -226,6 +226,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
 RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
                                    const Configuration::Agent& agent_configuration)
         : thread_container_ { "Action Executer" },
+          thread_container_mutex_ {},
           connector_ptr_ { connector_ptr },
           spool_dir_path_ { agent_configuration.spool_dir },
           modules_ {},
@@ -372,16 +373,27 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
               request.prettyLabel(), request.id(), request.sender());
 
     try {
-        // Flag to enable signaling from task to thread_container
-        auto done = std::make_shared<std::atomic<bool>>(false);
+        pcp_util::lock_guard<pcp_util::mutex> lck { thread_container_mutex_ };
 
-        thread_container_.add(pcp_util::thread(&nonBlockingActionTask,
-                                               modules_[request.module()],
-                                               request,
-                                               ResultsStorage { request },
-                                               connector_ptr_,
-                                               done),
-                              done);
+        if (thread_container_.find(request.transactionId())) {
+            err_msg = std::string { "already exists an ongoing task with "
+                                    "transaction id " };
+            err_msg += request.transactionId();
+        } else {
+            // Flag to enable signaling from task to thread_container
+            auto done = std::make_shared<std::atomic<bool>>(false);
+
+            // NB: we got the_lock, so we're sure this will not throw
+            // for having another thread with the same name
+            thread_container_.add(request.transactionId(),
+                                  pcp_util::thread(&nonBlockingActionTask,
+                                                   modules_[request.module()],
+                                                   request,
+                                                   ResultsStorage { request },
+                                                   connector_ptr_,
+                                                   done),
+                                  done);
+        }
     } catch (ResultsStorage::Error& e) {
         // Failed to instantiate ResultsStorage
         LOG_ERROR("Failed to initialize the result files for the %1%; error: %2%",

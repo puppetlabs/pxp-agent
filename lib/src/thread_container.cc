@@ -10,6 +10,8 @@
 
 namespace PXPAgent {
 
+namespace pcp_util = PCPClient::Util;
+
 // Check if the thread has completed; if so, and if it's joinable,
 // detach it. Return true if completed, false otherwise.
 bool detachIfCompleted(std::shared_ptr<ManagedThread> thread_ptr) {
@@ -53,7 +55,7 @@ ThreadContainer::ThreadContainer(const std::string& name,
 
 ThreadContainer::~ThreadContainer() {
     {
-        PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
+        pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
         destructing_ = true;
         cond_var_.notify_one();
     }
@@ -64,8 +66,8 @@ ThreadContainer::~ThreadContainer() {
 
     // Detach the completed threads
     bool all_detached { true };
-    for (auto thread_ptr : threads_) {
-        if (!detachIfCompleted(thread_ptr)) {
+    for (auto itr = threads_.begin(); itr != threads_.end(); ++itr) {
+        if (!detachIfCompleted(itr->second)) {
             all_detached = false;
         }
     }
@@ -77,13 +79,23 @@ ThreadContainer::~ThreadContainer() {
     }
 }
 
-void ThreadContainer::add(PCPClient::Util::thread task,
+void ThreadContainer::add(std::string thread_name,
+                          pcp_util::thread task,
                           std::shared_ptr<std::atomic<bool>> is_done) {
-    LOG_TRACE("Adding thread %1% to the '%2%' ThreadContainer; added %3% "
-              "threads so far", task.get_id(), name_, num_added_threads_);
-    PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
-    threads_.push_back(std::shared_ptr<ManagedThread> {
-        new ManagedThread { std::move(task), is_done } });
+    LOG_TRACE("Adding thread %1%  (named '%2%') to the '%3%' "
+              "ThreadContainer; added %4% threads so far",
+              task.get_id(), thread_name,  name_, num_added_threads_);
+    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
+
+    if (findLocked(thread_name))
+        throw Error { "thread name is already stored" };
+
+    threads_.insert(
+        std::make_pair(
+            std::move(thread_name),
+            std::shared_ptr<ManagedThread>(
+                new ManagedThread { std::move(task), is_done })));
+
     num_added_threads_++;
 
     // Start the monitoring thread, if necessary
@@ -99,27 +111,40 @@ void ThreadContainer::add(PCPClient::Util::thread task,
 
         is_monitoring_ = true;
         monitoring_thread_ptr_.reset(
-            new PCPClient::Util::thread(&ThreadContainer::monitoringTask_, this));
+            new pcp_util::thread(&ThreadContainer::monitoringTask_, this));
     }
 }
 
-bool ThreadContainer::isMonitoring() {
-    PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
+bool ThreadContainer::find(const std::string& thread_name) const {
+    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
+    return findLocked(thread_name);
+}
+
+bool ThreadContainer::isMonitoring() const {
+    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
     return is_monitoring_;
 }
 
-uint32_t ThreadContainer::getNumAddedThreads() {
-    PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
+uint32_t ThreadContainer::getNumAddedThreads() const {
+    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
     return num_added_threads_;
 }
 
-uint32_t ThreadContainer::getNumErasedThreads() {
-    PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
+uint32_t ThreadContainer::getNumErasedThreads() const {
+    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
     return num_erased_threads_;
 }
 
+std::vector<std::string> ThreadContainer::getThreadNames() const {
+    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
+    std::vector<std::string> names;
+    for (auto itr = threads_.begin(); itr != threads_.end(); itr++)
+        names.push_back(itr->first);
+    return names;
+}
+
 void ThreadContainer::setName(const std::string& name) {
-    PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
+    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
     name_ = name;
 }
 
@@ -127,17 +152,21 @@ void ThreadContainer::setName(const std::string& name) {
 // Private methods
 //
 
+bool ThreadContainer::findLocked(const std::string& thread_name) const {
+    return threads_.find(thread_name) != threads_.end();
+}
+
 void ThreadContainer::monitoringTask_() {
     LOG_DEBUG("Starting monitoring task for the '%1%' ThreadContainer, "
-              "with id %2%", name_, PCPClient::Util::this_thread::get_id());
+              "with id %2%", name_, pcp_util::this_thread::get_id());
 
     while (true) {
-        PCPClient::Util::unique_lock<PCPClient::Util::mutex> the_lock { mutex_ };
-        auto now = PCPClient::Util::chrono::system_clock::now();
+        pcp_util::unique_lock<pcp_util::mutex> the_lock { mutex_ };
+        auto now = pcp_util::chrono::system_clock::now();
 
         // Wait for thread objects or for the check interval timeout
         cond_var_.wait_until(the_lock,
-                             now + PCPClient::Util::chrono::milliseconds(check_interval));
+                             now + pcp_util::chrono::milliseconds(check_interval));
 
         if (destructing_) {
             // The dtor has been invoked
@@ -150,22 +179,24 @@ void ThreadContainer::monitoringTask_() {
             break;
         }
 
-        // Get the range with the pointers of the thread objects
-        // that have completed their execution
-        auto detached_threads_it = std::remove_if(threads_.begin(),
-                                                  threads_.end(),
-                                                  detachIfCompleted);
+        int num_deletions { 0 };
 
-        // ... and delete them; note that we keep the pointers of the
-        // thread instances that are still executing to be able to
-        // destroy them when exiting
-        auto num_deletes = std::distance(detached_threads_it, threads_.end());
-        if (num_deletes > 0) {
-            LOG_DEBUG("Deleting %1% thread objects that have completed their "
-                      "execution; deleted %2% threads so far",
-                      num_deletes, num_erased_threads_);
-            threads_.erase(detached_threads_it, threads_.end());
-            num_erased_threads_ += num_deletes;
+        for (auto itr = threads_.begin(); itr != threads_.end();) {
+            if (detachIfCompleted(itr->second)) {
+                LOG_DEBUG("Deleting thread %1% (named '%2%')",
+                          itr->second->the_instance.get_id(), itr->first);
+                itr = threads_.erase(itr);
+                num_deletions++;
+            } else {
+                ++itr;
+            }
+        }
+
+        if (num_deletions > 0) {
+            num_erased_threads_ += num_deletions;
+            LOG_DEBUG("Deleted %1% thread objects that have completed their "
+                      "execution; in total, deleted %2% threads so far",
+                      num_deletions, num_erased_threads_);
         }
 
         if (threads_.size() < threads_threshold) {

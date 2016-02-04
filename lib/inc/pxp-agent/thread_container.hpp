@@ -4,9 +4,11 @@
 #include <cpp-pcp-client/util/thread.hpp>
 
 #include <vector>
+#include <unordered_map>
 #include <memory>   // shared_ptr
 #include <atomic>
 #include <string>
+#include <stdexcept>
 
 namespace PXPAgent {
 
@@ -24,11 +26,13 @@ struct ManagedThread {
     std::shared_ptr<std::atomic<bool>> is_done;
 };
 
-/// Store thread objects. If the number of stored threads is greater
-/// than the specified threshold, the container will delete the
-/// instances of those threads that have completed their execution,
-/// after detaching them. It is assumed that the completion of a given
-/// thread is indicated by the associated atomic flag 'done'.
+/// This container stores named thread objects in a thread-safe way
+/// and manages their lifecycle. If the number of stored threads is
+/// greater than the specified threshold, the container will delete
+/// the instances of those threads that have completed their
+/// execution, after detaching them. It is assumed that the completion
+/// of a given thread is indicated by the associated atomic flag
+/// 'done'.
 ///
 /// The purpose of this class is to manage the lifecycle of threads;
 /// in case one or more stored threads are executing by the time
@@ -36,38 +40,57 @@ struct ManagedThread {
 /// function will be invoked; the program will then immediately abort.
 class ThreadContainer {
   public:
+    struct Error : public std::runtime_error {
+        explicit Error(std::string const& msg) : std::runtime_error(msg) {}
+    };
+
     uint32_t check_interval;  // [ms]
     uint32_t threads_threshold;  // number of stored thread objects
 
+    ThreadContainer() = delete;
     ThreadContainer(const std::string& name = "",
                     uint32_t _check_interval = THREADS_MONITORING_INTERVAL_MS,
                     uint32_t _threads_threshold = THREADS_THRESHOLD);
+    ThreadContainer(const ThreadContainer&) = delete;
+    ThreadContainer& operator=(const ThreadContainer&) = delete;
     ~ThreadContainer();
 
     /// Add the specified thread instance to the container together
     /// with the pointer to the atomic boolean that will tell when
-    /// it has completed its execution
-    void add(PCPClient::Util::thread task, std::shared_ptr<std::atomic<bool>> done);
+    /// it has completed its execution and a name string.
+    /// Throw an Error in case a thread instance with the same name
+    /// already exists.
+    void add(std::string thread_name,
+             PCPClient::Util::thread task,
+             std::shared_ptr<std::atomic<bool>> done);
+
+    /// Return true if a task with the specified name is currently
+    /// stored, false otherwise.
+    bool find(const std::string& thread_name) const;
 
     /// Return true if the monitoring thread is actually executing,
     /// false otherwise
-    bool isMonitoring();
+    bool isMonitoring() const;
 
-    uint32_t getNumAddedThreads();
-    uint32_t getNumErasedThreads();
+    uint32_t getNumAddedThreads() const;
+    uint32_t getNumErasedThreads() const;
+    std::vector<std::string> getThreadNames() const;
 
     void setName(const std::string& name);
 
   private:
     std::string name_;
-    std::vector<std::shared_ptr<ManagedThread>> threads_;
+    std::unordered_map<std::string, std::shared_ptr<ManagedThread>> threads_;
     std::unique_ptr<PCPClient::Util::thread> monitoring_thread_ptr_;
     bool destructing_;
-    PCPClient::Util::mutex mutex_;
+    mutable PCPClient::Util::mutex mutex_;
     PCPClient::Util::condition_variable cond_var_;
     bool is_monitoring_;
     uint32_t num_added_threads_;
     uint32_t num_erased_threads_;
+
+    // Must hold the lock to call this one
+    bool findLocked(const std::string& thread_name) const;
 
     void monitoringTask_();
 };
