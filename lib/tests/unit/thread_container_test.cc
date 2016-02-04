@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <exception>  // set_terminate
 #include <vector>
+#include <string>
+#include <set>
 
 namespace PXPAgent {
 
@@ -29,12 +31,14 @@ void testTask(std::shared_ptr<std::atomic<bool>> a,
 void addTasksTo(ThreadContainer& container,
                 const uint32_t num_tasks,
                 const uint32_t caller_duration_us,
-                const uint32_t task_duration_us) {
+                const uint32_t task_duration_us,
+                std::string prefix = "") {
     uint32_t idx;
     for (idx = 0; idx < num_tasks; idx++) {
+        auto task_name = prefix + std::to_string(idx);
         std::shared_ptr<std::atomic<bool>> a { new  std::atomic<bool> { false } };
-        auto t = PCPClient::Util::thread(testTask, a, task_duration_us);
-        container.add(std::move(t), a);
+        auto t = pcp_util::thread(testTask, a, task_duration_us);
+        container.add(task_name, std::move(t), a);
     }
 
     if (task_duration_us == 0) {
@@ -81,6 +85,15 @@ TEST_CASE("ThreadContainer::add, ~ThreadContainer", "[async]") {
         ThreadContainer container { "TESTING_2_4" };
         addTasksTo(container, 42, 0, 0);
         REQUIRE(container.getNumAddedThreads() == 42);
+    }
+
+    SECTION("throws when adding threads with the same name") {
+        auto f = []{
+                    ThreadContainer container { "TESTING_2_5" };
+                    addTasksTo(container, 1, 0, 100000);
+                    addTasksTo(container, 1, 0, 0);
+                 };
+        REQUIRE_THROWS_AS(f(), ThreadContainer::Error);
     }
 }
 
@@ -146,10 +159,39 @@ TEST_CASE("ThreadContainer::monitoringTask", "[async]") {
         addTasksTo(container, THREADS_THRESHOLD + 4, 0, task_duration_us);
         REQUIRE(container.isMonitoring());
 
-        REQUIRE_NOTHROW(addTasksTo(container, 10, 0, 0));
+        REQUIRE_NOTHROW(addTasksTo(container, 10, 0, 0, "bis_"));
         REQUIRE(container.getNumAddedThreads() == THREADS_THRESHOLD + 4 + 10);
         pcp_util::this_thread::sleep_for(
             pcp_util::chrono::microseconds(2 * task_duration_us));
+    }
+}
+
+TEST_CASE("ThreadContainer::find", "[async]") {
+    ThreadContainer container { "TESTING_4" };
+
+    SECTION("successfully returns true after a known thread") {
+        addTasksTo(container, 1, 0, 0);
+        REQUIRE(container.find("0"));
+    }
+
+    SECTION("successfully returns false after an unknown thread") {
+        addTasksTo(container, 1, 0, 0);
+        REQUIRE_FALSE(container.find("1"));
+    }
+}
+
+TEST_CASE("ThreadContainer::getThreadNames", "[async]") {
+    ThreadContainer container { "TESTING_5" };
+
+    SECTION("successfully returns the names of the stored threads") {
+        addTasksTo(container, 4, 0, 0);
+        std::set<std::string> expected_names { "0", "1", "2", "3" };
+        auto stored_names = container.getThreadNames();
+
+        REQUIRE(expected_names.size() == stored_names.size());
+
+        for (const auto& name : stored_names)
+            REQUIRE(expected_names.find(name) != expected_names.end());
     }
 }
 

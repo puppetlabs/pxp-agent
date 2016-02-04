@@ -7,6 +7,8 @@
 #include <pxp-agent/pxp_connector.hpp>
 #include <pxp-agent/configuration.hpp>
 
+#include <cpp-pcp-client/util/thread.hpp>
+
 #include <boost/filesystem/path.hpp>
 
 #include <memory>
@@ -59,6 +61,8 @@ class RequestProcessor {
   private:
     /// Manages the lifecycle of non-blocking action jobs
     ThreadContainer thread_container_;
+
+    PCPClient::Util::mutex thread_container_mutex_;
 
     /// PXP Connector pointer
     std::shared_ptr<PXPConnector> connector_ptr_;
