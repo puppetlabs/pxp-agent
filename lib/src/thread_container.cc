@@ -10,6 +10,8 @@
 
 namespace PXPAgent {
 
+namespace pcp_util = PCPClient::Util;
+
 // Check if the thread has completed; if so, and if it's joinable,
 // detach it. Return true if completed, false otherwise.
 bool detachIfCompleted(std::shared_ptr<ManagedThread> thread_ptr) {
@@ -53,7 +55,7 @@ ThreadContainer::ThreadContainer(const std::string& name,
 
 ThreadContainer::~ThreadContainer() {
     {
-        PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
+        pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
         destructing_ = true;
         cond_var_.notify_one();
     }
@@ -99,7 +101,7 @@ void ThreadContainer::add(PCPClient::Util::thread task,
 
         is_monitoring_ = true;
         monitoring_thread_ptr_.reset(
-            new PCPClient::Util::thread(&ThreadContainer::monitoringTask_, this));
+            new pcp_util::thread(&ThreadContainer::monitoringTask_, this));
     }
 }
 
@@ -119,7 +121,7 @@ uint32_t ThreadContainer::getNumErasedThreads() {
 }
 
 void ThreadContainer::setName(const std::string& name) {
-    PCPClient::Util::lock_guard<PCPClient::Util::mutex> the_lock { mutex_ };
+    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
     name_ = name;
 }
 
@@ -129,15 +131,15 @@ void ThreadContainer::setName(const std::string& name) {
 
 void ThreadContainer::monitoringTask_() {
     LOG_DEBUG("Starting monitoring task for the '%1%' ThreadContainer, "
-              "with id %2%", name_, PCPClient::Util::this_thread::get_id());
+              "with id %2%", name_, pcp_util::this_thread::get_id());
 
     while (true) {
-        PCPClient::Util::unique_lock<PCPClient::Util::mutex> the_lock { mutex_ };
-        auto now = PCPClient::Util::chrono::system_clock::now();
+        pcp_util::unique_lock<pcp_util::mutex> the_lock { mutex_ };
+        auto now = pcp_util::chrono::system_clock::now();
 
         // Wait for thread objects or for the check interval timeout
         cond_var_.wait_until(the_lock,
-                             now + PCPClient::Util::chrono::milliseconds(check_interval));
+                             now + pcp_util::chrono::milliseconds(check_interval));
 
         if (destructing_) {
             // The dtor has been invoked
