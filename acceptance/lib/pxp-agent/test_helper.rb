@@ -52,9 +52,87 @@ def kill_pcp_broker(host)
   end
 end
 
+# Query pcp-broker's inventory of associated clients
+# Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/inventory.md
+# @param broker hostname or beaker host object of the pcp-broker host
+# @param query pattern of client identities that you want to check e.g. pcp://*/agent for all agents, or pcp://*/* for everything
+# @return Ruby array of strings that are the client identities that match the query pattern
+# @raise Exception if pcp-client cannot connect to make the inventory request, does not receive a response, or the response is missing
+#        the required [:data]["uris"] property
+def pcp_broker_inventory(broker, query)
+  # Event machine is required by the ruby-pcp-client gem
+  # https://github.com/puppetlabs/ruby-pcp-client
+  em_thread = Thread.new { EventMachine.run }
+  Thread.pass until EventMachine.reactor_running?
+
+  mutex = Mutex.new
+  have_response = ConditionVariable.new
+  response = nil
+
+  client = connect_pcp_client(broker)
+
+  client.on_message = proc do |message|
+    mutex.synchronize do
+      resp = {
+        :envelope => message.envelope,
+        :data     => JSON.load(message.data)
+      }
+      response = resp
+      have_response.signal
+    end
+  end
+
+  message = PCP::Message.new({
+    :message_type => 'http://puppetlabs.com/inventory_request',
+    :targets => ["pcp:///server"]
+  })
+
+  message.data = {
+    :query => [query]
+  }.to_json
+
+  message_expiry = 10 # Seconds for the PCP message to be considered failed
+  inventory_expiry = 60 # Seconds for the inventory request to be considered failed
+  message.expires(message_expiry)
+
+  client.send(message)
+
+  begin
+    Timeout::timeout(inventory_expiry) do
+      loop do
+        mutex.synchronize do
+          have_response.wait(mutex)
+        end
+        break if response
+      end
+    end
+  rescue Timeout::Error
+    raise "Didn't receive a response for PCP inventory request"
+  end # wait for message
+
+  EventMachine.stop_event_loop
+  em_thread.join
+
+  if(!response.has_key?(:data))
+    raise 'Response to PCP inventory request is missing :data'
+  end
+  if(!response[:data].has_key?("uris"))
+    raise 'Response to PCP inventory request is missing an array of uri\'s'
+  end
+  response[:data]["uris"]
+end
+
+# Check if a PCP identity is in the pcp-broker's inventory
+# @param broker hostname or beaker host object of the machine running PCP broker
+# @param identity PCP identity of the client/agent to check e.g. "pcp://client01.example.com/agent"
+# @return true if PCP identity is included in the broker's inventory, false otherwise
+def is_associated?(broker, identity)
+  return pcp_broker_inventory(master, identity).include?(identity)
+end
+
 # Make an rpc_blocking_request to pxp-agent
 # Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
-# @param broker the hostname or beaker host object of the machine running PCP broker
+# @param broker hostname or beaker host object of the machine running PCP broker
 # @param targets array of PCP identities to send request to
 #                e.g. ["pcp://client01.example.com/agent","pcp://client02.example.com/agent"]
 # @param pxp_module which PXP module to call, default pxp-module-puppet
@@ -68,37 +146,25 @@ def rpc_blocking_request(broker, targets,
                          params)
   # Event machine is required by the ruby-pcp-client gem
   # https://github.com/puppetlabs/ruby-pcp-client
-  em = Thread.new { EM.run }
+  em_thread = Thread.new { EventMachine.run }
+  Thread.pass until EventMachine.reactor_running?
 
   mutex = Mutex.new
   have_response = ConditionVariable.new
   responses = Hash.new
 
-  client = PCP::Client.new({
-    :server => broker_ws_uri(broker),
-    :ssl_cert => "../test-resources/ssl/certs/controller01.example.com.pem",
-    :ssl_key => "../test-resources/ssl/private_keys/controller01.example.com.pem"
-  })
+  client = connect_pcp_client(broker)
 
   client.on_message = proc do |message|
     mutex.synchronize do
       resp = {
         :envelope => message.envelope,
-        :data     => JSON.load(message.data),
-        :debug    => JSON.load(message.debug)
+        :data     => JSON.load(message.data)
       }
       responses[resp[:envelope][:sender]] = resp
       print resp
       have_response.signal
     end
-  end
-
-  if !client.connect(5)
-    raise "Controller PCP client failed to connect with pcp-broker on #{broker}"
-  end
-  
-  if !client.associated?
-    raise "Controller PCP client failed to associate with pcp-broker on #{broker}"
   end
 
   message = PCP::Message.new({
@@ -132,16 +198,44 @@ def rpc_blocking_request(broker, targets,
     end
   rescue Timeout::Error
     mutex.synchronize do
-      if !have_all_rpc_responses?
-        raise "Didn't receive all PCP responses when requesting puppet run on #{targets}. Responses received were: #{responses.to_s}"
+      if !have_all_rpc_responses?(targets, responses)
+        raise "Didn't receive all PCP responses when requesting #{pxp_module} #{action} on #{targets}. Responses received were: #{responses.to_s}"
       end
     end
   end # wait for message
 
-  em.exit
+  EventMachine.stop_event_loop
+  em_thread.join
 
   responses
+end
 
+# Connect a ruby-pcp-client instance to pcp-broker
+# @param broker hostname or beaker host object of the machine running PCP broker
+# @return instance of pcp-client associated with the broker
+# @raise exception if could not connect or client is not associated with broker after connecting
+def connect_pcp_client(broker)
+  client = PCP::Client.new({
+    :server => broker_ws_uri(broker),
+    :ssl_cert => "../test-resources/ssl/certs/controller01.example.com.pem",
+    :ssl_key => "../test-resources/ssl/private_keys/controller01.example.com.pem"
+  })
+
+  retries = 0
+  max_retries = 10
+  connected = false
+  until (connected || retries == max_retries) do
+    connected = client.connect(5)
+    retries += 1
+  end
+  if !connected
+    raise "Controller PCP client failed to connect with pcp-broker on #{broker} after #{max_retries} attempts"
+  end
+  if !client.associated?
+    raise "Controller PCP client failed to associate with pcp-broker on #{broker}"
+  end
+
+  client
 end
 
 # Quick test of RPC targets vs RPC responses to check if we have them all yet
