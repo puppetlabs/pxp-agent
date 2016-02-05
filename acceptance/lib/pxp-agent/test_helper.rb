@@ -7,9 +7,6 @@ require 'pcp/client'
 PXP_LOG_FILE_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/var/log/pxp-agent.log'
 PXP_LOG_FILE_POSIX = '/var/log/puppetlabs/pxp-agent/pxp-agent.log'
 
-PXP_AGENT_LOG_ENTRY_WEBSOCKET_SUCCESS = 'INFO.*Successfully established a WebSocket connection with the PCP broker.*'
-PXP_AGENT_LOG_ENTRY_ASSOCIATION_SUCCESS = 'INFO.*Received associate session response.*success'
-
 # @param host the beaker host you want the path to the log file on
 # @return The path to the log file on the host. For Windows, a cygpath is returned
 def logfile(host)

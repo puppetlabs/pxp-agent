@@ -11,19 +11,18 @@ agents.each_with_index do |agent, i|
     on agent, puppet('resource service pxp-agent ensure=stopped')
   end
 
-  step 'Clear existing logs so we don\'t match an existing association entry' do
-    on(agent, "rm -rf #{logfile(agent)}")
+  step 'Assert that the agent is not listed in pcp-broker inventory' do
+    assert(!is_associated?(master, "pcp://client0#{i+1}.example.com/agent"),
+           "Agent identity pcp://client0#{i+1}.example.com/agent for agent host #{agent} appears in pcp-broker's client inventory " \
+           "but pxp-agent service is supposed to be stopped")
   end
 
   step 'Start pxp-agent service' do
     on agent, puppet('resource service pxp-agent ensure=running')
   end
 
-  step 'Check that within 60 seconds, log file contains entry for WebSocket connection being established' do
-    expect_file_on_host_to_contain(agent, logfile(agent), PXP_AGENT_LOG_ENTRY_WEBSOCKET_SUCCESS, 60)
-  end
-
-  step 'Check that log file contains entry that association has succeeded' do
-    expect_file_on_host_to_contain(agent, logfile(agent), PXP_AGENT_LOG_ENTRY_ASSOCIATION_SUCCESS)
+  step 'Assert that agent is listed in pcp-broker inventory' do
+    assert(is_associated?(master, "pcp://client0#{i+1}.example.com/agent"),
+           "Agent identity pcp://client0#{i+1}.example.com/agent for agent host #{agent} does not appear in pcp-broker's client inventory")
   end
 end
