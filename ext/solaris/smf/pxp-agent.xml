@@ -7,10 +7,6 @@
     <create_default_instance enabled="false"/>
     <single_instance/>
 
-    <dependency name="config-file" grouping="require_all" restart_on="none" type="path">
-      <service_fmri value="file:///etc/puppetlabs/pxp-agent/pxp-agent.conf"/>
-    </dependency>
-
     <dependency name="loopback" grouping="require_all" restart_on="error" type="service">
       <service_fmri value="svc:/network/loopback:default"/>
     </dependency>
