@@ -44,7 +44,6 @@ PCPClient::Schema NonBlockingResponseSchema() {
     PCPClient::Schema schema { NON_BLOCKING_RESPONSE_TYPE, C_Type::Json };
     // NB: additionalProperties = false
     schema.addConstraint("transaction_id", T_Constraint::String, true);
-    schema.addConstraint("job_id", T_Constraint::String, true);
     schema.addConstraint("results", T_Constraint::Object, true);
     return schema;
 }
