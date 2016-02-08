@@ -2,6 +2,9 @@
 
 ### Metadata
 
+When a module is invoked with no arguments, it must write its `metadata` to
+stdout.
+
 The `metadata` of a module is a JSON object that contains a number of JSON
 schemas for specifying its configuration options and actions. It contains:
 
@@ -99,9 +102,6 @@ it's invalid, the actions of such module won't be available.
 
 ### Invoking actions
 
-When a module is invoked with no arguments it must write its `metadata` to
-stdout.
-
 When a module is invoked by passing the name of an action listed in the
 `metadata`, such action must be executed.
 
@@ -179,10 +179,14 @@ the processing completion.
 Also, in this case, pxp-agent will discard the output on stdout and stderr
 streams.
 
-##### Exit code
+##### Success or failure?
 
-pxp-agent will interpret an exit code different than 0 as an indication of a
-processing failure.
+pxp-agent will not determine if an action run succeded based on the returned
+exit code; pxp-agent will leave it up to the requester controller to determine
+the outcome of the action run. It will report back a successfull action run in
+case the returned results are valid, by using the *metadata*'s *results* schema.
+
+##### Exit code
 
 The module can use any exit code it wishes to communicate to the requester via
 the [PXP Transaction Response][transaction_status]. The only reserved code is
