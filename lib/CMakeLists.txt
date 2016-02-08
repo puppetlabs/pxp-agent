@@ -52,6 +52,11 @@ set (LIBS
     ${LEATHERMAN_LIBRARIES}
 )
 
+if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "SunOS")
+    # On some platforms Boost.Thread has a dependency on clock_gettime.
+    list(APPEND LIBS rt)
+endif()
+
 add_library(libpxp-agent STATIC ${LIBRARY_COMMON_SOURCES} ${LIBRARY_STANDARD_SOURCES})
 target_link_libraries(libpxp-agent ${LIBS})
 set_target_properties(libpxp-agent PROPERTIES PREFIX "" IMPORT_PREFIX "")
