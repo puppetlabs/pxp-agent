@@ -17,6 +17,7 @@ Dependencies
  - gnumake
  - CMake
  - Boost
+ - OpenSSL
  - ruby (2.0 and newer)
  - [leatherman][leatherman] (0.3.5 or newer)
  - [cpp-pcp-client][cpp-pcp-client] (master)
@@ -24,13 +25,13 @@ Dependencies
 Initial Setup
 -------------
 
-### Setup on Fedora 23
+#### Setup on Fedora 23
 
 The following will install all required tools and libraries:
 
     yum install boost-devel openssl-devel gcc-c++ make wget tar cmake
 
-### Setup on Mac OSX El Capitan (homebrew)
+#### Setup on Mac OSX El Capitan (homebrew)
 
 This assumes Clang is installed and the system OpenSSL libraries will be used.
 
@@ -38,13 +39,13 @@ The following will install all required libraries:
 
     brew install cmake boost
 
-### Setup on Ubuntu 15.10 (Trusty)
+#### Setup on Ubuntu 15.10 (Trusty)
 
 The following will install most required tools and libraries:
 
     apt-get install build-essential libboost-all-dev libssl-dev wget tar cmake
 
-### Setup on Windows
+#### Setup on Windows
 
 [MinGW-w64][MinGW-w64] is used for full C++11 support, and [Chocolatey][Chocolatey] can be used to install. You should have at least 2GB of memory for compilation.
 
@@ -111,7 +112,10 @@ Build
       cmake -DCMAKE_BUILD_TYPE=Debug -DTEST_VIRTUAL=ON -DDEV_LOG_COLOR=ON ..
       make
 
-## Starting the agent
+Usage
+-----
+
+### Starting the agent
 
 pxp-agent should be configured in your system to be executed automatically as a
 service. In case you need to run it manually, you can invoke directly its
@@ -128,7 +132,7 @@ The agent will execute as a background process by default; in that case,
 it prevents multiple instances running at the same time. Please refer to the
 following sections for platform-specific behavior.
 
-### *nix
+#### *nix
 
 In case `--foreground` is unflagged, pxp-agent will start as a daemon and its
 PID will be stored in */var/run/puppetlabs/pxp-agent.pid*, or in another
@@ -137,13 +141,13 @@ prevent multiple daemon instances from executing at once. The PID file will be
 removed if the daemon is stopped by using one of SIGINT, SIGTERM, or SIGQUIT
 signals.
 
-### Windows
+#### Windows
 
 pxp-agent relies on [nssm][nssm] to execute as a service. In case `--foreground`
 is unflagged, a mutex-based mechanism will prevent multiple instances of
 pxp-agent. Note that no PID file will be created.
 
-### Exit code
+#### Exit code
 
 In POSIX, when the daemon is successfully instantiated, the parent process
 returns 0. In case of a daemonization failure, it returns 4.
@@ -156,14 +160,14 @@ returns 3.
 
 For all other failures it returns 1.
 
-## Modules
+### Modules
 
 [Actions][pxp_specs_actions] are grouped in modules, by which they can be loaded
 and configured within pxp-agent. An example of module is given by the
 [Puppet module][pxp-module-puppet_script]; a trivial one is the
 [reverse module][pxp-module-puppet_docs] that is used for testing.
 
-### Modules interface
+#### Modules interface
 
 A module is a file that provides an interface to retrieve information about
 its actions (we call such information metadata - it's a set of JSON schemas) and
@@ -189,7 +193,7 @@ Note that the [transaction status module][pxp_specs_transaction_status] is
 implemented natively; there is no module file for it. Also, as a side note,
 `status query` requests must be of [blocking][pxp_specs_request_response].
 
-### Modules configuration
+#### Modules configuration
 
 Modules can be configured by placing a configuration file in the
 `--modules-config-dir` named like `<module_name>.conf`. The content of a
@@ -197,7 +201,7 @@ configuration file must be in JSON format and conform with the `configuration`
 schema provided by the module's metadata, otherwise the module will not be
 loaded.
 
-## Configuring the agent
+### Configuring the agent
 
 The PXP agent is configured with a config file. The values in the config file
 can be overridden by supplying arguments on the command line.
@@ -224,7 +228,7 @@ Note that you have to specify the WebSocket secure URL of the
 [PCP broker][pcp-broker] in order to establish the WebSocket connection on top
 of which the PCP communication will take place.
 
-### Logging
+#### Logging
 
 By default, log messages will be written to:
  - \*nix: */var/log/puppetlabs/pxp-agent/pxp-agent.log*
@@ -239,7 +243,7 @@ The default log level is `info`. You can specify a different log level by
 using the `--loglevel` option with one of the following strings: `none`,
 `trace`, `debug`, `info`, `warning`, `error`, `fatal`.
 
-### List of all configuration options
+#### List of all configuration options
 
 The PXP agent has the following configuration options
 
@@ -321,4 +325,3 @@ The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 [7zip-choco]: https://chocolatey.org/packages/7zip.commandline
 [MinGW-w64-choco]: https://chocolatey.org/packages/mingw
 [Boost-download]: http://sourceforge.net/projects/boost/files/latest/download
-
