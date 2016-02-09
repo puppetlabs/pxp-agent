@@ -58,7 +58,7 @@ endif()
 
 find_package(Leatherman REQUIRED COMPONENTS ${LEATHERMAN_COMPONENTS})
 find_package(Boost 1.54 REQUIRED
-  COMPONENTS filesystem system date_time thread log regex random)
+  COMPONENTS filesystem chrono system date_time thread log regex random)
 find_package(OpenSSL REQUIRED)
 find_package(cpp-pcp-client REQUIRED)
 

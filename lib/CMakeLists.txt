@@ -52,9 +52,11 @@ set (LIBS
     ${LEATHERMAN_LIBRARIES}
 )
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "SunOS")
-    # On some platforms Boost.Thread has a dependency on clock_gettime.
-    list(APPEND LIBS rt)
+if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "SunOS" OR CMAKE_SYSTEM_NAME MATCHES "AIX")
+    # On some platforms Boost.Thread has a dependency on clock_gettime. It also depends on pthread,
+    # and FindBoost in CMake 3.2.3 doesn't include that dependency.
+    find_package(Threads)
+    list(APPEND LIBS rt ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
 add_library(libpxp-agent STATIC ${LIBRARY_COMMON_SOURCES} ${LIBRARY_STANDARD_SOURCES})
