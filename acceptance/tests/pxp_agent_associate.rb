@@ -12,7 +12,7 @@ agents.each_with_index do |agent, i|
   end
 
   step 'Assert that the agent is not listed in pcp-broker inventory' do
-    assert(!is_associated?(master, "pcp://client0#{i+1}.example.com/agent"),
+    assert(is_not_associated?(master, "pcp://client0#{i+1}.example.com/agent"),
            "Agent identity pcp://client0#{i+1}.example.com/agent for agent host #{agent} appears in pcp-broker's client inventory " \
            "but pxp-agent service is supposed to be stopped")
   end
