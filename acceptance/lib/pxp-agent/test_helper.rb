@@ -119,12 +119,45 @@ def pcp_broker_inventory(broker, query)
   response[:data]["uris"]
 end
 
-# Check if a PCP identity is in the pcp-broker's inventory
+# Check if a PCP identity is present or absent from a pcp-broker's inventory
+# Retries several times to allow for pxp-agent service to start up or shut down
+# Note: if you expect an identity to not be associated; instead use is_not_associated? to avoid needless retries
 # @param broker hostname or beaker host object of the machine running PCP broker
 # @param identity PCP identity of the client/agent to check e.g. "pcp://client01.example.com/agent"
-# @return true if PCP identity is included in the broker's inventory, false otherwise
-def is_associated?(broker, identity)
-  return pcp_broker_inventory(master, identity).include?(identity)
+# @param retries the number of times to retry checking the inventory. Default 60 to allow for slow test VMs. Set to 0 to only check once.
+# @return if the identity is in the broker's inventory within the allowed number of retries
+#         false if the identity remains absent from the broker's inventory after the allowed number of retries
+def is_associated?(broker, identity, retries = 60)
+  if retries == 0
+    return pcp_broker_inventory(broker,identity).include?(identity)
+  end
+  retries.times do
+    if pcp_broker_inventory(broker,identity).include?(identity)
+      return true
+    end
+    sleep 1
+  end
+  return false
+end
+
+# Check if a PCP identity is present or absent from a pcp-broker's inventory
+# Retries several times to allow for pxp-agent service to start up or shut down
+# @param broker hostname or beaker host object of the machine running PCP broker
+# @param identity PCP identity of the client/agent to check e.g. "pcp://client01.example.com/agent"
+# @param retries the number of times to retry checking the inventory. Default 60 to allow for slow test VMs. Set to 0 to only check once.
+# @return true if the identity is absent from the broker's inventory within the allowed number of retries
+#         false if the identity persists in the broker's inventory after the allowed number of retries
+def is_not_associated?(broker, identity, retries = 60)
+  if retries == 0
+    return !pcp_broker_inventory(broker,identity).include?(identity)
+  end
+  retries.times do
+    if !pcp_broker_inventory(broker,identity).include?(identity)
+      return true
+    end
+    sleep 1
+  end
+  return false
 end
 
 # Make an rpc_blocking_request to pxp-agent
