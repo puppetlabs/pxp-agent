@@ -8,7 +8,8 @@ test_name 'C95972 - pxp-module-puppet run' do
       cert_dir = configure_std_certs_on_host(agent)
       create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_test_certs(master, agent, i + 1, cert_dir).to_s)
       on agent, puppet('resource service pxp-agent ensure=running')
-      expect_file_on_host_to_contain(agent, logfile(agent), PXP_AGENT_LOG_ENTRY_ASSOCIATION_SUCCESS, seconds_to_wait = 60)
+      assert(is_associated?(master, "pcp://client0#{i+1}.example.com/agent"),
+             "Agent #{agent} with PCP identity pcp://client0#{i+1}.example.com/agent should be associated with pcp-broker")
     end
   end
 
