@@ -63,50 +63,32 @@ C:\Program Files\Puppet Labs\Puppet\pxp-agent\modules>echo {"input":{"env":[],"f
 ## Output
 
 On successful completion of a Puppet run the module will print a JSON document to
-stdout. The JSON document will conform to the following JSON schema:
+stdout. The JSON document will have the following fields.
 
-```
-{
-    "type" : "object",
-    "description" : "pxp-module-puppet output structure",
-    "properties" : {
-        "version" : { "type" : "number", "description" : "The version of pxp-module-puppet output schema" },
-        "report" : {
-            "type" : "object",
-            "description" : "Selected fields from the `last_run_report.yaml` file",
-            "properties" : {
-                "kind" : { "type" : "string", "desription" : "The value of `kind` in `last_run_report.yaml`" },
-                "time" : { "type" : "string", "desription" : "The value of `time` in `last_run_report.yaml`" },
-                "transaction_uuid" : { "type" : "string", "desription" : "The value of `transaction_uuid` in `last_run_report.yaml`" },
-                "environment" : { "type" : "string", "desription" : "The value of `environment` in `last_run_report.yaml`" },
-                "status" : { "type" : "string", "desription" : "The value of `status` in `last_run_report.yaml`" }
-            },
-            "required" : ["kind", "time", "transaction_uuid", "environment", "status"],
-            "additionalProperties" : false
-        },
-        "exitcode" : { "type" : "number", "description" : "The exitcode of the Puppet run" },
-        "error_type" : { "type" : "string", "description" : "A machine readable error type if one occurred when trying to run Puppet" },
-        "error" : { "type" : "string", "description" : "A human readable description of the error if one occurred when trying to run Puppet" }
-    },
-    "required" : ["version", "report", "exitcode"],
-    "additionalProperties" : false
-}
-```
+- `kind` : The value of `kind` in last_run_report.yaml
+- `time` : The value of `time` in last_run_report.yaml
+- `transaction_uuid` : The value of `transaction_uuid` in last_run_report.yaml
+- `environment` : The value of `environment` in last_run_report.yaml
+- `status` : The value of `status` in last_run_report.yaml
+- `error_type` : A string containing the machine readable error type
+- `error` : A string containing an error description if one occurred when trying to run Puppet
+- `exitcode` : The exitcode of the Puppet run
+- `version` : The version of pxp-module-puppet output schema
 
 ## Error cases
 
 ### Error Types
 
-If a run fails the `error_type` field will be set to one of the following values:
+If a run fails the `"error_type"` field will be set to one of the following values:
 
-- `invalid_json` pxp-module-puppet was called with invalid json on stdin
-- `no_puppet_bin` The executable specified by `puppet_bin` doesn't exist
-- `no_last_run_report` last_run_report.yaml doesn't exist
-- `invalid_last_run_report` last_run_report.yaml could not be parsed
-- `agent_already_running` Puppet agent is already performing a run
-- `agent_disabled` Puppet agent is disabled
-- `agent_failed_to_start` Puppet agent failed to start
-- `agent_exit_non_zero` Puppet agent exited with a non-zero exitcode
+- `"invalid_json"` pxp-module-puppet was called with invalid json on stdin
+- `"no_puppet_bin"` The executable specified by `puppet_bin` doesn't exist
+- `"no_last_run_report"` last_run_report.yaml doesn't exist
+- `"invalid_last_run_report"` last_run_report.yaml could not be parsed
+- `"agent_already_running"` Puppet agent is already performing a run
+- `"agent_disabled"` Puppet agent is disabled
+- `"agent_failed_to_start"` Puppet agent failed to start
+- `"agent_exit_non_zero"` Puppet agent exited with a non-zero exitcode
 
 ### Example error responses
 
@@ -115,17 +97,14 @@ If a run fails the `error_type` field will be set to one of the following values
 
 ```
 {
-    "report" : {
-        "kind" : "unknown",
-        "time" : "unknown",
-        "transaction_uuid" : "unknown",
-        "environment" : "unknown",
-        "status" : "unknown"
-    },
+    "kind" : "unknown",
+    "time" : "unknown",
+    "transaction_uuid" : "unknown",
+    "environment" : "unknown",
+    "status" : "unknown",
     "error_type" : "no_puppet_bin",
     "error" : "Puppet executable '$puppet_bin' does not exist",
-    "exitcode" : -1,
-    "version" : 1
+    "exitcode" : -1
 }
 ```
 
@@ -133,17 +112,14 @@ If a run fails the `error_type` field will be set to one of the following values
 
 ```
 {
-    "report" : {
-        "kind" : "unknown",
-        "time" : "unknown",
-        "transaction_uuid" : "unknown",
-        "environment" : "unknown",
-        "status" : "unknown"
-    },
+    "kind" : "unknown",
+    "time" : "unknown",
+    "transaction_uuid" : "unknown",
+    "environment" : "unknown",
+    "status" : "unknown",
     "error_type" : "agent_already_running",
-    "error" : "Puppet agent is already performing a run",
-    "exitcode" : -1,
-    "version" : 1
+    "error" : "Puppet is already running",
+    "exitcode" : -1
 }
 ```
 
@@ -151,17 +127,14 @@ If a run fails the `error_type` field will be set to one of the following values
 
 ```
 {
-    "report" : {
-        "kind" : "unknown",
-        "time" : "unknown",
-        "transaction_uuid" : "unknown",
-        "environment" : "unknown",
-        "status" : "unknown"
-    },
+    "kind" : "unknown",
+    "time" : "unknown",
+    "transaction_uuid" : "unknown",
+    "environment" : "unknown",
+    "status" : "unknown",
     "error_type" : "agent_disabled",
-    "error" : "Puppet agent is disabled",
-    "exitcode" : -1,
-    "version" : 1
+    "error" : "Puppet is disabled",
+    "exitcode" : -1
 }
 ```
 
@@ -169,17 +142,14 @@ If a run fails the `error_type` field will be set to one of the following values
 
 ```
 {
-    "report" : {
-        "kind" : "unknown",
-        "time" : "unknown",
-        "transaction_uuid" : "unknown",
-        "environment" : "unknown",
-        "status" : "unknown"
-    },
+    "kind" : "unknown",
+    "time" : "unknown",
+    "transaction_uuid" : "unknown",
+    "environment" : "unknown",
+    "status" : "unknown",
     "error_type" : "invalid_json",
-    "error" : "Invalid json parsed on STDIN. Cannot start run action",
-    "exitcode" : -1,
-    "version" : 1
+    "error" : "Invalid json parsed on STDIN",
+    "exitcode" : -1
 }
 ```
 
@@ -187,17 +157,14 @@ If a run fails the `error_type` field will be set to one of the following values
 
 ```
 {
-    "report" : {
-        "kind" : "unknown",
-        "time" : "unknown",
-        "transaction_uuid" : "unknown",
-        "environment" : "unknown",
-        "status" : "unknown"
-    },
+    "kind" : "unknown",
+    "time" : "unknown",
+    "transaction_uuid" : "unknown",
+    "environment" : "unknown",
+    "status" : "unknown",
     "error_type" : "agent_failed_to_start",
-    "error" : "Failed to start Puppet agent",
-    "exitcode" : -1,
-    "version" : 1
+    "error" : "Failed to start Puppet",
+    "exitcode" : -1
 }
 ```
 
@@ -205,17 +172,14 @@ If a run fails the `error_type` field will be set to one of the following values
 
 ```
 {
-    "report" : {
-        "kind" : "unknown",
-        "time" : "unknown",
-        "transaction_uuid" : "unknown",
-        "environment" : "unknown",
-        "status" : "unknown"
-    },
+    "kind" : "unknown",
+    "time" : "unknown",
+    "transaction_uuid" : "unknown",
+    "environment" : "unknown",
+    "status" : "unknown",
     "error_type" : "agent_exit_non_zero",
-    "error" : "Puppet agent exited with a non 0 exitcode",
-    "exitcode" : $exitcode,
-    "version" : 1
+    "error" : "Puppet exited with a non 0 exitcode",
+    "exitcode" : $exitcode
 }
 ```
 
@@ -223,17 +187,14 @@ If a run fails the `error_type` field will be set to one of the following values
 
 ```
 {
-    "report" : {
-        "kind" : "unknown",
-        "time" : "unknown",
-        "transaction_uuid" : "unknown",
-        "environment" : "unknown",
-        "status" : "unknown"
-    },
+    "kind" : "unknown",
+    "time" : "unknown",
+    "transaction_uuid" : "unknown",
+    "environment" : "unknown",
+    "status" : "unknown",
     "error_type" : "no_last_run_report",
-    "error" : "$last_run_report doesn't exist",
-    "exitcode" : $exitcode,
-    "version" : 1
+    "error" : "$last_run_report.yaml doesn't exist",
+    "exitcode" : $exitcode
 }
 ```
 
@@ -242,16 +203,13 @@ If a run fails the `error_type` field will be set to one of the following values
 
 ```
 {
-    "report" : {
-        "kind" : "unknown",
-        "time" : "unknown",
-        "transaction_uuid" : "unknown",
-        "environment" : "unknown",
-        "status" : "unknown"
-    },
+    "kind" : "unknown",
+    "time" : "unknown",
+    "transaction_uuid" : "unknown",
+    "environment" : "unknown",
+    "status" : "unknown",
     "error_type" : "invalid_last_run_report",
-    "error" : "$last_run_report could not be loaded: $error",
-    "exitcode" : $exitcode,
-    "version" : 1
+    "error" : "$last_run_report.yaml isn't valid yaml",
+    "exitcode" : exitcode
 }
 ```

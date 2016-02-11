@@ -14,13 +14,13 @@ describe "pxp-module-puppet" do
 
   describe "last_run_result" do
     it "returns the basic structure with exitcode set" do
-      expect(last_run_result(42)).to be == {"report"   => {"kind"             => "unknown",
-                                                           "time"             => "unknown",
-                                                           "transaction_uuid" => "unknown",
-                                                           "environment"      => "unknown",
-                                                           "status"           => "unknown"},
-                                            "exitcode" => 42,
-                                            "version"  => 1}
+      expect(last_run_result(42)).to be == {"kind"             => "unknown",
+                                            "time"             => "unknown",
+                                            "transaction_uuid" => "unknown",
+                                            "environment"      => "unknown",
+                                            "status"           => "unknown",
+                                            "exitcode"         => 42,
+                                            "version"          => 1}
     end
   end
 
@@ -89,15 +89,15 @@ describe "pxp-module-puppet" do
   describe "make_error_result" do
     it "should set the exitcode, error_type and error_message" do
       expect(make_error_result(42, Errors::FailedToStart, "test error")).to be ==
-          {"report"     => {"kind"             => "unknown",
-                            "time"             => "unknown",
-                            "transaction_uuid" => "unknown",
-                            "environment"      => "unknown",
-                            "status"           => "unknown"},
-           "error_type" => "agent_failed_to_start",
-           "error"      => "test error",
-           "exitcode"   => 42,
-           "version"    => 1}
+          {"kind"             => "unknown",
+           "time"             => "unknown",
+           "transaction_uuid" => "unknown",
+           "environment"      => "unknown",
+           "status"           => "unknown",
+           "error_type"       => "agent_failed_to_start",
+           "error"            => "test error",
+           "exitcode"         => 42,
+           "version"          => 1}
     end
   end
 
@@ -106,15 +106,15 @@ describe "pxp-module-puppet" do
       allow(File).to receive(:exist?).and_return(false)
       allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
       expect(get_result_from_report(0, default_configuration, Time.now)).to be ==
-          {"report"     => {"kind"             => "unknown",
-                            "time"             => "unknown",
-                            "transaction_uuid" => "unknown",
-                            "environment"      => "unknown",
-                            "status"           => "unknown"},
-           "error_type" => "no_last_run_report",
-           "error"      => "/opt/puppetlabs/puppet/cache/state/last_run_report.yaml doesn't exist",
-           "exitcode"   => 0,
-           "version"    => 1}
+          {"kind"             => "unknown",
+           "time"             => "unknown",
+           "transaction_uuid" => "unknown",
+           "environment"      => "unknown",
+           "status"           => "unknown",
+           "error_type"       => "no_last_run_report",
+           "error"            => "/opt/puppetlabs/puppet/cache/state/last_run_report.yaml doesn't exist",
+           "exitcode"         => 0,
+           "version"          => 1}
     end
 
     it "doesn't process the last_run_report if the file cant be loaded" do
@@ -122,15 +122,15 @@ describe "pxp-module-puppet" do
       allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
       allow(YAML).to receive(:load_file).and_raise("error")
       expect(get_result_from_report(0, default_configuration, Time.now)).to be ==
-          {"report"     => {"kind"             => "unknown",
-                            "time"             => "unknown",
-                            "transaction_uuid" => "unknown",
-                            "environment"      => "unknown",
-                            "status"           => "unknown"},
-           "error_type" => "invalid_last_run_report",
-           "error"      => "/opt/puppetlabs/puppet/cache/state/last_run_report.yaml could not be loaded: error",
-           "exitcode"   => 0,
-           "version"    => 1}
+          {"kind"             => "unknown",
+           "time"             => "unknown",
+           "transaction_uuid" => "unknown",
+           "environment"      => "unknown",
+           "status"           => "unknown",
+           "error_type"       => "invalid_last_run_report",
+           "error"            => "/opt/puppetlabs/puppet/cache/state/last_run_report.yaml could not be loaded: error",
+           "exitcode"         => 0,
+           "version"          => 1}
     end
 
     it "doesn't process the last_run_report if it hasn't been updated after the run was kicked" do
@@ -149,15 +149,15 @@ describe "pxp-module-puppet" do
       allow(YAML).to receive(:load_file).and_return(last_run_report)
 
       expect(get_result_from_report(-1, default_configuration, start_time)).to be ==
-          {"report"     => {"kind"             => "unknown",
-                            "time"             => "unknown",
-                            "transaction_uuid" => "unknown",
-                            "environment"      => "unknown",
-                            "status"           => "unknown"},
-           "error_type" => "agent_exit_non_zero",
-           "error"      => "Puppet agent exited with a non 0 exitcode",
-           "exitcode"   => -1,
-           "version"    => 1}
+          {"kind"             => "unknown",
+           "time"             => "unknown",
+           "transaction_uuid" => "unknown",
+           "environment"      => "unknown",
+           "status"           => "unknown",
+           "error_type"       => "agent_exit_non_zero",
+           "error"            => "Puppet agent exited with a non 0 exitcode",
+           "exitcode"         => -1,
+           "version"          => 1}
     end
 
     it "processes the last_run_report if it has been updated after the run was kicked" do
@@ -176,15 +176,15 @@ describe "pxp-module-puppet" do
       allow(YAML).to receive(:load_file).and_return(last_run_report)
 
       expect(get_result_from_report(-1, default_configuration, start_time)).to be ==
-          {"report"     => {"kind"             => "apply",
-                            "time"             => run_time,
-                            "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
-                            "environment"      => "production",
-                            "status"           => "changed"},
-           "error_type" => "agent_exit_non_zero",
-           "error"      => "Puppet agent exited with a non 0 exitcode",
-           "exitcode"   => -1,
-           "version"    => 1}
+          {"kind"             => "apply",
+           "time"             => run_time,
+           "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
+           "environment"      => "production",
+           "status"           => "changed",
+           "error_type"       => "agent_exit_non_zero",
+           "error"            => "Puppet agent exited with a non 0 exitcode",
+           "exitcode"         => -1,
+           "version"          => 1}
     end
 
     it "correctly processes the last_run_report" do
@@ -203,13 +203,13 @@ describe "pxp-module-puppet" do
       allow(YAML).to receive(:load_file).and_return(last_run_report)
 
       expect(get_result_from_report(0, default_configuration, start_time)).to be ==
-          {"report"   => {"kind"             => "apply",
-                          "time"             => run_time,
-                          "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
-                          "environment"      => "production",
-                          "status"           => "changed"},
-           "exitcode" => 0,
-           "version"  => 1}
+          {"kind"             => "apply",
+           "time"             => run_time,
+           "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
+           "environment"      => "production",
+           "status"           => "changed",
+           "exitcode"         => 0,
+           "version"          => 1}
     end
   end
 
@@ -278,26 +278,20 @@ describe "pxp-module-puppet" do
             :results => {
               :type => "object",
               :properties => {
-                :report => {
-                  :type => "object",
-                  :properties => {
-                    :kind => {
-                      :type => "string"
-                    },
-                    :time => {
-                      :type => "string"
-                    },
-                    :transaction_uuid => {
-                      :type => "string"
-                    },
-                    :environment => {
-                      :type => "string"
-                    },
-                    :status => {
-                      :type => "string"
-                    }
-                  },
-                  :required => [:kind, :time, :transaction_uuid, :environment, :status]
+                :kind => {
+                  :type => "string"
+                },
+                :time => {
+                  :type => "string"
+                },
+                :transaction_uuid => {
+                  :type => "string"
+                },
+                :environment => {
+                  :type => "string"
+                },
+                :status => {
+                  :type => "string"
                 },
                 :error_type => {
                   :type => "string"
@@ -312,7 +306,8 @@ describe "pxp-module-puppet" do
                   :type => "number"
                 }
               },
-              :required => [:report, :exitcode, :version]
+              :required => [:kind, :time, :transaction_uuid, :environment, :status,
+                            :exitcode, :version]
             }
           }
         ],
