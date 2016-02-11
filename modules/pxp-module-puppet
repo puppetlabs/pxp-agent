@@ -28,13 +28,13 @@ def is_win?
 end
 
 def last_run_result(exitcode)
-  return {"report"   => {"kind"             => "unknown",
-                         "time"             => "unknown",
-                         "transaction_uuid" => "unknown",
-                         "environment"      => "unknown",
-                         "status"           => "unknown"},
-          "exitcode" => exitcode,
-          "version"  => 1}
+  return {"kind"             => "unknown",
+          "time"             => "unknown",
+          "transaction_uuid" => "unknown",
+          "environment"      => "unknown",
+          "status"           => "unknown",
+          "exitcode"         => exitcode,
+          "version"          => 1}
 end
 
 def check_config_print(cli_arg, config)
@@ -103,12 +103,11 @@ def get_result_from_report(exitcode, config, start_time)
   end
 
   if start_time.to_i < last_run_report_yaml.time.to_i
-    report = run_result["report"]
-    report["kind"] = last_run_report_yaml.kind
-    report["time"] = last_run_report_yaml.time
-    report["transaction_uuid"] = last_run_report_yaml.transaction_uuid
-    report["environment"] = last_run_report_yaml.environment
-    report["status"] = last_run_report_yaml.status
+    run_result["kind"] = last_run_report_yaml.kind
+    run_result["time"] = last_run_report_yaml.time
+    run_result["transaction_uuid"] = last_run_report_yaml.transaction_uuid
+    run_result["environment"] = last_run_report_yaml.environment
+    run_result["status"] = last_run_report_yaml.status
   end
 
   return run_result
@@ -163,26 +162,20 @@ def metadata()
         :results => {
           :type => "object",
           :properties => {
-            :report => {
-              :type => "object",
-              :properties => {
-                :kind => {
-                  :type => "string"
-                },
-                :time => {
-                  :type => "string"
-                },
-                :transaction_uuid => {
-                  :type => "string"
-                },
-                :environment => {
-                  :type => "string"
-                },
-                :status => {
-                  :type => "string"
-                }
-              },
-              :required => [:kind, :time, :transaction_uuid, :environment, :status]
+            :kind => {
+              :type => "string"
+            },
+            :time => {
+              :type => "string"
+            },
+            :transaction_uuid => {
+              :type => "string"
+            },
+            :environment => {
+              :type => "string"
+            },
+            :status => {
+              :type => "string"
             },
             :error_type => {
               :type => "string"
@@ -197,7 +190,8 @@ def metadata()
               :type => "number"
             }
           },
-          :required => [:report, :exitcode, :version]
+          :required => [:kind, :time, :transaction_uuid, :environment, :status,
+                        :exitcode, :version]
         }
       }
     ],
@@ -297,10 +291,10 @@ if __FILE__ == $0
   else
     args = JSON.parse($stdin.read.chomp) rescue nil
 
-    action_output = action_run(args)
-    print action_output.to_json
+    action_results = action_run(args)
+    print action_results.to_json
 
-    unless action_output["error"].nil?
+    unless action_results["error"].nil?
       exit 1
     end
   end
