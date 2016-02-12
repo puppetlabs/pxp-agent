@@ -1,9 +1,6 @@
 require 'puppet/acceptance/install_utils'
 extend Puppet::Acceptance::InstallUtils
-
-pcp_broker_port = 8142
-pcp_broker_minutes_to_start = 2
-GIT_CLONE_FOLDER = '/opt/puppet-git-repos'
+require 'pxp-agent/test_helper'
 
 step 'Install build dependencies on master' do
   MASTER_PACKAGES = {
@@ -35,9 +32,6 @@ step 'Run lein deps to download dependencies' do
   on master, "cd #{GIT_CLONE_FOLDER}/pcp-broker; export LEIN_ROOT=ok; lein deps"
 end
 
-step "Run pcp-broker in trapperkeeper in background and wait for port #{pcp_broker_port.to_s}" do
-  on master, "cd #{GIT_CLONE_FOLDER}/pcp-broker; export LEIN_ROOT=ok; lein tk </dev/null >/var/log/pcp-broker.log 2>&1 &"
-  assert(port_open_within?(master, pcp_broker_port, 60 * pcp_broker_minutes_to_start),
-         "pcp-broker port #{pcp_broker_port.to_s} not open within " \
-         "#{pcp_broker_minutes_to_start.to_s} minutes of starting the broker")
+step "Run pcp-broker in trapperkeeper in background and wait for it to report status 'running'" do
+  run_pcp_broker(master)
 end
