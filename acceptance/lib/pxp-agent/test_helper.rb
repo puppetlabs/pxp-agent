@@ -6,6 +6,9 @@ require 'json'
 
 # This file contains general test helper methods for pxp-agent acceptance tests
 
+# The standard path for git checkouts is where pcp-broker will be
+GIT_CLONE_FOLDER = '/opt/puppet-git-repos'
+
 # Some helpers for working with the log file
 PXP_LOG_FILE_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/var/log/pxp-agent.log'
 PXP_LOG_FILE_POSIX = '/var/log/puppetlabs/pxp-agent/pxp-agent.log'
@@ -40,7 +43,7 @@ end
 
 # Some helpers for working with a pcp-broker 'lein tk' instance
 def run_pcp_broker(host)
-  on(host, 'cd /opt/puppet-git-repos/pcp-broker; export LEIN_ROOT=ok; lein tk </dev/null >/var/log/pcp-broker.log 2>&1 &')
+  on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker; export LEIN_ROOT=ok; lein tk </dev/null >/var/log/pcp-broker.log 2>&1 &"")
   assert(port_open_within?(host, PCP_BROKER_PORT, 60),
          "pcp-broker port #{PCP_BROKER_PORT.to_s} not open within 1 minutes of starting the broker")
   broker_state = nil
@@ -276,7 +279,8 @@ def connect_pcp_client(broker)
   client = PCP::Client.new({
     :server => broker_ws_uri(broker),
     :ssl_cert => "../test-resources/ssl/certs/controller01.example.com.pem",
-    :ssl_key => "../test-resources/ssl/private_keys/controller01.example.com.pem"
+    :ssl_key => "../test-resources/ssl/private_keys/controller01.example.com.pem",
+    :loglevel => logger.is_debug? ? Logger::DEBUG : Logger::WARN
   })
 
   retries = 0
