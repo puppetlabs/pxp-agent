@@ -276,17 +276,17 @@ end
 # @return instance of pcp-client associated with the broker
 # @raise exception if could not connect or client is not associated with broker after connecting
 def connect_pcp_client(broker)
-  client = PCP::Client.new({
-    :server => broker_ws_uri(broker),
-    :ssl_cert => "../test-resources/ssl/certs/controller01.example.com.pem",
-    :ssl_key => "../test-resources/ssl/private_keys/controller01.example.com.pem",
-    :loglevel => logger.is_debug? ? Logger::DEBUG : Logger::WARN
-  })
-
+  client = nil
   retries = 0
   max_retries = 10
   connected = false
   until (connected || retries == max_retries) do
+    client = PCP::Client.new({
+      :server => broker_ws_uri(broker),
+      :ssl_cert => "../test-resources/ssl/certs/controller01.example.com.pem",
+      :ssl_key => "../test-resources/ssl/private_keys/controller01.example.com.pem",
+      :loglevel => logger.is_debug? ? Logger::DEBUG : Logger::WARN
+    })
     connected = client.connect(5)
     retries += 1
   end
