@@ -43,7 +43,7 @@ end
 
 # Some helpers for working with a pcp-broker 'lein tk' instance
 def run_pcp_broker(host)
-  on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker; export LEIN_ROOT=ok; lein tk </dev/null >/var/log/pcp-broker.log 2>&1 &"")
+  on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker; export LEIN_ROOT=ok; lein tk </dev/null >/var/log/pcp-broker.log 2>&1 &")
   assert(port_open_within?(host, PCP_BROKER_PORT, 60),
          "pcp-broker port #{PCP_BROKER_PORT.to_s} not open within 1 minutes of starting the broker")
   broker_state = nil
