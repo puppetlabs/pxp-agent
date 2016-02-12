@@ -276,7 +276,8 @@ def connect_pcp_client(broker)
   client = PCP::Client.new({
     :server => broker_ws_uri(broker),
     :ssl_cert => "../test-resources/ssl/certs/controller01.example.com.pem",
-    :ssl_key => "../test-resources/ssl/private_keys/controller01.example.com.pem"
+    :ssl_key => "../test-resources/ssl/private_keys/controller01.example.com.pem",
+    :loglevel => logger.is_debug? ? Logger::DEBUG : Logger::WARN
   })
 
   retries = 0
