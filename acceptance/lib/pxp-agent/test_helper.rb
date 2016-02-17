@@ -1,5 +1,6 @@
 require 'pxp-agent/config_helper.rb'
 require 'pcp/client'
+require 'pcp/simple_logger'
 require 'net/http'
 require 'openssl'
 require 'json'
@@ -285,6 +286,7 @@ def connect_pcp_client(broker)
       :server => broker_ws_uri(broker),
       :ssl_cert => "../test-resources/ssl/certs/controller01.example.com.pem",
       :ssl_key => "../test-resources/ssl/private_keys/controller01.example.com.pem",
+      :logger => PCP::SimpleLogger.new,
       :loglevel => logger.is_debug? ? Logger::DEBUG : Logger::WARN
     })
     connected = client.connect(5)
