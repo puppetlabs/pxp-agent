@@ -291,10 +291,10 @@ def connect_pcp_client(broker)
     retries += 1
   end
   if !connected
-    raise "Controller PCP client failed to connect with pcp-broker on #{broker} after #{max_retries} attempts"
+    raise "Controller PCP client failed to connect with pcp-broker on #{broker} after #{max_retries} attempts: #{client.inspect}"
   end
   if !client.associated?
-    raise "Controller PCP client failed to associate with pcp-broker on #{broker}"
+    raise "Controller PCP client failed to associate with pcp-broker on #{broker} #{client.inspect}"
   end
 
   client
