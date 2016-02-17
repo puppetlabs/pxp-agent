@@ -683,6 +683,21 @@ void Configuration::validateAndNormalizeOtherSettings() {
         }
 
         auto pid_dir = fs::path(pid_file).parent_path().string();
+
+        // We know that, on Solaris, the /var/run when gets cleaned up
+        // at reboot; daemonization assumes that the PID file
+        // directory exists. So, if we're using the default PID
+        // directory, ensure it exists (PCP-297)
+        if (pid_dir == "/var/run/puppetlabs" && !fs::exists(pid_dir)) {
+            try {
+                LOG_DEBUG("Creating the PID file directory '%1%'", pid_dir);
+                fs::create_directories(pid_dir);
+            } catch (const std::exception& e) {
+                LOG_DEBUG("Failed to create '%1%' directory: %2%", pid_dir, e.what());
+                throw Configuration::Error { "failed to create the PID file directory" };
+            }
+        }
+
         if (fs::exists(pid_dir)) {
             if (!fs::is_directory(pid_dir)) {
                 throw Configuration::Error { "the PID directory '" + pid_dir
