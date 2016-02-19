@@ -1,6 +1,0 @@
-{"module":"foo",
- "action":"bar",
- "input":"{10}",
- "completed":true,
- "exitcode":4,
- "duration":"3.141592s"}

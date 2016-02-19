@@ -15,8 +15,9 @@ namespace lth_util = leatherman::util;
 
 static const int DEFAULT_MSG_TIMEOUT_SEC { 2 };
 
-std::vector<lth_jc::JsonContainer> wrapDebug(
-        const PCPClient::ParsedChunks& parsed_chunks) {
+std::vector<lth_jc::JsonContainer>
+wrapDebug(const PCPClient::ParsedChunks& parsed_chunks)
+{
     auto request_id = parsed_chunks.envelope.get<std::string>("id");
     if (parsed_chunks.num_invalid_debug) {
         LOG_WARNING("Message %1% contained %2% bad debug chunk%3%",
@@ -36,12 +37,14 @@ PXPConnector::PXPConnector(const Configuration::Agent& agent_configuration)
                                  agent_configuration.ca,
                                  agent_configuration.crt,
                                  agent_configuration.key,
-                                 agent_configuration.connection_timeout} {
+                                 agent_configuration.connection_timeout}
+{
 }
 
 void PXPConnector::sendPCPError(const std::string& request_id,
                                 const std::string& description,
-                                const std::vector<std::string>& endpoints) {
+                                const std::vector<std::string>& endpoints)
+{
     lth_jc::JsonContainer pcp_error_data {};
     pcp_error_data.set<std::string>("id", request_id);
     pcp_error_data.set<std::string>("description", description);
@@ -59,8 +62,30 @@ void PXPConnector::sendPCPError(const std::string& request_id,
     }
 }
 
+void PXPConnector::sendProvisionalResponse(const ActionRequest& request)
+{
+    auto debug = wrapDebug(request.parsedChunks());
+    lth_jc::JsonContainer provisional_data {};
+    provisional_data.set<std::string>("transaction_id", request.transactionId());
+
+    try {
+        send(std::vector<std::string> { request.sender() },
+             PXPSchemas::PROVISIONAL_RESPONSE_TYPE,
+             DEFAULT_MSG_TIMEOUT_SEC,
+             provisional_data,
+             debug);
+        LOG_INFO("Sent provisional response for the %1% by %2%",
+                 request.prettyLabel(), request.sender());
+    } catch (PCPClient::connection_error& e) {
+        LOG_ERROR("Failed to send provisional response for the %1% by %2% "
+                  "(no further attempts will be made): %3%",
+                  request.prettyLabel(), request.sender(), e.what());
+    }
+}
+
 void PXPConnector::sendPXPError(const ActionRequest& request,
-                                const std::string& description) {
+                                const std::string& description)
+{
     lth_jc::JsonContainer pxp_error_data {};
     pxp_error_data.set<std::string>("transaction_id", request.transactionId());
     pxp_error_data.set<std::string>("id", request.id());
@@ -80,18 +105,40 @@ void PXPConnector::sendPXPError(const ActionRequest& request,
     }
 }
 
-void PXPConnector::sendBlockingResponse(const ActionRequest& request,
-                                        const lth_jc::JsonContainer& results) {
+void PXPConnector::sendPXPError(const ActionResponse& response)
+{
+    assert(response.valid(ActionResponse::ResponseType::RPCError));
+
+    try {
+        send(std::vector<std::string> {
+                response.action_metadata.get<std::string>("requester") },
+             PXPSchemas::PXP_ERROR_MSG_TYPE,
+             DEFAULT_MSG_TIMEOUT_SEC,
+             response.toJSON(ActionResponse::ResponseType::RPCError));
+        LOG_INFO("Replied to %1% by %2%, request ID %3%, with a PXP error message",
+                 response.prettyRequestLabel(),
+                 response.action_metadata.get<std::string>("requester"),
+                 response.action_metadata.get<std::string>("request_id"));
+    } catch (PCPClient::connection_error& e) {
+        LOG_ERROR("Failed to send a PXP error message for the %1% by %2% "
+                  "(no further sending attempts will be made): %3%",
+                  response.prettyRequestLabel(),
+                  response.action_metadata.get<std::string>("requester"),
+                  response.action_metadata.get<std::string>("execution_error"));
+    }
+}
+
+void PXPConnector::sendBlockingResponse(const ActionResponse& response,
+                                        const ActionRequest& request)
+{
+    assert(response.valid(ActionResponse::ResponseType::Blocking));
     auto debug = wrapDebug(request.parsedChunks());
-    lth_jc::JsonContainer response_data {};
-    response_data.set<std::string>("transaction_id", request.transactionId());
-    response_data.set<lth_jc::JsonContainer>("results", results);
 
     try {
         send(std::vector<std::string> { request.sender() },
              PXPSchemas::BLOCKING_RESPONSE_TYPE,
              DEFAULT_MSG_TIMEOUT_SEC,
-             response_data,
+             response.toJSON(ActionResponse::ResponseType::Blocking),
              debug);
         LOG_INFO("Sent response for the %1% by %2%",
                  request.prettyLabel(), request.sender());
@@ -101,46 +148,27 @@ void PXPConnector::sendBlockingResponse(const ActionRequest& request,
     }
 }
 
-void PXPConnector::sendNonBlockingResponse(const ActionRequest& request,
-                                           const lth_jc::JsonContainer& results,
-                                           const std::string& job_id) {
-    lth_jc::JsonContainer response_data {};
-    response_data.set<std::string>("transaction_id", request.transactionId());
-    response_data.set<std::string>("job_id", job_id);
-    response_data.set<lth_jc::JsonContainer>("results", results);
+void PXPConnector::sendNonBlockingResponse(const ActionResponse& response)
+{
+    assert(response.valid(ActionResponse::ResponseType::NonBlocking));
+    assert(response.action_metadata.get<std::string>("status") != "undetermined");
 
     try {
         // NOTE(ale): assuming debug was sent in provisional response
-        send(std::vector<std::string> { request.sender() },
+        send(std::vector<std::string> {
+                response.action_metadata.get<std::string>("requester") },
              PXPSchemas::NON_BLOCKING_RESPONSE_TYPE,
              DEFAULT_MSG_TIMEOUT_SEC,
-             response_data);
+             response.toJSON(ActionResponse::ResponseType::NonBlocking));
         LOG_INFO("Sent response for the %1% by %2%",
-                 request.prettyLabel(), request.sender());
+                 response.prettyRequestLabel(),
+                 response.action_metadata.get<std::string>("requester"));
     } catch (PCPClient::connection_error& e) {
         LOG_ERROR("Failed to reply to %1% by %2%, (no further attempts will "
                   "be made): %3%",
-                  request.prettyLabel(), request.sender(), e.what());
-    }
-}
-
-void PXPConnector::sendProvisionalResponse(const ActionRequest& request) {
-    auto debug = wrapDebug(request.parsedChunks());
-    lth_jc::JsonContainer provisional_data {};
-    provisional_data.set<std::string>("transaction_id", request.transactionId());
-
-    try {
-        send(std::vector<std::string> { request.sender() },
-             PXPSchemas::PROVISIONAL_RESPONSE_TYPE,
-             DEFAULT_MSG_TIMEOUT_SEC,
-             provisional_data,
-             debug);
-        LOG_INFO("Sent provisional response for the %1% by %2%",
-                 request.prettyLabel(), request.sender());
-    } catch (PCPClient::connection_error& e) {
-        LOG_ERROR("Failed to send provisional response for the %1% by %2% "
-                  "(no further attempts will be made): %3%",
-                  request.prettyLabel(), request.sender(), e.what());
+                  response.prettyRequestLabel(),
+                  response.action_metadata.get<std::string>("requester"),
+                  e.what());
     }
 }
 

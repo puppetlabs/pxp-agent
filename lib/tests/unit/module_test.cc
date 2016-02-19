@@ -1,6 +1,7 @@
 #include "../common/content_format.hpp"
 
 #include <pxp-agent/modules/echo.hpp>
+#include <pxp-agent/module_type.hpp>
 
 #include <cpp-pcp-client/protocol/chunks.hpp>       // ParsedChunks
 
@@ -36,7 +37,7 @@ TEST_CASE("Module::type", "[modules]") {
     Modules::Echo echo_module {};
 
     SECTION("correctly reports its type") {
-        REQUIRE(echo_module.type() == Module::Type::Internal);
+        REQUIRE(echo_module.type() == ModuleType::Internal);
     }
 }
 
@@ -57,8 +58,8 @@ TEST_CASE("Module::executeAction", "[modules]") {
 
     SECTION("it should correctly call echo") {
         ActionRequest request { RequestType::Blocking, PARSED_CHUNKS };
-        auto outcome = echo_module.executeAction(request);
-        auto txt = outcome.results.get<std::string>("outcome");
+        auto response = echo_module.executeAction(request);
+        auto txt = response.action_metadata.get<std::string>({ "results", "outcome" });
         REQUIRE(txt == "maradona");
     }
 }

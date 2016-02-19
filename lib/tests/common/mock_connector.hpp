@@ -5,8 +5,8 @@
 
 #include <pxp-agent/configuration.hpp>
 #include <pxp-agent/pxp_connector.hpp>  // TEST_VIRTUAL, PXPConnector
-
-#include <leatherman/json_container/json_container.hpp>
+#include <pxp-agent/action_request.hpp>
+#include <pxp-agent/action_response.hpp>
 
 namespace PXPAgent {
 
@@ -66,14 +66,12 @@ class MockConnector : public PXPConnector {
     virtual void sendPXPError(const ActionRequest&,
                               const std::string&);
 
-    virtual void sendBlockingResponse(
-                              const ActionRequest&,
-                              const leatherman::json_container::JsonContainer&);
+    virtual void sendPXPError(const ActionResponse&);
 
-    virtual void sendNonBlockingResponse(
-                              const ActionRequest&,
-                              const leatherman::json_container::JsonContainer&,
-                              const std::string&);
+    virtual void sendBlockingResponse(const ActionResponse&,
+                                      const ActionRequest&);
+
+    virtual void sendNonBlockingResponse(const ActionResponse&);
 
     virtual void sendProvisionalResponse(const ActionRequest&);
 };

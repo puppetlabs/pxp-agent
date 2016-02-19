@@ -6,6 +6,7 @@
 #include <pxp-agent/action_request.hpp>
 #include <pxp-agent/pxp_connector.hpp>
 #include <pxp-agent/configuration.hpp>
+#include <pxp-agent/results_storage.hpp>
 
 #include <cpp-pcp-client/util/thread.hpp>
 
@@ -67,6 +68,9 @@ class RequestProcessor {
     /// PXP Connector pointer
     std::shared_ptr<PXPConnector> connector_ptr_;
 
+    /// ResultsStorage pointer
+    std::shared_ptr<ResultsStorage> storage_ptr_;
+
     /// Where the directories that will store the outcome of
     /// non-blocking actions will be created
     const boost::filesystem::path spool_dir_path_;
@@ -78,16 +82,25 @@ class RequestProcessor {
     const std::string modules_config_dir_;
 
     /// Modules configuration
-    std::map<std::string, lth_jc::JsonContainer> modules_config_;
+    std::map<std::string, leatherman::json_container::JsonContainer> modules_config_;
 
     /// Throw a RequestProcessor::Error in case of unknown module,
     /// unknown action, or if the requested input parameters entry
     /// does not match the JSON schema defined for the relevant action
-    void validateRequestContent(const ActionRequest& request);
+    void validateRequestContent(const ActionRequest& request) const;
 
     void processBlockingRequest(const ActionRequest& request);
 
     void processNonBlockingRequest(const ActionRequest& request);
+
+    // Provides the status of the task performed for a non-blocking
+    // request by processing the results data from the spool dir.
+    // Updates the metadata file if necessary.
+    //
+    // NOTE(ale): the 'status query' action is implemented as a
+    // RequestProcessor member function as it needs to access the
+    // loaded modules' interface
+    void processStatusRequest(const ActionRequest& request);
 
     /// Load the modules configuration files
     void loadModulesConfiguration();

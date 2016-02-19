@@ -2,6 +2,7 @@
 #define SRC_MODULES_ECHO_H_
 
 #include <pxp-agent/module.hpp>
+#include <pxp-agent/action_response.hpp>
 
 namespace PXPAgent {
 namespace Modules {
@@ -11,7 +12,7 @@ class Echo : public PXPAgent::Module {
     Echo();
 
   private:
-    ActionOutcome callAction(const ActionRequest& request);
+    ActionResponse callAction(const ActionRequest& request);
 };
 
 }  // namespace Modules

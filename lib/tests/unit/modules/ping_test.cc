@@ -55,8 +55,9 @@ TEST_CASE("Modules::Ping::executeAction", "[modules]") {
     }
 
     SECTION("it should return the request_hops entries") {
-        auto outcome = ping_module.executeAction(request);
-        REQUIRE(outcome.results.includes("request_hops"));
+        auto response = ping_module.executeAction(request);
+        auto r = response.action_metadata.get<lth_jc::JsonContainer>("results");
+        REQUIRE(r.includes("request_hops"));
     }
 }
 
