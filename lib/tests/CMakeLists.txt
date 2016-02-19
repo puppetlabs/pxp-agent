@@ -21,6 +21,7 @@ set(COMMON_TEST_SOURCES
     unit/module_test.cc
     unit/request_processor_test.cc
     unit/results_mutex_test.cc
+    unit/results_storage_test.cc
     unit/thread_container_test.cc
     unit/modules/ping_test.cc
     unit/modules/status_test.cc
