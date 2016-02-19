@@ -9,8 +9,8 @@ namespace PXPAgent {
 
 struct ActionOutput {
     int exitcode;
-    std::string stdout;
-    std::string stderr;
+    std::string std_out;
+    std::string std_err;
 };
 
 }  // namespace PXPAgent

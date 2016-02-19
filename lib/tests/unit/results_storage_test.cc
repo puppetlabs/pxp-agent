@@ -102,6 +102,40 @@ TEST_CASE("ResultsStorage::getActionMetadata", "[module][results]") {
     }
 }
 
+TEST_CASE("ResultsStorage::updateMetadataFile", "[module][results]") {
+    std::string valid_transaction_id { "1234" };
+    lth_jc::JsonContainer some_valid_metadata {};
+    some_valid_metadata.set<std::string>("requester", "me");
+    some_valid_metadata.set<std::string>("module", "good_stuff");
+    some_valid_metadata.set<std::string>("action", "do_stuff");
+    some_valid_metadata.set<std::string>("request_params", "abc");
+    some_valid_metadata.set<std::string>("transaction_id", valid_transaction_id);
+    some_valid_metadata.set<std::string>("request_id", "45");
+    some_valid_metadata.set<bool>("notify_outcome", false);
+    some_valid_metadata.set<std::string>("start", "5:60");
+    some_valid_metadata.set<std::string>("status", "running");
+
+    configureTest();
+    ResultsStorage st { SPOOL_DIR };
+
+    SECTION("Throws an Error if the results directory does not exist") {
+        REQUIRE_THROWS_AS(st.updateMetadataFile(valid_transaction_id,
+                                                some_valid_metadata),
+                          ResultsStorage::Error);
+    }
+
+    SECTION("Correctly updates the metadata file") {
+        st.initializeMetadataFile(valid_transaction_id, some_valid_metadata);
+        some_valid_metadata.set<std::string>("status", "success");
+        st.updateMetadataFile(valid_transaction_id, some_valid_metadata);
+        auto read_metadata = st.getActionMetadata(valid_transaction_id);
+
+        REQUIRE(read_metadata.get<std::string>("status") == "success");
+    }
+
+    resetTest();
+}
+
 TEST_CASE("ResultsStorage::pidFileExists", "[module][results]") {
     configureTest(TESTING_RESULTS);
     ResultsStorage st { TESTING_RESULTS };

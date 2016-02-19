@@ -44,6 +44,7 @@ class ResultsStorage {
     // Throws an Error in case there's no results directory for the
     // specified transaction or in case it fails to write to file.
     void updateMetadataFile(
+        const std::string& transaction_id,
         const leatherman::json_container::JsonContainer& metadata);
 
     // Returns the action metadata specified by the transaction.

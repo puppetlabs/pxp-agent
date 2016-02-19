@@ -60,14 +60,14 @@ void ResultsStorage::initializeMetadataFile(const std::string& transaction_id,
     writeMetadata(metadata.toString() + "\n", metadata_file);
 }
 
-void ResultsStorage::updateMetadataFile(const lth_jc::JsonContainer& metadata)
+void ResultsStorage::updateMetadataFile(const std::string& transaction_id,
+                                        const lth_jc::JsonContainer& metadata)
 {
-    auto t_id = metadata.get<std::string>("transaction_id");
+    if (!find(transaction_id))
+        throw Error { "no results directory for the transaction "
+                      + transaction_id };
 
-    if (!find(t_id))
-        throw Error { "no results directory for the transaction " + t_id };
-
-    auto metadata_file = (spool_dir_path_ / t_id / METADATA).string();
+    auto metadata_file = (spool_dir_path_ / transaction_id / METADATA).string();
     writeMetadata(metadata.toString() + "\n", metadata_file);
 }
 
@@ -152,7 +152,7 @@ ActionOutput ResultsStorage::getOutput_(const std::string& transaction_id,
     auto stdout_file = (results_path / STDOUT).string();
 
     if (fs::exists(stderr_file)) {
-        if (!lth_file::read(stderr_file, output.stderr)) {
+        if (!lth_file::read(stderr_file, output.std_err)) {
             LOG_ERROR("Failed to read error file '%1%'; this failure will be ignored",
                       stderr_file);
         } else {
@@ -162,9 +162,9 @@ ActionOutput ResultsStorage::getOutput_(const std::string& transaction_id,
 
     if (!fs::exists(stdout_file)) {
         LOG_DEBUG("Output file '%1%' does not exist", stdout_file);
-    } else if (!lth_file::read(stdout_file, output.stdout)) {
+    } else if (!lth_file::read(stdout_file, output.std_out)) {
         throw Error { "failed to read " + stdout_file };
-    } else if (output.stdout.empty()) {
+    } else if (output.std_out.empty()) {
         LOG_TRACE("Output file '%1%' is empty", stdout_file);
     } else {
         LOG_TRACE("Successfully read output file '%1%'", stdout_file);

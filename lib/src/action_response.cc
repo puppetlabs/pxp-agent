@@ -98,14 +98,14 @@ ActionResponse::ActionResponse(ModuleType module_type_,
 {
 }
 
-ActionResponse::ActionResponse(ModuleType module_type_,
-                               RequestType request_type_,
-                               ActionOutput output_,
-                               lth_jc::JsonContainer&& action_metadata_)
-        : module_type { module_type_ },
-          request_type { request_type_ },
-          output { output_ },
-          action_metadata { action_metadata_ }
+ActionResponse::ActionResponse(ModuleType m_t,
+                               RequestType r_t,
+                               ActionOutput out,
+                               lth_jc::JsonContainer&& a_m)
+        : module_type(m_t),
+          request_type(r_t),
+          output(out),
+          action_metadata(std::forward<lth_jc::JsonContainer>(a_m))
 {
     if (!valid())
         throw Error { "invalid action metadata" };
@@ -175,15 +175,21 @@ bool ActionResponse::valid(R_T response_type) const
     if (!valid())
         return false;
 
+    bool is_valid { false };
+
     switch (response_type) {
         case (R_T::Blocking):
         case (R_T::NonBlocking):
-            return action_metadata.includes(RESULTS);
+            is_valid = action_metadata.includes(RESULTS);
+            break;
         case (R_T::StatusOutput):
-            return true;
+            is_valid = true;
+            break;
         case (R_T::RPCError):
-            return action_metadata.includes(EXECUTION_ERROR);
+            is_valid = action_metadata.includes(EXECUTION_ERROR);
     }
+
+    return is_valid;
 }
 
 // TODO(ale): update this after PXP v2.0 changes
@@ -201,8 +207,8 @@ lth_jc::JsonContainer ActionResponse::toJSON(R_T response_type) const
             break;
         case (R_T::StatusOutput):
             r.set<std::string>(STATUS, action_metadata.get<std::string>(STATUS));
-            r.set<std::string>("stdout", output.stdout);
-            r.set<std::string>("stderr", output.stderr);
+            r.set<std::string>("stdout", output.std_out);
+            r.set<std::string>("stderr", output.std_err);
             r.set<int>("exitcode", output.exitcode);
             break;
         case (R_T::RPCError):

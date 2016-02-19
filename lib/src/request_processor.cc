@@ -43,6 +43,10 @@ namespace lth_file = leatherman::file_util;
 namespace lth_util = leatherman::util;
 namespace pcp_util = PCPClient::Util;
 
+// Time interval to allow the non-blocking action task to ask for the
+// named mutex lock, before updating the metadata
+static const uint32_t METADATA_RACE_MS { 100 };
+
 //
 // Static functions
 //
@@ -146,7 +150,8 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     }
 
     try {
-        storage_ptr->updateMetadataFile(response.action_metadata);
+        storage_ptr->updateMetadataFile(request.transactionId(),
+                                        response.action_metadata);
     } catch (const ResultsStorage::Error& e) {
         LOG_ERROR("Failed to write metadata of the %1%: %2%",
                   request.prettyLabel(), e.what());
@@ -209,7 +214,9 @@ void RequestProcessor::processRequest(const RequestType& request_type,
         LOG_DEBUG("The %1% has been successfully validated", request.prettyLabel());
 
         try {
-            if (request.type() == RequestType::Blocking) {
+            if (isStatusRequest(request)) {
+                processStatusRequest(request);
+            } else if (request.type() == RequestType::Blocking) {
                 processBlockingRequest(request);
             } else {
                 processNonBlockingRequest(request);
@@ -382,6 +389,306 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
     } else {
         connector_ptr_->sendPXPError(request, err_msg);
     }
+}
+
+// TODO(ale): update table and use UNDETERMINED and RPC errors (v2.0)
+
+//                       TRANSACTION STATUS RESPONSE TABLE
+//
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |         |          |         |          |           |                     |
+// |metadata |completed |exitcode | PID file |PID process|      response:      |
+// | exists? |    by    |  file   |  exists? |  exists?  |       status        |
+// |  valid  |metadata? | exists? |          |           |          &          |
+// |metadata?|(status   |(got     |          |           |   included files    |
+// |         |!=RUNNING)| output?)|          |           |                     |
+// |         |          |         |          |           |                     |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// | ~exists |     -    |    -    |     -    |     -     |       UNKNOWN       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// | ~valid  |     -    |    -    |     -    |     -     |       UNKNOWN       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    no    |   no    |    no    |     -     |       UNKNOWN       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    no    |   no    |    yes   |    yes    |       RUNNING       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    no    |   no    |    yes   |    no     |       UNKNOWN       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    no    |   yes   |     -    |     -     |  SUCCESS / FAILURE  |
+// |         |          |         |          |           | + stdout & stderr   |
+// |         |          |         |          |           | + metadata update   |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    yes   |         |     -    |     -     |  SUCCESS / FAILURE  |
+// |         |          |         |          |           | + stdout & stderr   |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+//
+
+void RequestProcessor::processStatusRequest(const ActionRequest& request)
+{
+    ActionResponse status_response { ModuleType::Internal, request };
+    lth_jc::JsonContainer status_results {};
+    const auto& AS = ACTION_STATUS_NAMES;
+    auto t_id = request.params().get<std::string>("transaction_id");
+    status_results.set<std::string>("transaction_id", t_id);
+    status_results.set<std::string>("status", AS.at(ActionStatus::Unknown));
+
+    if (!storage_ptr_->find(t_id)) {
+        LOG_DEBUG("Found no results for the %1%", request.prettyLabel());
+        status_response.setValidResultsAndEnd(std::move(status_results),
+                                              "found no results directory");
+        connector_ptr_->sendBlockingResponse(status_response, request);
+        return;
+    }
+
+    // There's a results directory for the requested transaction!
+
+    // Get PID information before metadata, to avoid a race with the
+    // nonBlockingActionTask thread when accessing the metadata file,
+    // due to the elapsed time between the end of the external module
+    // process and the metadata update (note that we use a lock based
+    // on a named mutex to access the medata file in a safe way)
+
+    bool running_by_pid { false };
+    bool not_running_by_pid { false };
+
+    if (!storage_ptr_->pidFileExists(t_id)) {
+        LOG_DEBUG("PID file for transaction %1% task does not exist", t_id);
+    } else {
+        try {
+            auto pid = storage_ptr_->getPID(t_id);
+
+            // NOTE(ale): processExists() does not throw
+            if (Util::processExists(pid)) {
+                running_by_pid = true;
+            } else {
+                not_running_by_pid = true;
+                bool cached { false };
+                {
+                    ResultsMutex::LockGuard a_l { ResultsMutex::Instance().access_mtx };
+                    cached = ResultsMutex::Instance().exists(t_id);
+                }
+                if (cached)
+                    // The process doe not exist anymore, but its
+                    // mutex is still cached - wait a bit before
+                    // reading the metadata to allow the non-blocking
+                    // to lock its mutex and update the metadata
+                    pcp_util::this_thread::sleep_for(
+                        pcp_util::chrono::milliseconds(METADATA_RACE_MS));
+            }
+        } catch (const ResultsStorage::Error& e) {
+            LOG_ERROR("Failed to get the PID for transaction %1%: %2%",
+                      t_id, e.what());
+        }
+    }
+
+    // Retrieve metadata
+
+    LOG_DEBUG("Retrieving metadata and output for the transaction %1%", t_id);
+    std::string metadata_retrieval_error {};
+    lth_jc::JsonContainer metadata;
+
+    // NB: later on, we determine if the mutex of the requested
+    // transaction was cached by checking if mtx_ptr is defined
+    ResultsMutex::Mutex_Ptr mtx_ptr;
+    {
+        ResultsMutex::LockGuard a_l { ResultsMutex::Instance().access_mtx };
+        if (ResultsMutex::Instance().exists(t_id))
+            mtx_ptr = ResultsMutex::Instance().get(t_id);
+    }
+
+    try {
+        // Acquire the result mutex lock, if the transaction is cached
+        if (mtx_ptr != nullptr) {
+            ResultsMutex::LockGuard r_l { *mtx_ptr };  // RAII
+            metadata = storage_ptr_->getActionMetadata(t_id);
+        } else {
+            metadata = storage_ptr_->getActionMetadata(t_id);
+        }
+
+        // We know that metadata has a valid format; ensure that the
+        // stored module/action pair is known (it would be very
+        // unexpected otherwise, but we may rely on this later)
+        auto mod = metadata.get<std::string>("module");
+        auto act = metadata.get<std::string>("action");
+        if (!hasModule(mod) || !modules_.at(mod)->hasAction(act))
+            throw Error { "unknow action stored in metadata file: '"
+                          + mod + " " + act + "'" };
+    } catch (const ResultsStorage::Error& e) {
+        LOG_ERROR("Cannot access the stored metadata for the transaction %1%: %2%",
+                  t_id, e.what());
+        metadata_retrieval_error = e.what();
+    } catch (const std::exception& e) {
+        LOG_ERROR("Unexpected failure while retrieving metadata for the "
+                  "transaction %1%: %2%",
+                  t_id, e.what());
+        std::string err_msg { e.what() };
+        metadata_retrieval_error = "unexpected failure while retrieving metadata";
+        metadata_retrieval_error += (err_msg.empty() ? "" : ": " + err_msg);
+    }
+
+    if (!metadata_retrieval_error.empty()) {
+        // TODO(ale): send RPC error once PXP v2.0 changes are in
+        status_response.setValidResultsAndEnd(std::move(status_results),
+                                              metadata_retrieval_error);
+        connector_ptr_->sendBlockingResponse(status_response, request);
+        return;
+    }
+
+    // At this point, we have a valid metadata object;
+    // inspect it and see if it was finalized
+
+    std::string execution_error {};
+
+    if (metadata.get<std::string>("status") != AS.at(ActionStatus::Running)) {
+        // The metadata was finalized (status != RUNNING); just use it
+        auto stored_status = metadata.get<std::string>("status");
+
+        // TODO(ale): use UNDETERMINED after PXP v2.0 changes
+        if (stored_status != AS.at(ActionStatus::Undetermined))
+            status_results.set<std::string>("status", stored_status);
+
+        if (metadata.includes("execution_error"))
+            execution_error = metadata.get<std::string>("execution_error");
+
+        // Get the output if possible, otherwise move on
+        try {
+            status_response.output = storage_ptr_->getOutput(t_id);
+        } catch (const ResultsStorage::Error& e) {
+            // Log an error and update the execution_error only if
+            // the metadata says that the results were valid
+            if (metadata.includes("results_are_valid")
+                && metadata.get<bool>("results_are_valid")) {
+                LOG_ERROR("Failed to get the output of the trasaction %1%: %2%",
+                          t_id, e.what());
+                if (execution_error.empty()) {
+                    execution_error = "failed to retrieve the output: ";
+                    execution_error += e.what();
+                }
+            }
+        }
+
+        status_response.setValidResultsAndEnd(std::move(status_results),
+                                              execution_error);
+        connector_ptr_->sendBlockingResponse(status_response, request);
+        return;
+    }
+
+    // The metadata was not finalized (status == RUNNING); if the
+    // output is not available, use the PID data to ensure that the
+    // task is still running
+
+    if (!storage_ptr_->outputIsReady(t_id)) {
+        // No output; use the PID information to determine the status
+        // and update the metadata if UNDETERMINED
+
+        if (running_by_pid) {
+            // It's running --> RUNNING
+            status_results.set<std::string>("status", AS.at(ActionStatus::Running));
+        } else  if (not_running_by_pid) {
+            // It's not running --> UNDETERMINED / execution_error
+            // TODO(ale): use UNDETERMINED after PXP v2.0 changes
+            execution_error = "task process is not running, but no output is available";
+            metadata.set<std::string>("status", AS.at(ActionStatus::Undetermined));
+            if (!metadata.includes("execution_error"))
+                // Update this for the sake of future status requests
+                metadata.set<std::string>("execution_error", execution_error);
+            try {
+                if (mtx_ptr != nullptr) {
+                    ResultsMutex::LockGuard r_l { *mtx_ptr };
+                    storage_ptr_->updateMetadataFile(t_id, metadata);
+                } else {
+                    storage_ptr_->updateMetadataFile(t_id, metadata);
+                }
+            } catch (const ResultsStorage::Error& err) {
+                LOG_ERROR("Failed to update metadata for the %1%: %2%",
+                          request.prettyLabel(), err.what());
+            }
+        } else {
+            // We failed to get any indication from the PID file;
+            // leave the status as UNKNOWN as the process may finish
+            // later and make its output available
+            execution_error = "the task PID and output are not available";
+        }
+
+        status_response.setValidResultsAndEnd(std::move(status_results),
+                                              execution_error);
+        connector_ptr_->sendBlockingResponse(status_response, request);
+        return;
+    }
+
+    // The exitcode file exists, so the external module process has
+    // completed; retrieve output, process it and update metadata file
+
+    try {
+        status_response.output = storage_ptr_->getOutput(t_id);
+    } catch (const ResultsStorage::Error& e) {
+        LOG_ERROR("Failed to get the output of the transaction %1%: %2%",
+                  t_id, e.what());
+        // TODO(ale): use UNDETERMINED after PXP v2.0 changes
+        status_response.setValidResultsAndEnd(std::move(status_results),
+                                         "found no results directory");
+        connector_ptr_->sendBlockingResponse(status_response, request);
+
+        // Update the metadata with a final 'status' value
+        metadata.set<std::string>("status", AS.at(ActionStatus::Undetermined));
+        try {
+            if (mtx_ptr != nullptr) {
+                ResultsMutex::LockGuard r_l { *mtx_ptr };
+                storage_ptr_->updateMetadataFile(t_id, metadata);
+            } else {
+                storage_ptr_->updateMetadataFile(t_id, metadata);
+            }
+        } catch (const ResultsStorage::Error& err) {
+            LOG_ERROR("Failed to update metadata for the %1%: %2%",
+                      request.prettyLabel(), err.what());
+        }
+        return;
+    }
+
+    std::shared_ptr<Module> mod_ptr {
+        modules_.at(metadata.get<std::string>("module")) };
+
+    // Create a new response object, to process the output
+    // NOTE(ale): this is not ideal since we're copying the output; on
+    // the other hand, this is an exceptional case (available output
+    // and non finalized metadata; pxp-agent crashed during a task...)
+    ActionResponse a_r { mod_ptr->type(),
+                         RequestType::NonBlocking,
+                         status_response.output,
+                         std::move(metadata) };
+    // HERE(ale): ^^ don't use the 'metadata' ref below!!!
+
+    ExternalModule::processOutputAndUpdateMetadata(a_r);
+
+    if (a_r.action_metadata.get<bool>("results_are_valid"))
+        // Validate by using the action's output JSON schema
+        mod_ptr->validateOutputAndUpdateMetadata(a_r);
+
+    // Update metadata file while holding the lock (if cached)
+    try {
+        if (mtx_ptr != nullptr) {
+            ResultsMutex::LockGuard r_l { *mtx_ptr };
+            storage_ptr_->updateMetadataFile(t_id, a_r.action_metadata);
+        } else {
+            storage_ptr_->updateMetadataFile(t_id, a_r.action_metadata);
+        }
+    } catch (const ResultsStorage::Error& err) {
+        LOG_ERROR("Failed to update metadata of the transaction %1%: %2%",
+                  t_id, err.what());
+    }
+
+    // Update status query response's status / execution_error
+    if (a_r.action_metadata.get<bool>("results_are_valid")) {
+        status_results.set<std::string>("status", AS.at(ActionStatus::Success));
+    } else {
+        status_results.set<std::string>("status", AS.at(ActionStatus::Failure));
+        status_results.set<std::string>("execution_error",
+            a_r.action_metadata.get<std::string>("execution_error"));
+    }
+
+    status_response.setValidResultsAndEnd(std::move(status_results),
+                                          execution_error);
+    connector_ptr_->sendBlockingResponse(status_response, request);
 }
 
 //

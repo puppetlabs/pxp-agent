@@ -93,6 +93,15 @@ class RequestProcessor {
 
     void processNonBlockingRequest(const ActionRequest& request);
 
+    // Provides the status of the task performed for a non-blocking
+    // request by processing the results data from the spool dir.
+    // Updates the metadata file if necessary.
+    //
+    // NOTE(ale): the 'status query' action is implemented as a
+    // RequestProcessor member function as it needs to access the
+    // loaded modules' interface
+    void processStatusRequest(const ActionRequest& request);
+
     /// Load the modules configuration files
     void loadModulesConfiguration();
 

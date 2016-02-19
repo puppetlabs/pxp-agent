@@ -45,8 +45,8 @@ void Module::validateOutputAndUpdateMetadata(ActionResponse& response)
             err_msg += " returned invalid results.";
         } else {
             // Log about the output
-            const auto& out = response.output.stdout;
-            const auto& err = response.output.stdout;
+            const auto& out = response.output.std_out;
+            const auto& err = response.output.std_out;
             err_msg =
                 (boost::format("The task executed for the %1% returned %2% "
                                "results on stdout%3% - stderr:%4%")

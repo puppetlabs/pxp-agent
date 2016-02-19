@@ -133,42 +133,42 @@ void ExternalModule::validateConfiguration()
 
 void ExternalModule::processOutputAndUpdateMetadata(ActionResponse& response)
 {
-    if (response.output.stdout.empty()) {
+    if (response.output.std_out.empty()) {
         LOG_TRACE("Obtained no results on stdout for the %1%",
                   response.prettyRequestLabel());
     } else {
         LOG_TRACE("Results on stdout for the %1%: %2%",
-                  response.prettyRequestLabel(), response.output.stdout);
+                  response.prettyRequestLabel(), response.output.std_out);
     }
 
     if (response.output.exitcode != EXIT_SUCCESS) {
         LOG_TRACE("Execution failure (exit code %1%) for the %2%%3%",
                   response.output.exitcode, response.prettyRequestLabel(),
-                  (response.output.stderr.empty()
+                  (response.output.std_err.empty()
                     ? ""
-                    : "; stderr:\n" + response.output.stderr));
-    } else if (!response.output.stderr.empty()) {
+                    : "; stderr:\n" + response.output.std_err));
+    } else if (!response.output.std_err.empty()) {
         LOG_TRACE("Output on stderr for the %1%:\n%2%",
-                  response.prettyRequestLabel(), response.output.stderr);
+                  response.prettyRequestLabel(), response.output.std_err);
     }
 
     try {
         // Ensure output format is valid JSON by instantiating
         // JsonContainer (NB: its ctor does not accept empty strings)
         lth_jc::JsonContainer results {
-            (response.output.stdout.empty() ? "null" : response.output.stdout) };
+            (response.output.std_out.empty() ? "null" : response.output.std_out) };
         response.setValidResultsAndEnd(std::move(results));
     } catch (lth_jc::data_parse_error& e) {
         LOG_DEBUG("Obtained invalid JSON on stdout for the %1%; (validation "
                   "error: %2%); stdout:\n%3%",
-                  response.prettyRequestLabel(), e.what(), response.output.stdout);
+                  response.prettyRequestLabel(), e.what(), response.output.std_out);
         auto execution_error =
             (boost::format("The task executed for the %1% returned invalid "
                            "JSON on stdout - stderr:%2%")
                 % response.prettyRequestLabel()
-                % (response.output.stderr.empty()
+                % (response.output.std_err.empty()
                         ? " (empty)"
-                        : '\n' + response.output.stderr))
+                        : '\n' + response.output.std_err))
             .str();
         response.setBadResultsAndEnd(execution_error);
     }

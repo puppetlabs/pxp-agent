@@ -146,7 +146,7 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             ActionRequest request { RequestType::Blocking, CONTENT };
             auto response = reverse_module.executeAction(request);
 
-            REQUIRE(response.output.stdout.find("anodaram") != std::string::npos);
+            REQUIRE(response.output.std_out.find("anodaram") != std::string::npos);
         }
     }
 
