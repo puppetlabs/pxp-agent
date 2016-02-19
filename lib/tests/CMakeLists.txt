@@ -24,7 +24,6 @@ set(COMMON_TEST_SOURCES
     unit/results_storage_test.cc
     unit/thread_container_test.cc
     unit/modules/ping_test.cc
-    unit/modules/status_test.cc
     unit/util/process_test.cc
 )
 

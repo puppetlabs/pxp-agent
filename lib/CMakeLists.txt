@@ -26,7 +26,6 @@ set(LIBRARY_COMMON_SOURCES
     src/thread_container.cc
     src/modules/echo.cc
     src/modules/ping.cc
-    src/modules/status.cc
 )
 
 if (UNIX)
