@@ -425,10 +425,10 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
 
 void RequestProcessor::processStatusRequest(const ActionRequest& request)
 {
-    ActionResponse status_response { ModuleType::Internal, request };
+    auto t_id = request.params().get<std::string>("transaction_id");
+    ActionResponse status_response { ModuleType::Internal, request, t_id };
     lth_jc::JsonContainer status_results {};
     const auto& AS = ACTION_STATUS_NAMES;
-    auto t_id = request.params().get<std::string>("transaction_id");
     status_results.set<std::string>("transaction_id", t_id);
     status_results.set<std::string>("status", AS.at(ActionStatus::Unknown));
 
@@ -436,7 +436,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
         LOG_DEBUG("Found no results for the %1%", request.prettyLabel());
         status_response.setValidResultsAndEnd(std::move(status_results),
                                               "found no results directory");
-        connector_ptr_->sendBlockingResponse(status_response, request);
+        connector_ptr_->sendStatusResponse(status_response, request);
         return;
     }
 
@@ -530,7 +530,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
         // TODO(ale): send RPC error once PXP v2.0 changes are in
         status_response.setValidResultsAndEnd(std::move(status_results),
                                               metadata_retrieval_error);
-        connector_ptr_->sendBlockingResponse(status_response, request);
+        connector_ptr_->sendStatusResponse(status_response, request);
         return;
     }
 
@@ -569,7 +569,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
 
         status_response.setValidResultsAndEnd(std::move(status_results),
                                               execution_error);
-        connector_ptr_->sendBlockingResponse(status_response, request);
+        connector_ptr_->sendStatusResponse(status_response, request);
         return;
     }
 
@@ -612,7 +612,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
 
         status_response.setValidResultsAndEnd(std::move(status_results),
                                               execution_error);
-        connector_ptr_->sendBlockingResponse(status_response, request);
+        connector_ptr_->sendStatusResponse(status_response, request);
         return;
     }
 
@@ -627,7 +627,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
         // TODO(ale): use UNDETERMINED after PXP v2.0 changes
         status_response.setValidResultsAndEnd(std::move(status_results),
                                          "found no results directory");
-        connector_ptr_->sendBlockingResponse(status_response, request);
+        connector_ptr_->sendStatusResponse(status_response, request);
 
         // Update the metadata with a final 'status' value
         metadata.set<std::string>("status", AS.at(ActionStatus::Undetermined));
@@ -688,7 +688,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
 
     status_response.setValidResultsAndEnd(std::move(status_results),
                                           execution_error);
-    connector_ptr_->sendBlockingResponse(status_response, request);
+    connector_ptr_->sendStatusResponse(status_response, request);
 }
 
 //

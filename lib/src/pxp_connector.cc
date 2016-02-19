@@ -8,6 +8,8 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.pxp_connector"
 #include <leatherman/logging/logging.hpp>
 
+#include <utility>
+
 namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
@@ -132,20 +134,18 @@ void PXPConnector::sendBlockingResponse(const ActionResponse& response,
                                         const ActionRequest& request)
 {
     assert(response.valid(ActionResponse::ResponseType::Blocking));
-    auto debug = wrapDebug(request.parsedChunks());
+    sendBlockingResponse_(ActionResponse::ResponseType::Blocking,
+                          response,
+                          request);
+}
 
-    try {
-        send(std::vector<std::string> { request.sender() },
-             PXPSchemas::BLOCKING_RESPONSE_TYPE,
-             DEFAULT_MSG_TIMEOUT_SEC,
-             response.toJSON(ActionResponse::ResponseType::Blocking),
-             debug);
-        LOG_INFO("Sent response for the %1% by %2%",
-                 request.prettyLabel(), request.sender());
-    } catch (PCPClient::connection_error& e) {
-        LOG_ERROR("Failed to reply to the %1% by %2%: %3%",
-                  request.prettyLabel(), request.sender(), e.what());
-    }
+void PXPConnector::sendStatusResponse(const ActionResponse& response,
+                                      const ActionRequest& request)
+{
+    assert(response.valid(ActionResponse::ResponseType::StatusOutput));
+    sendBlockingResponse_(ActionResponse::ResponseType::StatusOutput,
+                          response,
+                          request);
 }
 
 void PXPConnector::sendNonBlockingResponse(const ActionResponse& response)
@@ -169,6 +169,31 @@ void PXPConnector::sendNonBlockingResponse(const ActionResponse& response)
                   response.prettyRequestLabel(),
                   response.action_metadata.get<std::string>("requester"),
                   e.what());
+    }
+}
+
+//
+// Private interface
+//
+
+void PXPConnector::sendBlockingResponse_(
+        const ActionResponse::ResponseType& response_type,
+        const ActionResponse& response,
+        const ActionRequest& request)
+{
+    auto debug = wrapDebug(request.parsedChunks());
+
+    try {
+        send(std::vector<std::string> { request.sender() },
+             PXPSchemas::BLOCKING_RESPONSE_TYPE,
+             DEFAULT_MSG_TIMEOUT_SEC,
+             response.toJSON(response_type),
+             debug);
+        LOG_INFO("Sent response for the %1% by %2%",
+                 request.prettyLabel(), request.sender());
+    } catch (PCPClient::connection_error& e) {
+        LOG_ERROR("Failed to reply to the %1% by %2%: %3%",
+                  request.prettyLabel(), request.sender(), e.what());
     }
 }
 

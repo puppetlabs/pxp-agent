@@ -26,12 +26,14 @@ class ActionResponse {
     RequestType request_type;
     ActionOutput output;
     leatherman::json_container::JsonContainer action_metadata;
+    std::string status_query_transaction;
 
     static leatherman::json_container::JsonContainer
     getMetadataFromRequest(const ActionRequest& request);
 
     ActionResponse(ModuleType module_type_,
-                   const ActionRequest& request_);
+                   const ActionRequest& request_,
+                   std::string status_query_transaction_ = "");
 
     // Throws an Error if action_metadata is invalid.
     ActionResponse(ModuleType module_type_,
