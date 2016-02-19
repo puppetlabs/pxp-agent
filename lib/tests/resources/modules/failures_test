@@ -21,7 +21,7 @@ def action_metadata
           :type => "object",
           :properties => {
             :output => {
-              :type => "string",
+              :type => "object",
             },
           },
           :required => [ :output ],
@@ -57,7 +57,7 @@ end
 def action_get_an_invalid_result
   args = JSON.load($stdin)
   check_output_files(args)
-  puts "not valid JSON - it will not be parsed successfully!"
+  puts "not valid JSON object - it will not be parsed successfully!"
 end
 
 def action_broken_action

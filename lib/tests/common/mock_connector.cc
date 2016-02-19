@@ -2,8 +2,6 @@
 
 namespace PXPAgent {
 
-namespace lth_jc = leatherman::json_container;
-
 #ifdef TEST_VIRTUAL
 
 MockConnector::MockConnector()
@@ -27,15 +25,18 @@ void MockConnector::sendPXPError(const ActionRequest&,
     throw MockConnector::pxpError_msg {};
 }
 
-void MockConnector::sendBlockingResponse(const ActionRequest&,
-                                         const lth_jc::JsonContainer&)
+void MockConnector::sendPXPError(const ActionResponse&)
+{
+    throw MockConnector::pxpError_msg {};
+}
+
+void MockConnector::sendBlockingResponse(const ActionResponse&,
+                                         const ActionRequest&)
 {
     sent_blocking_response = true;
 }
 
-void MockConnector::sendNonBlockingResponse(const ActionRequest&,
-                                            const lth_jc::JsonContainer&,
-                                            const std::string&)
+void MockConnector::sendNonBlockingResponse(const ActionResponse&)
 {
     sent_non_blocking_response = true;
 }
