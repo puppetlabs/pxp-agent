@@ -1,4 +1,5 @@
 #include <pxp-agent/modules/ping.hpp>
+#include <pxp-agent/module_type.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -11,6 +12,8 @@
 
 namespace PXPAgent {
 namespace Modules {
+
+namespace lth_jc = leatherman::json_container;
 
 static const std::string PING { "ping" };
 
@@ -48,8 +51,10 @@ lth_jc::JsonContainer Ping::ping(const ActionRequest& request) {
     return data;
 }
 
-ActionOutcome Ping::callAction(const ActionRequest& request) {
-   return ActionOutcome { EXIT_SUCCESS, ping(request) };
+ActionResponse Ping::callAction(const ActionRequest& request) {
+    ActionResponse response { ModuleType::Internal, request };
+    response.setValidResultsAndEnd(ping(request));
+    return response;
 }
 
 }  // namespace Modules

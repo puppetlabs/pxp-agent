@@ -3,9 +3,13 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.action_request"
 #include <leatherman/logging/logging.hpp>
 
+#include <boost/format.hpp>
+
 #include <cassert>
 
 namespace PXPAgent {
+
+namespace lth_jc = leatherman::json_container;
 
 ActionRequest::ActionRequest(RequestType type,
                              const PCPClient::ParsedChunks& parsed_chunks)
@@ -67,7 +71,7 @@ const std::string& ActionRequest::prettyLabel() const {
     if (pretty_label_.empty())
         pretty_label_ =
             (boost::format("%1% '%2% %3%' request (transaction %4%)")
-             % requestTypeNames[type_]
+             % REQUEST_TYPE_NAMES.at(type_)
              % module_
              % action_
              % transaction_id_).str();
@@ -82,7 +86,7 @@ void ActionRequest::init() {
     sender_ = parsed_chunks_.envelope.get<std::string>("sender");
 
     LOG_DEBUG("Validating %1% request %2% by %3%:\n%4%",
-              requestTypeNames[type_], id_, sender_, parsed_chunks_.toString());
+              REQUEST_TYPE_NAMES.at(type_), id_, sender_, parsed_chunks_.toString());
 
     validateFormat();
 

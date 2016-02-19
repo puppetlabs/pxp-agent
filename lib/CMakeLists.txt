@@ -13,6 +13,7 @@ include_directories(
 
 set(LIBRARY_COMMON_SOURCES
     src/action_request.cc
+    src/action_response.cc
     src/agent.cc
     src/configuration.cc
     src/external_module.cc
@@ -21,6 +22,7 @@ set(LIBRARY_COMMON_SOURCES
     src/pxp_schemas.cc
     src/request_processor.cc
     src/results_mutex.cc
+    src/results_storage.cc
     src/thread_container.cc
     src/modules/echo.cc
     src/modules/ping.cc

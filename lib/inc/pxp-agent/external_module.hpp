@@ -3,6 +3,9 @@
 
 #include <pxp-agent/module.hpp>
 #include <pxp-agent/thread_container.hpp>
+#include <pxp-agent/action_response.hpp>
+#include <pxp-agent/module_type.hpp>
+#include <pxp-agent/results_storage.hpp>
 
 #include <map>
 #include <string>
@@ -15,12 +18,6 @@ class ExternalModule : public Module {
     /// Run the specified executable; its output must define the
     /// module by providing the metadata in JSON format.
     ///
-    /// For each action of the module, the metadata must specify:
-    ///     - name
-    ///     - description
-    ///     - input schema
-    ///     - output schema
-    ///
     /// After retrieving the metadata, validate it and, for each
     /// action defined in it, ensure that the specified input and
     /// output schemas are valid JSON schemas
@@ -28,45 +25,56 @@ class ExternalModule : public Module {
     /// Throw a Module::LoadingError if: it fails to load the external
     /// module metadata; if the metadata is invalid; in case of
     /// invalid input or output schemas.
-    explicit ExternalModule(const std::string& exec_path);
+    explicit ExternalModule(const std::string& exec_path,
+                            const std::string& spool_dir);
 
-    explicit ExternalModule(const std::string& path,
-                            const lth_jc::JsonContainer& config);
+    explicit ExternalModule(
+        const std::string& path,
+        const leatherman::json_container::JsonContainer& config,
+        const std::string& spool_dir);
 
     /// The type of the module.
-    Module::Type type() { return Module::Type::External; }
+    ModuleType type() { return ModuleType::External; }
 
     /// If a configuration schema has been registered for this module,
     /// validate configuration data. In that case, throw a
     /// PCPClient::validation_error for invalid configuration data.
     void validateConfiguration();
 
-    /// Writes the content of the specified out/err_file in,
-    /// respectively, out/err_txt. Reads first err_file.
-    /// Throws a ProcessingError in case it fails to read out_file.
-    static void readNonBlockingOutcome(const ActionRequest& request,
-                                       const std::string& out_file,
-                                       const std::string& err_file,
-                                       std::string& out_txt,
-                                       std::string& err_txt);
+    /// Log information about the output of the performed action
+    /// while validating the JSON format of the output.
+    /// Update the metadata of the ActionResponse instance (the
+    /// 'results_are_valid', 'status', and 'execution_error' entries
+    /// will be set appropriately; 'end' will be set to the current
+    /// time).
+    /// This function does not throw a ProcessingError in case of
+    /// invalid output on stdout; such failure is instead reported
+    /// in the response object's metadata.
+    static void processOutputAndUpdateMetadata(ActionResponse& response);
 
   private:
     /// The path of the module file
     const std::string path_;
 
     /// Module configuration data
-    lth_jc::JsonContainer config_;
+    leatherman::json_container::JsonContainer config_;
+
+    /// Results Storage
+    ResultsStorage storage_;
 
     /// Metadata validator
     static const PCPClient::Validator metadata_validator_;
 
-    const lth_jc::JsonContainer getMetadata();
+    const leatherman::json_container::JsonContainer getModuleMetadata();
 
-    void registerConfiguration(const lth_jc::JsonContainer& config);
+    void registerConfiguration(
+        const leatherman::json_container::JsonContainer& config);
 
-    void registerActions(const lth_jc::JsonContainer& metadata);
+    void registerActions(
+        const leatherman::json_container::JsonContainer& metadata);
 
-    void registerAction(const lth_jc::JsonContainer& action);
+    void registerAction(
+        const leatherman::json_container::JsonContainer& action);
 
     /// Returns a string containing the arguments, in JSON format, for
     /// the requested action.
@@ -78,23 +86,13 @@ class ExternalModule : public Module {
     /// to the output files will be added to an "output_files" entry.
     std::string getActionArguments(const ActionRequest& request);
 
-    /// Log information about the outcome of the performed action
-    /// while checking the exit code and validating the JSON format
-    /// of the output.
-    /// Returns an ActionOutcome object.
-    /// Throws a ProcessingError in case of invalid output.
-    ActionOutcome processRequestOutcome(const ActionRequest& request,
-                                        int exit_code,
-                                        std::string& out_txt,
-                                        std::string& err_txt);
-
-    ActionOutcome callBlockingAction(const ActionRequest& request);
+    ActionResponse callBlockingAction(const ActionRequest& request);
 
     /// Throws a ProcessingError in case the module fails to write
     /// the action output to file.
-    ActionOutcome callNonBlockingAction(const ActionRequest& request);
+    ActionResponse callNonBlockingAction(const ActionRequest& request);
 
-    ActionOutcome callAction(const ActionRequest& request);
+    ActionResponse callAction(const ActionRequest& request);
 };
 
 }  // namespace PXPAgent

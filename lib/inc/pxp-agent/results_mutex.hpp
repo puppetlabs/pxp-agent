@@ -12,10 +12,10 @@ namespace PXPAgent {
 
 // NOTE(ale): this class does not provide general synchronizaion
 // functions; it provides a cache for named mutexes where it is
-// assumed that a single actor (the RequestProcessor instance, in
-// practice) is allowed to add and remove mutexes, whereas all actors
-// (including instances of the Transaction Status request handler) can
-// lock the cached mutexes
+// assumed that a single actor (e.g. the RequestProcessor instance)
+// is allowed to add and remove mutexes, whereas all actors (including
+// instances of the Transaction Status request handler) can lock the
+// cached mutexes
 
 class ResultsMutex {
   public:

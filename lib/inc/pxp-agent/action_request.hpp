@@ -1,6 +1,8 @@
 #ifndef SRC_AGENT_ACTION_REQUEST_HPP_
 #define SRC_AGENT_ACTION_REQUEST_HPP_
 
+#include <pxp-agent/request_type.hpp>
+
 #include <cpp-pcp-client/protocol/chunks.hpp>      // ParsedChunk
 
 #include <leatherman/json_container/json_container.hpp>
@@ -10,13 +12,6 @@
 #include <map>
 
 namespace PXPAgent {
-
-namespace lth_jc = leatherman::json_container;
-
-enum class RequestType { Blocking, NonBlocking };
-static std::map<RequestType, std::string> requestTypeNames {
-    { RequestType::Blocking, "blocking" },
-    { RequestType::NonBlocking, "non blocking" } };
 
 class ActionRequest {
   public:
@@ -47,7 +42,7 @@ class ActionRequest {
     // The following accessors perform lazy initialization
     // The params entry is not required; in case it's not included
     // in the request, an empty JsonContainer object is returned
-    const lth_jc::JsonContainer& params() const;
+    const leatherman::json_container::JsonContainer& params() const;
     const std::string& paramsTxt() const;
     const std::string& prettyLabel() const;
 
@@ -62,7 +57,7 @@ class ActionRequest {
     PCPClient::ParsedChunks parsed_chunks_;
 
     // Lazy initialized; no setter is available
-    mutable lth_jc::JsonContainer params_;
+    mutable leatherman::json_container::JsonContainer params_;
     mutable std::string params_txt_;
     mutable std::string pretty_label_;
 

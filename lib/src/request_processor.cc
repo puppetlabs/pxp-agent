@@ -1,31 +1,39 @@
 #include <pxp-agent/request_processor.hpp>
 #include <pxp-agent/results_mutex.hpp>
-#include <pxp-agent/action_outcome.hpp>
+#include <pxp-agent/action_response.hpp>
+#include <pxp-agent/action_status.hpp>
 #include <pxp-agent/pxp_schemas.hpp>
 #include <pxp-agent/external_module.hpp>
+#include <pxp-agent/module_type.hpp>
+#include <pxp-agent/request_type.hpp>
 #include <pxp-agent/modules/echo.hpp>
 #include <pxp-agent/modules/ping.hpp>
-#include <pxp-agent/modules/status.hpp>
+#include <pxp-agent/util/process.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/file_util/file.hpp>
 #include <leatherman/file_util/directory.hpp>
 #include <leatherman/util/strings.hpp>
-#include <leatherman/util/timer.hpp>
 #include <leatherman/util/scope_exit.hpp>
 
 #include <cpp-pcp-client/util/thread.hpp>
+#include <cpp-pcp-client/validator/validator.hpp>
+#include <cpp-pcp-client/validator/schema.hpp>
+#include <cpp-pcp-client/util/thread.hpp>   // this_thread::sleep_for
+#include <cpp-pcp-client/util/chrono.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.request_processor"
 #include <leatherman/logging/logging.hpp>
 
 #include <boost/filesystem/operations.hpp>
+#include <boost/format.hpp>
 
 #include <vector>
 #include <atomic>
 #include <functional>
 #include <stdexcept>  // out_of_range
 #include <memory>
+#include <stdint.h>
 
 namespace PXPAgent {
 
@@ -36,80 +44,24 @@ namespace lth_util = leatherman::util;
 namespace pcp_util = PCPClient::Util;
 
 //
-// Results Storage
+// Static functions
 //
 
-class ResultsStorage {
-  public:
-    struct Error : public std::runtime_error {
-        explicit Error(std::string const& msg) : std::runtime_error(msg) {}
-    };
+static bool isStatusRequest(const ActionRequest& request)
+{
+    return (request.module() == "status" && request.action() == "query");
+}
 
-    // Throw a ResultsStorage::Error in case of failure while writing
-    // to any of result files
-    ResultsStorage(const ActionRequest& request)
-            : module { request.module() },
-              action { request.action() },
-              metadata_file { (fs::path(request.resultsDir()) / "metadata").string() },
-              action_metadata {} {
-        initialize(request);
-    }
+static const std::string STATUS_QUERY_SCHEMA { "query" };
 
-    void writeMetadata(const int exit_code,
-                       const std::string& exec_error,
-                       const std::string& duration) {
-        // TODO(ale): use this metadata in status response!
-        action_metadata.set<bool>("completed", true);
-        action_metadata.set<std::string>("duration", duration);
-        action_metadata.set<int>("exitcode", exit_code);
-        action_metadata.set<std::string>("exec_error", exec_error);
-
-        lth_file::atomic_write_to_file(action_metadata.toString() + "\n",
-                                       metadata_file);
-    }
-
-  private:
-    std::string module;
-    std::string action;
-    std::string metadata_file;
-    lth_jc::JsonContainer action_metadata;
-
-    void initialize(const ActionRequest& request) {
-        if (!fs::exists(request.resultsDir())) {
-            LOG_DEBUG("Creating results directory for the %1% in '%2%'",
-                      request.prettyLabel(), request.resultsDir());
-            try {
-                fs::create_directories(request.resultsDir());
-            } catch (const fs::filesystem_error& e) {
-                std::string err_msg { "failed to create results directory: " };
-                throw Error { err_msg + e.what() };
-            }
-        }
-
-        action_metadata.set<std::string>("module", module);
-        action_metadata.set<std::string>("action", action);
-        action_metadata.set<bool>("completed", false);
-        action_metadata.set<std::string>("duration", "0 s");
-
-        if (!request.paramsTxt().empty()) {
-            action_metadata.set<std::string>("input", request.paramsTxt());
-        } else {
-            action_metadata.set<std::string>("input", "none");
-        }
-
-        lth_file::atomic_write_to_file(action_metadata.toString() + "\n",
-                                       metadata_file);
-
-        ResultsMutex::LockGuard a_l { ResultsMutex::Instance().access_mtx };
-        if (ResultsMutex::Instance().exists(request.transactionId())) {
-            // Mutex already exists; unexpected
-            LOG_DEBUG("Mutex for transaction ID %1% is already cached",
-                      request.transactionId());
-        } else {
-            ResultsMutex::Instance().add(request.transactionId());
-        }
-    }
-};
+static PCPClient::Validator getStatusQueryValidator()
+{
+    PCPClient::Schema sch { STATUS_QUERY_SCHEMA };
+    sch.addConstraint("transaction_id", PCPClient::TypeConstraint::String, true);
+    PCPClient::Validator validator {};
+    validator.registerSchema(sch);
+    return validator;
+}
 
 //
 // Non-blocking action task
@@ -117,22 +69,23 @@ class ResultsStorage {
 
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ActionRequest request,
-                           ResultsStorage results_storage,
                            std::shared_ptr<PXPConnector> connector_ptr,
-                           std::shared_ptr<std::atomic<bool>> done) {
-    lth_util::Timer timer {};
-    std::string exec_error {};
-    ActionOutcome outcome {};
-    int exit_code { EXIT_FAILURE };
-    lth_jc::JsonContainer results {};
-    bool completed { false };
+                           std::shared_ptr<ResultsStorage> storage_ptr,
+                           std::shared_ptr<std::atomic<bool>> done)
+{
     ResultsMutex::Mutex_Ptr mtx_ptr;
     std::unique_ptr<ResultsMutex::Lock> lck_ptr;
-
     try {
         ResultsMutex::LockGuard a_l { ResultsMutex::Instance().access_mtx };
-        mtx_ptr = ResultsMutex::Instance().get(request.transactionId());
-        lck_ptr.reset(new ResultsMutex::Lock(*mtx_ptr, pcp_util::defer_lock));
+        if (ResultsMutex::Instance().exists(request.transactionId())) {
+            // Mutex already exists; unexpected
+            LOG_DEBUG("Mutex for transaction ID %1% is already cached",
+                      request.transactionId());
+        } else {
+            ResultsMutex::Instance().add(request.transactionId());
+            mtx_ptr = ResultsMutex::Instance().get(request.transactionId());
+            lck_ptr.reset(new ResultsMutex::Lock(*mtx_ptr, pcp_util::defer_lock));
+        }
     } catch (const ResultsMutex::Error& e) {
         // This is unexpected
         LOG_ERROR("Failed to obtain the mutex pointer for transaction %1%: %2%",
@@ -142,13 +95,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     lth_util::scope_exit task_cleaner {
         [&]() {
             if (lck_ptr != nullptr) {
-                // Lock and remove the mutex for this non-blocking
-                // transaction
-                if (!completed) {
-                    LOG_TRACE("Locking transaction mutex %1% - the action did "
-                              "not complete successfully", request.transactionId());
-                    lck_ptr->lock();
-                }
+                // Remove the mutex for this non-blocking transaction
                 try {
                     ResultsMutex::LockGuard a_l {
                         ResultsMutex::Instance().access_mtx };  // RAII
@@ -157,10 +104,12 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                     // Unexpected; if we have a lock pointer it means
                     // that the mutex was cached
                     LOG_ERROR("Failed to remove the mutex pointer for "
-                              "transaction %1%: %2%", request.transactionId(), e.what());
+                              "transaction %1%: %2%",
+                              request.transactionId(), e.what());
                 }
                 lck_ptr->unlock();
-                LOG_TRACE("Unlocked transaction mutex %1%", request.transactionId());
+                LOG_TRACE("Unlocked transaction mutex %1%",
+                          request.transactionId());
             }
 
             // Flag the end of execution, for the thread container
@@ -168,54 +117,39 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
         }
     };
 
-    try {
-        outcome = module_ptr->executeAction(request);
+    auto response = module_ptr->executeAction(request);
+    assert(response.request_type == RequestType::NonBlocking);
 
-        if (lck_ptr != nullptr) {
-            LOG_TRACE("Locking transaction mutex %1%", request.transactionId());
-            lck_ptr->lock();
-        } else {
-            // This is unexpected
-            LOG_TRACE("We previously failed to obtain the mutex pointer for "
-                      "transaction %1%; we will not lock the access to the "
-                      "metadata file", request.transactionId());
-        }
-
-        completed = true;
-        assert(outcome.type == ActionOutcome::Type::External);
-        exit_code = outcome.exitcode;
-        LOG_INFO("The task for the %1%, by %2%, has completed",
-                 request.prettyLabel(), request.sender());
-
-        if (request.parsedChunks().data.get<bool>("notify_outcome")) {
-            connector_ptr->sendNonBlockingResponse(request, outcome.results,
-                                                   request.transactionId());
-        }
-    } catch (const Module::ProcessingError& e) {
-        exec_error = std::string { e.what() } + "\n";
-        LOG_ERROR("Execution failure for the task of the %1% (will send a "
-                  "PXP Error: %2%",
-                  request.prettyLabel(), e.what());
-        try {
-            connector_ptr->sendPXPError(request, e.what());
-        } catch (const PCPClient::connection_error& e) {
-            LOG_ERROR("Failed to send PXP Error after the failed task for %1%: %2%",
-                      request.prettyLabel(), e.what());
-        }
-    } catch (const PCPClient::connection_error& e) {
-        exec_error = std::string("Failed to send non blocking response: ")
-                     + e.what() + "\n";
-        LOG_ERROR("Failed to send non blocking response for the %1%: %2%",
-                  request.prettyLabel(), e.what());
+    if (lck_ptr != nullptr) {
+        LOG_TRACE("Locking transaction mutex %1%", request.transactionId());
+        lck_ptr->lock();
+    } else {
+        // This is unexpected
+        LOG_TRACE("We previously failed to obtain the mutex pointer for "
+                  "transaction %1%; we will not lock the access to the "
+                  "metadata file", request.transactionId());
     }
 
-    // Store metadata on disk
-    auto duration = std::to_string(timer.elapsed_seconds()) + " s";
+    if (response.action_metadata.get<bool>("results_are_valid")) {
+        LOG_INFO("The %1%, request ID %2% by %3%, has successfully completed",
+                 request.prettyLabel(), request.id(), request.sender());
+    } else {
+        LOG_ERROR(response.action_metadata.get<std::string>("execution_error"));
+    }
+
+    if (response.action_metadata.get<bool>("notify_outcome")) {
+        if (response.action_metadata.get<bool>("results_are_valid")) {
+            connector_ptr->sendNonBlockingResponse(response);
+        } else {
+            connector_ptr->sendPXPError(response);
+        }
+    }
+
     try {
-        results_storage.writeMetadata(exit_code, exec_error, duration);
+        storage_ptr->updateMetadataFile(response.action_metadata);
     } catch (const ResultsStorage::Error& e) {
-        LOG_ERROR("Failed to write metadata of non blocking request %1%: %2%",
-                  request.transactionId(), e.what());
+        LOG_ERROR("Failed to write metadata of the %1%: %2%",
+                  request.prettyLabel(), e.what());
     }
 }
 
@@ -228,10 +162,12 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
         : thread_container_ { "Action Executer" },
           thread_container_mutex_ {},
           connector_ptr_ { connector_ptr },
+          storage_ptr_ { new ResultsStorage(agent_configuration.spool_dir) },
           spool_dir_path_ { agent_configuration.spool_dir },
           modules_ {},
           modules_config_dir_ { agent_configuration.modules_config_dir },
-          modules_config_ {} {
+          modules_config_ {}
+{
     assert(!spool_dir_path_.string().empty());
     loadModulesConfiguration();
     loadInternalModules();
@@ -247,7 +183,8 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
 }
 
 void RequestProcessor::processRequest(const RequestType& request_type,
-                                      const PCPClient::ParsedChunks& parsed_chunks) {
+                                      const PCPClient::ParsedChunks& parsed_chunks)
+{
     LOG_TRACE("About to validate and process PXP request message: %1%",
               parsed_chunks.toString());
     try {
@@ -261,9 +198,9 @@ void RequestProcessor::processRequest(const RequestType& request_type,
             // We can access the request content; validate it
             validateRequestContent(request);
         } catch (RequestProcessor::Error& e) {
-            // Invalid request; send *PXP error*
-            LOG_ERROR("Invalid %1%, request ID %2% by %3%. Will reply with a "
-                      "PXP error; %4%",
+            // Invalid request; send *RPC Error message*
+            LOG_ERROR("Invalid %1%, request ID %2% by %3%. Will reply with an "
+                      "RPC Error message. Error: %4%",
                       request.prettyLabel(), request.id(), request.sender(), e.what());
             connector_ptr_->sendPXPError(request, e.what());
             return;
@@ -277,66 +214,83 @@ void RequestProcessor::processRequest(const RequestType& request_type,
             } else {
                 processNonBlockingRequest(request);
             }
+
             LOG_DEBUG("The %1%, request ID %2% by %3%, has been successfully processed",
                       request.prettyLabel(), request.id(), request.sender());
         } catch (std::exception& e) {
-            // Process failure; send *PXP error*
+            // Process failure; send a *RPC Error message*
             LOG_ERROR("Failed to process %1%, request ID %2% by %3%. Will reply "
-                      "with a PXP error; %4%",
+                      "with an RPC Error message. Error: %4%",
                       request.prettyLabel(), request.id(), request.sender(), e.what());
             connector_ptr_->sendPXPError(request, e.what());
         }
     } catch (ActionRequest::Error& e) {
-        // Failed to instantiate ActionRequest - bad message; send *PCP error*
-
+        // Failed to instantiate ActionRequest - bad message;
+        // send a *PCP error*
         auto id = parsed_chunks.envelope.get<std::string>("id");
         auto sender = parsed_chunks.envelope.get<std::string>("sender");
         std::vector<std::string> endpoints { sender };
         LOG_ERROR("Invalid request with ID %1% by %2%. Will reply with a PCP "
-                  "error; %3%",
+                  "error. Error: %3%",
                   id, sender, e.what());
         connector_ptr_->sendPCPError(id, e.what(), endpoints);
     }
 }
 
-
-bool RequestProcessor::hasModule(const std::string& module_name) const {
+bool RequestProcessor::hasModule(const std::string& module_name) const
+{
     return modules_.find(module_name) != modules_.end();
 }
 
-bool RequestProcessor::hasModuleConfig(const std::string& module_name) const {
+bool RequestProcessor::hasModuleConfig(const std::string& module_name) const
+{
     return modules_config_.find(module_name) != modules_config_.end();
 }
 
-std::string RequestProcessor::getModuleConfig(const std::string& module_name) const {
+std::string RequestProcessor::getModuleConfig(const std::string& module_name) const
+{
     if (!hasModuleConfig(module_name))
-        throw RequestProcessor::Error { std::string("no configuration loaded for ")
-                                        + module_name };
+        throw RequestProcessor::Error {
+            (boost::format("no configuration loaded for the module '%1%'")
+                % module_name)
+            .str() };
 
     return modules_config_.at(module_name).toString();
 }
 
 //
-// Private interface
+// Process requests (private interface)
 //
 
-void RequestProcessor::validateRequestContent(const ActionRequest& request) {
-    // Validate requested module and action
+void RequestProcessor::validateRequestContent(const ActionRequest& request) const
+{
+    static PCPClient::Validator status_query_validator { getStatusQueryValidator() };
+
+    auto is_status_request = isStatusRequest(request);
+
     try {
-        if (!modules_.at(request.module())->hasAction(request.action())) {
-            throw RequestProcessor::Error { "unknown action '" + request.action()
-                                            + "' for module '" + request.module() + "'" };
-        }
+        if (!is_status_request
+                && !modules_.at(request.module())->hasAction(request.action()))
+            throw RequestProcessor::Error {
+                (boost::format("unknown action '%1%' for module '%2%'")
+                    % request.action()
+                    % request.module())
+                .str() };
     } catch (std::out_of_range& e) {
         throw RequestProcessor::Error { "unknown module: " + request.module() };
     }
 
     // If it's an internal module, the request must be blocking
-    if (modules_.at(request.module())->type() == Module::Type::Internal
-        && request.type() == RequestType::NonBlocking) {
-        throw RequestProcessor::Error { "the module '" + request.module() + "' "
-                                        "supports only blocking PXP requests" };
-    }
+    // NB: we rely on short-circuiting OR (otherwise, modules_ access
+    // could break)
+    if (request.type() == RequestType::NonBlocking
+            && (is_status_request
+                || modules_.at(request.module())->type() == ModuleType::Internal))
+        throw RequestProcessor::Error {
+            (boost::format("the module '%1%' supports only blocking PXP requests")
+                % request.module())
+            .str() };
+
 
     // Validate request input params
     try {
@@ -344,7 +298,9 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
                   request.prettyLabel(), request.id(), request.sender());
 
         // NB: the registred schemas have the same name as the action
-        auto& validator = modules_.at(request.module())->input_validator_;
+        auto& validator = (is_status_request
+                                ? status_query_validator
+                                : modules_.at(request.module())->input_validator_);
         validator.validate(request.params(), request.action());
     } catch (PCPClient::validation_error& e) {
         LOG_DEBUG("Invalid input parameters of the %1%, request ID %2% by %3%: %4%",
@@ -353,17 +309,22 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) {
     }
 }
 
-void RequestProcessor::processBlockingRequest(const ActionRequest& request) {
-    // Execute action; possible request errors will be propagated
-    auto outcome = modules_[request.module()]->executeAction(request);
+void RequestProcessor::processBlockingRequest(const ActionRequest& request)
+{
+    auto response = modules_[request.module()]->executeAction(request);
 
-    LOG_INFO("The %1%, request ID %2% by %3%, has completed",
-             request.prettyLabel(), request.id(), request.sender());
-
-    connector_ptr_->sendBlockingResponse(request, outcome.results);
+    if (response.action_metadata.get<bool>("results_are_valid")) {
+        LOG_INFO("The %1%, request ID %2% by %3%, has successfully completed",
+                 request.prettyLabel(), request.id(), request.sender());
+        connector_ptr_->sendBlockingResponse(response, request);
+    } else {
+        LOG_ERROR(response.action_metadata.get<std::string>("execution_error"));
+        connector_ptr_->sendPXPError(response);
+    }
 }
 
-void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
+void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
+{
     request.setResultsDir(
         std::move((spool_dir_path_ / request.transactionId()).string()));
     std::string err_msg {};
@@ -373,36 +334,47 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
               request.prettyLabel(), request.id(), request.sender());
 
     try {
+        // NB: this locked check prevents multiple requests with the
+        // same transaction_id
         pcp_util::lock_guard<pcp_util::mutex> lck { thread_container_mutex_ };
 
         if (thread_container_.find(request.transactionId())) {
-            err_msg = std::string { "already exists an ongoing task with "
-                                    "transaction id " };
+            err_msg += "already exists an ongoing task with transaction id ";
             err_msg += request.transactionId();
         } else {
-            // Flag to enable signaling from task to thread_container
-            auto done = std::make_shared<std::atomic<bool>>(false);
+            try {
+                // Initialize the action metadata file
+                auto metadata = ActionResponse::getMetadataFromRequest(request);
+                storage_ptr_->initializeMetadataFile(request.transactionId(),
+                                                     metadata);
+            } catch (const ResultsStorage::Error& e) {
+                err_msg += "Failed to initialize the metadata file: ";
+                err_msg += e.what();
+            }
 
-            // NB: we got the_lock, so we're sure this will not throw
-            // for having another thread with the same name
-            thread_container_.add(request.transactionId(),
-                                  pcp_util::thread(&nonBlockingActionTask,
-                                                   modules_[request.module()],
-                                                   request,
-                                                   ResultsStorage { request },
-                                                   connector_ptr_,
-                                                   done),
-                                  done);
+            if (err_msg.empty()) {
+                // Metadata file was created; we can start the task
+
+                // Flag to enable signaling from task to thread_container
+                auto done = std::make_shared<std::atomic<bool>>(false);
+
+                // NB: we got the_lock, so we're sure this will not throw
+                // due to another stored thread with the same name
+                thread_container_.add(request.transactionId(),
+                                      pcp_util::thread(&nonBlockingActionTask,
+                                                       modules_[request.module()],
+                                                       request,
+                                                       connector_ptr_,
+                                                       storage_ptr_,
+                                                       done),
+                                      done);
+            }
         }
-    } catch (ResultsStorage::Error& e) {
-        // Failed to instantiate ResultsStorage
-        LOG_ERROR("Failed to initialize the result files for the %1%; error: %2%",
-                  request.prettyLabel(), e.what());
-        err_msg = std::string { "failed to initialize result files: " } + e.what();
-    } catch (std::exception& e) {
-        LOG_ERROR("Failed to spawn the action job for the %1%; error: %2%",
-                  request.prettyLabel(), e.what());
-        err_msg = std::string { "failed to start action task: " } + e.what();
+    } catch (const std::exception& e) {
+        LOG_ERROR("Failed to spawn the action job for transaction %1%; error: %2%",
+                  request.transactionId(), e.what());
+        err_msg += "failed to start action task: ";
+        err_msg += e.what();
     }
 
     if (err_msg.empty()) {
@@ -412,7 +384,12 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request) {
     }
 }
 
-void RequestProcessor::loadModulesConfiguration() {
+//
+// Load Modules (private interface)
+//
+
+void RequestProcessor::loadModulesConfiguration()
+{
     LOG_INFO("Loading external modules configuration from %1%",
              modules_config_dir_);
 
@@ -450,14 +427,15 @@ void RequestProcessor::loadModulesConfiguration() {
     }
 }
 
-void RequestProcessor::loadInternalModules() {
+void RequestProcessor::loadInternalModules()
+{
     // HERE(ale): no external configuration for internal modules
     modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
     modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
-    modules_["status"] = std::shared_ptr<Module>(new Modules::Status);
 }
 
-void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
+void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
+{
     LOG_INFO("Loading external modules from %1%", dir_path.string());
 
     if (fs::is_directory(dir_path)) {
@@ -480,13 +458,16 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
                         auto config_itr = modules_config_.find(f_p.stem().string());
 
                         if (config_itr != modules_config_.end()) {
-                            e_m = new ExternalModule(f_p.string(), config_itr->second);
+                            e_m = new ExternalModule(f_p.string(),
+                                                     config_itr->second,
+                                                     spool_dir_path_.string());
                             e_m->validateConfiguration();
                             LOG_DEBUG("The '%1%' module configuration has been "
                                       "validated: %2%", e_m->module_name,
                                       config_itr->second.toString());
                         } else {
-                            e_m = new ExternalModule(f_p.string());
+                            e_m = new ExternalModule(f_p.string(),
+                                                     spool_dir_path_.string());
                         }
 
                         modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
@@ -509,7 +490,8 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path) {
     }
 }
 
-void RequestProcessor::logLoadedModules() const {
+void RequestProcessor::logLoadedModules() const
+{
     for (auto& module : modules_) {
         std::string txt { "found no action" };
         std::string actions_list { "" };

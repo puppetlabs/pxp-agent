@@ -1,17 +1,19 @@
 #include <pxp-agent/external_module.hpp>
+#include <pxp-agent/module_type.hpp>
+#include <pxp-agent/action_output.hpp>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.external_module"
-#include <leatherman/logging/logging.hpp>
 #include <leatherman/execution/execution.hpp>
 #include <leatherman/file_util/file.hpp>
 
-#include <horsewhisperer/horsewhisperer.h>
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.external_module"
+#include <leatherman/logging/logging.hpp>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
 #include <atomic>
-#include <memory>  // shared_ptr
+#include <memory>   // std::shared_ptr
+#include <utility>  // std::move
 
 // TODO(ale): disable assert() once we're confident with the code...
 // To disable assert()
@@ -29,16 +31,17 @@ static const std::string METADATA_ACTIONS_ENTRY { "actions" };
 static const int EXTERNAL_MODULE_FILE_ERROR_EC { 5 };
 
 namespace fs = boost::filesystem;
-namespace HW = HorseWhisperer;
 namespace lth_exec = leatherman::execution;
 namespace lth_file = leatherman::file_util;
+namespace lth_jc = leatherman::json_container;
 
 //
 // Free functions
 //
 
 // Provides the module metadata validator
-PCPClient::Validator getMetadataValidator() {
+PCPClient::Validator getMetadataValidator()
+{
     // Metadata schema
     PCPClient::Schema metadata_schema { METADATA_SCHEMA_NAME,
                                           PCPClient::ContentType::Json };
@@ -67,12 +70,15 @@ PCPClient::Validator getMetadataValidator() {
 //
 
 ExternalModule::ExternalModule(const std::string& path,
-                               const lth_jc::JsonContainer& config)
+                               const lth_jc::JsonContainer& config,
+                               const std::string& spool_dir)
         : path_ { path },
-          config_ { config } {
+          config_ { config },
+          storage_ { spool_dir }
+{
     fs::path module_path { path };
     module_name = module_path.stem().string();
-    auto metadata = getMetadata();
+    auto metadata = getModuleMetadata();
 
     try {
         if (metadata.includes(METADATA_CONFIGURATION_ENTRY)) {
@@ -91,12 +97,15 @@ ExternalModule::ExternalModule(const std::string& path,
     }
 }
 
-ExternalModule::ExternalModule(const std::string& path)
+ExternalModule::ExternalModule(const std::string& path,
+                               const std::string& spool_dir)
         : path_ { path },
-          config_ { "{}" } {
+          config_ { "{}" },
+          storage_ { spool_dir }
+{
     fs::path module_path { path };
     module_name = module_path.stem().string();
-    auto metadata = getMetadata();
+    auto metadata = getModuleMetadata();
 
     try {
        registerActions(metadata);
@@ -108,7 +117,8 @@ ExternalModule::ExternalModule(const std::string& path)
     }
 }
 
-void ExternalModule::validateConfiguration() {
+void ExternalModule::validateConfiguration()
+{
     if (config_validator_.includesSchema(module_name)) {
         config_validator_.validate(config_, module_name);
     } else {
@@ -118,36 +128,49 @@ void ExternalModule::validateConfiguration() {
 }
 
 //
-// Static functions
+// Static class functions
 //
 
-void ExternalModule::readNonBlockingOutcome(const ActionRequest& request,
-                                            const std::string& out_file,
-                                            const std::string& err_file,
-                                            std::string& out_txt,
-                                            std::string& err_txt) {
-    if (fs::exists(err_file)) {
-        if (!lth_file::read(err_file, err_txt)) {
-            LOG_ERROR("Failed to read error file '%1%' of '%2% %3%'; will "
-                      "continue processing the output",
-                      err_file, request.module(), request.action());
-        } else {
-            LOG_TRACE("Successfully read error file '%1%'", err_file);
-        }
+void ExternalModule::processOutputAndUpdateMetadata(ActionResponse& response)
+{
+    if (response.output.stdout.empty()) {
+        LOG_TRACE("Obtained no results on stdout for the %1%",
+                  response.prettyRequestLabel());
+    } else {
+        LOG_TRACE("Results on stdout for the %1%: %2%",
+                  response.prettyRequestLabel(), response.output.stdout);
     }
 
-    if (!fs::exists(out_file)) {
-        LOG_DEBUG("Output file '%1%' of '%2% %3%' does not exist",
-                  out_file, request.module(), request.action());
-    } else if (!lth_file::read(out_file, out_txt)) {
-        LOG_ERROR("Failed to read output file '%1%' of '%2% %3%'",
-                  out_file, request.module(), request.action());
-        throw Module::ProcessingError { "failed to read" };
-    } else if (out_txt.empty()) {
-        LOG_TRACE("Output file '%1%' of '%2% %3%' is empty",
-                  out_file, request.module(), request.action());
-    } else {
-        LOG_TRACE("Successfully read output file '%1%'", out_file);
+    if (response.output.exitcode != EXIT_SUCCESS) {
+        LOG_TRACE("Execution failure (exit code %1%) for the %2%%3%",
+                  response.output.exitcode, response.prettyRequestLabel(),
+                  (response.output.stderr.empty()
+                    ? ""
+                    : "; stderr:\n" + response.output.stderr));
+    } else if (!response.output.stderr.empty()) {
+        LOG_TRACE("Output on stderr for the %1%:\n%2%",
+                  response.prettyRequestLabel(), response.output.stderr);
+    }
+
+    try {
+        // Ensure output format is valid JSON by instantiating
+        // JsonContainer (NB: its ctor does not accept empty strings)
+        lth_jc::JsonContainer results {
+            (response.output.stdout.empty() ? "null" : response.output.stdout) };
+        response.setValidResultsAndEnd(std::move(results));
+    } catch (lth_jc::data_parse_error& e) {
+        LOG_DEBUG("Obtained invalid JSON on stdout for the %1%; (validation "
+                  "error: %2%); stdout:\n%3%",
+                  response.prettyRequestLabel(), e.what(), response.output.stdout);
+        auto execution_error =
+            (boost::format("The task executed for the %1% returned invalid "
+                           "JSON on stdout - stderr:%2%")
+                % response.prettyRequestLabel()
+                % (response.output.stderr.empty()
+                        ? " (empty)"
+                        : '\n' + response.output.stderr))
+            .str();
+        response.setBadResultsAndEnd(execution_error);
     }
 }
 
@@ -159,8 +182,9 @@ void ExternalModule::readNonBlockingOutcome(const ActionRequest& request,
 const PCPClient::Validator ExternalModule::metadata_validator_ {
         getMetadataValidator() };
 
-// Retrieve and validate the module metadata
-const lth_jc::JsonContainer ExternalModule::getMetadata() {
+// Retrieve and validate the module's metadata
+const lth_jc::JsonContainer ExternalModule::getModuleMetadata()
+{
     auto exec =
 #ifdef _WIN32
         lth_exec::execute("cmd.exe", { "/c", path_, "metadata" },
@@ -196,7 +220,8 @@ const lth_jc::JsonContainer ExternalModule::getMetadata() {
     return metadata;
 }
 
-void ExternalModule::registerConfiguration(const lth_jc::JsonContainer& config_metadata) {
+void ExternalModule::registerConfiguration(const lth_jc::JsonContainer& config_metadata)
+{
     try {
         PCPClient::Schema configuration_schema { module_name, config_metadata };
         LOG_DEBUG("Registering module config schema for '%1%'", module_name);
@@ -209,16 +234,18 @@ void ExternalModule::registerConfiguration(const lth_jc::JsonContainer& config_m
     }
 }
 
-void ExternalModule::registerActions(const lth_jc::JsonContainer& metadata) {
-    for (auto& action : metadata.get<std::vector<lth_jc::JsonContainer>>(
-                                    METADATA_ACTIONS_ENTRY)) {
+void ExternalModule::registerActions(const lth_jc::JsonContainer& metadata)
+{
+    for (auto& action
+            : metadata.get<std::vector<lth_jc::JsonContainer>>(
+                METADATA_ACTIONS_ENTRY))
         registerAction(action);
-    }
 }
 
 // Register the specified action after ensuring that the input and
 // output schemas are valid JSON (i.e. we can instantiate Schema).
-void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
+void ExternalModule::registerAction(const lth_jc::JsonContainer& action)
+{
     // NOTE(ale): name, input, and output are required action entries
     auto action_name = action.get<std::string>("name");
     LOG_DEBUG("Validating action '%1% %2%'", module_name, action_name);
@@ -250,7 +277,8 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action) {
     }
 }
 
-std::string ExternalModule::getActionArguments(const ActionRequest& request) {
+std::string ExternalModule::getActionArguments(const ActionRequest& request)
+{
     lth_jc::JsonContainer action_args {};
     action_args.set<lth_jc::JsonContainer>("input", request.params());
 
@@ -269,55 +297,9 @@ std::string ExternalModule::getActionArguments(const ActionRequest& request) {
     return action_args.toString();
 }
 
-ActionOutcome ExternalModule::processRequestOutcome(const ActionRequest& request,
-                                                    int exit_code,
-                                                    std::string& out_txt,
-                                                    std::string& err_txt) {
-    if (out_txt.empty()) {
-        LOG_TRACE("Obtained no results on stdout for the %1%",
-                  request.prettyLabel());
-    } else {
-        LOG_TRACE("Results on stdout for the %1%: %2%",
-                  request.prettyLabel(), out_txt);
-    }
-
-    if (exit_code != EXIT_SUCCESS) {
-        LOG_TRACE("Execution failure (exit code %1%) for the %2%%3%",
-                  exit_code, request.prettyLabel(),
-                  (err_txt.empty() ? "" : "; stderr:\n" + err_txt));
-    } else if (!err_txt.empty()) {
-        LOG_TRACE("Output on stderr for the %1%:\n%2%",
-                  request.prettyLabel(), err_txt);
-    }
-
-    try {
-        // Ensure output format is valid JSON by instantiating JsonContainer
-        // NB: JsonContainer's ctor does not accept empty strings
-        lth_jc::JsonContainer results { (out_txt.empty() ? "null" : out_txt) };
-        return ActionOutcome { exit_code, err_txt, out_txt, results };
-    } catch (lth_jc::data_parse_error& e) {
-        boost::format err_format;
-
-        if (out_txt.empty()) {
-            LOG_DEBUG("Obtained no output on stdout for the %1%",
-                      request.prettyLabel());
-            err_format = boost::format { "The task executed for the %1% returned "
-                                         "no output on stdout - stderr:%2%" };
-        } else {
-            LOG_DEBUG("Obtained invalid JSON on stdout for the %1%; "
-                      "(validation error: %2%); stdout:\n%3%",
-                      request.prettyLabel(), e.what(), out_txt);
-            err_format = boost::format { "The task executed for the %1% returned "
-                                         "invalid JSON on stdout - stderr:%2%" };
-        }
-        auto err_msg = (err_format % request.prettyLabel()
-                                   % (err_txt.empty() ? " (empty)" : '\n' + err_txt))
-                        .str();
-        throw Module::ProcessingError { err_msg };
-    }
-}
-
-ActionOutcome ExternalModule::callBlockingAction(const ActionRequest& request) {
+ActionResponse ExternalModule::callBlockingAction(const ActionRequest& request)
+{
+    ActionResponse response { ModuleType::External, request };
     auto action_name = request.action();
     auto action_args = getActionArguments(request);
 
@@ -335,10 +317,14 @@ ActionOutcome ExternalModule::callBlockingAction(const ActionRequest& request) {
         0,                                     // timeout
         { lth_exec::execution_options::merge_environment });  // options
 
-    return processRequestOutcome(request, exec.exit_code, exec.output, exec.error);
+    response.output = ActionOutput { exec.exit_code, exec.output, exec.error };
+    ExternalModule::processOutputAndUpdateMetadata(response);
+    return response;
 }
 
-ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request) {
+ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& request)
+{
+    ActionResponse response { ModuleType::External, request };
     auto action_name = request.action();
     auto input_txt = getActionArguments(request);
     fs::path results_dir_path { request.resultsDir() };
@@ -365,8 +351,9 @@ ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request
         { lth_exec::execution_options::merge_environment });  // options
 
     if (exec.exit_code == EXTERNAL_MODULE_FILE_ERROR_EC) {
-        // This is unexpected. The outcome of the task will not be
-        // available for future transaction status requests
+        // This is unexpected. The output of the task will not be
+        // available for future transaction status requests; we cannot
+        // provide a reliable ActionResponse.
         LOG_WARNING("The task process failed to write output on file for the %1%; "
                     "stdout: %2%; stderr: %3%",
                     request.prettyLabel(),
@@ -376,14 +363,13 @@ ActionOutcome ExternalModule::callNonBlockingAction(const ActionRequest& request
     }
 
     // Stdout / stderr output is on file; read it
-    std::string out_txt;
-    std::string err_txt;
-    readNonBlockingOutcome(request, out_file, err_file, out_txt, err_txt);
-
-    return processRequestOutcome(request, exec.exit_code, out_txt, err_txt);
+    response.output = storage_.getOutput(request.transactionId(), exec.exit_code);
+    ExternalModule::processOutputAndUpdateMetadata(response);
+    return response;
 }
 
-ActionOutcome ExternalModule::callAction(const ActionRequest& request) {
+ActionResponse ExternalModule::callAction(const ActionRequest& request)
+{
     if (request.type() == RequestType::Blocking) {
         return callBlockingAction(request);
     } else {
