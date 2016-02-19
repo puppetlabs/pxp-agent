@@ -44,7 +44,16 @@ class PXPConnector : public PCPClient::Connector {
                                                      const ActionRequest& request);
 
     // Asserts that the ActionResponse arg has all needed entries.
+    TEST_VIRTUAL_SPECIFIER void sendStatusResponse(const ActionResponse& response,
+                                                   const ActionRequest& request);
+
+    // Asserts that the ActionResponse arg has all needed entries.
     TEST_VIRTUAL_SPECIFIER void sendNonBlockingResponse(const ActionResponse& response);
+
+  private:
+    void sendBlockingResponse_(const ActionResponse::ResponseType& response_type,
+                               const ActionResponse& response,
+                               const ActionRequest& request);
 };
 
 }  // namespace PXPAgent

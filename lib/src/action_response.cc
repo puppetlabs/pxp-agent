@@ -90,11 +90,13 @@ ActionResponse::getMetadataFromRequest(const ActionRequest& request)
 //
 
 ActionResponse::ActionResponse(ModuleType module_type_,
-                               const ActionRequest& request)
+                               const ActionRequest& request,
+                               std::string status_query_transaction_)
         : module_type { module_type_ },
           request_type { request.type() },
           output {},
-          action_metadata { getMetadataFromRequest(request) }
+          action_metadata { getMetadataFromRequest(request) },
+          status_query_transaction { status_query_transaction_ }
 {
 }
 
@@ -105,7 +107,8 @@ ActionResponse::ActionResponse(ModuleType m_t,
         : module_type(m_t),
           request_type(r_t),
           output(out),
-          action_metadata(std::forward<lth_jc::JsonContainer>(a_m))
+          action_metadata(std::forward<lth_jc::JsonContainer>(a_m)),
+          status_query_transaction()
 {
     if (!valid())
         throw Error { "invalid action metadata" };
@@ -183,7 +186,7 @@ bool ActionResponse::valid(R_T response_type) const
             is_valid = action_metadata.includes(RESULTS);
             break;
         case (R_T::StatusOutput):
-            is_valid = true;
+            is_valid = !status_query_transaction.empty();
             break;
         case (R_T::RPCError):
             is_valid = action_metadata.includes(EXECUTION_ERROR);
@@ -206,11 +209,20 @@ lth_jc::JsonContainer ActionResponse::toJSON(R_T response_type) const
                 action_metadata.get<lth_jc::JsonContainer>(RESULTS));
             break;
         case (R_T::StatusOutput):
-            r.set<std::string>(STATUS, action_metadata.get<std::string>(STATUS));
-            r.set<std::string>("stdout", output.std_out);
-            r.set<std::string>("stderr", output.std_err);
-            r.set<int>("exitcode", output.exitcode);
+        {
+            auto action_status = action_metadata.get<std::string>(STATUS);
+            lth_jc::JsonContainer action_results {};
+            action_results.set<std::string>(STATUS, action_status);
+            action_results.set<std::string>(TRANSACTION_ID, status_query_transaction);
+            if (action_status != "unknown" && action_status != "undetermined")
+                action_results.set<int>("exitcode", output.exitcode);
+            if (!output.std_out.empty())
+                action_results.set<std::string>("stdout", output.std_out);
+            if (!output.std_err.empty())
+                action_results.set<std::string>("stderr", output.std_err);
+            r.set<lth_jc::JsonContainer>(RESULTS, action_results);
             break;
+        }
         case (R_T::RPCError):
             r.set<std::string>("id", action_metadata.get<std::string>(REQUEST_ID));
             r.set<std::string>("description",
