@@ -186,7 +186,13 @@ bool ActionResponse::valid(R_T response_type) const
             is_valid = action_metadata.includes(RESULTS);
             break;
         case (R_T::StatusOutput):
-            is_valid = !status_query_transaction.empty();
+            if (action_metadata.includes("status")) {
+                auto found = NAMES_OF_ACTION_STATUS.find(
+                    action_metadata.get<std::string>("status"));
+                if (found != NAMES_OF_ACTION_STATUS.end())
+                    is_valid = !status_query_transaction.empty();
+            }
+
             break;
         case (R_T::RPCError):
             is_valid = action_metadata.includes(EXECUTION_ERROR);
