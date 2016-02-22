@@ -28,14 +28,14 @@ TEST_CASE("ResultsStorage ctor", "[module]") {
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
 
-static void configureTest(const std::string& p = SPOOL_DIR) {
-    if (!fs::exists(p) && !fs::create_directories(p))
+static void configureTest() {
+    if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR))
         FAIL("Failed to create the spool directory");
 }
 
-static void resetTest(const std::string& p = SPOOL_DIR) {
-    if (fs::exists(p))
-        fs::remove_all(p);
+static void resetTest() {
+    if (fs::exists(SPOOL_DIR))
+        fs::remove_all(SPOOL_DIR);
 }
 
 TEST_CASE("ResultsStorage::find", "[module][results]") {
@@ -84,7 +84,6 @@ static const std::string VALID_TRANSACTION { "valid" };
 static const std::string BROKEN_TRANSACTION { "broken" };
 
 TEST_CASE("ResultsStorage::getActionMetadata", "[module][results]") {
-    configureTest(TESTING_RESULTS);
     ResultsStorage st { TESTING_RESULTS };
 
     SECTION("Throws an Error if the metadata file does not exist") {
@@ -137,7 +136,6 @@ TEST_CASE("ResultsStorage::updateMetadataFile", "[module][results]") {
 }
 
 TEST_CASE("ResultsStorage::pidFileExists", "[module][results]") {
-    configureTest(TESTING_RESULTS);
     ResultsStorage st { TESTING_RESULTS };
 
     SECTION("returns true if exists") {
@@ -150,7 +148,6 @@ TEST_CASE("ResultsStorage::pidFileExists", "[module][results]") {
 }
 
 TEST_CASE("ResultsStorage::getPID", "[module][results]") {
-    configureTest(TESTING_RESULTS);
     ResultsStorage st { TESTING_RESULTS };
 
     SECTION("Throws an Error if the PID file does not exist") {
