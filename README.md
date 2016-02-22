@@ -225,8 +225,10 @@ single JSON object. Example:
 ```
 
 Note that you have to specify the WebSocket secure URL of the
-[PCP broker][pcp-broker] in order to establish the WebSocket connection on top
-of which the PCP communication will take place.
+[PCP broker][pcp-broker] and the paths of the SSL certificates in order to
+establish the WebSocket connection on top of which the PCP communication will
+take place. If such mandatory options are not configured, pxp-agent will not
+start.
 
 #### Logging
 
@@ -297,6 +299,18 @@ The location where the outcome of non-blocking requests will be stored; the
 default location is:
  - \*nix: */opt/puppetlabs/pxp-agent/spool*
  - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\spool*
+
+**spool-dir-purge-ttl (optional)**
+
+Automatically delete results subdirectories located in the `spool` directory
+that have a `start` timestamp that has expired in respect to the specified TTL.
+The TTL value must be an integer with one of the following suffixes:
+ - 'm' - minutes
+ - 'h' - hours
+ - 'd' - days
+The default TTL value is "14d" (14 days). Specifying a 0, with any of the above
+suffixes, will disable the purge functionality. Note that the purge will take
+place when pxp-agent starts and will be repeated at each 1.2*TTL interval.
 
 **foreground (optional flag)**
 

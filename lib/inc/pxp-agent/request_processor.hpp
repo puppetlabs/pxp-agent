@@ -25,9 +25,13 @@ class RequestProcessor {
     };
 
     RequestProcessor() = delete;
+    RequestProcessor(const RequestProcessor&) = delete;
+    RequestProcessor& operator=(const RequestProcessor&) = delete;
 
     RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
                      const Configuration::Agent& agent_configuration);
+
+    ~RequestProcessor();
 
     /// Execute the specified action.
     ///
@@ -75,6 +79,9 @@ class RequestProcessor {
     /// non-blocking actions will be created
     const boost::filesystem::path spool_dir_path_;
 
+    /// Time duration after which results directories get deleted
+    const std::string spool_dir_purge_ttl_;
+
     /// Modules
     std::map<std::string, std::shared_ptr<Module>> modules_;
 
@@ -83,6 +90,14 @@ class RequestProcessor {
 
     /// Modules configuration
     std::map<std::string, leatherman::json_container::JsonContainer> modules_config_;
+
+    /// To manage the spool purge task
+    std::unique_ptr<PCPClient::Util::thread> spool_dir_purge_thread_ptr_;
+    PCPClient::Util::mutex spool_dir_purge_mutex_;
+    PCPClient::Util::condition_variable spool_dir_purge_cond_var_;
+
+    /// Flag; set to true if the dtor has been called
+    bool is_destructing_;
 
     /// Throw a RequestProcessor::Error in case of unknown module,
     /// unknown action, or if the requested input parameters entry
@@ -113,6 +128,10 @@ class RequestProcessor {
 
     /// Log the loaded modules
     void logLoadedModules() const;
+
+    /// Spool directory purge task; the purge call will be triggered
+    /// in intervals of (TTL + TTL * 1.2) duration
+    void spoolDirPurgeTask();
 };
 
 }  // namespace PXPAgent

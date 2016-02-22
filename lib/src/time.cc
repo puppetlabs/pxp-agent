@@ -101,10 +101,10 @@ std::string Timestamp::convertToISO(std::string extended_ISO8601_time)
     return extended_ISO8601_time;
 }
 
-bool Timestamp::isOlderThan(const std::string& extended_ISO8601_time)
+bool Timestamp::isNewerThan(const std::string& extended_ISO8601_time)
 {
     auto t_p = pt::from_iso_string(Timestamp::convertToISO(extended_ISO8601_time));
-    return time_point < t_p;
+    return time_point > t_p;
 }
 
 }  // namespace PXPAgent

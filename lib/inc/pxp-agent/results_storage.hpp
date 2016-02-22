@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <stdexcept>
+#include <functional>  // std::function
 
 namespace PXPAgent {
 
@@ -79,6 +80,17 @@ class ResultsStorage {
     // Same as above, but does not retrieve the exit code from file.
     ActionOutput getOutput(const std::string& transaction_id,
                            int exitcode);
+
+    // Cleans up the spool directory by removing the results
+    // directories that are older than the specified ttl and skipping
+    // the directories related to ongoing tasks.
+    // This function is not thread safe.
+    // If a purge_callback is not specified, the boost filesystem's
+    // remove_all() will be used.
+    unsigned int purge(
+        const std::string& ttl,
+        const std::vector<std::string>& ongoing_transactions,
+        std::function<void(const std::string& dir_path)> purge_callback = nullptr);
 
   private:
     const boost::filesystem::path spool_dir_path_;

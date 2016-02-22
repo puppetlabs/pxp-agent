@@ -43,7 +43,7 @@ class Timestamp {
     // the extended ISO format (refer to boost date_time docs)
     static std::string convertToISO(std::string extended_ISO8601_time);
 
-    bool isOlderThan(const std::string& extended_ISO8601_time);
+    bool isNewerThan(const std::string& extended_ISO8601_time);
 };
 
 }  // namespace PXPAgents

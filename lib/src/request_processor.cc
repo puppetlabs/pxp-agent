@@ -6,6 +6,7 @@
 #include <pxp-agent/external_module.hpp>
 #include <pxp-agent/module_type.hpp>
 #include <pxp-agent/request_type.hpp>
+#include <pxp-agent/time.hpp>
 #include <pxp-agent/modules/echo.hpp>
 #include <pxp-agent/modules/ping.hpp>
 #include <pxp-agent/util/process.hpp>
@@ -169,9 +170,14 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
           connector_ptr_ { connector_ptr },
           storage_ptr_ { new ResultsStorage(agent_configuration.spool_dir) },
           spool_dir_path_ { agent_configuration.spool_dir },
+          spool_dir_purge_ttl_ { agent_configuration.spool_dir_purge_ttl },
           modules_ {},
           modules_config_dir_ { agent_configuration.modules_config_dir },
-          modules_config_ {}
+          modules_config_ {},
+          spool_dir_purge_thread_ptr_ { nullptr },
+          spool_dir_purge_mutex_ {},
+          spool_dir_purge_cond_var_ {},
+          is_destructing_ { false }
 {
     assert(!spool_dir_path_.string().empty());
     loadModulesConfiguration();
@@ -185,6 +191,28 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
     }
 
     logLoadedModules();
+
+    if (Timestamp::getMinutes(spool_dir_purge_ttl_) > 0) {
+        auto num = storage_ptr_->purge(spool_dir_purge_ttl_,
+                                       thread_container_.getThreadNames());
+        LOG_INFO("Removed %1% director%2% from %3%",
+                 num, (num == 1 ? "y" : "ies"), spool_dir_path_.string());
+        spool_dir_purge_thread_ptr_.reset(
+            new pcp_util::thread(&RequestProcessor::spoolDirPurgeTask, this));
+    }
+}
+
+RequestProcessor::~RequestProcessor()
+{
+    {
+        pcp_util::lock_guard<pcp_util::mutex> the_lock { spool_dir_purge_mutex_ };
+        is_destructing_ = true;
+        spool_dir_purge_cond_var_.notify_one();
+    }
+
+    if (spool_dir_purge_thread_ptr_ != nullptr
+            && spool_dir_purge_thread_ptr_->joinable())
+        spool_dir_purge_thread_ptr_->join();
 }
 
 void RequestProcessor::processRequest(const RequestType& request_type,
@@ -816,6 +844,39 @@ void RequestProcessor::logLoadedModules() const
         auto txt_suffix = lth_util::plural(module.second->actions.size());
         LOG_DEBUG("Loaded '%1%' module - %2%%3%%4%",
                   module.first, txt, txt_suffix, actions_list);
+    }
+}
+
+//
+// Spool directory purge task (private interface)
+//
+
+void RequestProcessor::spoolDirPurgeTask()
+{
+    auto num_minutes = Timestamp::getMinutes(spool_dir_purge_ttl_);
+    num_minutes *= 1.2;
+    LOG_DEBUG("Starting the task for purging the spool directory every %1% "
+              "minute%2%; thread id %3%",
+              num_minutes, lth_util::plural(num_minutes),
+              pcp_util::this_thread::get_id());
+
+
+    while (true) {
+        pcp_util::unique_lock<pcp_util::mutex> the_lock { spool_dir_purge_mutex_ };
+        auto now = pcp_util::chrono::system_clock::now();
+
+        if (!is_destructing_)
+            spool_dir_purge_cond_var_.wait_until(
+                the_lock,
+                now + pcp_util::chrono::minutes(num_minutes));
+
+        if (is_destructing_)
+            return;
+
+        auto num = storage_ptr_->purge(spool_dir_purge_ttl_,
+                                       thread_container_.getThreadNames());
+        LOG_INFO("Removed %1% director%2% from %3%",
+                 num, (num == 1 ? "y" : "ies"), spool_dir_path_.string());
     }
 }
 

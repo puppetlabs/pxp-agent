@@ -103,20 +103,20 @@ TEST_CASE("Timestamp::convertToISO", "[utils][time]") {
     }
 }
 
-TEST_CASE("Timestamp::isOlderThan", "[utils][time]") {
+TEST_CASE("Timestamp::isNewerThan", "[utils][time]") {
     Timestamp ts { "1h" };
 
-    SECTION("returns true if time_point is older than the datetime string arg") {
+    SECTION("returns false if time_point is older than the datetime string arg") {
         auto newer_datetime = lth_util::get_ISO8601_time(60);
-        REQUIRE(ts.isOlderThan(newer_datetime));
+        REQUIRE_FALSE(ts.isNewerThan(newer_datetime));
     }
 
-    SECTION("returns false if time_point is newer than the datetime string arg") {
+    SECTION("returns true if time_point is newer than the datetime string arg") {
         auto now = pt::microsec_clock::universal_time();
         auto older_time_point = now - pt::hours(2);
         auto older_datetime = pt::to_iso_extended_string(older_time_point) + "Z";
 
-        REQUIRE_FALSE(ts.isOlderThan(older_datetime));
+        REQUIRE(ts.isNewerThan(older_datetime));
     }
 }
 
