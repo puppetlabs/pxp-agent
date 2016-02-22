@@ -137,10 +137,10 @@ def pcp_broker_inventory(broker, query)
     end
   rescue Timeout::Error
     raise "Didn't receive a response for PCP inventory request"
+  ensure
+    EventMachine.stop_event_loop
+    em_thread.join
   end # wait for message
-
-  EventMachine.stop_event_loop
-  em_thread.join
 
   if(!response.has_key?(:data))
     raise 'Response to PCP inventory request is missing :data'
@@ -264,10 +264,10 @@ def rpc_blocking_request(broker, targets,
         raise "Didn't receive all PCP responses when requesting #{pxp_module} #{action} on #{targets}. Responses received were: #{responses.to_s}"
       end
     end
+  ensure
+    EventMachine.stop_event_loop
+    em_thread.join
   end # wait for message
-
-  EventMachine.stop_event_loop
-  em_thread.join
 
   responses
 end
