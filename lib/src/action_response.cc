@@ -216,7 +216,7 @@ lth_jc::JsonContainer ActionResponse::toJSON(R_T response_type) const
             break;
         case (R_T::StatusOutput):
         {
-            auto action_status = action_metadata.get<std::string>(STATUS);
+            auto action_status = action_metadata.get<std::string>({ RESULTS, STATUS });
             lth_jc::JsonContainer action_results {};
             action_results.set<std::string>(TRANSACTION_ID, status_query_transaction);
 
