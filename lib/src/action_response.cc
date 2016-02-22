@@ -186,7 +186,13 @@ bool ActionResponse::valid(R_T response_type) const
             is_valid = action_metadata.includes(RESULTS);
             break;
         case (R_T::StatusOutput):
-            is_valid = !status_query_transaction.empty();
+            if (action_metadata.includes("status")) {
+                auto found = NAMES_OF_ACTION_STATUS.find(
+                    action_metadata.get<std::string>("status"));
+                if (found != NAMES_OF_ACTION_STATUS.end())
+                    is_valid = !status_query_transaction.empty();
+            }
+
             break;
         case (R_T::RPCError):
             is_valid = action_metadata.includes(EXECUTION_ERROR);
@@ -210,30 +216,40 @@ lth_jc::JsonContainer ActionResponse::toJSON(R_T response_type) const
             break;
         case (R_T::StatusOutput):
         {
-            auto action_status = action_metadata.get<std::string>(STATUS);
+            auto action_status = action_metadata.get<std::string>({ RESULTS, STATUS });
             lth_jc::JsonContainer action_results {};
             action_results.set<std::string>(TRANSACTION_ID, status_query_transaction);
 
-            // TODO(ale): decouple the status of the action from the
-            // output of the action once PXP v.2 gets in, as doing so
-            // would break compatibility against old clj-pxp-puppet;
-            // in practice set STATUS to action_status, instead of
-            // setting it to "failure" (in case the output is bad) or
-            // to (exitcode == EXIT_SUCCESS) otherwise, as done in:
-            // https://github.com/puppetlabs/pxp-agent/blob/1.0.2/lib/src/modules/status.cc#L232
-            if (action_status != "unknown" && action_status != "undetermined") {
+            if (action_status == ACTION_STATUS_NAMES.at(ActionStatus::Running)) {
+                action_results.set<std::string>(STATUS,
+                    ACTION_STATUS_NAMES.at(ActionStatus::Running));
+            } else if (action_status == ACTION_STATUS_NAMES.at(ActionStatus::Success)
+                    || action_status == ACTION_STATUS_NAMES.at(ActionStatus::Failure)) {
+                // TODO(ale): decouple the status of the action from
+                // the output of the action once PXP v.2 gets in, as
+                // doing so would break compatibility against old
+                // clj-pxp-puppet; in practice set STATUS to
+                // action_status, instead of setting it to "failure"
+                // (in case the output is bad) or, otherwise, to
+                // (exitcode == EXIT_SUCCESS), as done in:
+                // https://github.com/puppetlabs/pxp-agent/blob/1.0.2/lib/src/modules/status.cc#L232
                 action_results.set<int>("exitcode", output.exitcode);
 
-                if (action_status == "failure") {
+                if (action_status == ACTION_STATUS_NAMES.at(ActionStatus::Failure)) {
                     // The output was bad; report a failure
-                    action_results.set<std::string>(STATUS, "failure");
+                    action_results.set<std::string>(STATUS,
+                        ACTION_STATUS_NAMES.at(ActionStatus::Failure));
                 } else {
                     // The output was good; use exitcode
                     action_results.set<std::string>(STATUS,
-                        (output.exitcode == EXIT_SUCCESS ? "success" : "failure"));
+                        (output.exitcode == EXIT_SUCCESS
+                            ? ACTION_STATUS_NAMES.at(ActionStatus::Success)
+                            : ACTION_STATUS_NAMES.at(ActionStatus::Failure)));
                 }
             } else {
-                action_results.set<std::string>(STATUS, "unknown");
+                // TODO(ale): also UNDETERMINED once PXP v.2 is in
+                action_results.set<std::string>(STATUS,
+                    ACTION_STATUS_NAMES.at(ActionStatus::Unknown));
             }
 
             if (!output.std_out.empty())
