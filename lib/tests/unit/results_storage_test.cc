@@ -168,4 +168,21 @@ TEST_CASE("ResultsStorage::getPID", "[module][results]") {
     }
 }
 
+TEST_CASE("ResultsStorage::getOutput", "[module][results]") {
+    ResultsStorage st { TESTING_RESULTS };
+
+    SECTION("Throws an Error if the exitcode is invalid") {
+        REQUIRE_THROWS_AS(st.getOutput(BROKEN_TRANSACTION),
+                          ResultsStorage::Error);
+    }
+
+    SECTION("Retrieves correctly valid output") {
+        auto output = st.getOutput(VALID_TRANSACTION);
+
+        REQUIRE(output.exitcode == 0);
+        REQUIRE(output.std_err == "Hey, all good here!");
+        REQUIRE(output.std_out == "{\"spam\":\"eggs\"}");
+    }
+}
+
 }  // namespace PXPAgent
