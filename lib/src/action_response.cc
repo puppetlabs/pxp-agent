@@ -212,15 +212,36 @@ lth_jc::JsonContainer ActionResponse::toJSON(R_T response_type) const
         {
             auto action_status = action_metadata.get<std::string>(STATUS);
             lth_jc::JsonContainer action_results {};
-            action_results.set<std::string>(STATUS, action_status);
             action_results.set<std::string>(TRANSACTION_ID, status_query_transaction);
-            if (action_status != "unknown" && action_status != "undetermined")
+
+            // TODO(ale): decouple the status of the action from the
+            // output of the action once PXP v.2 gets in, as doing so
+            // would break compatibility against old clj-pxp-puppet;
+            // in practice set STATUS to action_status, instead of
+            // setting it to "failure" (in case the output is bad) or
+            // to (exitcode == EXIT_SUCCESS) otherwise, as done in:
+            // https://github.com/puppetlabs/pxp-agent/blob/1.0.2/lib/src/modules/status.cc#L232
+            if (action_status != "unknown" && action_status != "undetermined") {
                 action_results.set<int>("exitcode", output.exitcode);
+
+                if (action_status == "failure") {
+                    // The output was bad; report a failure
+                    action_results.set<std::string>(STATUS, "failure");
+                } else {
+                    // The output was good; use exitcode
+                    action_results.set<std::string>(STATUS,
+                        (output.exitcode == EXIT_SUCCESS ? "success" : "failure"));
+                }
+            } else {
+                action_results.set<std::string>(STATUS, "unknown");
+            }
+
             if (!output.std_out.empty())
                 action_results.set<std::string>("stdout", output.std_out);
             if (!output.std_err.empty())
                 action_results.set<std::string>("stderr", output.std_err);
             r.set<lth_jc::JsonContainer>(RESULTS, action_results);
+
             break;
         }
         case (R_T::RPCError):
