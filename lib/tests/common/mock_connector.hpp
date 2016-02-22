@@ -31,6 +31,7 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   CERT,
                                                   KEY,
                                                   SPOOL,
+                                                  "0d",  // don't purge!
                                                   "",  // modules config dir
                                                   "test_agent",
                                                   5000 };

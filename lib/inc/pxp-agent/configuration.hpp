@@ -125,6 +125,7 @@ class Configuration {
         std::string crt;
         std::string key;
         std::string spool_dir;
+        std::string spool_dir_purge_ttl;
         std::string modules_config_dir;
         std::string client_type;
         long connection_timeout;
