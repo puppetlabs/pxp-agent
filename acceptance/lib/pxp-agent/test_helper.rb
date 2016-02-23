@@ -177,7 +177,7 @@ end
 # @param broker hostname or beaker host object of the machine running PCP broker
 # @param identity PCP identity of the client/agent to check e.g. "pcp://client01.example.com/agent"
 # @param retries the number of times to retry checking the inventory. Default 60 to allow for slow test VMs. Set to 0 to only check once.
-# @return true if the identity is absent from the broker's inventory within the allowed number of retries
+# @return true if the identity is absent from the broker's inventory within the allowed number of retries
 #         false if the identity persists in the broker's inventory after the allowed number of retries
 def is_not_associated?(broker, identity, retries = 60)
   if retries == 0
@@ -199,7 +199,7 @@ end
 #                e.g. ["pcp://client01.example.com/agent","pcp://client02.example.com/agent"]
 # @param pxp_module which PXP module to call, default pxp-module-puppet
 # @param action which action in the PXP module to call, default run
-# @param params params to send to the module. e.g for pxp-module-puppet:
+# @param params params to send to the module. e.g for pxp-module-puppet:
 #               {:env => [], :flags => ['--noop', '--onetime', '--no-daemonize']}
 # @return hash of responses, with target identities as keys, and value being the response message for that identity as a hash
 # @raise String indicating something went wrong, test case can use to fail
