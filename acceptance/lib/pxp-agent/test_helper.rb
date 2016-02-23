@@ -81,6 +81,40 @@ def get_pcp_broker_status(host)
   end
 end
 
+# Start an eventmachine reactor in a thread
+# @return Thread object where the EM reactor should be running
+def start_eventmachine_thread
+  if EventMachine.reactor_running?
+    puts "EventMachine already running!"
+    puts caller
+    return EventMachine.reactor_thread
+  end
+
+  em_thread = Thread.new do
+    begin
+      EventMachine.run
+    rescue Exception => e
+      puts "Problem in eventmachine reactor thread: ", e.message, e.backtrace.join("\n\t")
+    end
+  end
+
+  # busy wait this thread until reactor has started
+  Thread.pass until EventMachine.reactor_running?
+  em_thread
+end
+
+# Stop the eventmachine reactor
+# @param thread  The thread the EM reactor should be running in
+def stop_eventmachine_thread(thread)
+  unless EventMachine.reactor_running?
+    puts "EventMachine is not running!"
+    puts caller
+  end
+
+  EventMachine.stop_event_loop
+  thread.join
+end
+
 # Query pcp-broker's inventory of associated clients
 # Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/inventory.md
 # @param broker hostname or beaker host object of the pcp-broker host
@@ -91,8 +125,7 @@ end
 def pcp_broker_inventory(broker, query)
   # Event machine is required by the ruby-pcp-client gem
   # https://github.com/puppetlabs/ruby-pcp-client
-  em_thread = Thread.new { EventMachine.run }
-  Thread.pass until EventMachine.reactor_running?
+  em_thread = start_eventmachine_thread
 
   mutex = Mutex.new
   have_response = ConditionVariable.new
@@ -138,8 +171,7 @@ def pcp_broker_inventory(broker, query)
   rescue Timeout::Error
     raise "Didn't receive a response for PCP inventory request"
   ensure
-    EventMachine.stop_event_loop
-    em_thread.join
+    stop_eventmachine_thread(em_thread)
   end # wait for message
 
   if(!response.has_key?(:data))
@@ -177,7 +209,7 @@ end
 # @param broker hostname or beaker host object of the machine running PCP broker
 # @param identity PCP identity of the client/agent to check e.g. "pcp://client01.example.com/agent"
 # @param retries the number of times to retry checking the inventory. Default 60 to allow for slow test VMs. Set to 0 to only check once.
-# @return true if the identity is absent from the broker's inventory within the allowed number of retries
+# @return true if the identity is absent from the broker's inventory within the allowed number of retries
 #         false if the identity persists in the broker's inventory after the allowed number of retries
 def is_not_associated?(broker, identity, retries = 60)
   if retries == 0
@@ -199,7 +231,7 @@ end
 #                e.g. ["pcp://client01.example.com/agent","pcp://client02.example.com/agent"]
 # @param pxp_module which PXP module to call, default pxp-module-puppet
 # @param action which action in the PXP module to call, default run
-# @param params params to send to the module. e.g for pxp-module-puppet:
+# @param params params to send to the module. e.g for pxp-module-puppet:
 #               {:env => [], :flags => ['--noop', '--onetime', '--no-daemonize']}
 # @return hash of responses, with target identities as keys, and value being the response message for that identity as a hash
 # @raise String indicating something went wrong, test case can use to fail
@@ -208,8 +240,7 @@ def rpc_blocking_request(broker, targets,
                          params)
   # Event machine is required by the ruby-pcp-client gem
   # https://github.com/puppetlabs/ruby-pcp-client
-  em_thread = Thread.new { EventMachine.run }
-  Thread.pass until EventMachine.reactor_running?
+  em_thread = start_eventmachine_thread
 
   mutex = Mutex.new
   have_response = ConditionVariable.new
@@ -265,8 +296,7 @@ def rpc_blocking_request(broker, targets,
       end
     end
   ensure
-    EventMachine.stop_event_loop
-    em_thread.join
+    stop_eventmachine_thread(em_thread)
   end # wait for message
 
   responses
