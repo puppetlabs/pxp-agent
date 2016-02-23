@@ -84,7 +84,21 @@ end
 # Start an eventmachine reactor in a thread
 # @return Thread object where the EM reactor should be running
 def start_eventmachine_thread
-  em_thread = Thread.new { EventMachine.run }
+  if EventMachine.reactor_running?
+    puts "EventMachine already running!"
+    puts caller
+    return EventMachine.reactor_thread
+  end
+
+  em_thread = Thread.new do
+    begin
+      EventMachine.run
+    rescue Exception => e
+      puts "Problem in eventmachine reactor thread: ", e.message, e.backtrace.join("\n\t")
+    end
+  end
+
+  # busy wait this thread until reactor has started
   Thread.pass until EventMachine.reactor_running?
   em_thread
 end
@@ -92,6 +106,11 @@ end
 # Stop the eventmachine reactor
 # @param thread  The thread the EM reactor should be running in
 def stop_eventmachine_thread(thread)
+  unless EventMachine.reactor_running?
+    puts "EventMachine is not running!"
+    puts caller
+  end
+
   EventMachine.stop_event_loop
   thread.join
 end
