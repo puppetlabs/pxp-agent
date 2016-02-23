@@ -1,4 +1,5 @@
 #include <pxp-agent/configuration.hpp>
+#include <pxp-agent/time.hpp>
 
 #include "version-inl.hpp"
 
@@ -91,6 +92,7 @@ static const std::string DEFAULT_MODULES_CONF_DIR {
     (DEFAULT_CONF_DIR / "modules").string() };
 static const std::string DEFAULT_CONFIG_FILE {
     (DEFAULT_CONF_DIR / "pxp-agent.conf").string() };
+static const std::string DEFAULT_SPOOL_DIR_PURGE_TTL { "14d" };
 
 static const std::string AGENT_CLIENT_TYPE { "agent" };
 
@@ -265,6 +267,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const {
         HW::GetFlag<std::string>("ssl-cert"),
         HW::GetFlag<std::string>("ssl-key"),
         HW::GetFlag<std::string>("spool-dir"),
+        HW::GetFlag<std::string>("spool-dir-purge-ttl"),
         HW::GetFlag<std::string>("modules-config-dir"),
         AGENT_CLIENT_TYPE,
         HW::GetFlag<int>("connection-timeout") * 1000};
@@ -406,6 +409,16 @@ void Configuration::defineDefaultValues() {
                     DEFAULT_SPOOL_DIR },
                     Types::String,
                     DEFAULT_SPOOL_DIR) } });
+
+    defaults_.insert(
+        Option { "spool-dir-purge-ttl",
+                 Base_ptr { new Entry<std::string>(
+                    "spool-dir-purge-ttl",
+                    "",
+                    { "TTL for action results before being deleted, default: '" +
+                    DEFAULT_SPOOL_DIR_PURGE_TTL + "' (14 days)" },
+                    Types::String,
+                    DEFAULT_SPOOL_DIR_PURGE_TTL) } });
 
     defaults_.insert(
         Option { "foreground",
@@ -711,6 +724,13 @@ void Configuration::validateAndNormalizeOtherSettings() {
         HW::SetFlag<std::string>("pidfile", pid_file);
     }
 #endif
+
+    try {
+        Timestamp(HW::GetFlag<std::string>("spool-dir-purge-ttl"));
+    } catch (const Timestamp::Error& e) {
+        throw Configuration::Error { std::string("invalid spool-dir-purge-ttl: ")
+                                     + e.what() };
+    }
 }
 
 }  // namespace PXPAgent

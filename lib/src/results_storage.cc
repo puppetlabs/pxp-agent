@@ -1,12 +1,17 @@
 #include <pxp-agent/results_storage.hpp>
 #include <pxp-agent/action_response.hpp>
+#include <pxp-agent/time.hpp>
 
 #include <leatherman/file_util/file.hpp>
+#include <leatherman/file_util/directory.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.results_storage"
 #include <leatherman/logging/logging.hpp>
 
 #include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+#include <algorithm>  // std::find
 
 namespace PXPAgent {
 
@@ -184,6 +189,57 @@ ActionOutput ResultsStorage::getOutput(const std::string& transaction_id,
     auto output = getOutput_(transaction_id, false);
     output.exitcode = exitcode;
     return output;
+}
+
+static void defaultPurgeCallback(const std::string& dir_path)
+{
+    fs::remove_all(dir_path);
+}
+
+unsigned int ResultsStorage::purge(
+                const std::string& ttl,
+                const std::vector<std::string>& ongoing_transactions,
+                std::function<void(const std::string& dir_path)> purge_callback)
+{
+    int num_purged_dirs { 0 };
+    Timestamp ts { ttl };
+    if (purge_callback == nullptr)
+        purge_callback = &defaultPurgeCallback;
+
+    lth_file::each_subdirectory(
+        spool_dir_path_.string(),
+        [&](std::string const& s) -> bool {
+            fs::path dir_path { s };
+            auto transaction_id = dir_path.filename().string();
+
+            if (!ongoing_transactions.empty()
+                    && std::find(ongoing_transactions.begin(),
+                                 ongoing_transactions.end(),
+                                 transaction_id) != ongoing_transactions.end())
+                return true;
+
+            try {
+                auto md = getActionMetadata(transaction_id);
+                if (md.get<std::string>("status") != "running"
+                        && ts.isNewerThan(md.get<std::string>("start"))) {
+                    LOG_TRACE("Removing %1%", s);
+                    try {
+                        purge_callback(dir_path.string());
+                        num_purged_dirs++;
+                    } catch (const std::exception& e) {
+                        LOG_ERROR("Failed to remove %1%: %2%", s, e.what());
+                    }
+                }
+            } catch (const Error& e) {
+                LOG_DEBUG("Failed to get metadata for transaction %1% "
+                          "(the results directory will not be removed): %2%",
+                          transaction_id, e.what());
+            }
+
+            return true;
+        });
+
+    return num_purged_dirs;
 }
 
 }  // namespace PXPAgent

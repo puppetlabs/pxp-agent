@@ -24,6 +24,7 @@ set(LIBRARY_COMMON_SOURCES
     src/results_mutex.cc
     src/results_storage.cc
     src/thread_container.cc
+    src/time.cc
     src/modules/echo.cc
     src/modules/ping.cc
 )

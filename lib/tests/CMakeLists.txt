@@ -23,6 +23,7 @@ set(COMMON_TEST_SOURCES
     unit/results_mutex_test.cc
     unit/results_storage_test.cc
     unit/thread_container_test.cc
+    unit/time_test.cc
     unit/modules/ping_test.cc
     unit/util/process_test.cc
 )

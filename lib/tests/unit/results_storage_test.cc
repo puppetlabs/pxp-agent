@@ -6,6 +6,7 @@
 #include <pxp-agent/request_type.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
+#include <leatherman/util/time.hpp>
 
 #include <boost/filesystem/operations.hpp>
 
@@ -13,11 +14,13 @@
 
 #include <string>
 #include <utility>  // std::move
+#include <vector>
 
 namespace PXPAgent {
 
 namespace fs = boost::filesystem;
 namespace lth_jc = leatherman::json_container;
+namespace lth_util = leatherman::util;
 
 TEST_CASE("ResultsStorage ctor", "[module]") {
     SECTION("can instantiate") {
@@ -28,14 +31,14 @@ TEST_CASE("ResultsStorage ctor", "[module]") {
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
 
-static void configureTest(const std::string& p = SPOOL_DIR) {
-    if (!fs::exists(p) && !fs::create_directories(p))
+static void configureTest() {
+    if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR))
         FAIL("Failed to create the spool directory");
 }
 
-static void resetTest(const std::string& p = SPOOL_DIR) {
-    if (fs::exists(p))
-        fs::remove_all(p);
+static void resetTest() {
+    if (fs::exists(SPOOL_DIR))
+        fs::remove_all(SPOOL_DIR);
 }
 
 TEST_CASE("ResultsStorage::find", "[module][results]") {
@@ -84,7 +87,6 @@ static const std::string VALID_TRANSACTION { "valid" };
 static const std::string BROKEN_TRANSACTION { "broken" };
 
 TEST_CASE("ResultsStorage::getActionMetadata", "[module][results]") {
-    configureTest(TESTING_RESULTS);
     ResultsStorage st { TESTING_RESULTS };
 
     SECTION("Throws an Error if the metadata file does not exist") {
@@ -137,7 +139,6 @@ TEST_CASE("ResultsStorage::updateMetadataFile", "[module][results]") {
 }
 
 TEST_CASE("ResultsStorage::pidFileExists", "[module][results]") {
-    configureTest(TESTING_RESULTS);
     ResultsStorage st { TESTING_RESULTS };
 
     SECTION("returns true if exists") {
@@ -150,7 +151,6 @@ TEST_CASE("ResultsStorage::pidFileExists", "[module][results]") {
 }
 
 TEST_CASE("ResultsStorage::getPID", "[module][results]") {
-    configureTest(TESTING_RESULTS);
     ResultsStorage st { TESTING_RESULTS };
 
     SECTION("Throws an Error if the PID file does not exist") {
@@ -165,6 +165,46 @@ TEST_CASE("ResultsStorage::getPID", "[module][results]") {
 
     SECTION("Returns an integer if the PID is valid") {
         REQUIRE_NOTHROW(st.getPID(VALID_TRANSACTION));
+    }
+}
+
+TEST_CASE("ResultsStorage::getOutput", "[module][results]") {
+    ResultsStorage st { TESTING_RESULTS };
+
+    SECTION("Throws an Error if the exitcode is invalid") {
+        REQUIRE_THROWS_AS(st.getOutput(BROKEN_TRANSACTION),
+                          ResultsStorage::Error);
+    }
+
+    SECTION("Retrieves correctly valid output") {
+        auto output = st.getOutput(VALID_TRANSACTION);
+
+        REQUIRE(output.exitcode == 0);
+        REQUIRE(output.std_err == "Hey, all good here!");
+        REQUIRE(output.std_out == "{\"spam\":\"eggs\"}");
+    }
+}
+
+static const std::string PURGE_TEST_RESULTS { std::string { PXP_AGENT_ROOT_PATH}
+                                              + "/lib/tests/resources/purge_test" };
+
+static const std::string OLD_TRANSACTION { "valid_old" };
+static const std::string RECENT_TRANSACTION { "valid_recent" };
+
+TEST_CASE("ResultsStorage::purge", "[module][results]") {
+    ResultsStorage st { PURGE_TEST_RESULTS };
+    auto recent_metadata = st.getActionMetadata(RECENT_TRANSACTION);
+    recent_metadata.set<std::string>("start", lth_util::get_ISO8601_time());
+    unsigned int num_purged_results { 0 };
+    auto purgeCallback =
+        [&num_purged_results](const std::string&) -> void { num_purged_results++; };
+    recent_metadata.set<std::string>("end", lth_util::get_ISO8601_time());
+    st.updateMetadataFile(RECENT_TRANSACTION, recent_metadata);
+
+    SECTION("Purges only the X months old results if ttl is set to a few days") {
+        auto results = st.purge("10d", std::vector<std::string>(), purgeCallback);
+        REQUIRE(results == 1);
+        REQUIRE(num_purged_results == 1);
     }
 }
 

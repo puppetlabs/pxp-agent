@@ -25,6 +25,7 @@ TEST_CASE("Agent::Agent", "[agent]") {
                                                getCertPath(),
                                                getKeyPath(),
                                                SPOOL,
+                                               "0d",  // don't purge!
                                                "",  // modules config dir
                                                "test_agent",
                                                5000 };
