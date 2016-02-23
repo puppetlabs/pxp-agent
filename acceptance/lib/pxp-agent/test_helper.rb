@@ -81,6 +81,21 @@ def get_pcp_broker_status(host)
   end
 end
 
+# Start an eventmachine reactor in a thread
+# @return Thread object where the EM reactor should be running
+def start_eventmachine_thread
+  em_thread = Thread.new { EventMachine.run }
+  Thread.pass until EventMachine.reactor_running?
+  em_thread
+end
+
+# Stop the eventmachine reactor
+# @param thread  The thread the EM reactor should be running in
+def stop_eventmachine_thread(thread)
+  EventMachine.stop_event_loop
+  thread.join
+end
+
 # Query pcp-broker's inventory of associated clients
 # Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/inventory.md
 # @param broker hostname or beaker host object of the pcp-broker host
@@ -91,8 +106,7 @@ end
 def pcp_broker_inventory(broker, query)
   # Event machine is required by the ruby-pcp-client gem
   # https://github.com/puppetlabs/ruby-pcp-client
-  em_thread = Thread.new { EventMachine.run }
-  Thread.pass until EventMachine.reactor_running?
+  em_thread = start_eventmachine_thread
 
   mutex = Mutex.new
   have_response = ConditionVariable.new
@@ -138,8 +152,7 @@ def pcp_broker_inventory(broker, query)
   rescue Timeout::Error
     raise "Didn't receive a response for PCP inventory request"
   ensure
-    EventMachine.stop_event_loop
-    em_thread.join
+    stop_eventmachine_thread(em_thread)
   end # wait for message
 
   if(!response.has_key?(:data))
@@ -208,8 +221,7 @@ def rpc_blocking_request(broker, targets,
                          params)
   # Event machine is required by the ruby-pcp-client gem
   # https://github.com/puppetlabs/ruby-pcp-client
-  em_thread = Thread.new { EventMachine.run }
-  Thread.pass until EventMachine.reactor_running?
+  em_thread = start_eventmachine_thread
 
   mutex = Mutex.new
   have_response = ConditionVariable.new
@@ -265,8 +277,7 @@ def rpc_blocking_request(broker, targets,
       end
     end
   ensure
-    EventMachine.stop_event_loop
-    em_thread.join
+    stop_eventmachine_thread(em_thread)
   end # wait for message
 
   responses
