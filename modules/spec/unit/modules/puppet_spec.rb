@@ -324,17 +324,19 @@ describe "pxp-module-puppet" do
   end
 
   describe "action_run" do
-    it "fails when puppet_bin doesn't exist" do
-      allow(File).to receive(:exist?).and_return(false)
-      expect(action_run({"configuration" => default_configuration, "input" => default_input})["error"]).to be ==
-          "Puppet executable 'puppet' does not exist"
+    it "fails when invalid json is passed" do
+      expect(action_run("{")["error"]).to be ==
+          "Invalid json received on STDIN: {"
     end
 
-    it "fails when invalid json is passed" do
-      # JSON is parsed when the action is invoked. Any invalid json will call run
-      # with nil
-      expect(action_run(nil)["error"]).to be ==
-          "Invalid json parsed on STDIN. Cannot start run action"
+    it "fails when the passed json data isn't a hash" do
+      expect(action_run("[]")["error"]).to be ==
+          "The json received on STDIN was not a hash: []"
+    end
+
+    it "fails when the passed json data doesn't contain the 'input' key" do
+      expect(action_run("{\"input\": null}")["error"]).to be ==
+          "The json received on STDIN did not contain a valid 'input' key: {\"input\"=>nil}"
     end
 
     it "populates flags with the correct defaults" do
@@ -345,7 +347,7 @@ describe "pxp-module-puppet" do
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
       expect_any_instance_of(Object).to receive(:start_run).with(default_configuration,
                                                                  expected_input)
-      action_run({"configuration" => default_configuration, "input" => default_input})
+      action_run({"configuration" => default_configuration, "input" => default_input}.to_json)
     end
 
     it "does not add flag defaults if they have been passed" do
@@ -358,7 +360,13 @@ describe "pxp-module-puppet" do
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
       expect_any_instance_of(Object).to receive(:start_run).with(default_configuration,
                                                                  expected_input)
-      action_run({"configuration" => default_configuration, "input" => passed_input})
+      action_run({"configuration" => default_configuration, "input" => passed_input}.to_json)
+    end
+
+    it "fails when puppet_bin doesn't exist" do
+      allow(File).to receive(:exist?).and_return(false)
+      expect(action_run({"configuration" => default_configuration, "input" => default_input}.to_json)["error"]).to be ==
+          "Puppet executable 'puppet' does not exist"
     end
 
     it "starts the run" do
@@ -366,7 +374,7 @@ describe "pxp-module-puppet" do
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
       expect_any_instance_of(Object).to receive(:start_run)
-      action_run({"configuration" => default_configuration, "input" => default_input})
+      action_run({"configuration" => default_configuration, "input" => default_input}.to_json)
     end
   end
 end
