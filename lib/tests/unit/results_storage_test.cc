@@ -193,7 +193,8 @@ static const std::string RECENT_TRANSACTION { "valid_recent" };
 
 TEST_CASE("ResultsStorage::purge", "[module][results]") {
     ResultsStorage st { PURGE_TEST_RESULTS };
-    auto recent_metadata = st.getActionMetadata(RECENT_TRANSACTION);
+    auto recent_metadata_old = st.getActionMetadata(RECENT_TRANSACTION);
+    lth_jc::JsonContainer recent_metadata { recent_metadata_old };
     recent_metadata.set<std::string>("start", lth_util::get_ISO8601_time());
     unsigned int num_purged_results { 0 };
     auto purgeCallback =
@@ -206,6 +207,10 @@ TEST_CASE("ResultsStorage::purge", "[module][results]") {
         REQUIRE(results == 1);
         REQUIRE(num_purged_results == 1);
     }
+
+    // Let's keep the recent metadata file as it was, to avoid
+    // updating it at every "git add -A"...
+    st.updateMetadataFile(RECENT_TRANSACTION, recent_metadata_old);
 }
 
 }  // namespace PXPAgent
