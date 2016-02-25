@@ -201,16 +201,20 @@ unsigned int ResultsStorage::purge(
                 const std::vector<std::string>& ongoing_transactions,
                 std::function<void(const std::string& dir_path)> purge_callback)
 {
-    int num_purged_dirs { 0 };
+    unsigned int num_purged_dirs { 0 };
     Timestamp ts { ttl };
     if (purge_callback == nullptr)
         purge_callback = &defaultPurgeCallback;
+
+    LOG_INFO("About to purge the results directories from %1%; TTL = %2%",
+             spool_dir_path_.string(), ttl);
 
     lth_file::each_subdirectory(
         spool_dir_path_.string(),
         [&](std::string const& s) -> bool {
             fs::path dir_path { s };
             auto transaction_id = dir_path.filename().string();
+            LOG_TRACE("Inspecting %1% for purging", s);
 
             if (!ongoing_transactions.empty()
                     && std::find(ongoing_transactions.begin(),
@@ -220,9 +224,12 @@ unsigned int ResultsStorage::purge(
 
             try {
                 auto md = getActionMetadata(transaction_id);
-                if (md.get<std::string>("status") != "running"
-                        && ts.isNewerThan(md.get<std::string>("start"))) {
+
+                if (md.get<std::string>("status") == "running") {
+                    LOG_TRACE("Skipping %1% as the action status is \"running\"", s);
+                } else if (ts.isNewerThan(md.get<std::string>("start"))) {
                     LOG_TRACE("Removing %1%", s);
+
                     try {
                         purge_callback(dir_path.string());
                         num_purged_dirs++;
@@ -231,14 +238,21 @@ unsigned int ResultsStorage::purge(
                     }
                 }
             } catch (const Error& e) {
-                LOG_DEBUG("Failed to get metadata for transaction %1% "
-                          "(the results directory will not be removed): %2%",
-                          transaction_id, e.what());
+                LOG_WARNING("Failed to retrieve the metadata for the transaction %1% "
+                            "(the results directory will not be removed): %2%",
+                            transaction_id, e.what());
+            } catch (const Timestamp::Error& e) {
+                LOG_WARNING("Failed to process the metadata for the transaction %1% "
+                            "(the results directory will not be removed): %2%",
+                            transaction_id, e.what());
             }
 
             return true;
         });
 
+    LOG_INFO("Removed %1% director%2% from %3%",
+             num_purged_dirs, (num_purged_dirs == 1 ? "y" : "ies"),
+             spool_dir_path_.string());
     return num_purged_dirs;
 }
 

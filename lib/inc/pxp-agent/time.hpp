@@ -43,6 +43,8 @@ class Timestamp {
     // the extended ISO format (refer to boost date_time docs)
     static std::string convertToISO(std::string extended_ISO8601_time);
 
+    // Throws an Error in case it fails to create a time point from
+    // the specified extended ISO date time string
     bool isNewerThan(const std::string& extended_ISO8601_time);
 };
 

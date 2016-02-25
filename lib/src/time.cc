@@ -38,7 +38,7 @@ pt::ptime Timestamp::getPastInstant(std::string past_duration)
     int value {};
     char suffix {};
     processDurationString(past_duration, value, suffix);
-    auto instant = pt::microsec_clock::universal_time();
+    pt::ptime instant { pt::microsec_clock::universal_time() };
 
     switch (suffix) {
         case ('d'):
@@ -51,7 +51,7 @@ pt::ptime Timestamp::getPastInstant(std::string past_duration)
             instant = instant - pt::minutes(value);
             break;
         default:
-            throw Error { "invalid duration string: "+ past_duration + suffix };
+            throw Error { "invalid duration string: " + past_duration + suffix };
     }
 
     return instant;
@@ -103,8 +103,14 @@ std::string Timestamp::convertToISO(std::string extended_ISO8601_time)
 
 bool Timestamp::isNewerThan(const std::string& extended_ISO8601_time)
 {
-    auto t_p = pt::from_iso_string(Timestamp::convertToISO(extended_ISO8601_time));
-    return time_point > t_p;
+    try {
+        auto t_p = pt::from_iso_string(Timestamp::convertToISO(extended_ISO8601_time));
+        return time_point > t_p;
+    } catch (const std::exception& e) {
+        std::string err { e.what() };
+        throw Error { "failed to create a timepoint for " + extended_ISO8601_time
+                      + (err.empty() ? "" : ": " + err) };
+    }
 }
 
 }  // namespace PXPAgent
