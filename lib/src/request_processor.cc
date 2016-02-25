@@ -193,10 +193,8 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
     logLoadedModules();
 
     if (Timestamp::getMinutes(spool_dir_purge_ttl_) > 0) {
-        auto num = storage_ptr_->purge(spool_dir_purge_ttl_,
-                                       thread_container_.getThreadNames());
-        LOG_INFO("Removed %1% director%2% from %3%",
-                 num, (num == 1 ? "y" : "ies"), spool_dir_path_.string());
+        storage_ptr_->purge(spool_dir_purge_ttl_,
+                            thread_container_.getThreadNames());
         spool_dir_purge_thread_ptr_.reset(
             new pcp_util::thread(&RequestProcessor::spoolDirPurgeTask, this));
     }
@@ -855,10 +853,10 @@ void RequestProcessor::spoolDirPurgeTask()
 {
     auto num_minutes = Timestamp::getMinutes(spool_dir_purge_ttl_);
     num_minutes *= 1.2;
-    LOG_DEBUG("Starting the task for purging the spool directory every %1% "
-              "minute%2%; thread id %3%",
-              num_minutes, lth_util::plural(num_minutes),
-              pcp_util::this_thread::get_id());
+    LOG_INFO("Starting the task for purging the spool directory every %1% "
+             "minute%2%; thread id %3%",
+             num_minutes, lth_util::plural(num_minutes),
+             pcp_util::this_thread::get_id());
 
 
     while (true) {
@@ -873,10 +871,8 @@ void RequestProcessor::spoolDirPurgeTask()
         if (is_destructing_)
             return;
 
-        auto num = storage_ptr_->purge(spool_dir_purge_ttl_,
-                                       thread_container_.getThreadNames());
-        LOG_INFO("Removed %1% director%2% from %3%",
-                 num, (num == 1 ? "y" : "ies"), spool_dir_path_.string());
+        storage_ptr_->purge(spool_dir_purge_ttl_,
+                            thread_container_.getThreadNames());
     }
 }
 
