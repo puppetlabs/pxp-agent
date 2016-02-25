@@ -15,6 +15,15 @@ module Errors
   NonZeroExit = "agent_exit_non_zero"
 end
 
+class ProcessingError < StandardError
+  attr_reader :error_type
+
+  def initialize(error_type, message = nil)
+    super(message)
+    @error_type = error_type
+  end
+end
+
 DEFAULT_EXITCODE = -1
 
 # This method exists to facilitate testing
@@ -233,14 +242,23 @@ end
 
 def get_action_input(args)
   action_input = args["input"]
+  unless action_input.is_a?(Hash)
+    raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN did not contain a valid 'input' key: #{args.to_s}")
+  end
   action_input["flags"] = action_input["flags"] | ["--onetime", "--no-daemonize", "--verbose"]
   action_input
 end
 
-def action_run(args)
-  if !args
+def action_run(input)
+  begin
+    args = JSON.parse(input)
+  rescue
     return make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
-                             "Invalid json parsed on STDIN. Cannot start run action")
+                             "Invalid json received on STDIN: #{input}")
+  end
+  unless args.is_a?(Hash)
+    return make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
+                             "The json received on STDIN was not a hash: #{args.to_s}")
   end
 
   output_files = args["output_files"]
@@ -277,8 +295,12 @@ def action_run(args)
     end
   end
 
-  config = get_configuration(args)
-  action_input = get_action_input(args)
+  begin
+    config = get_configuration(args)
+    action_input = get_action_input(args)
+  rescue ProcessingError => e
+    return make_error_result(DEFAULT_EXITCODE, e.error_type, e.message)
+  end
 
   run(config, action_input)
 end
@@ -289,9 +311,7 @@ if __FILE__ == $0
   if action == 'metadata'
     puts metadata.to_json
   else
-    args = JSON.parse($stdin.read.chomp) rescue nil
-
-    action_results = action_run(args)
+    action_results = action_run($stdin.read.chomp)
     print action_results.to_json
 
     unless action_results["error"].nil?
