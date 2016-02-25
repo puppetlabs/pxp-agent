@@ -38,7 +38,7 @@ pt::ptime Timestamp::getPastInstant(std::string past_duration)
     int value {};
     char suffix {};
     processDurationString(past_duration, value, suffix);
-    auto instant = pt::microsec_clock::universal_time();
+    pt::ptime instant { pt::microsec_clock::universal_time() };
 
     switch (suffix) {
         case ('d'):
@@ -51,7 +51,7 @@ pt::ptime Timestamp::getPastInstant(std::string past_duration)
             instant = instant - pt::minutes(value);
             break;
         default:
-            throw Error { "invalid duration string: "+ past_duration + suffix };
+            throw Error { "invalid duration string: " + past_duration + suffix };
     }
 
     return instant;
