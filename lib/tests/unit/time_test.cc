@@ -43,9 +43,11 @@ TEST_CASE("Timestamp::getPastInstant", "[utils][time]") {
         auto tp1 =  Timestamp::getPastInstant("1m");
         auto tp2 =  Timestamp::getPastInstant("1h");
         auto tp3 =  Timestamp::getPastInstant("1d");
+        auto tp4 =  Timestamp::getPastInstant("2m");
 
         REQUIRE(tp1 > tp2);
         REQUIRE(tp2 > tp3);
+        REQUIRE(tp4 < tp1);
     }
 }
 
@@ -107,8 +109,16 @@ TEST_CASE("Timestamp::isNewerThan", "[utils][time]") {
     Timestamp ts { "1h" };
 
     SECTION("returns false if time_point is older than the datetime string arg") {
-        auto newer_datetime = lth_util::get_ISO8601_time(60);
-        REQUIRE_FALSE(ts.isNewerThan(newer_datetime));
+        SECTION("one hour newer") {
+            auto one_hour_newer_datetime = lth_util::get_ISO8601_time();
+            REQUIRE_FALSE(ts.isNewerThan(one_hour_newer_datetime));
+        }
+
+        SECTION("one minute newer") {
+            Timestamp now_ts { "0m" };
+            auto one_min_newer_datetime = lth_util::get_ISO8601_time(60);
+            REQUIRE_FALSE(now_ts.isNewerThan(one_min_newer_datetime));
+        }
     }
 
     SECTION("returns true if time_point is newer than the datetime string arg") {
@@ -117,6 +127,11 @@ TEST_CASE("Timestamp::isNewerThan", "[utils][time]") {
         auto older_datetime = pt::to_iso_extended_string(older_time_point) + "Z";
 
         REQUIRE(ts.isNewerThan(older_datetime));
+    }
+
+    SECTION("throws an Error in case of invalid datetime string, longer than 21 chars") {
+        REQUIRE_THROWS_AS(ts.isNewerThan("asdfasdf2016asdfasdffas-02-18T19:40:49Z"),
+                          Timestamp::Error);
     }
 }
 

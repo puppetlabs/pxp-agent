@@ -103,8 +103,14 @@ std::string Timestamp::convertToISO(std::string extended_ISO8601_time)
 
 bool Timestamp::isNewerThan(const std::string& extended_ISO8601_time)
 {
-    auto t_p = pt::from_iso_string(Timestamp::convertToISO(extended_ISO8601_time));
-    return time_point > t_p;
+    try {
+        auto t_p = pt::from_iso_string(Timestamp::convertToISO(extended_ISO8601_time));
+        return time_point > t_p;
+    } catch (const std::exception& e) {
+        std::string err { e.what() };
+        throw Error { "failed to create a timepoint for " + extended_ISO8601_time
+                      + (err.empty() ? "" : ": " + err) };
+    }
 }
 
 }  // namespace PXPAgent

@@ -238,9 +238,13 @@ unsigned int ResultsStorage::purge(
                     }
                 }
             } catch (const Error& e) {
-                LOG_DEBUG("Failed to get metadata for transaction %1% "
-                          "(the results directory will not be removed): %2%",
-                          transaction_id, e.what());
+                LOG_WARNING("Failed to retrieve the metadata for the transaction %1% "
+                            "(the results directory will not be removed): %2%",
+                            transaction_id, e.what());
+            } catch (const Timestamp::Error& e) {
+                LOG_WARNING("Failed to process the metadata for the transaction %1% "
+                            "(the results directory will not be removed): %2%",
+                            transaction_id, e.what());
             }
 
             return true;
