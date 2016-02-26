@@ -648,7 +648,7 @@ void Configuration::validateAndNormalizeOtherSettings() {
 
         if (!fs::exists(val_path)) {
             throw Configuration::Error { option + " '" + val_path.string()
-                + "'' does not exist" };
+                + "' does not exist" };
         } else if (!fs::is_directory(val_path)) {
             throw Configuration::Error { option + " '" + val_path.string()
                 + "' is not a directory" };
