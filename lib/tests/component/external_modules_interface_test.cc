@@ -112,7 +112,8 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
     }
 
     SECTION("correctly process non-blocking requests") {
-        SECTION("send a provisional response when the requested starts successfully") {
+        SECTION("send a provisional response when the requested action starts "
+                "successfully") {
             REQUIRE(!c_ptr->sent_provisional_response);
 
             data.set<std::string>("module", "reverse_valid");
