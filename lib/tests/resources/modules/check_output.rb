@@ -17,6 +17,8 @@ def check_output_files(args)
     else
       1
     end
+    $stdout.fsync
+    $stderr.fsync
     File.open(output_files["exitcode"], 'w') do |f|
       f.puts(status)
     end
