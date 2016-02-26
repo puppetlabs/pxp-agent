@@ -133,7 +133,7 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
             REQUIRE(c_ptr->sent_provisional_response);
         }
 
-        SECTION("send a blocking response when the requested action succeeds") {
+        SECTION("send a non-blocking response when the requested action succeeds") {
             REQUIRE(!c_ptr->sent_provisional_response);
             REQUIRE(!c_ptr->sent_non_blocking_response);
 
@@ -141,15 +141,16 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
             data.set<bool>("notify_outcome", true);
             data.set<std::string>("action", "string");
             lth_jc::JsonContainer params {};
-            params.set<std::string>("argument", "kondgbia");
+            params.set<std::string>("argument", "kondogbia");
             data.set<lth_jc::JsonContainer>("params", params);
             const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
             REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
 
-            // Wait a bit to let the execution thread finish
+            // Wait a bit to let the execution thread finish plus the
+            // 100 ms of pause for getting the output
             pcp_util::this_thread::sleep_for(
-                pcp_util::chrono::microseconds(100000));
+                pcp_util::chrono::microseconds(200000));
 
             REQUIRE(c_ptr->sent_provisional_response);
             REQUIRE(c_ptr->sent_non_blocking_response);

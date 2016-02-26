@@ -8,6 +8,9 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.external_module"
 #include <leatherman/logging/logging.hpp>
 
+#include <cpp-pcp-client/util/thread.hpp>   // this_thread::sleep_for
+#include <cpp-pcp-client/util/chrono.hpp>
+
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
@@ -34,6 +37,7 @@ namespace fs = boost::filesystem;
 namespace lth_exec = leatherman::execution;
 namespace lth_file = leatherman::file_util;
 namespace lth_jc = leatherman::json_container;
+namespace pcp_util = PCPClient::Util;
 
 //
 // Free functions
@@ -128,8 +132,10 @@ void ExternalModule::validateConfiguration()
 }
 
 //
-// Static class functions
+// Static class members
 //
+
+const int ExternalModule::OUTPUT_DELAY_MS { 100 };
 
 void ExternalModule::processOutputAndUpdateMetadata(ActionResponse& response)
 {
@@ -350,6 +356,8 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
         0,          // timeout
         { lth_exec::execution_options::merge_environment });  // options
 
+    LOG_INFO("The task for the %1% has completed", request.prettyLabel());
+
     if (exec.exit_code == EXTERNAL_MODULE_FILE_ERROR_EC) {
         // This is unexpected. The output of the task will not be
         // available for future transaction status requests; we cannot
@@ -362,7 +370,14 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
         throw Module::ProcessingError { "failed to write output on file" };
     }
 
-    // Stdout / stderr output is on file; read it
+    // Wait a bit to relax the requirement for the exitcode file being
+    // written before the output ones, when the process completes
+    LOG_TRACE("Waiting %1% ms before retrieving the output of %2%",
+              OUTPUT_DELAY_MS, request.prettyLabel());
+    pcp_util::this_thread::sleep_for(
+        pcp_util::chrono::milliseconds(OUTPUT_DELAY_MS));
+
+    // Stdout / stderr output should be on file; read it
     response.output = storage_.getOutput(request.transactionId(), exec.exit_code);
     ExternalModule::processOutputAndUpdateMetadata(response);
     return response;
