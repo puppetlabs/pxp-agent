@@ -477,10 +477,12 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
     bool not_running_by_pid { false };
 
     if (!storage_ptr_->pidFileExists(t_id)) {
-        LOG_DEBUG("PID file for transaction %1% task does not exist", t_id);
+        LOG_DEBUG("The PID file for the transaction %1% task does not exist", t_id);
     } else {
         try {
             auto pid = storage_ptr_->getPID(t_id);
+            LOG_DEBUG("The PID of the action process for the transaction %1% is %2%",
+                      t_id, pid);
 
             // NOTE(ale): processExists() does not throw
             if (Util::processExists(pid)) {
@@ -493,10 +495,10 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
                     cached = ResultsMutex::Instance().exists(t_id);
                 }
                 if (cached)
-                    // The process doe not exist anymore, but its
+                    // The process does not exist anymore, but its
                     // mutex is still cached - wait a bit before
                     // reading the metadata to allow the non-blocking
-                    // to lock its mutex and update the metadata
+                    // task to lock its mutex and update the metadata
                     pcp_util::this_thread::sleep_for(
                         pcp_util::chrono::milliseconds(METADATA_RACE_MS));
             }
@@ -563,12 +565,15 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
     // inspect it and see if it was finalized
 
     std::string execution_error {};
+    auto stored_status = metadata.get<std::string>("status");
+    LOG_TRACE("The status of the transaction %1% is \"%2%\", as reported in its "
+              "metadata file",
+              t_id, stored_status);
 
-    if (metadata.get<std::string>("status") != AS.at(ActionStatus::Running)) {
+    if (stored_status != AS.at(ActionStatus::Running)) {
         // The metadata was finalized (status != RUNNING); just use it
-        auto stored_status = metadata.get<std::string>("status");
-
-        // TODO(ale): use UNDETERMINED after PXP v2.0 changes
+        // TODO(ale): use UNDETERMINED after PXP v2.0 changes; leaving
+        // as UNKNOWN for now
         if (stored_status != AS.at(ActionStatus::Undetermined))
             status_results.set<std::string>("status", stored_status);
 
@@ -605,13 +610,20 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
     if (!storage_ptr_->outputIsReady(t_id)) {
         // No output; use the PID information to determine the status
         // and update the metadata if UNDETERMINED
+        LOG_TRACE("The output of the transaction %1% is not ready; using the PID "
+                  "information to ensure that the action process is running", t_id);
 
         if (running_by_pid) {
             // It's running --> RUNNING
+            LOG_TRACE("The action process of the transaction %1% is running", t_id);
             status_results.set<std::string>("status", AS.at(ActionStatus::Running));
         } else  if (not_running_by_pid) {
             // It's not running --> UNDETERMINED / execution_error
             // TODO(ale): use UNDETERMINED after PXP v2.0 changes
+            LOG_WARNING("The action process of the transaction %1% is not "
+                        "running; updating its status to \"undetermined\" "
+                        "on its metadata file",
+                        t_id);
             execution_error = "task process is not running, but no output is available";
             metadata.set<std::string>("status", AS.at(ActionStatus::Undetermined));
             if (!metadata.includes("execution_error"))
@@ -625,13 +637,16 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
                     storage_ptr_->updateMetadataFile(t_id, metadata);
                 }
             } catch (const ResultsStorage::Error& err) {
-                LOG_ERROR("Failed to update metadata for the %1%: %2%",
-                          request.prettyLabel(), err.what());
+                LOG_ERROR("Failed to update the metadata file of the "
+                          "transaction %1%: %2%",
+                          t_id, err.what());
             }
         } else {
             // We failed to get any indication from the PID file;
             // leave the status as UNKNOWN as the process may finish
             // later and make its output available
+            LOG_WARNING("We cannot determine the status of the transaction %1% "
+                        "from the action process' PID", t_id);
             execution_error = "the task PID and output are not available";
         }
 
@@ -662,11 +677,12 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
     try {
         status_response.output = storage_ptr_->getOutput(t_id);
     } catch (const ResultsStorage::Error& e) {
-        LOG_ERROR("Failed to get the output of the transaction %1%: %2%",
+        LOG_ERROR("Failed to get the output of the transaction %1% (it status "
+                  "will be updated to \"undetermined\" on its metadata file): %2%",
                   t_id, e.what());
         // TODO(ale): use UNDETERMINED after PXP v2.0 changes
         status_response.setValidResultsAndEnd(std::move(status_results),
-                                         "found no results directory");
+                                              "found no results directory");
         connector_ptr_->sendStatusResponse(status_response, request);
 
         // Update the metadata with a final 'status' value
@@ -705,6 +721,9 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
         mod_ptr->validateOutputAndUpdateMetadata(a_r);
 
     // Update metadata file while holding the lock (if cached)
+    LOG_INFO("Setting the status of the transaction %1% to \"%2%\" on its "
+             "metadata file",
+             t_id, a_r.action_metadata.get<std::string>("status"));
     try {
         if (mtx_ptr != nullptr) {
             ResultsMutex::LockGuard r_l { *mtx_ptr };

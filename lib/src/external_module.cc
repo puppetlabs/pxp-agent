@@ -356,6 +356,8 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
         0,          // timeout
         { lth_exec::execution_options::merge_environment });  // options
 
+    LOG_INFO("The task for the %1% has completed", request.prettyLabel());
+
     if (exec.exit_code == EXTERNAL_MODULE_FILE_ERROR_EC) {
         // This is unexpected. The output of the task will not be
         // available for future transaction status requests; we cannot
