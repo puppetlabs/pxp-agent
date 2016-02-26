@@ -17,7 +17,6 @@
 #include <leatherman/util/strings.hpp>
 #include <leatherman/util/scope_exit.hpp>
 
-#include <cpp-pcp-client/util/thread.hpp>
 #include <cpp-pcp-client/validator/validator.hpp>
 #include <cpp-pcp-client/validator/schema.hpp>
 #include <cpp-pcp-client/util/thread.hpp>   // this_thread::sleep_for
