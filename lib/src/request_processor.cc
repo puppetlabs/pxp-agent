@@ -641,8 +641,23 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
         return;
     }
 
-    // The exitcode file exists, so the external module process has
-    // completed; retrieve output, process it and update metadata file
+    // The exitcode file exists, so the external module process should
+    // have completed; if, by the PID information, the process was
+    // still executing, wait a bit, then retrieve the output, process
+    // it and update metadata file
+
+    if (running_by_pid) {
+        // Wait a bit to relax the requirement for the exitcode file
+        // being written before the output ones
+        LOG_DEBUG("The output for the transaction %1% is now available, but the "
+                  "aciton process was still executing when this handler started; "
+                  "wait for %2% ms before retrieving the output from file",
+                  t_id, ExternalModule::OUTPUT_DELAY_MS);
+        pcp_util::this_thread::sleep_for(
+            pcp_util::chrono::milliseconds(ExternalModule::OUTPUT_DELAY_MS));
+    } else {
+        LOG_TRACE("Output of %1% is ready; retrieving it", t_id);
+    }
 
     try {
         status_response.output = storage_ptr_->getOutput(t_id);
