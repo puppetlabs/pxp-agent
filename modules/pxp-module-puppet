@@ -282,6 +282,10 @@ def action_run(input)
         1
       end
 
+      # flush the stdout/stderr before writing the exitcode
+      # file to avoid pxp-agent reading incomplete output
+      $stdout.fsync
+      $stderr.fsync
       begin
         File.open(output_files["exitcode"], 'w') do |f|
           f.puts(status)
