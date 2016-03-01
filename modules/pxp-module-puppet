@@ -202,6 +202,12 @@ def metadata()
   }
 end
 
+DEFAULT_FLAGS = ["--onetime", "--no-daemonize", "--verbose"]
+
+WHITELISTED_FLAGS = DEFAULT_FLAGS + ["--noop", "--debug", "--trace", "--evaltrace",
+  "--no-use_cached_catalog", "--pluginsync", "--no-usecacheonfailure", "--show_diff", "--no-splay",
+  "--environment", "--strict_environment_mode"]
+
 def run(params_and_config)
   if !params_and_config
     return make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
@@ -210,7 +216,19 @@ def run(params_and_config)
 
   params = params_and_config["params"]
   config = params_and_config["config"]
-  params["flags"] = params["flags"] | ["--onetime", "--no-daemonize", "--verbose"]
+
+  if params.has_key?("flags")
+    params["flags"].each do |flag|
+      if flag.is_a?(String) and flag.start_with?("--")
+        unless WHITELISTED_FLAGS.include?(flag)
+          return make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
+                                   "The json received on STDIN included a non-permitted flag: #{flag}")
+        end
+      end
+    end
+  end
+
+  params["flags"] = params["flags"] | DEFAULT_FLAGS
 
   if config["puppet_bin"].nil? || config["puppet_bin"].empty?
     if !is_win?

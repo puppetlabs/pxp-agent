@@ -337,6 +337,13 @@ describe "pxp-module-puppet" do
           "Invalid json parsed on STDIN. Cannot start run action"
     end
 
+    it "fails when the flags of the passed json data are not all whitelisted" do
+      input = {"config" => [],
+               "params" => {"flags" => ["--prerun_command", "echo safe"]}}
+      expect(run(input)["error"]).to be ==
+          "The json received on STDIN included a non-permitted flag: --prerun_command"
+    end
+
     it "populates flags with the correct defaults" do
       expected_params = {"env" => [],
                          "flags" => ["--onetime", "--no-daemonize", "--verbose"]}
@@ -350,9 +357,23 @@ describe "pxp-module-puppet" do
 
     it "does not add flag defaults if they have been passed" do
       expected_params = {"env" => [],
-                         "flags" => ["--squirrels", "--onetime", "--no-daemonize", "--verbose"]}
+                         "flags" => ["--show_diff", "--onetime", "--no-daemonize", "--verbose"]}
       passed_params = {"env" => [],
-                       "flags" => ["--squirrels", "--onetime", "--no-daemonize"]}
+                       "flags" => ["--show_diff", "--onetime", "--no-daemonize"]}
+      allow(File).to receive(:exist?).and_return(true)
+      allow_any_instance_of(Object).to receive(:running?).and_return(false)
+      allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
+      expect_any_instance_of(Object).to receive(:start_run).with(default_config,
+                                                                 expected_params)
+      run({"config" => default_config, "params" => passed_params})
+    end
+
+    it "allows passing arguments of flags" do
+      expected_params = {"env" => [],
+                         "flags" => ["--environment", "/etc/puppetlabs/the_environment",
+                                    "--onetime", "--no-daemonize", "--verbose"]}
+      passed_params = {"env" => [],
+                       "flags" => ["--environment", "/etc/puppetlabs/the_environment"]}
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
