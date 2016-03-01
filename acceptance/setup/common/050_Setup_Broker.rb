@@ -32,6 +32,17 @@ step 'Run lein deps to download dependencies' do
   on master, "cd #{GIT_CLONE_FOLDER}/pcp-broker; export LEIN_ROOT=ok; lein deps"
 end
 
+step 'Replace PCP test certs with the Puppet certs of this SUT' do
+  on(master, puppet('config print ssldir')) do |result|
+    puppet_ssldir = result.stdout.chomp
+    broker_ssldir = "#{GIT_CLONE_FOLDER}/pcp-broker/test-resources/ssl"
+    on master, "\\cp #{puppet_ssldir}/certs/#{master}.pem #{broker_ssldir}/certs/broker.example.com.pem"
+    on master, "\\cp #{puppet_ssldir}/private_keys/#{master}.pem #{broker_ssldir}/private_keys/broker.example.com.pem"
+    on master, "\\cp #{puppet_ssldir}/ca/ca_crt.pem #{broker_ssldir}/ca/ca_crt.pem"
+    on master, "\\cp #{puppet_ssldir}/ca/ca_crl.pem #{broker_ssldir}/ca/ca_crl.pem"
+  end
+end
+
 step "Run pcp-broker in trapperkeeper in background and wait for it to report status 'running'" do
   run_pcp_broker(master)
 end
