@@ -3,6 +3,7 @@ require 'pcp/client'
 require 'pcp/simple_logger'
 require 'net/http'
 require 'openssl'
+require 'socket'
 require 'json'
 
 # This file contains general test helper methods for pxp-agent acceptance tests
@@ -311,11 +312,12 @@ def connect_pcp_client(broker)
   retries = 0
   max_retries = 10
   connected = false
+  hostname = Socket.gethostname
   until (connected || retries == max_retries) do
     client = PCP::Client.new({
       :server => broker_ws_uri(broker),
-      :ssl_cert => "../test-resources/ssl/certs/controller01.example.com.pem",
-      :ssl_key => "../test-resources/ssl/private_keys/controller01.example.com.pem",
+      :ssl_cert => "tmp/ssl/certs/#{hostname.downcase}.pem",
+      :ssl_key => "tmp/ssl/private_keys/#{hostname.downcase}.pem",
       :logger => PCP::SimpleLogger.new,
       :loglevel => logger.is_debug? ? Logger::DEBUG : Logger::WARN
     })
