@@ -38,8 +38,7 @@ end
 agents.each_with_index do |agent, i|
   @agent = agent
 
-  cert_dir = configure_std_certs_on_host(@agent)
-  create_remote_file(@agent, pxp_agent_config_file(@agent), pxp_config_json_using_test_certs(master, @agent, i + 1, cert_dir).to_s)
+  create_remote_file(@agent, pxp_agent_config_file(@agent), pxp_config_json_using_puppet_certs(master, @agent).to_s)
 
   step 'C93070 - Service Start (from stopped, with configuration)' do
     stop_service
@@ -67,11 +66,6 @@ agents.each_with_index do |agent, i|
     step 'C94686 - Service Start (from stopped, un-configured)' do
       start_service
       assert_running
-    end
-
-    step 'C94687 - Service Stop (from running, un-configured)' do
-      stop_service
-      assert_stopped
     end
 
     step 'Restore configuration' do

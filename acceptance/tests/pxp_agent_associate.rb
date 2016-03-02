@@ -2,28 +2,26 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'C93807 - Associate pxp-agent with a PCP broker'
 
-agents.each_with_index do |agent, i|
+agents.each do |agent|
 
-  cert_dir = configure_std_certs_on_host(agent)
-  create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_test_certs(master, agent, i + 1, cert_dir).to_s)
+  create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
 
   step 'Stop pxp-agent if it is currently running' do
     on agent, puppet('resource service pxp-agent ensure=stopped')
   end
 
-  step 'Clear existing logs so we don\'t match an existing association entry' do
-    on(agent, "rm -rf #{logfile(agent)}")
+  step 'Assert that the agent is not listed in pcp-broker inventory' do
+    assert(is_not_associated?(master, "pcp://#{agent}/agent"),
+           "Agent identity pcp://#{agent}/agent for agent host #{agent} appears in pcp-broker's client inventory " \
+           "but pxp-agent service is supposed to be stopped")
   end
 
   step 'Start pxp-agent service' do
     on agent, puppet('resource service pxp-agent ensure=running')
   end
 
-  step 'Check that within 60 seconds, log file contains entry for WebSocket connection being established' do
-    expect_file_on_host_to_contain(agent, logfile(agent), PXP_AGENT_LOG_ENTRY_WEBSOCKET_SUCCESS, 60)
-  end
-
-  step 'Check that log file contains entry that association has succeeded' do
-    expect_file_on_host_to_contain(agent, logfile(agent), PXP_AGENT_LOG_ENTRY_ASSOCIATION_SUCCESS)
+  step 'Assert that agent is listed in pcp-broker inventory' do
+    assert(is_associated?(master, "pcp://#{agent}/agent"),
+           "Agent identity pcp://#{agent}/agent for agent host #{agent} does not appear in pcp-broker's client inventory")
   end
 end

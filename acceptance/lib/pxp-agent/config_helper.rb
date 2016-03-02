@@ -86,6 +86,21 @@ def pxp_config_hash_using_test_certs(broker, agent, client_number, base_path)
   }
 end
 
+def pxp_config_json_using_puppet_certs(broker, agent)
+  pxp_config_hash_using_puppet_certs(broker, agent).to_json
+end
+
+def pxp_config_hash_using_puppet_certs(broker, agent)
+  on(agent, puppet('config print ssldir')) do |result|
+    puppet_ssldir = result.stdout.chomp
+    return { "broker-ws-uri" => "#{broker_ws_uri(broker)}",
+      "ssl-key" => "#{puppet_ssldir}/private_keys/#{agent}.pem",
+      "ssl-ca-cert" => "#{puppet_ssldir}/certs/ca.pem",
+      "ssl-cert" => "#{puppet_ssldir}/certs/#{agent}.pem"
+    }
+  end
+end
+
 # @param broker_host the host name or beaker host object for the pcp-broker host
 # @return the broker-ws-uri config string
 def broker_ws_uri(broker_host)
