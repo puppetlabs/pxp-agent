@@ -157,8 +157,8 @@ object if its format is valid JSON.
 
 Once an action completes its execution, its results will be validated by
 pxp-agent. That will be done by using the action's `results` schema contained in
-the `metadata`. Instead, any error message provided by the module will be
-treated as free format text.
+the `metadata`. In case the action provides error messages, they will be treated
+as free format text and no validation will be performed.
 
 ##### Results and error messages on stdout and stderr
 
