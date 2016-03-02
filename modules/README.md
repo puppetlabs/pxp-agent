@@ -181,10 +181,9 @@ streams.
 
 ##### Success or failure?
 
-pxp-agent will not determine if an action run succeded based on the returned
-exit code; pxp-agent will leave it up to the requester controller to determine
-the outcome of the action run. It will report back a successfull action run in
-case the returned results are valid, by using the *metadata*'s *results* schema.
+pxp-agent will report back a successfull action run in case 1) the returned
+results comply with the `metadata`'s *results* schema and 2) the exit code is
+0.
 
 ##### Exit code
 
