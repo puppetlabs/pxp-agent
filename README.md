@@ -111,16 +111,18 @@ single JSON object. Example:
 
 ```
 {
-    "broker-ws-uri" : "wss://127.0.0.1:8142/pcp/",
+    "broker-ws-uri" : "wss://pcp_broker_cn:8142/pcp/",
     "ssl-key" : "/etc/puppetlabs/puppet/ssl/private_keys/myhost.net.pem",
     "ssl-ca-cert" : "/etc/puppetlabs/puppet/ssl/certs/ca.pem",
     "ssl-cert" : "/etc/puppetlabs/puppet/ssl/certs/myhost.net.pem"
 }
 ```
 
-Note that you have to specify the WebSocket secure URL of the [PCP broker][8]
-in order to establish the WebSocket connection on top of which the PCP
-communication will take place.
+Note that you have to specify the WebSocket secure URI of the [PCP broker][8]
+and the certificate of the CA that is used by it, in order to establish the
+WebSocket connection on top of which the PCP communication will take place
+(PCP uses secure WebSocket). Also, the hostname used in the WebSocket URI must
+match the SSL identity used by the broker.
 
 ### Logging
 
@@ -147,8 +149,9 @@ Specify which config file to use.
 
 **broker-ws-uri (required to connect)**
 
-The WebSocket URI of the PXP broker you wish to connect the agent to, example
-*wss://192.168.0.1:8142/pxp/*
+The WebSocket URI of the PXP broker you wish to connect the agent to, in the
+`wss://<broker identity>:8142/pcp/` format; example:
+*wss://pcp_broker_cn:8142/pcp/*
 
 **ssl-ca-cert (required to connect)**
 
