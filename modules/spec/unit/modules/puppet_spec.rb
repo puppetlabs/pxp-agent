@@ -256,6 +256,33 @@ describe "pxp-module-puppet" do
     end
   end
 
+  describe "get_flag_name" do
+    it "returns the flag name" do
+      expect(get_flag_name("--spam")).to be == "spam"
+    end
+
+    it "returns the flag name in case it's negative" do
+      expect(get_flag_name("--no-spam")).to be == "spam"
+    end
+
+    it "returns an empty string in case the flag has only a suffix" do
+      expect(get_flag_name("--")).to be == ""
+      expect(get_flag_name("--no-")).to be == ""
+    end
+
+    it "raises an error in case of invalid suffix" do
+      expect do
+        get_flag_name("-spam")
+      end.to raise_error(RuntimeError, /Assertion error: we're here by mistake/)
+    end
+
+    it "raises an error in case the flag has no suffix" do
+      expect do
+        get_flag_name("eggs")
+      end.to raise_error(RuntimeError, /Assertion error: we're here by mistake/)
+    end
+  end
+
   describe "action_metadata" do
     it "has the correct metadata" do
       expect(metadata).to be == {
@@ -353,6 +380,13 @@ describe "pxp-module-puppet" do
       expect_any_instance_of(Object).to receive(:start_run).with(default_config,
                                                                  expected_params)
       run({"config" => default_config, "params" => default_params})
+    end
+
+    it "does not allow changing settings of default flags" do
+      input = {"config" => [],
+               "params" => {"flags" => ["--daemonize"]}}
+      expect(run(input)["error"]).to be ==
+          "The json received on STDIN overrides a default setting with: --daemonize"
     end
 
     it "does not add flag defaults if they have been passed" do
