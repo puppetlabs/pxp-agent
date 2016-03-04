@@ -202,6 +202,37 @@ def metadata()
   }
 end
 
+DEFAULT_FLAGS = ["--onetime", "--no-daemonize", "--verbose"]
+
+DEFAULT_FLAGS_NAMES = ["onetime", "daemonize", "verbose"]
+
+WHITELISTED_FLAGS_NAMES = [
+  "color", "configtimeout",
+  "debug","disable_warnings",
+  "environment", "evaltrace",
+  "filetimeout",
+  "graph",
+  "http_connect_timeout", "http_debug", "http_keepalive_timeout", "http_read_timeout",
+  "log_level",
+  "noop",
+  "ordering",
+  "pluginsync",
+  "show_diff", "skip_tags", "splay", "strict_environment_mode",
+  "tags", "trace",
+  "use_cached_catalog", "usecacheonfailure",
+  "waitforcert"]
+
+# This asserts that the flag has a valid suffix
+def get_flag_name(flag)
+  if flag.start_with?("--no-")
+    flag[5..-1]
+  elsif flag.start_with?("--")
+    flag[2..-1]
+  else
+    raise "Assertion error: we're here by mistake"
+  end
+end
+
 def run(params_and_config)
   if !params_and_config
     return make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
@@ -210,7 +241,29 @@ def run(params_and_config)
 
   params = params_and_config["params"]
   config = params_and_config["config"]
-  params["flags"] = params["flags"] | ["--onetime", "--no-daemonize", "--verbose"]
+
+  if params.has_key?("flags")
+    params["flags"].each do |flag|
+      if flag.is_a?(String) and flag.start_with?("--")
+        flag_name = get_flag_name(flag)
+
+        if DEFAULT_FLAGS_NAMES.include?(flag_name)
+          unless DEFAULT_FLAGS.include?(flag)
+            return make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
+                                     "The json received on STDIN overrides a default setting with: #{flag}")
+          end
+          next
+        end
+
+        unless WHITELISTED_FLAGS_NAMES.include?(flag_name)
+          return make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
+                                   "The json received on STDIN included a non-permitted flag: #{flag}")
+        end
+      end
+    end
+  end
+
+  params["flags"] = params["flags"] | DEFAULT_FLAGS
 
   if config["puppet_bin"].nil? || config["puppet_bin"].empty?
     if !is_win?
