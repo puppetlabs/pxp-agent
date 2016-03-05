@@ -471,7 +471,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
     // nonBlockingActionTask thread when accessing the metadata file,
     // due to the elapsed time between the end of the external module
     // process and the metadata update (note that we use a lock based
-    // on a named mutex to access the medata file in a safe way)
+    // on a named mutex to access the metadata file in a safe way)
 
     bool running_by_pid { false };
     bool not_running_by_pid { false };
