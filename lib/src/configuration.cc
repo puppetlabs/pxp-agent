@@ -111,7 +111,7 @@ void Configuration::initialize(
 
     // Initialize boost filesystem's locale to a UTF-8 default.
     // Logging gets setup the same way via the default 2nd argument.
-#if (!defined(__sun) && !defined(_AIX)) || !defined(__GNUC__)
+#ifdef LEATHERMAN_USE_LOCALES
     // Locale support in GCC on Solaris is busted, so skip it.
     fs::path::imbue(lth_loc::get_locale());
 #endif
