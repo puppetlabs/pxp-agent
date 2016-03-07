@@ -1,3 +1,14 @@
+## 1.0.3
+
+This is a security release
+
+* [PCP-326](https://tickets.puppetlabs.com/browse/PCP-326) add acceptance tests
+ for SSL validation
+* [PCP-328](https://tickets.puppetlabs.com/browse/PCP-328) update acceptance
+ tests
+* [PCP-321](https://tickets.puppetlabs.com/browse/PCP-321) pxp-module-puppet now
+ implements a white list for puppet-agent's flags
+
 ## 1.0.2
 
 This is a maintenance release
