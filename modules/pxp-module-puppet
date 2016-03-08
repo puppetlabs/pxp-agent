@@ -240,12 +240,63 @@ def get_configuration(args)
   config
 end
 
+DEFAULT_FLAGS = ["--onetime", "--no-daemonize", "--verbose"]
+
+DEFAULT_FLAGS_NAMES = ["onetime", "daemonize", "verbose"]
+
+WHITELISTED_FLAGS_NAMES = [
+  "color", "configtimeout",
+  "debug","disable_warnings",
+  "environment", "evaltrace",
+  "filetimeout",
+  "graph",
+  "http_connect_timeout", "http_debug", "http_keepalive_timeout", "http_read_timeout",
+  "log_level",
+  "noop",
+  "ordering",
+  "pluginsync",
+  "show_diff", "skip_tags", "splay", "strict_environment_mode",
+  "tags", "trace",
+  "use_cached_catalog", "usecacheonfailure",
+  "waitforcert"]
+
+# This asserts that the flag has a valid suffix
+def get_flag_name(flag)
+  if flag.start_with?("--no-")
+    flag[5..-1]
+  elsif flag.start_with?("--")
+    flag[2..-1]
+  else
+    raise "Assertion error: we're here by mistake"
+  end
+end
+
 def get_action_input(args)
   action_input = args["input"]
   unless action_input.is_a?(Hash)
     raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN did not contain a valid 'input' key: #{args.to_s}")
   end
-  action_input["flags"] = action_input["flags"] | ["--onetime", "--no-daemonize", "--verbose"]
+
+  if action_input.has_key?("flags")
+    action_input["flags"].each do |flag|
+      if flag.is_a?(String) and flag.start_with?("--")
+        flag_name = get_flag_name(flag)
+
+        if DEFAULT_FLAGS_NAMES.include?(flag_name)
+          unless DEFAULT_FLAGS.include?(flag)
+            raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN overrides a default setting with: #{flag}")
+          end
+          next
+        end
+
+        unless WHITELISTED_FLAGS_NAMES.include?(flag_name)
+          raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN included a non-permitted flag: #{flag}")
+        end
+      end
+    end
+  end
+
+  action_input["flags"] = action_input["flags"] | DEFAULT_FLAGS
   action_input
 end
 
