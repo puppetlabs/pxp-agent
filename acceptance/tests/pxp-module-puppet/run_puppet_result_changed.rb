@@ -35,9 +35,7 @@ SITEPP
     begin
       responses = rpc_blocking_request(master, target_identities,
                                       'pxp-module-puppet', 'run',
-                                      {:env => [], :flags => ['--server', master.to_str,
-                                                              '--environment', ENVIRONMENT_NAME]
-                                      })
+                                      {:env => [], :flags => ['--environment', ENVIRONMENT_NAME]})
     rescue => exception
       fail("Exception occurred when trying to run Puppet on all agents: #{exception.message}")
     end

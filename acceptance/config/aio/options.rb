@@ -9,6 +9,7 @@
     'setup/aio/021_InstallAristaModule.rb',
     'setup/common/035_StartPuppetServer.rb',
     'setup/common/040_ValidateSignCert.rb',
+    'setup/common/045_SetPuppetServerOnAgents.rb',
     'setup/common/050_Setup_Broker.rb',
     'setup/common/060_Setup_PCP_Client.rb',
   ],
