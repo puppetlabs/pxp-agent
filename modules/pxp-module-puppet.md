@@ -48,7 +48,7 @@ You can use only a subset of Puppet's flags, including the "--no-.\*" variant wh
 
 ```
   "color", "configtimeout", "debug","disable_warnings", "environment", "evaltrace", "filetimeout",
-  "graph", "http_connect_timeout", "http_debug", "http_keepalive_timeout", "http_read_timeout",
+  "graph", "http_connect_timeout", "http_debug", "http_keepalive_timeout", "http_read_timeout", "ignorecache",
   "log_level", "noop", "ordering", "pluginsync", "show_diff", "skip_tags", "splay",
   "strict_environment_mode", "tags", "trace", "use_cached_catalog", "usecacheonfailure",
   "waitforcert"
