@@ -260,7 +260,7 @@ WHITELISTED_FLAGS_NAMES = [
   "use_cached_catalog", "usecacheonfailure",
   "waitforcert"]
 
-# This asserts that the flag has a valid suffix
+# This asserts that the flag has a valid prefix
 def get_flag_name(flag)
   if flag.start_with?("--no-")
     flag[5..-1]
