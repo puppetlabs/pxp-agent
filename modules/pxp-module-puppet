@@ -251,7 +251,6 @@ WHITELISTED_FLAGS_NAMES = [
   "filetimeout",
   "graph",
   "http_connect_timeout", "http_debug", "http_keepalive_timeout", "http_read_timeout",
-  "ignorecache",
   "log_level",
   "noop",
   "ordering",
