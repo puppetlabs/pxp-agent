@@ -147,10 +147,11 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
 
             REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
 
-            // Wait a bit to let the execution thread finish plus the
-            // 100 ms of pause for getting the output
+            // Wait a bit to let the module complete, the execution
+            // thread process the output (there's a OUTPUT_DELAY_MS
+            // pause) and send the non-blocking response
             pcp_util::this_thread::sleep_for(
-                pcp_util::chrono::microseconds(200000));
+                pcp_util::chrono::milliseconds(300 + ExternalModule::OUTPUT_DELAY_MS));
 
             REQUIRE(c_ptr->sent_provisional_response);
             REQUIRE(c_ptr->sent_non_blocking_response);
