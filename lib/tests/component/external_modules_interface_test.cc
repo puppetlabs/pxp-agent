@@ -70,6 +70,10 @@ TEST_CASE("Invalid (by metadata) External Module Configuration", "[component]") 
 }
 
 TEST_CASE("Process correctly requests for external modules", "[component]") {
+    if (!fs::exists(SPOOL) && !fs::create_directories(SPOOL)) {
+        FAIL("Failed to create the results directory");
+    }
+
     AGENT_CONFIGURATION.modules_config_dir = "";
     auto c_ptr = std::make_shared<MockConnector>();
     RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
@@ -79,7 +83,7 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
     lth_jc::JsonContainer data {};
     data.set<std::string>("transaction_id", "42");
 
-    SECTION("correctly process nonblocking requests") {
+    SECTION("correctly process blocking requests") {
         SECTION("send a blocking response when the requested action succeeds") {
             REQUIRE(!c_ptr->sent_blocking_response);
             data.set<std::string>("module", "reverse_valid");
@@ -114,7 +118,7 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
     SECTION("correctly process non-blocking requests") {
         SECTION("send a provisional response when the requested action starts "
                 "successfully") {
-            REQUIRE(!c_ptr->sent_provisional_response);
+            REQUIRE_FALSE(c_ptr->sent_provisional_response);
 
             data.set<std::string>("module", "reverse_valid");
             data.set<bool>("notify_outcome", false);
@@ -126,16 +130,22 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
 
             REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
 
-            // Wait a bit to let the execution thread finish
+            // Wait a bit to let the module complete.
+            // Note that, even if the provisional response is sent
+            // right after the module process is created, we must wait
+            // for the module completion, otherwise the fs::remove_all
+            // below will end up in a race with the module trying to
+            // write its output to files in SPOOL.
             pcp_util::this_thread::sleep_for(
-                pcp_util::chrono::microseconds(100000));
+                pcp_util::chrono::milliseconds(300 + ExternalModule::OUTPUT_DELAY_MS));
 
             REQUIRE(c_ptr->sent_provisional_response);
+            REQUIRE_FALSE(c_ptr->sent_non_blocking_response);
         }
 
         SECTION("send a non-blocking response when the requested action succeeds") {
-            REQUIRE(!c_ptr->sent_provisional_response);
-            REQUIRE(!c_ptr->sent_non_blocking_response);
+            REQUIRE_FALSE(c_ptr->sent_provisional_response);
+            REQUIRE_FALSE(c_ptr->sent_non_blocking_response);
 
             data.set<std::string>("module", "reverse_valid");
             data.set<bool>("notify_outcome", true);
