@@ -3,6 +3,7 @@
 require 'json'
 require 'yaml'
 require 'puppet'
+require 'tempfile'
 
 module Errors
   InvalidJson = "invalid_json"
@@ -46,12 +47,6 @@ def last_run_result(exitcode)
           "version"          => 1}
 end
 
-def check_config_print(cli_arg, config)
-  command_array = [config["puppet_bin"], "agent", "--configprint", cli_arg]
-  process_output = Puppet::Util::Execution.execute(command_array)
-  return process_output.to_s.chomp
-end
-
 def running?(run_result)
   !!(run_result =~ /Run of Puppet configuration client already in progress/)
 end
@@ -72,7 +67,8 @@ end
 
 def make_command_array(config, action_input)
   cmd_array = [config["puppet_bin"], "agent"]
-  cmd_array +=  action_input["flags"]
+  cmd_array.concat(action_input["flags"])
+  cmd_array << "--lastrunreport" << config["run_report_tempfile"].path
   return cmd_array
 end
 
@@ -83,12 +79,8 @@ def make_error_result(exitcode, error_type, error_message)
   return result
 end
 
-def get_result_from_report(exitcode, config, start_time)
-  last_run_report = check_config_print("lastrunreport",config)
-  if last_run_report.empty?
-    return make_error_result(exitcode, Errors::NoLastRunReport,
-                             "could not find the location of the last run report")
-  end
+def get_result_from_report(exitcode, config)
+  last_run_report = config["run_report_tempfile"].path
 
   if !File.exist?(last_run_report)
     return make_error_result(exitcode, Errors::NoLastRunReport,
@@ -111,7 +103,7 @@ def get_result_from_report(exitcode, config, start_time)
                                    "Puppet agent exited with a non 0 exitcode")
   end
 
-  if start_time.to_i < last_run_report_yaml.time.to_i
+  if last_run_report_yaml
     run_result["kind"] = last_run_report_yaml.kind
     run_result["time"] = last_run_report_yaml.time
     run_result["transaction_uuid"] = last_run_report_yaml.transaction_uuid
@@ -147,7 +139,7 @@ def start_run(config, action_input)
                              "Puppet agent is already performing a run")
   end
 
-  return get_result_from_report(exitcode, config, start_time)
+  return get_result_from_report(exitcode, config)
 end
 
 def metadata()
@@ -209,6 +201,9 @@ def metadata()
       :properties => {
         :puppet_bin => {
           :type => "string"
+        },
+        :temp_dir => {
+          :type => "string"
         }
       }
     }
@@ -224,6 +219,12 @@ def run(config, action_input)
   return start_run(config, action_input)
 end
 
+def get_run_report_tempfile(temp_dir)
+  run_report_tempfile = Tempfile.new(["run_report-", ".yaml"], temp_dir)
+  run_report_tempfile.close()
+  run_report_tempfile
+end
+
 def get_configuration(args)
   config = args["configuration"] || {}
 
@@ -235,6 +236,16 @@ def get_configuration(args)
       puppet_bin = File.join(module_path, '..', '..', 'bin', 'puppet.bat')
       config["puppet_bin"] = File.expand_path(puppet_bin)
     end
+  end
+
+  if config["temp_dir"].nil? || config["temp_dir"].empty?
+    config["temp_dir"] = ::Dir.tmpdir()
+  end
+
+  begin
+    config["run_report_tempfile"] = get_run_report_tempfile(config["temp_dir"])
+  rescue => e
+    raise ProcessingError.new(Errors::NoLastRunReport, "Failed to create a temporary last report file: #{e.message}")
   end
 
   config
