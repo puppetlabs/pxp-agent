@@ -6,8 +6,10 @@
 #include <pxp-agent/external_module.hpp>
 #include <pxp-agent/request_processor.hpp>
 #include <pxp-agent/configuration.hpp>
+#include <pxp-agent/results_storage.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
+#include <leatherman/util/timer.hpp>
 
 #include <cpp-pcp-client/util/thread.hpp>   // this_thread::sleep_for
 #include <cpp-pcp-client/util/chrono.hpp>
@@ -22,6 +24,7 @@ namespace PXPAgent {
 #ifdef TEST_VIRTUAL
 
 namespace lth_jc = leatherman::json_container;
+namespace lth_util = leatherman::util;
 namespace pcp_util = PCPClient::Util;
 namespace fs = boost::filesystem;
 
@@ -69,19 +72,35 @@ TEST_CASE("Invalid (by metadata) External Module Configuration", "[component]") 
     }
 }
 
+static ResultsStorage test_storage { SPOOL };
+
+void wait_for_module(ResultsStorage& storage, const std::string& t_id)
+{
+    lth_util::Timer t {};
+    while (!storage.outputIsReady(t_id)) {
+        if (t.elapsed_seconds() > 10)
+            FAIL("External Module ran out of time");
+        pcp_util::this_thread::sleep_for(
+            pcp_util::chrono::milliseconds(10));
+    }
+}
+
 TEST_CASE("Process correctly requests for external modules", "[component]") {
+    if (!fs::exists(SPOOL) && !fs::create_directories(SPOOL)) {
+        FAIL("Failed to create the results directory");
+    }
+
     AGENT_CONFIGURATION.modules_config_dir = "";
     auto c_ptr = std::make_shared<MockConnector>();
     RequestProcessor r_p { c_ptr, AGENT_CONFIGURATION };
     lth_jc::JsonContainer envelope { VALID_ENVELOPE_TXT };
     std::vector<lth_jc::JsonContainer> debug {};
-
     lth_jc::JsonContainer data {};
-    data.set<std::string>("transaction_id", "42");
 
-    SECTION("correctly process nonblocking requests") {
+    SECTION("correctly process blocking requests") {
         SECTION("send a blocking response when the requested action succeeds") {
             REQUIRE(!c_ptr->sent_blocking_response);
+            data.set<std::string>("transaction_id", "32");
             data.set<std::string>("module", "reverse_valid");
             data.set<std::string>("action", "string");
             lth_jc::JsonContainer params {};
@@ -90,15 +109,11 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
             const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
             REQUIRE_NOTHROW(r_p.processRequest(RequestType::Blocking, p_c));
-
-            // Wait a bit to let the execution thread finish
-            pcp_util::this_thread::sleep_for(
-                pcp_util::chrono::microseconds(100000));
-
             REQUIRE(c_ptr->sent_blocking_response);
         }
 
         SECTION("send a PXP error in case of action failure") {
+            data.set<std::string>("transaction_id", "64");
             data.set<std::string>("module", "failures_test");
             data.set<std::string>("action", "broken_action");
             lth_jc::JsonContainer params {};
@@ -114,8 +129,10 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
     SECTION("correctly process non-blocking requests") {
         SECTION("send a provisional response when the requested action starts "
                 "successfully") {
-            REQUIRE(!c_ptr->sent_provisional_response);
+            REQUIRE_FALSE(c_ptr->sent_provisional_response);
 
+            const std::string t_id { "128" };
+            data.set<std::string>("transaction_id", t_id);
             data.set<std::string>("module", "reverse_valid");
             data.set<bool>("notify_outcome", false);
             data.set<std::string>("action", "string");
@@ -126,17 +143,25 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
 
             REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
 
-            // Wait a bit to let the execution thread finish
-            pcp_util::this_thread::sleep_for(
-                pcp_util::chrono::microseconds(100000));
+            wait_for_module(test_storage, t_id);
 
             REQUIRE(c_ptr->sent_provisional_response);
+
+            // Wait to let the execution thread  process the output
+            // (there's a OUTPUT_DELAY_MS pause) and send the
+            // non-blocking response
+            pcp_util::this_thread::sleep_for(
+                pcp_util::chrono::milliseconds(100 + ExternalModule::OUTPUT_DELAY_MS));
+
+            REQUIRE_FALSE(c_ptr->sent_non_blocking_response);
         }
 
         SECTION("send a non-blocking response when the requested action succeeds") {
-            REQUIRE(!c_ptr->sent_provisional_response);
-            REQUIRE(!c_ptr->sent_non_blocking_response);
+            REQUIRE_FALSE(c_ptr->sent_provisional_response);
+            REQUIRE_FALSE(c_ptr->sent_non_blocking_response);
 
+            const std::string t_id { "512" };
+            data.set<std::string>("transaction_id", t_id);
             data.set<std::string>("module", "reverse_valid");
             data.set<bool>("notify_outcome", true);
             data.set<std::string>("action", "string");
@@ -147,13 +172,16 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
 
             REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
 
-            // Wait a bit to let the module complete, the execution
-            // thread process the output (there's a OUTPUT_DELAY_MS
-            // pause) and send the non-blocking response
-            pcp_util::this_thread::sleep_for(
-                pcp_util::chrono::milliseconds(300 + ExternalModule::OUTPUT_DELAY_MS));
+            wait_for_module(test_storage, t_id);
 
             REQUIRE(c_ptr->sent_provisional_response);
+
+            // Wait to let the execution thread  process the output
+            // (there's a OUTPUT_DELAY_MS pause) and send the
+            // non-blocking response
+            pcp_util::this_thread::sleep_for(
+                pcp_util::chrono::milliseconds(100 + ExternalModule::OUTPUT_DELAY_MS));
+
             REQUIRE(c_ptr->sent_non_blocking_response);
         }
     }

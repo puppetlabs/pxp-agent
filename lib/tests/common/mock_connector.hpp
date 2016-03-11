@@ -23,7 +23,7 @@ static const std::string BAD_FORMAT_MODULES_CONFIG { PXP_AGENT_ROOT_PATH
 static const std::string BROKEN_MODULES_CONFIG { PXP_AGENT_ROOT_PATH
             + std::string { "/lib/tests/resources/modules_config_broken" } };
 static const std::string SPOOL { PXP_AGENT_ROOT_PATH
-            + std::string { "/lib/tests/resources/tmp/" } };
+            + std::string { "/lib/tests/resources/tmp" } };
 
 static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   TEST_BROKER_WS_URI,
