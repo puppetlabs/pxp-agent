@@ -342,8 +342,10 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
     LOG_TRACE("Input for the %1%: %2%", request.prettyLabel(), input_txt);
 
     auto exec = lth_exec::execute(
-#ifdef _WIN32
+#if defined(_WIN32)
         "cmd.exe", { "/c", path_, action_name },
+#elif defined(__sun)
+        "/usr/bin/ctrun", { "-l", "child", path_, action_name },
 #else
         path_, { action_name },
 #endif
