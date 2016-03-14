@@ -37,7 +37,7 @@ def is_win?
   return !!File::ALT_SEPARATOR
 end
 
-def last_run_result(exitcode)
+def run_result(exitcode)
   return {"kind"             => "unknown",
           "time"             => "unknown",
           "transaction_uuid" => "unknown",
@@ -73,42 +73,42 @@ def make_command_array(config, action_input)
 end
 
 def make_error_result(exitcode, error_type, error_message)
-  result = last_run_result(exitcode)
+  result = run_result(exitcode)
   result["error_type"] = error_type
   result["error"] = error_message
   return result
 end
 
 def get_result_from_report(exitcode, config)
-  last_run_report = config["run_report_tempfile"].path
+  run_report = config["run_report_tempfile"].path
 
-  if !File.exist?(last_run_report)
+  if !File.exist?(run_report)
     return make_error_result(exitcode, Errors::NoLastRunReport,
-                             "#{last_run_report} doesn't exist")
+                             "#{run_report} doesn't exist")
   end
 
-  last_run_report_yaml = {}
+  run_report_yaml = {}
 
   begin
-    last_run_report_yaml = YAML.load_file(last_run_report)
+    run_report_yaml = YAML.load_file(run_report)
   rescue => e
     return make_error_result(exitcode, Errors::InvalidLastRunReport,
-                             "#{last_run_report} could not be loaded: #{e}")
+                             "#{run_report} could not be loaded: #{e}")
   end
 
   if exitcode == 0
-    run_result = last_run_result(exitcode)
+    run_result = run_result(exitcode)
   else
     run_result = make_error_result(exitcode, Errors::NonZeroExit,
                                    "Puppet agent exited with a non 0 exitcode")
   end
 
-  if last_run_report_yaml
-    run_result["kind"] = last_run_report_yaml.kind
-    run_result["time"] = last_run_report_yaml.time
-    run_result["transaction_uuid"] = last_run_report_yaml.transaction_uuid
-    run_result["environment"] = last_run_report_yaml.environment
-    run_result["status"] = last_run_report_yaml.status
+  if run_report_yaml
+    run_result["kind"] = run_report_yaml.kind
+    run_result["time"] = run_report_yaml.time
+    run_result["transaction_uuid"] = run_report_yaml.transaction_uuid
+    run_result["environment"] = run_report_yaml.environment
+    run_result["status"] = run_report_yaml.status
   end
 
   return run_result

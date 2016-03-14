@@ -22,15 +22,15 @@ describe "pxp-module-puppet" do
     {"puppet_bin" => "puppet", "run_report_tempfile" => run_report_tempfile}
   }
 
-  describe "last_run_result" do
+  describe "run_result" do
     it "returns the basic structure with exitcode set" do
-      expect(last_run_result(42)).to be == {"kind"             => "unknown",
-                                            "time"             => "unknown",
-                                            "transaction_uuid" => "unknown",
-                                            "environment"      => "unknown",
-                                            "status"           => "unknown",
-                                            "exitcode"         => 42,
-                                            "version"          => 1}
+      expect(run_result(42)).to be == {"kind"             => "unknown",
+                                       "time"             => "unknown",
+                                       "transaction_uuid" => "unknown",
+                                       "environment"      => "unknown",
+                                       "status"           => "unknown",
+                                       "exitcode"         => 42,
+                                       "version"          => 1}
     end
   end
 
@@ -104,7 +104,7 @@ describe "pxp-module-puppet" do
   end
 
   describe "get_result_from_report" do
-    it "doesn't process the last_run_report if the file doens't exist" do
+    it "doesn't process the run_report if the file doens't exist" do
       allow(File).to receive(:exist?).and_return(false)
       expect(get_result_from_report(0, default_configuration)).to be ==
           {"kind"             => "unknown",
@@ -118,7 +118,7 @@ describe "pxp-module-puppet" do
            "version"          => 1}
     end
 
-    it "doesn't process the last_run_report if the file cant be loaded" do
+    it "doesn't process the run_report if the file cant be loaded" do
       allow(File).to receive(:exist?).and_return(true)
       allow(YAML).to receive(:load_file).and_raise("error")
       expect(get_result_from_report(0, default_configuration)).to be ==
@@ -133,18 +133,18 @@ describe "pxp-module-puppet" do
            "version"          => 1}
     end
 
-    it "correctly processes the last_run_report" do
+    it "correctly processes the run_report" do
       run_time = Time.now + 10
-      last_run_report = double(:last_run_report)
+      run_report = double(:run_report)
 
-      allow(last_run_report).to receive(:kind).and_return("apply")
-      allow(last_run_report).to receive(:time).and_return(run_time)
-      allow(last_run_report).to receive(:transaction_uuid).and_return("ac59acbe-6a0f-49c9-8ece-f781a689fda9")
-      allow(last_run_report).to receive(:environment).and_return("production")
-      allow(last_run_report).to receive(:status).and_return("changed")
+      allow(run_report).to receive(:kind).and_return("apply")
+      allow(run_report).to receive(:time).and_return(run_time)
+      allow(run_report).to receive(:transaction_uuid).and_return("ac59acbe-6a0f-49c9-8ece-f781a689fda9")
+      allow(run_report).to receive(:environment).and_return("production")
+      allow(run_report).to receive(:status).and_return("changed")
 
       allow(File).to receive(:exist?).and_return(true)
-      allow(YAML).to receive(:load_file).and_return(last_run_report)
+      allow(YAML).to receive(:load_file).and_return(run_report)
 
       expect(get_result_from_report(0, default_configuration)).to be ==
           {"kind"             => "apply",
