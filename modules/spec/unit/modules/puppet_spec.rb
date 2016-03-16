@@ -256,6 +256,33 @@ describe "pxp-module-puppet" do
     end
   end
 
+  describe "get_flag_name" do
+    it "returns the flag name" do
+      expect(get_flag_name("--spam")).to be == "spam"
+    end
+
+    it "returns the flag name in case it's negative" do
+      expect(get_flag_name("--no-spam")).to be == "spam"
+    end
+
+    it "returns an empty string in case the flag has only a suffix" do
+      expect(get_flag_name("--")).to be == ""
+      expect(get_flag_name("--no-")).to be == ""
+    end
+
+    it "raises an error in case of invalid suffix" do
+      expect do
+        get_flag_name("-spam")
+      end.to raise_error(RuntimeError, /Assertion error: we're here by mistake/)
+    end
+
+    it "raises an error in case the flag has no suffix" do
+      expect do
+        get_flag_name("eggs")
+      end.to raise_error(RuntimeError, /Assertion error: we're here by mistake/)
+    end
+  end
+
   describe "action_metadata" do
     it "has the correct metadata" do
       expect(metadata).to be == {
@@ -339,6 +366,14 @@ describe "pxp-module-puppet" do
           "The json received on STDIN did not contain a valid 'input' key: {\"input\"=>nil}"
     end
 
+    it "fails when the flags of the passed json data are not all whitelisted" do
+      passed_args = {"configuration" => default_configuration,
+                     "input" => {"env" => [],
+                                 "flags" => ["--prerun_command", "echo safe"]}}
+      expect(action_run(passed_args.to_json)["error"]).to be ==
+          "The json received on STDIN included a non-permitted flag: --prerun_command"
+    end
+
     it "populates flags with the correct defaults" do
       expected_input = {"env" => [],
                         "flags" => ["--onetime", "--no-daemonize", "--verbose"]}
@@ -350,11 +385,33 @@ describe "pxp-module-puppet" do
       action_run({"configuration" => default_configuration, "input" => default_input}.to_json)
     end
 
+    it "does not allow changing settings of default flags" do
+      passed_args = {"configuration" => default_configuration,
+                     "input" => {"env" => [],
+                                 "flags" => ["--daemonize"]}}
+      expect(action_run(passed_args.to_json)["error"]).to be ==
+          "The json received on STDIN overrides a default setting with: --daemonize"
+    end
+
     it "does not add flag defaults if they have been passed" do
       expected_input = {"env" => [],
-                        "flags" => ["--squirrels", "--onetime", "--no-daemonize", "--verbose"]}
+                        "flags" => ["--show_diff", "--onetime", "--no-daemonize", "--verbose"]}
       passed_input = {"env" => [],
-                      "flags" => ["--squirrels", "--onetime", "--no-daemonize"]}
+                      "flags" => ["--show_diff", "--onetime", "--no-daemonize"]}
+      allow(File).to receive(:exist?).and_return(true)
+      allow_any_instance_of(Object).to receive(:running?).and_return(false)
+      allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
+      expect_any_instance_of(Object).to receive(:start_run).with(default_configuration,
+                                                                 expected_input)
+      action_run({"configuration" => default_configuration, "input" => passed_input}.to_json)
+    end
+
+    it "allows passing arguments of flags" do
+      expected_input = {"env" => [],
+                         "flags" => ["--environment", "/etc/puppetlabs/the_environment",
+                                    "--onetime", "--no-daemonize", "--verbose"]}
+      passed_input = {"env" => [],
+                      "flags" => ["--environment", "/etc/puppetlabs/the_environment"]}
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)

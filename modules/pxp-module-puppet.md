@@ -40,10 +40,30 @@ The module responds to two actions.
 
 The `run` action has two required parameters:
 
-* `env` : An array of strings that match ".*=.*". These are environment variables
+* `env` : An array of strings that match ".\*=.\*". These are environment variables
 that will be set before running Puppet.
-* `flags` : An array of strings that match "--.*" or "--.*=.*". These are cli flags
-that will be passed to the Puppet run.
+* `flags` : An array of strings that match "--.\*". These are cli flags that will be passed to the Puppet run. Note that you cannot use the "--.\*=.\*" format for specifying flags arguments; please pass the arguments in separate strings.
+
+You can use only a subset of Puppet's flags, including the "--no-.\*" variant where applicable:
+
+```
+  "color", "configtimeout", "debug","disable_warnings", "environment", "evaltrace", "filetimeout",
+  "graph", "http_connect_timeout", "http_debug", "http_keepalive_timeout", "http_read_timeout",
+  "log_level", "noop", "ordering", "pluginsync", "show_diff", "skip_tags", "splay",
+  "strict_environment_mode", "tags", "trace", "use_cached_catalog", "usecacheonfailure",
+  "waitforcert"
+```
+
+If `flags` contains any flag that is not included in the above white list, pxp-module-puppet will
+not start the Puppet run and will return an error.
+
+Also, pxp-module-puppet sets by default the following Puppet flags:
+
+```
+  "--onetime", "--no-daemonize", "--verbose"
+```
+
+Modifying the above settings (e.g. by specifying "--daemonize") will also result in an error.
 
 ## Testing in isolation
 
