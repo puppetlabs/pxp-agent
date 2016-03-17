@@ -2,6 +2,8 @@
 
 ## 1.1.1
 
+This version integrates the changes made for 1.0.3
+
 ## 1.1.0
 
 This version introduces new features and maintains compatibility with the
