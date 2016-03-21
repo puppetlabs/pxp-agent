@@ -66,9 +66,12 @@ int startAgent(std::vector<std::string> arguments) {
     try {
         Agent agent { Configuration::Instance().getAgentConfiguration() };
         agent.start();
+    } catch (const Agent::PCPConfigurationError& e) {
+        exit_code = PXP_AGENT_CONFIGURATION_FAILURE;
+        LOG_ERROR("PCP configuration error: %1%", e.what());
     } catch (const Agent::WebSocketConfigurationError& e) {
         exit_code = PXP_AGENT_CONFIGURATION_FAILURE;
-        LOG_ERROR("WebSocket configuration  rror: %1%", e.what());
+        LOG_ERROR("WebSocket configuration error: %1%", e.what());
     } catch (const Agent::Error& e) {
         exit_code = PXP_AGENT_GENERAL_FAILURE;
         LOG_ERROR("Fatal error: %1%", e.what());

@@ -19,6 +19,10 @@ class Agent {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
 
+    struct PCPConfigurationError : public Error {
+        explicit PCPConfigurationError(std::string const& msg) : Error(msg) {}
+    };
+
     struct WebSocketConfigurationError : public Error {
         explicit WebSocketConfigurationError(std::string const& msg) : Error(msg) {}
     };
