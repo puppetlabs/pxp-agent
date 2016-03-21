@@ -23,11 +23,12 @@
 
 #include <boost/nowide/iostream.hpp>
 
+#include <boost/format.hpp>
+
 #ifdef _WIN32
     #include <leatherman/windows/system_error.hpp>
     #include <leatherman/windows/windows.hpp>
     #undef ERROR
-    #include <boost/format.hpp>
     #include <Shlobj.h>
 #endif
 
