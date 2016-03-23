@@ -8,7 +8,7 @@
 // #define ENABLE_LOGGING
 
 #ifdef ENABLE_LOGGING
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pegasus.test"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp-agent.test"
 #include <leatherman/logging/logging.hpp>
 #endif
 
