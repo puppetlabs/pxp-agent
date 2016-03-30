@@ -2,8 +2,8 @@
 
 ### Metadata
 
-When a module is invoked with no arguments, it must write its `metadata` to
-stdout.
+When a module is invoked with the "metadata" argument, it must write its
+`metadata` to stdout.
 
 The `metadata` of a module is a JSON object that contains a number of JSON
 schemas for specifying its configuration options and actions. It contains:
