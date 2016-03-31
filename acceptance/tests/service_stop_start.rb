@@ -57,7 +57,11 @@ agents.each_with_index do |agent, i|
   # See: https://github.com/puppetlabs/pxp-agent/blob/stable/ext/solaris/smf/pxp-agent.xml#L10-L12
   #
   # Therefore, the un-configured test steps need to be skipped on Solaris
-  unless (@agent['platform'] =~ /solaris/) then
+  #
+  # Also needs skipped on OSX, as the pxp-agent executable will exit but the service will
+  # continue running and will re-execute pxp-agent every 10 seconds. Ref: PCP-305 
+  #
+  unless (@agent['platform'] =~ /solaris|osx/) then
     step 'Remove configuration' do
       stop_service
       on(@agent, "mv #{pxp_agent_config_file(@agent)} #{@pxp_temp_file}")
