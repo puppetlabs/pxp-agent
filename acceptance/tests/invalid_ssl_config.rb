@@ -38,8 +38,10 @@ agents.each_with_index do |agent, i|
   step 'C94730 - Attempt to run pxp-agent with mismatching SSL cert and private key' do
     on agent, puppet('resource service pxp-agent ensure=running')
     expect_file_on_host_to_contain(agent, logfile(agent), 'failed to load private key')
-    on agent, puppet('resource service pxp-agent') do |result|
-      assert_match(/stopped/, result.stdout, "pxp-agent service should not be running due to invalid SSL config")
+    unless (agent['platform'] =~ /osx/) then # on OSX, service remains running and continually retries executing pxp-agent
+      on agent, puppet('resource service pxp-agent') do |result|
+        assert_match(/stopped/, result.stdout, "pxp-agent service should not be running due to invalid SSL config")
+      end
     end
   end
 
@@ -63,10 +65,12 @@ agents.each_with_index do |agent, i|
     on agent, puppet('resource service pxp-agent') do |result|
       assert_match(/running/, result.stdout, "pxp-agent service should be running (failing handshake)")
     end
-    on agent, puppet('resource service pxp-agent ensure=stopped')
-    on agent, puppet('resource service pxp-agent') do |result|
-      assert_match(/stopped/, result.stdout,
-                   "pxp-agent service should stop cleanly when it is running in a loop retrying invalid certs")
+    unless (agent['platform'] =~ /osx/) then # on OSX, service remains running and continually retries executing pxp-agent
+      on agent, puppet('resource service pxp-agent ensure=stopped')
+      on agent, puppet('resource service pxp-agent') do |result|
+        assert_match(/stopped/, result.stdout,
+                     "pxp-agent service should stop cleanly when it is running in a loop retrying invalid certs")
+      end
     end
   end
 
