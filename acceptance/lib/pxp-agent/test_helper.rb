@@ -82,7 +82,7 @@ def get_pcp_broker_status(host)
   end
 end
 
-# Start an eventmachine reactor in a thread
+# Start an eventmachine reactor in a thread, if one is not already running
 # @return Thread object where the EM reactor should be running
 def assert_eventmachine_thread_running
   if EventMachine.reactor_running?
