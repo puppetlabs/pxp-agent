@@ -82,12 +82,10 @@ def get_pcp_broker_status(host)
   end
 end
 
-# Start an eventmachine reactor in a thread
+# Start an eventmachine reactor in a thread, if one is not already running
 # @return Thread object where the EM reactor should be running
-def start_eventmachine_thread
+def assert_eventmachine_thread_running
   if EventMachine.reactor_running?
-    puts "EventMachine already running!"
-    puts caller
     return EventMachine.reactor_thread
   end
 
@@ -104,18 +102,6 @@ def start_eventmachine_thread
   em_thread
 end
 
-# Stop the eventmachine reactor
-# @param thread  The thread the EM reactor should be running in
-def stop_eventmachine_thread(thread)
-  unless EventMachine.reactor_running?
-    puts "EventMachine is not running!"
-    puts caller
-  end
-
-  EventMachine.stop_event_loop
-  thread.join
-end
-
 # Query pcp-broker's inventory of associated clients
 # Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/inventory.md
 # @param broker hostname or beaker host object of the pcp-broker host
@@ -126,7 +112,7 @@ end
 def pcp_broker_inventory(broker, query)
   # Event machine is required by the ruby-pcp-client gem
   # https://github.com/puppetlabs/ruby-pcp-client
-  em_thread = start_eventmachine_thread
+  assert_eventmachine_thread_running
 
   mutex = Mutex.new
   have_response = ConditionVariable.new
@@ -172,7 +158,7 @@ def pcp_broker_inventory(broker, query)
   rescue Timeout::Error
     raise "Didn't receive a response for PCP inventory request"
   ensure
-    stop_eventmachine_thread(em_thread)
+    client.close
   end # wait for message
 
   if(!response.has_key?(:data))
@@ -241,7 +227,7 @@ def rpc_blocking_request(broker, targets,
                          params)
   # Event machine is required by the ruby-pcp-client gem
   # https://github.com/puppetlabs/ruby-pcp-client
-  em_thread = start_eventmachine_thread
+  assert_eventmachine_thread_running
 
   mutex = Mutex.new
   have_response = ConditionVariable.new
@@ -297,7 +283,7 @@ def rpc_blocking_request(broker, targets,
       end
     end
   ensure
-    stop_eventmachine_thread(em_thread)
+    client.close
   end # wait for message
 
   responses
@@ -325,9 +311,11 @@ def connect_pcp_client(broker)
     retries += 1
   end
   if !connected
+    client.close
     raise "Controller PCP client failed to connect with pcp-broker on #{broker} after #{max_retries} attempts: #{client.inspect}"
   end
   if !client.associated?
+    client.close
     raise "Controller PCP client failed to associate with pcp-broker on #{broker} #{client.inspect}"
   end
 
