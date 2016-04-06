@@ -110,10 +110,6 @@ end
 # @raise Exception if pcp-client cannot connect to make the inventory request, does not receive a response, or the response is missing
 #        the required [:data]["uris"] property
 def pcp_broker_inventory(broker, query)
-  # Event machine is required by the ruby-pcp-client gem
-  # https://github.com/puppetlabs/ruby-pcp-client
-  assert_eventmachine_thread_running
-
   mutex = Mutex.new
   have_response = ConditionVariable.new
   response = nil
@@ -225,10 +221,6 @@ end
 def rpc_blocking_request(broker, targets,
                          pxp_module = 'pxp-module-puppet', action = 'run',
                          params)
-  # Event machine is required by the ruby-pcp-client gem
-  # https://github.com/puppetlabs/ruby-pcp-client
-  assert_eventmachine_thread_running
-
   mutex = Mutex.new
   have_response = ConditionVariable.new
   responses = Hash.new
@@ -300,6 +292,10 @@ def connect_pcp_client(broker)
   connected = false
   hostname = Socket.gethostname
   until (connected || retries == max_retries) do
+    # Event machine is required by the ruby-pcp-client gem
+    # https://github.com/puppetlabs/ruby-pcp-client
+    assert_eventmachine_thread_running
+
     client = PCP::Client.new({
       :server => broker_ws_uri(broker),
       :ssl_cert => "tmp/ssl/certs/#{hostname.downcase}.pem",
