@@ -2,8 +2,13 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
 
+  applicable_agents = agents.select { |agent| agent['platform'] !~ /aix/}
+  unless applicable_agents then
+    skip_test('All agent hosts are AIX and QENG-3629 prevents AIX hosts being restarted')
+  end
+
   step 'Ensure each agent host has pxp-agent service running and enabled' do
-    agents.each do |agent|
+    applicable_agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
       cert_dir = configure_std_certs_on_host(agent)
       create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
@@ -14,7 +19,7 @@ test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
   end
 
   step "restart each agent" do
-    agents.each do |agent|
+    applicable_agents.each do |agent|
       agent.reboot
       assert(agent.up?, "Agent #{agent} should be up after reboot")
       on(agent, puppet('resource service pxp-agent ')) do |result|
@@ -28,7 +33,7 @@ test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
 
   step "Send an rpc_blocking_request to all agents after reboot" do
     target_identities = []
-    agents.each do |agent|
+    applicable_agents.each do |agent|
       target_identities << "pcp://#{agent}/agent"
     end
     responses = nil # Declare here so scoped above the begin/rescue below
@@ -42,7 +47,7 @@ test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
     rescue => exception
       fail("Exception occurred when trying to run Puppet on all agents: #{exception.message}")
     end
-    agents.each do |agent|
+    applicable_agents.each do |agent|
       step "Check Run Puppet response for #{agent}" do
         identity = "pcp://#{agent}/agent"
         response = responses[identity]
