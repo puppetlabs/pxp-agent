@@ -39,8 +39,10 @@ agents.each_with_index do |agent, i|
     on agent, puppet('resource service pxp-agent ensure=running')
     expect_file_on_host_to_contain(agent, logfile(agent), 'failed to load private key')
     unless (agent['platform'] =~ /osx/) then # on OSX, service remains running and continually retries executing pxp-agent
+      agent['platform'] =~ /solaris/ ? expected_service_state = /maintenance/
+                                     : expected_service_state = /stopped/
       on agent, puppet('resource service pxp-agent') do |result|
-        assert_match(/stopped/, result.stdout, "pxp-agent service should not be running due to invalid SSL config")
+        assert_match(expected_service_state, result.stdout, "pxp-agent service should not be running due to invalid SSL config")
       end
     end
   end
