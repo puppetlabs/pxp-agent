@@ -43,6 +43,29 @@ def expect_file_on_host_to_contain(host, file, expected, seconds=30)
   end
 end
 
+# Show the logs of the broker and agents - useful to see why a test failed
+def show_pcp_logs
+  puts "---- Broker log -----"
+  on(master, "cat /var/log/pcp-broker.log") do |result|
+    puts result.stdout
+  end
+
+  agents.each do |agent|
+    puts "----- agent #{agent} log -----"
+    on(agent, "cat #{logfile(agent)}") do |result|
+      puts result.stdout
+    end
+  end
+end
+
+# Evaluate the block, show logs if test assertions were triggered
+def show_pcp_logs_on_failure(&block)
+  yield
+rescue MiniTest::Assertion => exception
+  show_pcp_logs
+  raise exception
+end
+
 # Some helpers for working with a pcp-broker 'lein tk' instance
 def run_pcp_broker(host)
   on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker; export LEIN_ROOT=ok; lein tk </dev/null >/var/log/pcp-broker.log 2>&1 &")
