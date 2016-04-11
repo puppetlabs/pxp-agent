@@ -29,7 +29,8 @@ extern const std::string DEFAULT_SPOOL_DIR;     // used by unit tests
 
 enum Types { Integer, String, Bool, Double };
 
-struct EntryBase {
+struct EntryBase
+{
     // Config option name
     // HERE: must match one of the flag names and config file option
     std::string name;
@@ -51,7 +52,8 @@ struct EntryBase {
 };
 
 template <typename T>
-struct Entry : EntryBase {
+struct Entry : EntryBase
+{
     // Default value
     T value;
 
@@ -107,18 +109,22 @@ void configure_platform_file_logging();
 // Configuration (singleton)
 //
 
-class Configuration {
+class Configuration
+{
   public:
-    struct Error : public std::runtime_error {
+    struct Error : public std::runtime_error
+    {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
 
-    static Configuration& Instance() {
+    static Configuration& Instance()
+    {
         static Configuration instance {};
         return instance;
     }
 
-    struct Agent {
+    struct Agent
+    {
         std::string modules_dir;
         std::string broker_ws_uri;
         std::string ca;
@@ -167,7 +173,8 @@ class Configuration {
     /// value in case nd the requested flag is known or throw a
     /// Configuration::Error otherwise.
     template <typename T>
-    T get(std::string flagname) {
+    T get(std::string flagname)
+    {
         if (valid_) {
             try {
                 return HW::GetFlag<T>(flagname);
@@ -193,7 +200,8 @@ class Configuration {
     /// Throw a Configuration::Error in case the specified flag is
     /// unknown or the value is invalid.
     template<typename T>
-    void set(std::string flagname, T value) {
+    void set(std::string flagname, T value)
+    {
         if (!valid_) {
             throw Configuration::Error { "cannot set configuration value until "
                                          "configuration is validated" };

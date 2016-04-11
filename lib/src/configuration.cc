@@ -102,7 +102,8 @@ static const std::string AGENT_CLIENT_TYPE { "agent" };
 //
 
 void Configuration::initialize(
-        std::function<int(std::vector<std::string>)> start_function) {
+        std::function<int(std::vector<std::string>)> start_function)
+{
     // Ensure the state is reset (useful for testing)
     HW::Reset();
     HW::SetAppName("pxp-agent");
@@ -127,7 +128,8 @@ void Configuration::initialize(
                      start_function);               // callback
 }
 
-HW::ParseResult parseArguments(const int argc, char* const argv[]) {
+HW::ParseResult parseArguments(const int argc, char* const argv[])
+{
     // manipulate argc and v to make start the default action.
     // TODO(ploubser): Add ability to specify default action to HorseWhisperer
     int modified_argc = argc + 1;
@@ -142,7 +144,8 @@ HW::ParseResult parseArguments(const int argc, char* const argv[]) {
     return HW::Parse(modified_argc, modified_argv);
 }
 
-HW::ParseResult Configuration::parseOptions(int argc, char *argv[]) {
+HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
+{
     auto parse_result = parseArguments(argc, argv);
 
     if (parse_result == HW::ParseResult::FAILURE
@@ -162,7 +165,8 @@ HW::ParseResult Configuration::parseOptions(int argc, char *argv[]) {
     return parse_result;
 }
 
-static void validateLogDirPath(const std::string& logfile) {
+static void validateLogDirPath(const std::string& logfile)
+{
     auto logdir_path = fs::path(logfile).parent_path();
 
     if (fs::exists(logdir_path)) {
@@ -178,7 +182,8 @@ static void validateLogDirPath(const std::string& logfile) {
     }
 }
 
-void Configuration::setupLogging() {
+void Configuration::setupLogging()
+{
     logfile_ = HW::GetFlag<std::string>("logfile");
     auto log_on_stdout = (logfile_ == "-");
     auto loglevel = HW::GetFlag<std::string>("loglevel");
@@ -253,13 +258,15 @@ void Configuration::setupLogging() {
     }
 }
 
-void Configuration::validate() {
+void Configuration::validate()
+{
     validateAndNormalizeWebsocketSettings();
     validateAndNormalizeOtherSettings();
     valid_ = true;
 }
 
-const Configuration::Agent& Configuration::getAgentConfiguration() const {
+const Configuration::Agent& Configuration::getAgentConfiguration() const
+{
     assert(valid_);
     agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
@@ -275,7 +282,8 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const {
     return agent_configuration_;
 }
 
-void Configuration::reopenLogfile() const {
+void Configuration::reopenLogfile() const
+{
     if (!logfile_.empty() && logfile_ != "-") {
         try {
             logfile_fstream_.close();
@@ -299,11 +307,13 @@ Configuration::Configuration() : valid_ { false },
                                  config_file_ { "" },
                                  agent_configuration_ {},
                                  logfile_ { "" },
-                                 logfile_fstream_ {} {
+                                 logfile_fstream_ {}
+{
     defineDefaultValues();
 }
 
-void Configuration::defineDefaultValues() {
+void Configuration::defineDefaultValues()
+{
     defaults_.insert(
         Option { "config-file",
                  Base_ptr { new Entry<std::string>(
@@ -445,7 +455,8 @@ void Configuration::defineDefaultValues() {
 #endif
 }
 
-void Configuration::setDefaultValues() {
+void Configuration::setDefaultValues()
+{
     for (auto opt_idx = defaults_.get<Option::ByInsertion>().begin();
          opt_idx != defaults_.get<Option::ByInsertion>().end();
          ++opt_idx) {
@@ -499,7 +510,8 @@ void Configuration::setDefaultValues() {
     }
 }
 
-void Configuration::parseConfigFile() {
+void Configuration::parseConfigFile()
+{
     lth_jc::JsonContainer config_json;
 
     if (!lth_file::file_readable(config_file_)) {
