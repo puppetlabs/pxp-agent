@@ -15,8 +15,6 @@
 
 namespace PXPAgent {
 
-namespace HW = HorseWhisperer;
-
 //
 // Tokens
 //
@@ -153,7 +151,7 @@ class Configuration
     /// Throw a Configuration::Error: if it fails to parse the CLI
     /// arguments; if the specified config file cannot be parsed or
     /// has any invalid JSON entry.
-    HW::ParseResult parseOptions(int argc, char *argv[]);
+    HorseWhisperer::ParseResult parseOptions(int argc, char *argv[]);
 
     /// Validate logging configuration options and enable logging.
     /// Throw a Configuration::Error: in case of invalid the specified
@@ -177,8 +175,8 @@ class Configuration
     {
         if (valid_) {
             try {
-                return HW::GetFlag<T>(flagname);
-            } catch (HW::undefined_flag_error& e) {
+                return HorseWhisperer::GetFlag<T>(flagname);
+            } catch (HorseWhisperer::undefined_flag_error& e) {
                 throw Configuration::Error { std::string { e.what() } };
             }
         }
@@ -208,10 +206,10 @@ class Configuration
         }
 
         try {
-            HW::SetFlag<T>(flagname, value);
-        } catch (HW::flag_validation_error) {
+            HorseWhisperer::SetFlag<T>(flagname, value);
+        } catch (HorseWhisperer::flag_validation_error) {
             throw Configuration::Error { "invalid value for " + flagname };
-        } catch (HW::undefined_flag_error) {
+        } catch (HorseWhisperer::undefined_flag_error) {
             throw Configuration::Error { "unknown flag name: " + flagname };
         }
     }

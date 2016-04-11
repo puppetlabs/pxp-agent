@@ -34,6 +34,8 @@
 
 namespace PXPAgent {
 
+namespace HW = HorseWhisperer;
+
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
 namespace lth_jc = leatherman::json_container;
