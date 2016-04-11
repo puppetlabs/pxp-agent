@@ -514,11 +514,10 @@ void Configuration::setDefaultValues()
 
 void Configuration::parseConfigFile()
 {
-    lth_jc::JsonContainer config_json;
+    if (!lth_file::file_readable(config_file_))
+        return;
 
-    if (!lth_file::file_readable(config_file_)) {
-      return;
-    }
+    lth_jc::JsonContainer config_json;
 
     try {
         config_json = lth_jc::JsonContainer(lth_file::read(config_file_));
@@ -526,115 +525,86 @@ void Configuration::parseConfigFile()
         throw Configuration::Error { "cannot parse config file; invalid JSON" };
     }
 
-    if (config_json.type() != lth_jc::DataType::Object) {
+    if (config_json.type() != lth_jc::DataType::Object)
         throw Configuration::Error { "invalid config file content; not a "
                                      "JSON object" };
-    }
+
+    boost::format err_format { "field '%1%' must be of type %2%" };
+    auto check_key_type =
+        [&config_json, &err_format] (const std::string& key,
+                                     const std::string& type_str,
+                                     const lth_jc::DataType& type) -> void
+        {
+            if (config_json.type(key) != type)
+                throw Configuration::Error { (err_format % key % type_str).str() };
+        };
 
     for (const auto& key : config_json.keys()) {
         const auto& opt_idx = defaults_.get<Option::ByName>().find(key);
 
-        if (opt_idx != defaults_.get<Option::ByName>().end()) {
-            if (opt_idx->ptr->configured) {
-                continue;
-            }
+        if (opt_idx == defaults_.get<Option::ByName>().end())
+            throw Configuration::Error {
+                (boost::format("field '%1%' is not a valid configuration variable")
+                    % key).str() };
 
-            switch (opt_idx->ptr->type) {
-                case Integer:
-                    if (config_json.type(key) == lth_jc::DataType::Int) {
-                        HW::SetFlag<int>(key, config_json.get<int>(key));
-                    } else {
-                        std::string err { "field '" + key + "' must be of "
-                                          "type Integer" };
-                        throw Configuration::Error { err };
-                    }
-                    break;
-                case Bool:
-                    if (config_json.type(key) == lth_jc::DataType::Bool) {
-                        HW::SetFlag<bool>(key, config_json.get<bool>(key));
-                    } else {
-                        std::string err { "field '" + key + "' must be of "
-                                          "type Bool" };
-                        throw Configuration::Error { err };
-                    }
-                    break;
-                case Double:
-                    if (config_json.type(key) == lth_jc::DataType::Double) {
-                        HW::SetFlag<double>(key, config_json.get<double>(key));
-                    } else {
-                        std::string err { "field '" + key + "' must be of "
-                                          "type Double" };
-                        throw Configuration::Error { err };
-                    }
-                    break;
-                default:
-                    if (config_json.type(key) == lth_jc::DataType::String) {
-                        auto val = config_json.get<std::string>(key);
-                        HW::SetFlag<std::string>(key, val);
-                    } else {
-                        std::string err { "field '" + key + "' must be of "
-                                          "type String" };
-                        throw Configuration::Error { err };
-                    }
-            }
-        } else {
-            std::string err { "field '" + key + "' is not a valid "
-                              "configuration variable" };
-            throw Configuration::Error { err };
+        if (opt_idx->ptr->configured)
+            continue;
+
+        switch (opt_idx->ptr->type) {
+            case Integer:
+                check_key_type(key, "Integer", lth_jc::DataType::Int);
+                HW::SetFlag<int>(key, config_json.get<int>(key));
+                break;
+            case Bool:
+                check_key_type(key, "Bool", lth_jc::DataType::Bool);
+                HW::SetFlag<bool>(key, config_json.get<bool>(key));
+                break;
+            case Double:
+                check_key_type(key, "Double", lth_jc::DataType::Double);
+                HW::SetFlag<double>(key, config_json.get<double>(key));
+                break;
+            default:
+                check_key_type(key, "String", lth_jc::DataType::String);
+                HW::SetFlag<std::string>(key, config_json.get<std::string>(key));
         }
     }
 }
 
-void Configuration::validateAndNormalizeWebsocketSettings() {
-    if (HW::GetFlag<std::string>("broker-ws-uri").empty()) {
+// Helper function
+std::string check_and_expand_ssl_cert(const std::string& cert_name)
+{
+    auto c = HW::GetFlag<std::string>(cert_name);
+    if (c.empty())
+        throw Configuration::Error {
+            (boost::format("%1% value must be defined") % cert_name).str() };
+
+    c = lth_file::tilde_expand(c);
+    if (!fs::exists(c))
+        throw Configuration::Error {
+            (boost::format("%1% file '%2%' not found") % cert_name % c).str() };
+
+    if (!lth_file::file_readable(c))
+        throw Configuration::Error {
+            (boost::format("%1% file '%2%' not readable") % cert_name % c).str() };
+
+    return c;
+}
+
+void Configuration::validateAndNormalizeWebsocketSettings()
+{
+    // Check the broker's WebSocket URI
+    auto broker_ws_uri = HW::GetFlag<std::string>("broker-ws-uri");
+    if (broker_ws_uri.empty())
         throw Configuration::Error { "broker-ws-uri value must be defined" };
-    } else if (HW::GetFlag<std::string>("broker-ws-uri").find("wss://") != 0) {
+    if (broker_ws_uri.find("wss://") != 0)
         throw Configuration::Error { "broker-ws-uri value must start with wss://" };
-    }
 
-    auto ca = HW::GetFlag<std::string>("ssl-ca-cert");
-    auto cert = HW::GetFlag<std::string>("ssl-cert");
-    auto key = HW::GetFlag<std::string>("ssl-key");
+    // Check the SSL options and expand the paths
+    auto ca   = check_and_expand_ssl_cert("ssl-ca-cert");
+    auto cert = check_and_expand_ssl_cert("ssl-cert");
+    auto key  = check_and_expand_ssl_cert("ssl-key");
 
-    if (ca.empty()) {
-        throw Configuration::Error { "ssl-ca-cert value must be defined" };
-    } else {
-        ca = lth_file::tilde_expand(ca);
-        if (!fs::exists(ca)) {
-            throw Configuration::Error {
-                (boost::format("ssl-ca-cert file '%1%' not found") % ca).str() };
-        } else if (!lth_file::file_readable(ca)) {
-            throw Configuration::Error {
-                (boost::format("ssl-ca-cert file '%1%' not readable") % ca).str() };
-        }
-    }
-
-    if (cert.empty()) {
-        throw Configuration::Error { "ssl-cert value must be defined" };
-    } else {
-        cert = lth_file::tilde_expand(cert);
-        if (!fs::exists(cert)) {
-            throw Configuration::Error {
-                (boost::format("ssl-cert file '%1%' not found") % cert).str() };
-        } else if (!lth_file::file_readable(cert)) {
-            throw Configuration::Error {
-                (boost::format("ssl-cert file '%1%' not readable") % cert).str() };
-        }
-    }
-
-    if (key.empty()) {
-        throw Configuration::Error { "ssl-key value must be defined" };
-    } else {
-        key = lth_file::tilde_expand(key);
-        if (!fs::exists(key)) {
-            throw Configuration::Error {
-                (boost::format("ssl-key file '%1%' not found") % key).str() };
-        } else if (!lth_file::file_readable(key)) {
-            throw Configuration::Error {
-                (boost::format("ssl-key file '%1%' not readable") % key).str() };
-        }
-    }
-
+    // Ensure client certs are good
     try {
         PCPClient::getCommonNameFromCert(cert);
         PCPClient::validatePrivateKeyCertPair(key, cert);
@@ -642,6 +612,7 @@ void Configuration::validateAndNormalizeWebsocketSettings() {
         throw Configuration::Error { e.what() };
     }
 
+    // Set the expanded cert paths
     HW::SetFlag<std::string>("ssl-ca-cert", ca);
     HW::SetFlag<std::string>("ssl-cert", cert);
     HW::SetFlag<std::string>("ssl-key", key);
