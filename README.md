@@ -304,6 +304,8 @@ The location where the outcome of non-blocking requests will be stored; the
 default location is:
  - \*nix: */opt/puppetlabs/pxp-agent/spool*
  - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\spool*
+Note that if the specified spool directory does not exist, pxp-agent will create
+it when starting.
 
 **spool-dir-purge-ttl (optional)**
 
