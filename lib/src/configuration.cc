@@ -693,21 +693,24 @@ void Configuration::validateAndNormalizeOtherSettings() {
             fs::remove_all(tmp_path);
         }
     } catch (const std::exception& e) {
-        LOG_DEBUG("Failed to create the test dir in spool path during"
-                  "configuration validation: %1%", e.what());
+        LOG_DEBUG("Failed to create the test dir in spool path '%1%' during"
+                  "configuration validation: %2%",
+                  spool_dir_path.string(), e.what());
     }
 
     if (!is_writable) {
-        throw Configuration::Error { "--spool-dir '"
-            + spool_dir_path.string() + "' is not writable" };
+        throw Configuration::Error {
+                (boost::format("the spool-dir '%1%' is not writable")
+                    % spool_dir_path.string()).str() };
     }
 
 #ifndef _WIN32
     if (!HW::GetFlag<bool>("foreground")) {
         auto pid_file = lth_file::tilde_expand(HW::GetFlag<std::string>("pidfile"));
         if (fs::exists(pid_file) && !(fs::is_regular_file(pid_file))) {
-            throw Configuration::Error { "the PID file '" + pid_file
-                                         + "' is not a regular file" };
+            throw Configuration::Error {
+                    (boost::format("the PID file '%1%' is not a regular file")
+                        % pid_file).str() };
         }
 
         auto pid_dir = fs::path(pid_file).parent_path().string();
@@ -722,18 +725,22 @@ void Configuration::validateAndNormalizeOtherSettings() {
                 fs::create_directories(pid_dir);
             } catch (const std::exception& e) {
                 LOG_DEBUG("Failed to create '%1%' directory: %2%", pid_dir, e.what());
-                throw Configuration::Error { "failed to create the PID file directory" };
+                throw Configuration::Error {
+                        "failed to create the PID file directory" };
             }
         }
 
         if (fs::exists(pid_dir)) {
             if (!fs::is_directory(pid_dir)) {
-                throw Configuration::Error { "the PID directory '" + pid_dir
-                                             + "' is not a directory" };
+                throw Configuration::Error {
+                        (boost::format("'%1%' is not a directory")
+                            % pid_dir).str() };
             }
         } else {
-            throw Configuration::Error { "the PID directory '" + pid_dir + "' "
-                                         "does not exist; cannot create PID file" };
+            throw Configuration::Error {
+                    (boost::format("the PID directory '%1%' does not exist; "
+                                   "cannot create the PID file")
+                        % pid_dir).str() };
         }
 
         HW::SetFlag<std::string>("pidfile", pid_file);
