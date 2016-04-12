@@ -19,7 +19,7 @@ Dependencies
  - Boost
  - OpenSSL
  - ruby (2.0 and newer)
- - [leatherman][leatherman] (0.3.5 or newer)
+ - [leatherman][leatherman] (0.4.2 or newer)
  - [cpp-pcp-client][cpp-pcp-client] (master)
 
 Initial Setup
@@ -47,7 +47,9 @@ The following will install most required tools and libraries:
 
 #### Setup on Windows
 
-[MinGW-w64][MinGW-w64] is used for full C++11 support, and [Chocolatey][Chocolatey] can be used to install. You should have at least 2GB of memory for compilation.
+[MinGW-w64][MinGW-w64] is used for full C++11 support, and
+[Chocolatey][Chocolatey] can be used to install. You should have at least 2GB of
+memory for compilation.
 
 * install [CMake][CMake-choco] & [7zip][7zip-choco]
 
@@ -57,7 +59,9 @@ The following will install most required tools and libraries:
 
         choco install mingw --params "/threads:win32"
 
-For the remaining tasks, build commands can be executed in the shell from Start > MinGW-w64 project > Run Terminal
+For the remaining tasks, build commands can be executed in the shell from:
+
+        Start > MinGW-w64 project > Run Terminal
 
 * select an install location for dependencies, such as C:\\tools or cmake\\release\\ext; we'll refer to it as $install
 

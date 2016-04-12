@@ -187,7 +187,7 @@ TEST_CASE("Configuration::get", "[configuration]") {
 #endif
             Configuration::Instance().validate();
 
-            REQUIRE(Configuration::Instance().get<bool>("foreground") == false);
+            REQUIRE_FALSE(Configuration::Instance().get<bool>("foreground"));
         }
 
         SECTION("return the correct value after the flag has been set") {
