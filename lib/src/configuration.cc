@@ -618,39 +618,60 @@ void Configuration::validateAndNormalizeWebsocketSettings()
     HW::SetFlag<std::string>("ssl-key", key);
 }
 
-void Configuration::validateAndNormalizeOtherSettings() {
-    // Normalize
-    std::vector<std::string> options { "modules-dir", "modules-config-dir",
-                                       "spool-dir" };
+// Helper function
+void check_and_create_dir(const fs::path& dir_path,
+                          const std::string& opt,
+                          const bool& create)
+{
+    if (!fs::exists(dir_path)) {
+        if (create) {
+            try {
+                LOG_INFO("Creating the %1% '%2%'",
+                         opt, dir_path.string());
+                fs::create_directories(dir_path);
+            } catch (const std::exception& e) {
+                LOG_DEBUG("Failed to create the %1% '%2%': %3%",
+                          opt, dir_path.string(), e.what());
+                throw Configuration::Error {
+                        (boost::format("failed to create the %1% '%2%'")
+                            % opt % dir_path.string()).str() };
+            }
+        } else {
+            throw Configuration::Error {
+                    (boost::format("the %1% '%2%' does not exist")
+                        % opt % dir_path.string()).str() };
+        }
+    } else if (!fs::is_directory(dir_path)) {
+        throw Configuration::Error {
+                (boost::format("the %1% '%2%' is not a directory")
+                    % opt % dir_path.string()).str() };
+    }
+}
+
+void Configuration::validateAndNormalizeOtherSettings()
+{
+    // Normalize and check modules' directories
+    std::vector<std::string> options { "modules-dir", "modules-config-dir" };
 
     for (const auto& option : options) {
         auto val = HW::GetFlag<std::string>(option);
 
-        if (val.empty()) {
+        if (val.empty())
             continue;
-        }
 
         fs::path val_path { lth_file::tilde_expand(val) };
-
-        if (!fs::exists(val_path)) {
-            throw Configuration::Error { option + " '" + val_path.string()
-                + "' does not exist" };
-        } else if (!fs::is_directory(val_path)) {
-            throw Configuration::Error { option + " '" + val_path.string()
-                + "' is not a directory" };
-        }
-
+        check_and_create_dir(val_path, val, false);
         HW::SetFlag<std::string>(option, val_path.string());
     }
 
-    // Ensure spool-dir is defined and we can write in it
+    // Create the spool-dir if needed and ensure we can write in it
     const auto spool_dir = HW::GetFlag<std::string>("spool-dir");
 
-    if (spool_dir.empty()) {
+    if (spool_dir.empty())
         throw Configuration::Error { "spool-dir must be defined" };
-    }
 
-    fs::path spool_dir_path { spool_dir };
+    fs::path spool_dir_path { lth_file::tilde_expand(spool_dir) };
+    check_and_create_dir(spool_dir_path, "spool-dir", true);
     fs::path tmp_path;
 
     do {
