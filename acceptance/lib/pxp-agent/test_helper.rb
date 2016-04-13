@@ -45,15 +45,15 @@ end
 
 # Show the logs of the broker and agents - useful to see why a test failed
 def show_pcp_logs
-  puts "---- Broker log -----"
+  logger.notify "---- Broker log -----"
   on(master, "cat /var/log/pcp-broker.log") do |result|
-    puts result.stdout
+    logger.notify result.stdout
   end
 
   agents.each do |agent|
-    puts "----- agent #{agent} log -----"
+    logger.notify "----- agent #{agent} log -----"
     on(agent, "cat #{logfile(agent)}") do |result|
-      puts result.stdout
+      logger.notify result.stdout
     end
   end
 end
