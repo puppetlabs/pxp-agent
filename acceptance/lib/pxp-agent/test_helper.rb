@@ -62,6 +62,8 @@ end
 def show_pcp_logs_on_failure(&block)
   yield
 rescue MiniTest::Assertion => exception
+  logger.notify "Assertion failed in test: #{exception}"
+  logger.notify "Fetching logs for inspection"
   show_pcp_logs
   raise exception
 end
