@@ -12,6 +12,8 @@ module Puppet
         agents.each do |agent|
           next if agent == master
 
+          on agent, puppet("config set certname #{agent}")
+
           ssldir = on(agent, puppet('agent --configprint ssldir')).stdout.chomp
           on(agent, "rm -rf '#{ssldir}'")
 

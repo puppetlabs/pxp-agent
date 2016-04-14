@@ -38,8 +38,12 @@ agents.each_with_index do |agent, i|
   step 'C94730 - Attempt to run pxp-agent with mismatching SSL cert and private key' do
     on agent, puppet('resource service pxp-agent ensure=running')
     expect_file_on_host_to_contain(agent, logfile(agent), 'failed to load private key')
-    on agent, puppet('resource service pxp-agent') do |result|
-      assert_match(/stopped/, result.stdout, "pxp-agent service should not be running due to invalid SSL config")
+    unless (agent['platform'] =~ /osx/) then # on OSX, service remains running and continually retries executing pxp-agent
+      agent['platform'] =~ /solaris/ ? expected_service_state = /maintenance/
+                                     : expected_service_state = /stopped/
+      on agent, puppet('resource service pxp-agent') do |result|
+        assert_match(expected_service_state, result.stdout, "pxp-agent service should not be running due to invalid SSL config")
+      end
     end
   end
 
@@ -63,10 +67,12 @@ agents.each_with_index do |agent, i|
     on agent, puppet('resource service pxp-agent') do |result|
       assert_match(/running/, result.stdout, "pxp-agent service should be running (failing handshake)")
     end
-    on agent, puppet('resource service pxp-agent ensure=stopped')
-    on agent, puppet('resource service pxp-agent') do |result|
-      assert_match(/stopped/, result.stdout,
-                   "pxp-agent service should stop cleanly when it is running in a loop retrying invalid certs")
+    unless (agent['platform'] =~ /osx/) then # on OSX, service remains running and continually retries executing pxp-agent
+      on agent, puppet('resource service pxp-agent ensure=stopped')
+      on agent, puppet('resource service pxp-agent') do |result|
+        assert_match(/stopped/, result.stdout,
+                     "pxp-agent service should stop cleanly when it is running in a loop retrying invalid certs")
+      end
     end
   end
 
@@ -89,9 +95,11 @@ agents.each_with_index do |agent, i|
 
     step 'Start pxp-agent and assert that it does not connect to pcp-broker'
     on agent, puppet('resource service pxp-agent ensure=running')
-    assert(is_not_associated?(master, "pcp://#{agent}/agent"),
-           "Agent identity pcp://#{agent}/agent for agent host #{agent} should not appear in pcp-broker's inventory " \
-           "when pxp-agent is using the wrong CA cert")
+    show_pcp_logs_on_failure do
+      assert(is_not_associated?(master, "pcp://#{agent}/agent"),
+             "Agent identity pcp://#{agent}/agent for agent host #{agent} should not appear in pcp-broker's inventory " \
+             "when pxp-agent is using the wrong CA cert")
+    end
     expect_file_on_host_to_contain(agent, logfile(agent), 'TLS handshake failed')
   end
 
@@ -107,9 +115,11 @@ agents.each_with_index do |agent, i|
 
     step 'Start pxp-agent and assert that it does not connect to broker'
     on agent, puppet('resource service pxp-agent ensure=running')
-    assert(is_not_associated?(master, "pcp://#{agent}/agent"),
-           "Agent identity pcp://#{agent}/agent for agent host #{agent} should not appear in pcp-broker's inventory " \
-           "when pxp-agent attempts to connect by broker IP instead of broker certified hostname")
+    show_pcp_logs_on_failure do
+      assert(is_not_associated?(master, "pcp://#{agent}/agent"),
+             "Agent identity pcp://#{agent}/agent for agent host #{agent} should not appear in pcp-broker's inventory " \
+             "when pxp-agent attempts to connect by broker IP instead of broker certified hostname")
+    end
     expect_file_on_host_to_contain(agent, logfile(agent), 'TLS handshake failed')
   end
 end

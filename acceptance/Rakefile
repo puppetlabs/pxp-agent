@@ -242,7 +242,7 @@ def config
       ENV['TEST_TARGET'] = "redhat7-64m-#{ENV['TEST_TARGET']}"
       puts "Adding Redhat 7 master to ENV['TEST_TARGET']. Value is now '#{ENV['TEST_TARGET']}'"
     end
-    cli = BeakerHostGenerator::CLI.new([ENV['TEST_TARGET'], '--disable-default-role'])
+    cli = BeakerHostGenerator::CLI.new([ENV['TEST_TARGET'], '--disable-default-role', '--osinfo-version', '1'])
     ENV['CONFIG'] = "tmp/#{ENV['TEST_TARGET']}-#{SecureRandom.uuid}.yaml"
     FileUtils.mkdir_p('tmp')
     File.open(ENV['CONFIG'], 'w') do |fh|

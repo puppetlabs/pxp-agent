@@ -43,6 +43,31 @@ def expect_file_on_host_to_contain(host, file, expected, seconds=30)
   end
 end
 
+# Show the logs of the broker and agents - useful to see why a test failed
+def show_pcp_logs
+  logger.notify "---- Broker log -----"
+  on(master, "cat /var/log/pcp-broker.log") do |result|
+    logger.notify result.stdout
+  end
+
+  agents.each do |agent|
+    logger.notify "----- agent #{agent} log -----"
+    on(agent, "cat #{logfile(agent)}") do |result|
+      logger.notify result.stdout
+    end
+  end
+end
+
+# Evaluate the block, show logs if test assertions were triggered
+def show_pcp_logs_on_failure(&block)
+  yield
+rescue MiniTest::Assertion => exception
+  logger.notify "Assertion failed in test: #{exception}"
+  logger.notify "Fetching logs for inspection"
+  show_pcp_logs
+  raise exception
+end
+
 # Some helpers for working with a pcp-broker 'lein tk' instance
 def run_pcp_broker(host)
   on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker; export LEIN_ROOT=ok; lein tk </dev/null >/var/log/pcp-broker.log 2>&1 &")
@@ -82,12 +107,10 @@ def get_pcp_broker_status(host)
   end
 end
 
-# Start an eventmachine reactor in a thread
+# Start an eventmachine reactor in a thread, if one is not already running
 # @return Thread object where the EM reactor should be running
-def start_eventmachine_thread
+def assert_eventmachine_thread_running
   if EventMachine.reactor_running?
-    puts "EventMachine already running!"
-    puts caller
     return EventMachine.reactor_thread
   end
 
@@ -104,18 +127,6 @@ def start_eventmachine_thread
   em_thread
 end
 
-# Stop the eventmachine reactor
-# @param thread  The thread the EM reactor should be running in
-def stop_eventmachine_thread(thread)
-  unless EventMachine.reactor_running?
-    puts "EventMachine is not running!"
-    puts caller
-  end
-
-  EventMachine.stop_event_loop
-  thread.join
-end
-
 # Query pcp-broker's inventory of associated clients
 # Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/inventory.md
 # @param broker hostname or beaker host object of the pcp-broker host
@@ -124,10 +135,6 @@ end
 # @raise Exception if pcp-client cannot connect to make the inventory request, does not receive a response, or the response is missing
 #        the required [:data]["uris"] property
 def pcp_broker_inventory(broker, query)
-  # Event machine is required by the ruby-pcp-client gem
-  # https://github.com/puppetlabs/ruby-pcp-client
-  em_thread = start_eventmachine_thread
-
   mutex = Mutex.new
   have_response = ConditionVariable.new
   response = nil
@@ -172,7 +179,7 @@ def pcp_broker_inventory(broker, query)
   rescue Timeout::Error
     raise "Didn't receive a response for PCP inventory request"
   ensure
-    stop_eventmachine_thread(em_thread)
+    client.close
   end # wait for message
 
   if(!response.has_key?(:data))
@@ -239,10 +246,6 @@ end
 def rpc_blocking_request(broker, targets,
                          pxp_module = 'pxp-module-puppet', action = 'run',
                          params)
-  # Event machine is required by the ruby-pcp-client gem
-  # https://github.com/puppetlabs/ruby-pcp-client
-  em_thread = start_eventmachine_thread
-
   mutex = Mutex.new
   have_response = ConditionVariable.new
   responses = Hash.new
@@ -297,7 +300,7 @@ def rpc_blocking_request(broker, targets,
       end
     end
   ensure
-    stop_eventmachine_thread(em_thread)
+    client.close
   end # wait for message
 
   responses
@@ -314,6 +317,10 @@ def connect_pcp_client(broker)
   connected = false
   hostname = Socket.gethostname
   until (connected || retries == max_retries) do
+    # Event machine is required by the ruby-pcp-client gem
+    # https://github.com/puppetlabs/ruby-pcp-client
+    assert_eventmachine_thread_running
+
     client = PCP::Client.new({
       :server => broker_ws_uri(broker),
       :ssl_cert => "tmp/ssl/certs/#{hostname.downcase}.pem",
@@ -325,9 +332,11 @@ def connect_pcp_client(broker)
     retries += 1
   end
   if !connected
+    client.close
     raise "Controller PCP client failed to connect with pcp-broker on #{broker} after #{max_retries} attempts: #{client.inspect}"
   end
   if !client.associated?
+    client.close
     raise "Controller PCP client failed to associate with pcp-broker on #{broker} #{client.inspect}"
   end
 
