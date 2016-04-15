@@ -6,33 +6,50 @@ test_name 'Attempt to start pxp-agent with invalid SSL config'
 
 # On teardown, restore valid config file on each agent
 teardown do
-  agents.each_with_index do |agent, i|
+  agents.each do |agent|
     on agent, puppet('resource service pxp-agent ensure=stopped')
-    cert_dir = configure_std_certs_on_host(agent)
-    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_test_certs(master, agent, i+1, cert_dir).to_s)
+    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
     on agent, puppet('resource service pxp-agent ensure=running')
   end
 end
 
-agents.each_with_index do |agent, i|
+agents.each do |agent|
 
-  cert_dir = configure_std_certs_on_host(agent)
-  cert_number = i + 1
-
-  step 'Setup - Stop pxp-agent service' do
-    on agent, puppet('resource service pxp-agent ensure=stopped')
+  temp_ca_dir = agent.tmpdir('alternate_ssl')
+  if windows?(agent) then
+    alternate_cert = "#{temp_ca_dir}\\certs\\#{agent}.pem"
+    alternate_key = "#{temp_ca_dir}\\private_keys\\#{agent}.pem"
+    alternate_ca_cert = "#{temp_ca_dir}\\ca\\ca_crt.pem"
+  else
+    alternate_cert = "#{temp_ca_dir}/certs/#{agent}.pem"
+    alternate_key = "#{temp_ca_dir}/private_keys/#{agent}.pem"
+    alternate_ca_cert = "#{temp_ca_dir}/ca/ca_crt.pem"
   end
 
-  step "Setup - Wipe pxp-agent log" do
+  step 'Create an alternate ca in a temp folder' do
+    on agent, puppet("cert list --ssldir #{temp_ca_dir}") # this sets up a CA on the agent
+    on agent, puppet("cert generate #{agent} --ssldir #{temp_ca_dir}")
+  end
+
+  step 'Ensure pxp-agent is currently running and associated' do
+    on agent, puppet('resource service pxp-agent ensure=stopped')
+    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
+    on agent, puppet('resource service pxp-agent ensure=running')
+    show_pcp_logs_on_failure do
+      assert(is_associated?(master, "pcp://#{agent}/agent"),
+             "Agent #{agent} with PCP identity pcp://#{agent}/agent should be associated with pcp-broker")
+    end
+  end
+
+  step 'Setup - Stop pxp-agent service and wipe its log' do
+    on agent, puppet('resource service pxp-agent ensure=stopped')
     on(agent, "rm -rf #{logfile(agent)}")
   end
 
   step "Setup - Change pxp-agent config to use a cert that doesn't match private key" do
-    invalid_config_mismatching_keys = {:broker_ws_uri => broker_ws_uri(master),
-                                       :ssl_key => ssl_key_file(agent, cert_number, cert_dir),
-                                       :ssl_ca_cert => ssl_ca_file(agent, cert_dir),
-                                       :ssl_cert => ssl_cert_file(agent, cert_number, cert_dir, true)}
-    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json(master, agent, invalid_config_mismatching_keys).to_s)
+    pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
+    pxp_config["ssl-cert"] = alternate_cert
+    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
   end
 
   step 'C94730 - Attempt to run pxp-agent with mismatching SSL cert and private key' do
@@ -53,11 +70,10 @@ agents.each_with_index do |agent, i|
   end
 
   step "Change pxp-agent config so the cert and key match but they are of a different ca than the broker" do
-    invalid_config_wrong_ca = {:broker_ws_uri => broker_ws_uri(master),
-                               :ssl_key => ssl_key_file(agent, cert_number, cert_dir, true),
-                               :ssl_ca_cert => ssl_ca_file(agent, cert_dir),
-                               :ssl_cert => ssl_cert_file(agent, cert_number, cert_dir, true)}
-    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json(master, agent, invalid_config_wrong_ca).to_s)
+    pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
+    pxp_config["ssl-cert"] = alternate_cert
+    pxp_config["ssl-key"] = alternate_key
+    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
   end
 
   step 'C94729 - Attempt to run pxp-agent with SSL keypair from a different ca' do
@@ -77,12 +93,6 @@ agents.each_with_index do |agent, i|
   end
 
   step 'C97365 - Attempt to run pxp-agent with a different CA to the broker' do
-    step 'Create an alternate ca cert in a temp folder'
-    temp_ca_dir = agent.tmpdir('alt_ca')
-    on agent, puppet("cert list --ssldir #{temp_ca_dir}") # this sets up a CA on the agent
-    windows?(agent) ?
-      alt_ca_cert = "#{temp_ca_dir}\\ca\\ca_crt.pem" :
-      alt_ca_cert = "#{temp_ca_dir}/ca/ca_crt.pem"
 
     step 'Stop pxp-agent and wipe its existing log file'
     on agent, puppet('resource service pxp-agent ensure=stopped')
@@ -90,7 +100,7 @@ agents.each_with_index do |agent, i|
 
     step 'Create pxp-agent.conf with an alternate CA cert'
     pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
-    pxp_config['ssl-ca-cert'] = alt_ca_cert
+    pxp_config['ssl-ca-cert'] = alternate_ca_cert
     create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
 
     step 'Start pxp-agent and assert that it does not connect to pcp-broker'
