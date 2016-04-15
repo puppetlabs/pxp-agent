@@ -246,6 +246,30 @@ end
 def rpc_blocking_request(broker, targets,
                          pxp_module = 'pxp-module-puppet', action = 'run',
                          params)
+  rpc_request(broker, targets, pxp_module, action, params, true)
+end
+
+# Make an rpc_non_blocking_request to pxp-agent
+# Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
+# @param broker hostname or beaker host object of the machine running PCP broker
+# @param targets array of PCP identities to send request to
+#                e.g. ["pcp://client01.example.com/agent","pcp://client02.example.com/agent"]
+# @param pxp_module which PXP module to call, default pxp-module-puppet
+# @param action which action in the PXP module to call, default run
+# @param params params to send to the module. e.g for pxp-module-puppet:
+#               {:env => [], :flags => ['--noop', '--onetime', '--no-daemonize']}
+# @return hash of responses, with target identities as keys, and value being the response message as a hash
+#         Responses should be of message type http://puppetlabs.com/rpc_provisional_response
+# @raise String indicating something went wrong, test case can use to fail
+def rpc_non_blocking_request(broker, targets,
+                         pxp_module = 'pxp-module-puppet', action = 'run',
+                         params)
+  rpc_request(broker, targets, pxp_module, action, params, false)
+end
+
+def rpc_request(broker, targets,
+                pxp_module = 'pxp-module-puppet', action = 'run',
+                params, blocking)
   mutex = Mutex.new
   have_response = ConditionVariable.new
   responses = Hash.new
@@ -265,16 +289,20 @@ def rpc_blocking_request(broker, targets,
   end
 
   message = PCP::Message.new({
-    :message_type => 'http://puppetlabs.com/rpc_blocking_request',
+    :message_type => blocking ? 'http://puppetlabs.com/rpc_blocking_request' : 'http://puppetlabs.com/rpc_non_blocking_request',
     :targets => targets
   })
 
-  message.data = {
+  message_data = {
     :transaction_id => SecureRandom.uuid,
     :module         => pxp_module,
     :action         => action,
     :params         => params
-  }.to_json
+  }
+  if !blocking then
+    message_data[:notify_outcome] = false
+  end
+  message.data = message_data.to_json
 
   message_expiry = 10 # Seconds for the PCP message to be considered failed
   rpc_action_expiry = 60 # Seconds for the entire RPC action to be considered failed
@@ -297,84 +325,6 @@ def rpc_blocking_request(broker, targets,
     mutex.synchronize do
       if !have_all_rpc_responses?(targets, responses)
         raise "Didn't receive all PCP responses when requesting #{pxp_module} #{action} on #{targets}. Responses received were: #{responses.to_s}"
-      end
-    end
-  ensure
-    client.close
-  end # wait for message
-
-  responses
-end
-
-# Make an rpc_non_blocking_request to pxp-agent
-# Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
-# @param broker hostname or beaker host object of the machine running PCP broker
-# @param targets array of PCP identities to send request to
-#                e.g. ["pcp://client01.example.com/agent","pcp://client02.example.com/agent"]
-# @param pxp_module which PXP module to call, default pxp-module-puppet
-# @param action which action in the PXP module to call, default run
-# @param params params to send to the module. e.g for pxp-module-puppet:
-#               {:env => [], :flags => ['--noop', '--onetime', '--no-daemonize']}
-# @return hash of responses, with target identities as keys, and value being the response message as a hash
-#         Responses should be of message type http://puppetlabs.com/rpc_provisional_response
-# @raise String indicating something went wrong, test case can use to fail
-def rpc_non_blocking_request(broker, targets,
-                         pxp_module = 'pxp-module-puppet', action = 'run',
-                         params)
-  mutex = Mutex.new
-  have_response = ConditionVariable.new
-  responses = Hash.new
-
-  client = connect_pcp_client(broker)
-
-  client.on_message = proc do |message|
-    mutex.synchronize do
-      resp = {
-        :envelope => message.envelope,
-        :data     => JSON.load(message.data),
-        :debug    => JSON.load(message.debug)
-      }
-      responses[resp[:envelope][:sender]] = resp
-      print resp
-      have_response.signal
-    end
-  end
-
-  message = PCP::Message.new({
-    :message_type => 'http://puppetlabs.com/rpc_non_blocking_request',
-    :targets => targets
-  }).expires(60)
-
-  message.data = {
-    :transaction_id => SecureRandom.uuid,
-    :notify_outcome => false,
-    :module         => pxp_module,
-    :action         => action,
-    :params         => params
-  }.to_json
-
-  message_expiry = 10 # Seconds for the PCP message to be considered failed
-  rpc_action_expiry = 60 # Seconds for the entire RPC action to be considered failed
-  message.expires(message_expiry)
-
-  client.send(message)
-
-  begin
-    Timeout::timeout(rpc_action_expiry) do
-      done = false
-      loop do
-        mutex.synchronize do
-          have_response.wait(mutex)
-          done = have_all_rpc_responses?(targets, responses)
-        end
-        break if done
-      end
-    end
-  rescue Timeout::Error
-    mutex.synchronize do
-      if !have_all_rpc_responses?(targets, responses)
-        raise "Didn't receive all PCP responses when requesting #{pxp_module} #{action} on #{targets}. "\
-              "Responses received were: #{responses.to_s}"
       end
     end
   ensure
