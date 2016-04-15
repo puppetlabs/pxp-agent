@@ -9,7 +9,7 @@
 #include <vector>
 
 // To enable log messages:
-//#define ENABLE_LOGGING
+// #define ENABLE_LOGGING
 
 #ifdef ENABLE_LOGGING
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.cpp_pcp_client.test"
