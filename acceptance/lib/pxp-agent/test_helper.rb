@@ -323,6 +323,7 @@ def connect_pcp_client(broker)
 
     client = PCP::Client.new({
       :server => broker_ws_uri(broker),
+      :ssl_ca_cert => "tmp/ssl/certs/ca.pem",
       :ssl_cert => "tmp/ssl/certs/#{hostname.downcase}.pem",
       :ssl_key => "tmp/ssl/private_keys/#{hostname.downcase}.pem",
       :logger => PCP::SimpleLogger.new,
