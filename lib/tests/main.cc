@@ -4,8 +4,6 @@
 
 #include <catch.hpp>
 
-#include <boost/nowide/iostream.hpp>
-
 #include <vector>
 
 // To enable log messages:
