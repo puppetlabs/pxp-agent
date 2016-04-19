@@ -264,7 +264,7 @@ std::unique_ptr<PIDFile> daemonize() {
     // Set PIDFile dtor to clean itself up and return pointer for RAII
     pidf_ptr->cleanupWhenDone();
 
-    return std::move(pidf_ptr);
+    return pidf_ptr;
 }
 
 }  // namespace Util
