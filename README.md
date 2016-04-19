@@ -19,7 +19,7 @@ Dependencies
  - Boost
  - OpenSSL
  - ruby (2.0 and newer)
- - [leatherman][leatherman] (0.4.2 or newer)
+ - [leatherman][leatherman] (0.5.1 or newer)
  - [cpp-pcp-client][cpp-pcp-client] (master)
 
 Initial Setup
