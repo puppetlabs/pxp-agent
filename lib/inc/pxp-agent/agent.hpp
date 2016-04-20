@@ -19,6 +19,10 @@ class Agent {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
 
+    struct PCPConfigurationError : public Error {
+        explicit PCPConfigurationError(std::string const& msg) : Error(msg) {}
+    };
+
     struct WebSocketConfigurationError : public Error {
         explicit WebSocketConfigurationError(std::string const& msg) : Error(msg) {}
     };
@@ -70,10 +74,6 @@ class Agent {
     // will send a PXP non-blocking response containing the action
     // outcome when finished.
     void nonBlockingRequestCallback(const PCPClient::ParsedChunks& parsed_chunks);
-
-    // Callback for PCPClient::Connector handling incoming PCP TTL
-    // Expired messages; it will only log the ID of the expired msg.
-    void ttlExpiredCallback(const PCPClient::ParsedChunks& parsed_chunks);
 };
 
 }  // namespace PXPAgent

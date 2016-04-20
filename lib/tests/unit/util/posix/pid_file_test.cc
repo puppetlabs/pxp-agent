@@ -290,7 +290,7 @@ TEST_CASE("PIDFile::unlockFile", "[util]") {
         FAIL("failed to create spool directory");
     }
 
-    SECTION("it unlock a locked file") {
+    SECTION("it unlocks a locked file") {
         auto first_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
         if (first_fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
         PIDFile::lockFile(first_fd, F_WRLCK);

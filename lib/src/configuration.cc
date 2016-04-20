@@ -23,15 +23,18 @@
 
 #include <boost/nowide/iostream.hpp>
 
+#include <boost/format.hpp>
+
 #ifdef _WIN32
     #include <leatherman/windows/system_error.hpp>
     #include <leatherman/windows/windows.hpp>
     #undef ERROR
-    #include <boost/format.hpp>
     #include <Shlobj.h>
 #endif
 
 namespace PXPAgent {
+
+namespace HW = HorseWhisperer;
 
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
@@ -101,7 +104,8 @@ static const std::string AGENT_CLIENT_TYPE { "agent" };
 //
 
 void Configuration::initialize(
-        std::function<int(std::vector<std::string>)> start_function) {
+        std::function<int(std::vector<std::string>)> start_function)
+{
     // Ensure the state is reset (useful for testing)
     HW::Reset();
     HW::SetAppName("pxp-agent");
@@ -126,7 +130,8 @@ void Configuration::initialize(
                      start_function);               // callback
 }
 
-HW::ParseResult parseArguments(const int argc, char* const argv[]) {
+HW::ParseResult parseArguments(const int argc, char* const argv[])
+{
     // manipulate argc and v to make start the default action.
     // TODO(ploubser): Add ability to specify default action to HorseWhisperer
     int modified_argc = argc + 1;
@@ -141,7 +146,8 @@ HW::ParseResult parseArguments(const int argc, char* const argv[]) {
     return HW::Parse(modified_argc, modified_argv);
 }
 
-HW::ParseResult Configuration::parseOptions(int argc, char *argv[]) {
+HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
+{
     auto parse_result = parseArguments(argc, argv);
 
     if (parse_result == HW::ParseResult::FAILURE
@@ -161,7 +167,8 @@ HW::ParseResult Configuration::parseOptions(int argc, char *argv[]) {
     return parse_result;
 }
 
-static void validateLogDirPath(const std::string& logfile) {
+static void validateLogDirPath(const std::string& logfile)
+{
     auto logdir_path = fs::path(logfile).parent_path();
 
     if (fs::exists(logdir_path)) {
@@ -177,7 +184,8 @@ static void validateLogDirPath(const std::string& logfile) {
     }
 }
 
-void Configuration::setupLogging() {
+void Configuration::setupLogging()
+{
     logfile_ = HW::GetFlag<std::string>("logfile");
     auto log_on_stdout = (logfile_ == "-");
     auto loglevel = HW::GetFlag<std::string>("loglevel");
@@ -252,13 +260,15 @@ void Configuration::setupLogging() {
     }
 }
 
-void Configuration::validate() {
+void Configuration::validate()
+{
     validateAndNormalizeWebsocketSettings();
     validateAndNormalizeOtherSettings();
     valid_ = true;
 }
 
-const Configuration::Agent& Configuration::getAgentConfiguration() const {
+const Configuration::Agent& Configuration::getAgentConfiguration() const
+{
     assert(valid_);
     agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
@@ -274,7 +284,8 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const {
     return agent_configuration_;
 }
 
-void Configuration::reopenLogfile() const {
+void Configuration::reopenLogfile() const
+{
     if (!logfile_.empty() && logfile_ != "-") {
         try {
             logfile_fstream_.close();
@@ -298,11 +309,13 @@ Configuration::Configuration() : valid_ { false },
                                  config_file_ { "" },
                                  agent_configuration_ {},
                                  logfile_ { "" },
-                                 logfile_fstream_ {} {
+                                 logfile_fstream_ {}
+{
     defineDefaultValues();
 }
 
-void Configuration::defineDefaultValues() {
+void Configuration::defineDefaultValues()
+{
     defaults_.insert(
         Option { "config-file",
                  Base_ptr { new Entry<std::string>(
@@ -444,7 +457,8 @@ void Configuration::defineDefaultValues() {
 #endif
 }
 
-void Configuration::setDefaultValues() {
+void Configuration::setDefaultValues()
+{
     for (auto opt_idx = defaults_.get<Option::ByInsertion>().begin();
          opt_idx != defaults_.get<Option::ByInsertion>().end();
          ++opt_idx) {
@@ -498,12 +512,12 @@ void Configuration::setDefaultValues() {
     }
 }
 
-void Configuration::parseConfigFile() {
-    lth_jc::JsonContainer config_json;
+void Configuration::parseConfigFile()
+{
+    if (!lth_file::file_readable(config_file_))
+        return;
 
-    if (!lth_file::file_readable(config_file_)) {
-      return;
-    }
+    lth_jc::JsonContainer config_json;
 
     try {
         config_json = lth_jc::JsonContainer(lth_file::read(config_file_));
@@ -511,115 +525,86 @@ void Configuration::parseConfigFile() {
         throw Configuration::Error { "cannot parse config file; invalid JSON" };
     }
 
-    if (config_json.type() != lth_jc::DataType::Object) {
+    if (config_json.type() != lth_jc::DataType::Object)
         throw Configuration::Error { "invalid config file content; not a "
                                      "JSON object" };
-    }
+
+    boost::format err_format { "field '%1%' must be of type %2%" };
+    auto check_key_type =
+        [&config_json, &err_format] (const std::string& key,
+                                     const std::string& type_str,
+                                     const lth_jc::DataType& type) -> void
+        {
+            if (config_json.type(key) != type)
+                throw Configuration::Error { (err_format % key % type_str).str() };
+        };
 
     for (const auto& key : config_json.keys()) {
         const auto& opt_idx = defaults_.get<Option::ByName>().find(key);
 
-        if (opt_idx != defaults_.get<Option::ByName>().end()) {
-            if (opt_idx->ptr->configured) {
-                continue;
-            }
+        if (opt_idx == defaults_.get<Option::ByName>().end())
+            throw Configuration::Error {
+                (boost::format("field '%1%' is not a valid configuration variable")
+                    % key).str() };
 
-            switch (opt_idx->ptr->type) {
-                case Integer:
-                    if (config_json.type(key) == lth_jc::DataType::Int) {
-                        HW::SetFlag<int>(key, config_json.get<int>(key));
-                    } else {
-                        std::string err { "field '" + key + "' must be of "
-                                          "type Integer" };
-                        throw Configuration::Error { err };
-                    }
-                    break;
-                case Bool:
-                    if (config_json.type(key) == lth_jc::DataType::Bool) {
-                        HW::SetFlag<bool>(key, config_json.get<bool>(key));
-                    } else {
-                        std::string err { "field '" + key + "' must be of "
-                                          "type Bool" };
-                        throw Configuration::Error { err };
-                    }
-                    break;
-                case Double:
-                    if (config_json.type(key) == lth_jc::DataType::Double) {
-                        HW::SetFlag<double>(key, config_json.get<double>(key));
-                    } else {
-                        std::string err { "field '" + key + "' must be of "
-                                          "type Double" };
-                        throw Configuration::Error { err };
-                    }
-                    break;
-                default:
-                    if (config_json.type(key) == lth_jc::DataType::String) {
-                        auto val = config_json.get<std::string>(key);
-                        HW::SetFlag<std::string>(key, val);
-                    } else {
-                        std::string err { "field '" + key + "' must be of "
-                                          "type String" };
-                        throw Configuration::Error { err };
-                    }
-            }
-        } else {
-            std::string err { "field '" + key + "' is not a valid "
-                              "configuration variable" };
-            throw Configuration::Error { err };
+        if (opt_idx->ptr->configured)
+            continue;
+
+        switch (opt_idx->ptr->type) {
+            case Integer:
+                check_key_type(key, "Integer", lth_jc::DataType::Int);
+                HW::SetFlag<int>(key, config_json.get<int>(key));
+                break;
+            case Bool:
+                check_key_type(key, "Bool", lth_jc::DataType::Bool);
+                HW::SetFlag<bool>(key, config_json.get<bool>(key));
+                break;
+            case Double:
+                check_key_type(key, "Double", lth_jc::DataType::Double);
+                HW::SetFlag<double>(key, config_json.get<double>(key));
+                break;
+            default:
+                check_key_type(key, "String", lth_jc::DataType::String);
+                HW::SetFlag<std::string>(key, config_json.get<std::string>(key));
         }
     }
 }
 
-void Configuration::validateAndNormalizeWebsocketSettings() {
-    if (HW::GetFlag<std::string>("broker-ws-uri").empty()) {
+// Helper function
+std::string check_and_expand_ssl_cert(const std::string& cert_name)
+{
+    auto c = HW::GetFlag<std::string>(cert_name);
+    if (c.empty())
+        throw Configuration::Error {
+            (boost::format("%1% value must be defined") % cert_name).str() };
+
+    c = lth_file::tilde_expand(c);
+    if (!fs::exists(c))
+        throw Configuration::Error {
+            (boost::format("%1% file '%2%' not found") % cert_name % c).str() };
+
+    if (!lth_file::file_readable(c))
+        throw Configuration::Error {
+            (boost::format("%1% file '%2%' not readable") % cert_name % c).str() };
+
+    return c;
+}
+
+void Configuration::validateAndNormalizeWebsocketSettings()
+{
+    // Check the broker's WebSocket URI
+    auto broker_ws_uri = HW::GetFlag<std::string>("broker-ws-uri");
+    if (broker_ws_uri.empty())
         throw Configuration::Error { "broker-ws-uri value must be defined" };
-    } else if (HW::GetFlag<std::string>("broker-ws-uri").find("wss://") != 0) {
+    if (broker_ws_uri.find("wss://") != 0)
         throw Configuration::Error { "broker-ws-uri value must start with wss://" };
-    }
 
-    auto ca = HW::GetFlag<std::string>("ssl-ca-cert");
-    auto cert = HW::GetFlag<std::string>("ssl-cert");
-    auto key = HW::GetFlag<std::string>("ssl-key");
+    // Check the SSL options and expand the paths
+    auto ca   = check_and_expand_ssl_cert("ssl-ca-cert");
+    auto cert = check_and_expand_ssl_cert("ssl-cert");
+    auto key  = check_and_expand_ssl_cert("ssl-key");
 
-    if (ca.empty()) {
-        throw Configuration::Error { "ssl-ca-cert value must be defined" };
-    } else {
-        ca = lth_file::tilde_expand(ca);
-        if (!fs::exists(ca)) {
-            throw Configuration::Error {
-                (boost::format("ssl-ca-cert file '%1%' not found") % ca).str() };
-        } else if (!lth_file::file_readable(ca)) {
-            throw Configuration::Error {
-                (boost::format("ssl-ca-cert file '%1%' not readable") % ca).str() };
-        }
-    }
-
-    if (cert.empty()) {
-        throw Configuration::Error { "ssl-cert value must be defined" };
-    } else {
-        cert = lth_file::tilde_expand(cert);
-        if (!fs::exists(cert)) {
-            throw Configuration::Error {
-                (boost::format("ssl-cert file '%1%' not found") % cert).str() };
-        } else if (!lth_file::file_readable(cert)) {
-            throw Configuration::Error {
-                (boost::format("ssl-cert file '%1%' not readable") % cert).str() };
-        }
-    }
-
-    if (key.empty()) {
-        throw Configuration::Error { "ssl-key value must be defined" };
-    } else {
-        key = lth_file::tilde_expand(key);
-        if (!fs::exists(key)) {
-            throw Configuration::Error {
-                (boost::format("ssl-key file '%1%' not found") % key).str() };
-        } else if (!lth_file::file_readable(key)) {
-            throw Configuration::Error {
-                (boost::format("ssl-key file '%1%' not readable") % key).str() };
-        }
-    }
-
+    // Ensure client certs are good
     try {
         PCPClient::getCommonNameFromCert(cert);
         PCPClient::validatePrivateKeyCertPair(key, cert);
@@ -627,44 +612,66 @@ void Configuration::validateAndNormalizeWebsocketSettings() {
         throw Configuration::Error { e.what() };
     }
 
+    // Set the expanded cert paths
     HW::SetFlag<std::string>("ssl-ca-cert", ca);
     HW::SetFlag<std::string>("ssl-cert", cert);
     HW::SetFlag<std::string>("ssl-key", key);
 }
 
-void Configuration::validateAndNormalizeOtherSettings() {
-    // Normalize
-    std::vector<std::string> options { "modules-dir", "modules-config-dir",
-                                       "spool-dir" };
+// Helper function
+void check_and_create_dir(const fs::path& dir_path,
+                          const std::string& opt,
+                          const bool& create)
+{
+    if (!fs::exists(dir_path)) {
+        if (create) {
+            try {
+                LOG_INFO("Creating the %1% '%2%'",
+                         opt, dir_path.string());
+                fs::create_directories(dir_path);
+            } catch (const std::exception& e) {
+                LOG_DEBUG("Failed to create the %1% '%2%': %3%",
+                          opt, dir_path.string(), e.what());
+                throw Configuration::Error {
+                        (boost::format("failed to create the %1% '%2%'")
+                            % opt % dir_path.string()).str() };
+            }
+        } else {
+            throw Configuration::Error {
+                    (boost::format("the %1% '%2%' does not exist")
+                        % opt % dir_path.string()).str() };
+        }
+    } else if (!fs::is_directory(dir_path)) {
+        throw Configuration::Error {
+                (boost::format("the %1% '%2%' is not a directory")
+                    % opt % dir_path.string()).str() };
+    }
+}
+
+void Configuration::validateAndNormalizeOtherSettings()
+{
+    // Normalize and check modules' directories
+    std::vector<std::string> options { "modules-dir", "modules-config-dir" };
 
     for (const auto& option : options) {
         auto val = HW::GetFlag<std::string>(option);
 
-        if (val.empty()) {
+        if (val.empty())
             continue;
-        }
 
         fs::path val_path { lth_file::tilde_expand(val) };
-
-        if (!fs::exists(val_path)) {
-            throw Configuration::Error { option + " '" + val_path.string()
-                + "' does not exist" };
-        } else if (!fs::is_directory(val_path)) {
-            throw Configuration::Error { option + " '" + val_path.string()
-                + "' is not a directory" };
-        }
-
+        check_and_create_dir(val_path, val, false);
         HW::SetFlag<std::string>(option, val_path.string());
     }
 
-    // Ensure spool-dir is defined and we can write in it
+    // Create the spool-dir if needed and ensure we can write in it
     const auto spool_dir = HW::GetFlag<std::string>("spool-dir");
 
-    if (spool_dir.empty()) {
+    if (spool_dir.empty())
         throw Configuration::Error { "spool-dir must be defined" };
-    }
 
-    fs::path spool_dir_path { spool_dir };
+    fs::path spool_dir_path { lth_file::tilde_expand(spool_dir) };
+    check_and_create_dir(spool_dir_path, "spool-dir", true);
     fs::path tmp_path;
 
     do {
@@ -678,21 +685,24 @@ void Configuration::validateAndNormalizeOtherSettings() {
             fs::remove_all(tmp_path);
         }
     } catch (const std::exception& e) {
-        LOG_DEBUG("Failed to create the test dir in spool path during"
-                  "configuration validation: %1%", e.what());
+        LOG_DEBUG("Failed to create the test dir in spool path '%1%' during"
+                  "configuration validation: %2%",
+                  spool_dir_path.string(), e.what());
     }
 
     if (!is_writable) {
-        throw Configuration::Error { "--spool-dir '"
-            + spool_dir_path.string() + "' is not writable" };
+        throw Configuration::Error {
+                (boost::format("the spool-dir '%1%' is not writable")
+                    % spool_dir_path.string()).str() };
     }
 
 #ifndef _WIN32
     if (!HW::GetFlag<bool>("foreground")) {
         auto pid_file = lth_file::tilde_expand(HW::GetFlag<std::string>("pidfile"));
         if (fs::exists(pid_file) && !(fs::is_regular_file(pid_file))) {
-            throw Configuration::Error { "the PID file '" + pid_file
-                                         + "' is not a regular file" };
+            throw Configuration::Error {
+                    (boost::format("the PID file '%1%' is not a regular file")
+                        % pid_file).str() };
         }
 
         auto pid_dir = fs::path(pid_file).parent_path().string();
@@ -707,18 +717,22 @@ void Configuration::validateAndNormalizeOtherSettings() {
                 fs::create_directories(pid_dir);
             } catch (const std::exception& e) {
                 LOG_DEBUG("Failed to create '%1%' directory: %2%", pid_dir, e.what());
-                throw Configuration::Error { "failed to create the PID file directory" };
+                throw Configuration::Error {
+                        "failed to create the PID file directory" };
             }
         }
 
         if (fs::exists(pid_dir)) {
             if (!fs::is_directory(pid_dir)) {
-                throw Configuration::Error { "the PID directory '" + pid_dir
-                                             + "' is not a directory" };
+                throw Configuration::Error {
+                        (boost::format("'%1%' is not a directory")
+                            % pid_dir).str() };
             }
         } else {
-            throw Configuration::Error { "the PID directory '" + pid_dir + "' "
-                                         "does not exist; cannot create PID file" };
+            throw Configuration::Error {
+                    (boost::format("the PID directory '%1%' does not exist; "
+                                   "cannot create the PID file")
+                        % pid_dir).str() };
         }
 
         HW::SetFlag<std::string>("pidfile", pid_file);
