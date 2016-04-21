@@ -234,6 +234,25 @@ order to establish the WebSocket connection on top of which the PCP
 communication will take place (PCP uses secure WebSocket). Also, the hostname
 used in the WebSocket URI must match the SSL identity used by the broker.
 
+### Testing against a test broker
+
+The simple instructions for setting up a test [PCP broker][pcp-broker] use pre-
+generated certs present in that repo. To connect to this test broker, you'll first
+need to add a hosts config that redirects `broker.example.com` to the broker host
+so that server certificate verification succeeds. Then point pxp-agent at `ca`
+and a client certificate present in [PCP broker][pcp-broker]. Example:
+
+```
+puppet resource host broker.example.com ip=<host ip>
+pxp-agent --broker-ws-uri wss://broker.example.com:8142/pcp \
+          --ssl-ca-cert $pcp_broker/test-resources/ssl/certs/ca.pem \
+          --ssl-cert $pcp_broker/test-resources/ssl/certs/client01.example.com.pem \
+          --ssl-key $pcp_broker/test-resources/ssl/private_keys/client01.example.com.pem \
+          --spool-dir dev-resources/spool \
+          --modules-dir modules \
+          --logfile - --loglevel debug --foreground
+```
+
 #### Logging
 
 By default, log messages will be written to:
