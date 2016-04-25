@@ -696,6 +696,8 @@ void Configuration::validateAndNormalizeOtherSettings()
                     % spool_dir_path.string()).str() };
     }
 
+    HW::SetFlag<std::string>("spool-dir", spool_dir_path.string());
+
 #ifndef _WIN32
     if (!HW::GetFlag<bool>("foreground")) {
         auto pid_file = lth_file::tilde_expand(HW::GetFlag<std::string>("pidfile"));
