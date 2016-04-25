@@ -351,7 +351,7 @@ The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 Maintainers: Alessandro Parisi <alessandro@puppet.com>, Michael Smith
 <michael.smith@puppet.com>, Michal Ruzicka <michal.ruzicka@puppet.com>.
 
-Contributing: Please refer to [this](contributing) document.
+Contributing: Please refer to [this][contributing] document.
 
 Tickets: File bug tickets at https://tickets.puppet.com/browse/PCP and add the
 `pxp-agent` component to the ticket.
