@@ -346,6 +346,16 @@ Don't become a daemon and execute on foreground on the associated terminal.
 
 The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 
+## Maintenance
+
+Maintainers: Alessandro Parisi <alessandro@puppet.com>, Michael Smith
+<michael.smith@puppet.com>, Michal Ruzicka <michal.ruzicka@puppet.com>.
+
+Contributing: Please refer to [this](contributing) document.
+
+Tickets: File bug tickets at https://tickets.puppet.com/browse/PCP and add the
+`pxp-agent` component to the ticket.
+
 [cpp-pcp-client]: https://github.com/puppetlabs/cpp-pcp-client
 [leatherman]: https://github.com/puppetlabs/leatherman
 [nssm]: https://nssm.cc
@@ -365,3 +375,4 @@ The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 [7zip-choco]: https://chocolatey.org/packages/7zip.commandline
 [MinGW-w64-choco]: https://chocolatey.org/packages/mingw
 [Boost-download]: http://sourceforge.net/projects/boost/files/latest/download
+[contributing]: CONTRIBUTING.md
