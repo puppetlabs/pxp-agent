@@ -54,6 +54,12 @@ set (LIBS
     ${LEATHERMAN_LIBRARIES}
 )
 
+if (WIN32)
+    # Necessary when statically linking cpp-pcp-client on Windows.
+    # Shouldn't hurt when cpp-pcp-client is a DLL.
+    list(APPEND LIBS Ws2_32)
+endif()
+
 if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "SunOS" OR CMAKE_SYSTEM_NAME MATCHES "AIX")
     # On some platforms Boost.Thread has a dependency on clock_gettime. It also depends on pthread,
     # and FindBoost in CMake 3.2.3 doesn't include that dependency.
