@@ -246,6 +246,30 @@ end
 def rpc_blocking_request(broker, targets,
                          pxp_module = 'pxp-module-puppet', action = 'run',
                          params)
+  rpc_request(broker, targets, pxp_module, action, params, true)
+end
+
+# Make an rpc_non_blocking_request to pxp-agent
+# Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
+# @param broker hostname or beaker host object of the machine running PCP broker
+# @param targets array of PCP identities to send request to
+#                e.g. ["pcp://client01.example.com/agent","pcp://client02.example.com/agent"]
+# @param pxp_module which PXP module to call, default pxp-module-puppet
+# @param action which action in the PXP module to call, default run
+# @param params params to send to the module. e.g for pxp-module-puppet:
+#               {:env => [], :flags => ['--noop', '--onetime', '--no-daemonize']}
+# @return hash of responses, with target identities as keys, and value being the response message as a hash
+#         Responses should be of message type http://puppetlabs.com/rpc_provisional_response
+# @raise String indicating something went wrong, test case can use to fail
+def rpc_non_blocking_request(broker, targets,
+                         pxp_module = 'pxp-module-puppet', action = 'run',
+                         params)
+  rpc_request(broker, targets, pxp_module, action, params, false)
+end
+
+def rpc_request(broker, targets,
+                pxp_module = 'pxp-module-puppet', action = 'run',
+                params, blocking)
   mutex = Mutex.new
   have_response = ConditionVariable.new
   responses = Hash.new
@@ -265,16 +289,20 @@ def rpc_blocking_request(broker, targets,
   end
 
   message = PCP::Message.new({
-    :message_type => 'http://puppetlabs.com/rpc_blocking_request',
+    :message_type => blocking ? 'http://puppetlabs.com/rpc_blocking_request' : 'http://puppetlabs.com/rpc_non_blocking_request',
     :targets => targets
   })
 
-  message.data = {
+  message_data = {
     :transaction_id => SecureRandom.uuid,
     :module         => pxp_module,
     :action         => action,
     :params         => params
-  }.to_json
+  }
+  if !blocking then
+    message_data[:notify_outcome] = false
+  end
+  message.data = message_data.to_json
 
   message_expiry = 10 # Seconds for the PCP message to be considered failed
   rpc_action_expiry = 60 # Seconds for the entire RPC action to be considered failed
