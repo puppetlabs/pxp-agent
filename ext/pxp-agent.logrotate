@@ -6,6 +6,6 @@
     notifempty
     sharedscripts
     postrotate
-        [ -s /var/run/puppetlabs/pxp-agent.pid ] && kill -USR2 `cat /var/run/puppetlabs/pxp-agent.pid`
+        if [ -s /var/run/puppetlabs/pxp-agent.pid ]; then kill -USR2 `cat /var/run/puppetlabs/pxp-agent.pid`; fi
     endscript
 }
