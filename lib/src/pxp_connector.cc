@@ -3,8 +3,6 @@
 
 #include <cpp-pcp-client/protocol/schemas.hpp>
 
-#include <leatherman/util/strings.hpp>
-
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.pxp_connector"
 #include <leatherman/logging/logging.hpp>
 
@@ -13,7 +11,6 @@
 namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
-namespace lth_util = leatherman::util;
 
 static const int DEFAULT_MSG_TIMEOUT_SEC { 2 };
 
@@ -22,9 +19,9 @@ wrapDebug(const PCPClient::ParsedChunks& parsed_chunks)
 {
     auto request_id = parsed_chunks.envelope.get<std::string>("id");
     if (parsed_chunks.num_invalid_debug) {
-        LOG_WARNING("Message %1% contained %2% bad debug chunk%3%",
-                    request_id, parsed_chunks.num_invalid_debug,
-                    lth_util::plural(parsed_chunks.num_invalid_debug));
+        // TODO(ale): deal with locale & plural (PCP-257)
+        LOG_WARNING("Message {1} contained {2} bad debug chunks",
+                    request_id, parsed_chunks.num_invalid_debug);
     }
     std::vector<lth_jc::JsonContainer> debug {};
     for (auto& debug_entry : parsed_chunks.debug) {
@@ -56,10 +53,10 @@ void PXPConnector::sendPCPError(const std::string& request_id,
              PCPClient::Protocol::ERROR_MSG_TYPE,
              DEFAULT_MSG_TIMEOUT_SEC,
              pcp_error_data);
-        LOG_INFO("Replied to request %1% with a PCP error message",
+        LOG_INFO("Replied to request {1} with a PCP error message",
                  request_id);
     } catch (PCPClient::connection_error& e) {
-        LOG_ERROR("Failed to send PCP error message for request %1%: %3%",
+        LOG_ERROR("Failed to send PCP error message for request {1}: {2}",
                   request_id, e.what());
     }
 }
@@ -76,11 +73,11 @@ void PXPConnector::sendProvisionalResponse(const ActionRequest& request)
              DEFAULT_MSG_TIMEOUT_SEC,
              provisional_data,
              debug);
-        LOG_INFO("Sent provisional response for the %1% by %2%",
+        LOG_INFO("Sent provisional response for the {1} by {2}",
                  request.prettyLabel(), request.sender());
     } catch (PCPClient::connection_error& e) {
-        LOG_ERROR("Failed to send provisional response for the %1% by %2% "
-                  "(no further attempts will be made): %3%",
+        LOG_ERROR("Failed to send provisional response for the {1} by {2} "
+                  "(no further attempts will be made): {3}",
                   request.prettyLabel(), request.sender(), e.what());
     }
 }
@@ -98,11 +95,11 @@ void PXPConnector::sendPXPError(const ActionRequest& request,
              PXPSchemas::PXP_ERROR_MSG_TYPE,
              DEFAULT_MSG_TIMEOUT_SEC,
              pxp_error_data);
-        LOG_INFO("Replied to %1% by %2%, request ID %3%, with a PXP error message",
+        LOG_INFO("Replied to {1} by {2}, request ID {3}, with a PXP error message",
                  request.prettyLabel(), request.sender(), request.id());
     } catch (PCPClient::connection_error& e) {
-        LOG_ERROR("Failed to send a PXP error message for the %1% by %2% "
-                  "(no further sending attempts will be made): %3%",
+        LOG_ERROR("Failed to send a PXP error message for the {1} by {2} "
+                  "(no further sending attempts will be made): {3}",
                   request.prettyLabel(), request.sender(), description);
     }
 }
@@ -117,13 +114,13 @@ void PXPConnector::sendPXPError(const ActionResponse& response)
              PXPSchemas::PXP_ERROR_MSG_TYPE,
              DEFAULT_MSG_TIMEOUT_SEC,
              response.toJSON(ActionResponse::ResponseType::RPCError));
-        LOG_INFO("Replied to %1% by %2%, request ID %3%, with a PXP error message",
+        LOG_INFO("Replied to {1} by {2}, request ID {3}, with a PXP error message",
                  response.prettyRequestLabel(),
                  response.action_metadata.get<std::string>("requester"),
                  response.action_metadata.get<std::string>("request_id"));
     } catch (PCPClient::connection_error& e) {
-        LOG_ERROR("Failed to send a PXP error message for the %1% by %2% "
-                  "(no further sending attempts will be made): %3%",
+        LOG_ERROR("Failed to send a PXP error message for the {1} by {2} "
+                  "(no further sending attempts will be made): {3}",
                   response.prettyRequestLabel(),
                   response.action_metadata.get<std::string>("requester"),
                   response.action_metadata.get<std::string>("execution_error"));
@@ -160,12 +157,12 @@ void PXPConnector::sendNonBlockingResponse(const ActionResponse& response)
              PXPSchemas::NON_BLOCKING_RESPONSE_TYPE,
              DEFAULT_MSG_TIMEOUT_SEC,
              response.toJSON(ActionResponse::ResponseType::NonBlocking));
-        LOG_INFO("Sent response for the %1% by %2%",
+        LOG_INFO("Sent response for the {1} by {2}",
                  response.prettyRequestLabel(),
                  response.action_metadata.get<std::string>("requester"));
     } catch (PCPClient::connection_error& e) {
-        LOG_ERROR("Failed to reply to %1% by %2%, (no further attempts will "
-                  "be made): %3%",
+        LOG_ERROR("Failed to reply to {1} by {2}, (no further attempts will "
+                  "be made): {3}",
                   response.prettyRequestLabel(),
                   response.action_metadata.get<std::string>("requester"),
                   e.what());
@@ -189,10 +186,10 @@ void PXPConnector::sendBlockingResponse_(
              DEFAULT_MSG_TIMEOUT_SEC,
              response.toJSON(response_type),
              debug);
-        LOG_INFO("Sent response for the %1% by %2%",
+        LOG_INFO("Sent response for the {1} by {2}",
                  request.prettyLabel(), request.sender());
     } catch (PCPClient::connection_error& e) {
-        LOG_ERROR("Failed to reply to the %1% by %2%: %3%",
+        LOG_ERROR("Failed to reply to the {1} by {2}: {3}",
                   request.prettyLabel(), request.sender(), e.what());
     }
 }

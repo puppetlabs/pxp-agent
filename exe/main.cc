@@ -6,7 +6,7 @@
 #include <cpp-pcp-client/util/thread.hpp>
 #include <cpp-pcp-client/util/chrono.hpp>
 
-#include <leatherman/file_util/file.hpp>
+#include <leatherman/locale/locale.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.main"
 #include <leatherman/logging/logging.hpp>
@@ -21,7 +21,7 @@
 namespace PXPAgent {
 
 namespace HW = HorseWhisperer;
-namespace lth_file = leatherman::file_util;
+namespace lth_loc = leatherman::locale;
 
 // Exit code returned after a successful execution
 static int PXP_AGENT_SUCCESS = 0;
@@ -54,7 +54,7 @@ int startAgent(std::vector<std::string> arguments) {
 #endif
         }
     } catch (const std::exception& e) {
-        LOG_ERROR("Failed to daemonize: %1%", e.what());
+        LOG_ERROR("Failed to daemonize: {1}", e.what());
         return PXP_AGENT_DAEMONIZATION_FAILURE;
     } catch (...) {
         LOG_ERROR("Failed to daemonize");
@@ -68,16 +68,16 @@ int startAgent(std::vector<std::string> arguments) {
         agent.start();
     } catch (const Agent::PCPConfigurationError& e) {
         exit_code = PXP_AGENT_CONFIGURATION_FAILURE;
-        LOG_ERROR("PCP configuration error: %1%", e.what());
+        LOG_ERROR("PCP configuration error: {1}", e.what());
     } catch (const Agent::WebSocketConfigurationError& e) {
         exit_code = PXP_AGENT_CONFIGURATION_FAILURE;
-        LOG_ERROR("WebSocket configuration error: %1%", e.what());
+        LOG_ERROR("WebSocket configuration error: {1}", e.what());
     } catch (const Agent::Error& e) {
         exit_code = PXP_AGENT_GENERAL_FAILURE;
-        LOG_ERROR("Fatal error: %1%", e.what());
+        LOG_ERROR("Fatal error: {1}", e.what());
     } catch (const std::exception& e) {
         exit_code = PXP_AGENT_GENERAL_FAILURE;
-        LOG_ERROR("Unexpected error: %1%", e.what());
+        LOG_ERROR("Unexpected error: {1}", e.what());
     } catch (...) {
         exit_code = PXP_AGENT_GENERAL_FAILURE;
         LOG_ERROR("Unexpected error");
@@ -124,9 +124,10 @@ int main(int argc, char *argv[]) {
     }
     if (!err_msg.empty()) {
         tryLogError(err_msg);
-        boost::nowide::cout << err_msg
-                            << "\nCannot start pxp-agent"
-                            << std::endl;
+        boost::nowide::cout
+            << err_msg << "\n"
+            << lth_loc::translate("Cannot start pxp-agent")
+            << std::endl;
         return PXP_AGENT_PARSING_FAILURE;
     }
 
@@ -145,11 +146,12 @@ int main(int argc, char *argv[]) {
             // pxp-agent was not configured
             err_msg = "Invalid parse result";
             tryLogError(err_msg);
-            boost::nowide::cout << "An unexpected code was returned when trying "
-                                << "to parse command line arguments - "
-                                << static_cast<int>(parse_result)
-                                << "\nCannot start pxp-agent"
-                                << std::endl;
+            boost::nowide::cout
+                << lth_loc::format("An unexpected code was returned when trying "
+                                   "to parse command line arguments - {1}\n"
+                                   "Cannot start pxp-agent",
+                                   static_cast<int>(parse_result))
+                << std::endl;
             return PXP_AGENT_PARSING_FAILURE;
     }
 
@@ -159,9 +161,10 @@ int main(int argc, char *argv[]) {
         Configuration::Instance().setupLogging();
         LOG_DEBUG("pxp-agent logging has been initialized");
     } catch(const Configuration::Error& e) {
-        boost::nowide::cout << "Failed to configure logging: " << e.what()
-                            << "\nCannot start pxp-agent"
-                            << std::endl;
+        boost::nowide::cout
+            << lth_loc::format("Failed to configure logging: {1}\n"
+                               "Cannot start pxp-agent", e.what())
+            << std::endl;
         return PXP_AGENT_CONFIGURATION_FAILURE;
     }
 
@@ -171,7 +174,7 @@ int main(int argc, char *argv[]) {
         Configuration::Instance().validate();
         LOG_INFO("pxp-agent configuration has been validated");
     } catch(const Configuration::Error& e) {
-        LOG_ERROR("Fatal configuration error: %1%; cannot start pxp-agent",
+        LOG_ERROR("Fatal configuration error: {1}; cannot start pxp-agent",
                   e.what());
         return PXP_AGENT_CONFIGURATION_FAILURE;
     }

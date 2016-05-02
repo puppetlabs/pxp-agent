@@ -4,14 +4,15 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.module"
 #include <leatherman/logging/logging.hpp>
 
-#include <boost/format.hpp>
+#include <leatherman/locale/locale.hpp>
 
 #include <iostream>
 #include <algorithm>
 
 namespace PXPAgent {
 
-namespace lth_jc = leatherman::json_container;
+namespace lth_jc  = leatherman::json_container;
+namespace lth_loc = leatherman::locale;
 
 Module::Module()
         : input_validator_ {},
@@ -27,34 +28,37 @@ bool Module::hasAction(const std::string& action_name)
 
 void Module::validateOutputAndUpdateMetadata(ActionResponse& response)
 {
-    LOG_TRACE("Validating the results for the %1%", response.prettyRequestLabel());
+    LOG_TRACE("Validating the results for the {1}", response.prettyRequestLabel());
     std::string err_msg {};
 
     try {
         results_validator_.validate(
             response.action_metadata.get<lth_jc::JsonContainer>("results"),
             response.action_metadata.get<std::string>("action"));
-        LOG_TRACE("Successfully validated the results for the %1%",
+        LOG_TRACE("Successfully validated the results for the {1}",
                   response.prettyRequestLabel());
     } catch (PCPClient::validation_error) {
         // Modify the response metadata to indicate the failure
         if (type() == ModuleType::Internal) {
             // This is unexpected
-            err_msg += "The task executed for the ";
-            err_msg += response.prettyRequestLabel();
-            err_msg += " returned invalid results.";
+            err_msg = lth_loc::format(
+                "The task executed for the {1} returned invalid results.",
+                response.prettyRequestLabel());
         } else {
             // Log about the output
             const auto& out = response.output.std_out;
             const auto& err = response.output.std_out;
-            err_msg =
-                (boost::format("The task executed for the %1% returned %2% "
-                               "results on stdout%3% - stderr:%4%")
-                    % response.prettyRequestLabel()
-                    % (out.empty() ? "no" : "invalid")
-                    % (out.empty() ? "" : ": " + out)
-                    % (err.empty() ? " (empty)" : '\n' + err))
-                .str();
+            err_msg = lth_loc::format("The task executed for the {1} returned ",
+                                      response.prettyRequestLabel());
+
+            if (out.empty()) {
+                err_msg += lth_loc::translate("no results on stdout - stderr: ");
+            } else {
+                err_msg += lth_loc::format("invalid results on stdout: {1} "
+                                           "- stderr: ", out);
+            }
+
+            err_msg += (err.empty() ? lth_loc::translate("(empty)") : "\n" + err);
         }
 
         LOG_DEBUG(err_msg);
@@ -83,20 +87,16 @@ ActionResponse Module::executeAction(const ActionRequest& request)
         validateOutputAndUpdateMetadata(response);
         return response;
     } catch (const Module::ProcessingError& e) {
-        err_msg += "Error: ";
-        err_msg += e.what();
+        err_msg += lth_loc::format("Error: {1}", e.what());
     } catch (std::exception& e) {
-        err_msg += "Unexpected error: ";
-        err_msg += e.what();
+        err_msg += lth_loc::format("Unexpected error: {1}", e.what());
     } catch (...) {
-        err_msg = "Unexpected excption.";
+        err_msg = lth_loc::translate("Unexpected excption.");
     }
 
-    auto execution_error =
-        (boost::format("Failed to execute the task for the %1%. %2%")
-            % request.prettyLabel()
-            % err_msg)
-        .str();
+    std::string execution_error {
+         lth_loc::format("Failed to execute the task for the {1}. {2}",
+                         request.prettyLabel(), err_msg) };
     LOG_ERROR(execution_error);
     ActionResponse r { type(), request };
     r.setBadResultsAndEnd(execution_error);

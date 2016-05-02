@@ -23,8 +23,6 @@
 
 #include <boost/nowide/iostream.hpp>
 
-#include <boost/format.hpp>
-
 #ifdef _WIN32
     #include <leatherman/windows/system_error.hpp>
     #include <leatherman/windows/windows.hpp>
@@ -35,12 +33,11 @@
 namespace PXPAgent {
 
 namespace HW = HorseWhisperer;
-
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
-namespace lth_jc = leatherman::json_container;
-namespace lth_log = leatherman::logging;
-namespace lth_loc = leatherman::locale;
+namespace lth_jc   = leatherman::json_container;
+namespace lth_log  = leatherman::logging;
+namespace lth_loc  = leatherman::locale;
 namespace lth_util = leatherman::util;
 
 //
@@ -53,8 +50,8 @@ namespace lth_util = leatherman::util;
         wchar_t szPath[MAX_PATH+1];
         if (FAILED(SHGetFolderPathW(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szPath))) {
             throw Configuration::Error {
-                (boost::format("failure getting Windows AppData directory: %1%")
-                    % lth_w::system_error()).str() };
+                lth_loc::format("failure getting Windows AppData directory: {1}",
+                                lth_w::system_error()) };
         }
         return fs::path(szPath) / "PuppetLabs" / "pxp-agent";
     }();
@@ -67,7 +64,8 @@ namespace lth_util = leatherman::util;
     static const std::string DEFAULT_MODULES_DIR = []() {
         wchar_t szPath[MAX_PATH];
         if (GetModuleFileNameW(NULL, szPath, MAX_PATH) == 0) {
-            throw Configuration::Error { "failed to retrive pxp-agent binary path" };
+            throw Configuration::Error {
+                lth_loc::translate("failed to retrive pxp-agent binary path") };
         }
         // Go up twice, assuming the subtree from Puppet Specs:
         //      C:\Program Files\Puppet Labs\Puppet\pxp-agent
@@ -79,8 +77,8 @@ namespace lth_util = leatherman::util;
             return (fs::path(szPath).parent_path().parent_path() / "modules").string();
         } catch (const std::exception& e) {
             throw Configuration::Error {
-                (boost::format("failed to determine the modules directory path: %1%")
-                    % e.what()).str() };
+                lth_loc::format("failed to determine the modules directory path: {1}",
+                                e.what()) };
         }
     }();
 #else
@@ -109,7 +107,7 @@ void Configuration::initialize(
     // Ensure the state is reset (useful for testing)
     HW::Reset();
     HW::SetAppName("pxp-agent");
-    HW::SetHelpBanner("Usage: pxp-agent [options]");
+    HW::SetHelpBanner(lth_loc::translate("Usage: pxp-agent [options]"));
     HW::SetVersion(std::string { PXP_AGENT_VERSION } + "\n");
     valid_ = false;
 
@@ -122,6 +120,7 @@ void Configuration::initialize(
 
     setDefaultValues();
 
+    // NOTE(ale): don't need to translate this (forced default action)
     HW::DefineAction("start",                       // action name
                      0,                             // arity
                      false,                         // chainable
@@ -152,7 +151,8 @@ HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
 
     if (parse_result == HW::ParseResult::FAILURE
         || parse_result == HW::ParseResult::INVALID_FLAG) {
-        throw Configuration::Error { "An error occurred while parsing cli options"};
+        throw Configuration::Error {
+            lth_loc::translate("An error occurred while parsing cli options") };
     }
 
     if (parse_result == HW::ParseResult::OK) {
@@ -174,13 +174,13 @@ static void validateLogDirPath(const std::string& logfile)
     if (fs::exists(logdir_path)) {
         if (!fs::is_directory(logdir_path)) {
             throw Configuration::Error {
-                (boost::format("cannot write to the specified logfile; '%1%' is "
-                               "not a directory") % logdir_path.string()).str() };
+                lth_loc::format("cannot write to the specified logfile; '{1}' is "
+                                "not a directory", logdir_path.string()) };
         }
     } else {
         throw Configuration::Error {
-            (boost::format("cannot write to '%1%'; its parent directory does "
-                           "not exist") % logfile).str() };
+            lth_loc::format("cannot write to '{1}'; its parent directory does "
+                            "not exist", logfile) };
     }
 }
 
@@ -230,13 +230,15 @@ void Configuration::setupLogging()
         };
         lvl = option_to_log_level.at(loglevel);
     } catch (const std::out_of_range& e) {
-        throw Configuration::Error { "invalid log level: '" + loglevel + "'" };
+        throw Configuration::Error {
+            lth_loc::format("invalid log level: '{1}'", loglevel) };
     }
 
 
     // Configure logging for pxp-agent
     lth_log::setup_logging(*stream);
     lth_log::set_level(lvl);
+
 #ifdef DEV_LOG_COLOR
     // Enable colorozation anyway (development setting - it helps
     // debugging PXP message workflow, but it will add useless shell
@@ -321,7 +323,7 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "config-file",
                     "",
-                    { "Config file, default: " + DEFAULT_CONFIG_FILE },
+                    lth_loc::format("Config file, default: {1}", DEFAULT_CONFIG_FILE),
                     Types::String,
                     DEFAULT_CONFIG_FILE) } });
 
@@ -330,7 +332,7 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "broker-ws-uri",
                     "",
-                    "WebSocket URI of the PCP broker",
+                    lth_loc::translate("WebSocket URI of the PCP broker"),
                     Types::String,
                     "") } });
 
@@ -339,8 +341,8 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<int>(
                     "connection-timeout",
                     "",
-                    "Timeout (in seconds) for establishing a WebSocket "
-                    "connection, default: 5",
+                    lth_loc::translate("Timeout (in seconds) for establishing "
+                                       "a WebSocket connection, default: 5 s"),
                     Types::Integer,
                     5) } });
 
@@ -349,7 +351,7 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "ssl-ca-cert",
                     "",
-                    "SSL CA certificate",
+                    lth_loc::translate("SSL CA certificate"),
                     Types::String,
                     "") } });
 
@@ -358,7 +360,7 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "ssl-cert",
                     "",
-                    "pxp-agent SSL certificate",
+                    lth_loc::translate("pxp-agent SSL certificate"),
                     Types::String,
                     "") } });
 
@@ -367,7 +369,7 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "ssl-key",
                     "",
-                    "pxp-agent private SSL key",
+                    lth_loc::translate("pxp-agent private SSL key"),
                     Types::String,
                     "") } });
 
@@ -376,7 +378,7 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "logfile",
                     "",
-                    { "Log file, default: " + DEFAULT_LOG_FILE },
+                    lth_loc::format("Log file, default: {1}", DEFAULT_LOG_FILE),
                     Types::String,
                     DEFAULT_LOG_FILE) } });
 
@@ -385,8 +387,9 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "loglevel",
                     "",
-                    "Valid options are 'none', 'trace', 'debug', 'info',"
-                    "'warning', 'error' and 'fatal'. Defaults to 'info'",
+                    lth_loc::translate("Valid options are 'none', 'trace', "
+                                       "'debug', 'info','warning', 'error' and "
+                                       "'fatal'. Defaults to 'info'"),
                     Types::String,
                     "info") } });
 
@@ -395,11 +398,11 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "modules-dir",
                     "",
-                    { "Modules directory, default"
+                    lth_loc::format("Modules directory, default"
 #ifdef _WIN32
-                      " (relative to the pxp-agent.exe path)"
+                                    " (relative to the pxp-agent.exe path)"
 #endif
-                      ": " + DEFAULT_MODULES_DIR },
+                                    ": {1}", DEFAULT_MODULES_DIR),
                     Types::String,
                     DEFAULT_MODULES_DIR) } });
 
@@ -408,8 +411,8 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "modules-config-dir",
                     "",
-                    { "Module config files directory, default: " +
-                    DEFAULT_MODULES_CONF_DIR },
+                    lth_loc::format("Module config files directory, default: {1}",
+                                    DEFAULT_MODULES_CONF_DIR),
                     Types::String,
                     DEFAULT_MODULES_CONF_DIR) } });
 
@@ -418,8 +421,8 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "spool-dir",
                     "",
-                    { "Spool action results directory, default: " +
-                    DEFAULT_SPOOL_DIR },
+                    lth_loc::format("Spool action results directory, default: {1}",
+                                    DEFAULT_SPOOL_DIR),
                     Types::String,
                     DEFAULT_SPOOL_DIR) } });
 
@@ -428,8 +431,9 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "spool-dir-purge-ttl",
                     "",
-                    { "TTL for action results before being deleted, default: '" +
-                    DEFAULT_SPOOL_DIR_PURGE_TTL + "' (14 days)" },
+                    lth_loc::format("TTL for action results before being deleted, "
+                                    "default: '{1}' (days)",
+                                    DEFAULT_SPOOL_DIR_PURGE_TTL),
                     Types::String,
                     DEFAULT_SPOOL_DIR_PURGE_TTL) } });
 
@@ -438,7 +442,7 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<bool>(
                     "foreground",
                     "",
-                    "Don't daemonize, default: false",
+                    lth_loc::translate("Don't daemonize, default: false"),
                     Types::Bool,
                     false) } });
 
@@ -451,7 +455,7 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "pidfile",
                     "",
-                    { "PID file path, default: " + DEFAULT_PID_FILE },
+                    lth_loc::format("PID file path, default: {1}", DEFAULT_PID_FILE),
                     Types::String,
                     DEFAULT_PID_FILE) } });
 #endif
@@ -522,21 +526,23 @@ void Configuration::parseConfigFile()
     try {
         config_json = lth_jc::JsonContainer(lth_file::read(config_file_));
     } catch (lth_jc::data_parse_error& e) {
-        throw Configuration::Error { "cannot parse config file; invalid JSON" };
+        throw Configuration::Error {
+            lth_loc::translate("cannot parse config file; invalid JSON") };
     }
 
     if (config_json.type() != lth_jc::DataType::Object)
         throw Configuration::Error { "invalid config file content; not a "
                                      "JSON object" };
 
-    boost::format err_format { "field '%1%' must be of type %2%" };
     auto check_key_type =
-        [&config_json, &err_format] (const std::string& key,
-                                     const std::string& type_str,
-                                     const lth_jc::DataType& type) -> void
+        [&config_json] (const std::string& key,
+                        const std::string& type_str,
+                        const lth_jc::DataType& type) -> void
         {
             if (config_json.type(key) != type)
-                throw Configuration::Error { (err_format % key % type_str).str() };
+                throw Configuration::Error {
+                    lth_loc::format("field '{1}' must be of type {2}",
+                                    key, type_str) };
         };
 
     for (const auto& key : config_json.keys()) {
@@ -544,8 +550,8 @@ void Configuration::parseConfigFile()
 
         if (opt_idx == defaults_.get<Option::ByName>().end())
             throw Configuration::Error {
-                (boost::format("field '%1%' is not a valid configuration variable")
-                    % key).str() };
+                lth_loc::format("field '{1}' is not a valid configuration variable",
+                                key) };
 
         if (opt_idx->ptr->configured)
             continue;
@@ -576,16 +582,16 @@ std::string check_and_expand_ssl_cert(const std::string& cert_name)
     auto c = HW::GetFlag<std::string>(cert_name);
     if (c.empty())
         throw Configuration::Error {
-            (boost::format("%1% value must be defined") % cert_name).str() };
+            lth_loc::format("{1} value must be defined", cert_name) };
 
     c = lth_file::tilde_expand(c);
     if (!fs::exists(c))
         throw Configuration::Error {
-            (boost::format("%1% file '%2%' not found") % cert_name % c).str() };
+            lth_loc::format("{1} file '{2}' not found", cert_name, c) };
 
     if (!lth_file::file_readable(c))
         throw Configuration::Error {
-            (boost::format("%1% file '%2%' not readable") % cert_name % c).str() };
+            lth_loc::format("{1} file '{2}' not readable", cert_name, c) };
 
     return c;
 }
@@ -595,9 +601,11 @@ void Configuration::validateAndNormalizeWebsocketSettings()
     // Check the broker's WebSocket URI
     auto broker_ws_uri = HW::GetFlag<std::string>("broker-ws-uri");
     if (broker_ws_uri.empty())
-        throw Configuration::Error { "broker-ws-uri value must be defined" };
+        throw Configuration::Error {
+            lth_loc::translate("broker-ws-uri value must be defined") };
     if (broker_ws_uri.find("wss://") != 0)
-        throw Configuration::Error { "broker-ws-uri value must start with wss://" };
+        throw Configuration::Error {
+            lth_loc::translate("broker-ws-uri value must start with wss://") };
 
     // Check the SSL options and expand the paths
     auto ca   = check_and_expand_ssl_cert("ssl-ca-cert");
@@ -626,25 +634,24 @@ void check_and_create_dir(const fs::path& dir_path,
     if (!fs::exists(dir_path)) {
         if (create) {
             try {
-                LOG_INFO("Creating the %1% '%2%'",
-                         opt, dir_path.string());
+                LOG_INFO("Creating the {1} '{2}'", opt, dir_path.string());
                 fs::create_directories(dir_path);
             } catch (const std::exception& e) {
-                LOG_DEBUG("Failed to create the %1% '%2%': %3%",
+                LOG_DEBUG("Failed to create the {1} '{2}': {3}",
                           opt, dir_path.string(), e.what());
                 throw Configuration::Error {
-                        (boost::format("failed to create the %1% '%2%'")
-                            % opt % dir_path.string()).str() };
+                    lth_loc::format("failed to create the {1} '{2}'",
+                                    opt, dir_path.string()) };
             }
         } else {
             throw Configuration::Error {
-                    (boost::format("the %1% '%2%' does not exist")
-                        % opt % dir_path.string()).str() };
+                lth_loc::format("the {1} '{2}' does not exist",
+                                opt, dir_path.string()) };
         }
     } else if (!fs::is_directory(dir_path)) {
         throw Configuration::Error {
-                (boost::format("the %1% '%2%' is not a directory")
-                    % opt % dir_path.string()).str() };
+                lth_loc::format("the {1} '{2}' is not a directory",
+                                opt, dir_path.string()) };
     }
 }
 
@@ -668,7 +675,8 @@ void Configuration::validateAndNormalizeOtherSettings()
     const auto spool_dir = HW::GetFlag<std::string>("spool-dir");
 
     if (spool_dir.empty())
-        throw Configuration::Error { "spool-dir must be defined" };
+        throw Configuration::Error {
+            lth_loc::translate("spool-dir must be defined") };
 
     fs::path spool_dir_path { lth_file::tilde_expand(spool_dir) };
     check_and_create_dir(spool_dir_path, "spool-dir", true);
@@ -685,27 +693,25 @@ void Configuration::validateAndNormalizeOtherSettings()
             fs::remove_all(tmp_path);
         }
     } catch (const std::exception& e) {
-        LOG_DEBUG("Failed to create the test dir in spool path '%1%' during"
-                  "configuration validation: %2%",
+        LOG_DEBUG("Failed to create the test dir in spool path '{1}' during"
+                  "configuration validation: {2}",
                   spool_dir_path.string(), e.what());
     }
 
-    if (!is_writable) {
+    if (!is_writable)
         throw Configuration::Error {
-                (boost::format("the spool-dir '%1%' is not writable")
-                    % spool_dir_path.string()).str() };
-    }
+            lth_loc::format("the spool-dir '{1}' is not writable",
+                            spool_dir_path.string()) };
 
     HW::SetFlag<std::string>("spool-dir", spool_dir_path.string());
 
 #ifndef _WIN32
     if (!HW::GetFlag<bool>("foreground")) {
         auto pid_file = lth_file::tilde_expand(HW::GetFlag<std::string>("pidfile"));
-        if (fs::exists(pid_file) && !(fs::is_regular_file(pid_file))) {
+
+        if (fs::exists(pid_file) && !(fs::is_regular_file(pid_file)))
             throw Configuration::Error {
-                    (boost::format("the PID file '%1%' is not a regular file")
-                        % pid_file).str() };
-        }
+                lth_loc::format("the PID file '{1}' is not a regular file", pid_file) };
 
         auto pid_dir = fs::path(pid_file).parent_path().string();
 
@@ -715,26 +721,23 @@ void Configuration::validateAndNormalizeOtherSettings()
         // directory, ensure it exists (PCP-297)
         if (pid_dir == "/var/run/puppetlabs" && !fs::exists(pid_dir)) {
             try {
-                LOG_DEBUG("Creating the PID file directory '%1%'", pid_dir);
+                LOG_DEBUG("Creating the PID file directory '{1}'", pid_dir);
                 fs::create_directories(pid_dir);
             } catch (const std::exception& e) {
-                LOG_DEBUG("Failed to create '%1%' directory: %2%", pid_dir, e.what());
+                LOG_DEBUG("Failed to create '{1}' directory: {2}", pid_dir, e.what());
                 throw Configuration::Error {
-                        "failed to create the PID file directory" };
+                    lth_loc::translate("failed to create the PID file directory") };
             }
         }
 
         if (fs::exists(pid_dir)) {
-            if (!fs::is_directory(pid_dir)) {
+            if (!fs::is_directory(pid_dir))
                 throw Configuration::Error {
-                        (boost::format("'%1%' is not a directory")
-                            % pid_dir).str() };
-            }
+                    lth_loc::format("'{1}' is not a directory", pid_dir) };
         } else {
             throw Configuration::Error {
-                    (boost::format("the PID directory '%1%' does not exist; "
-                                   "cannot create the PID file")
-                        % pid_dir).str() };
+                lth_loc::format("the PID directory '{1}' does not exist; "
+                                "cannot create the PID file", pid_dir) };
         }
 
         HW::SetFlag<std::string>("pidfile", pid_file);
@@ -744,9 +747,37 @@ void Configuration::validateAndNormalizeOtherSettings()
     try {
         Timestamp(HW::GetFlag<std::string>("spool-dir-purge-ttl"));
     } catch (const Timestamp::Error& e) {
-        throw Configuration::Error { std::string("invalid spool-dir-purge-ttl: ")
-                                     + e.what() };
+        throw Configuration::Error {
+            lth_loc::format("invalid spool-dir-purge-ttl: {1}", e.what()) };
     }
+}
+
+const Options::iterator Configuration::getDefaultIndex(const std::string& flagname)
+{
+    const auto& opt_idx = defaults_.get<Option::ByName>().find(flagname);
+    if (opt_idx == defaults_.get<Option::ByName>().end())
+        throw Configuration::Error {
+            lth_loc::format("no default value for {1}", flagname) };
+    return opt_idx;
+}
+
+std::string Configuration::getInvalidFlagError(const std::string& flagname)
+{
+    return lth_loc::format("invalid value for {1}", flagname);
+}
+
+std::string Configuration::getUnknownFlagError(const std::string& flagname)
+{
+    return lth_loc::format("unknown flag name: {1}", flagname);
+
+}
+
+void Configuration::checkValidForSetting()
+{
+    if (!valid_)
+        throw Configuration::Error {
+            lth_loc::translate("cannot set configuration value until "
+                               "configuration is validated") };
 }
 
 }  // namespace PXPAgent

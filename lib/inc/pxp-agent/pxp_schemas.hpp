@@ -3,8 +3,6 @@
 
 #include <cpp-pcp-client/validator/schema.hpp>
 
-// TODO(ale): move this to separate cpp-pxp-client library
-
 namespace PXPAgent {
 namespace PXPSchemas {
 

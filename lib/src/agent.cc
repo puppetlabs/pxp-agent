@@ -54,8 +54,8 @@ void Agent::start() {
                 break;
             } catch (const PCPClient::connection_association_error& e) {
                 num_seconds = dist(engine);
-                LOG_WARNING("Error during the PCP Session Association (%1%); "
-                            "will retry to connect in %2% s",
+                LOG_WARNING("Error during the PCP Session Association ({1}); "
+                            "will retry to connect in {2} s",
                             e.what(), num_seconds);
                 pcp_util::this_thread::sleep_for(
                     pcp_util::chrono::seconds(num_seconds));
