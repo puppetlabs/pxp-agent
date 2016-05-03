@@ -234,7 +234,6 @@ void Configuration::setupLogging()
             lth_loc::format("invalid log level: '{1}'", loglevel) };
     }
 
-
     // Configure logging for pxp-agent
     lth_log::setup_logging(*stream);
     lth_log::set_level(lvl);
@@ -769,7 +768,6 @@ std::string Configuration::getInvalidFlagError(const std::string& flagname)
 std::string Configuration::getUnknownFlagError(const std::string& flagname)
 {
     return lth_loc::format("unknown flag name: {1}", flagname);
-
 }
 
 void Configuration::checkValidForSetting()

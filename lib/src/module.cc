@@ -91,7 +91,7 @@ ActionResponse Module::executeAction(const ActionRequest& request)
     } catch (std::exception& e) {
         err_msg += lth_loc::format("Unexpected error: {1}", e.what());
     } catch (...) {
-        err_msg = lth_loc::translate("Unexpected excption.");
+        err_msg = lth_loc::translate("Unexpected exception.");
     }
 
     std::string execution_error {

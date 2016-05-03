@@ -156,6 +156,7 @@ class Configuration
     /// Validate logging configuration options and enable logging.
     /// Throw a Configuration::Error: in case of invalid the specified
     /// log file is in a non-esixtent directory.
+    /// Other execeptions are propagated.
     void setupLogging();
 
     /// Ensure all required values are valid. If necessary, expand
