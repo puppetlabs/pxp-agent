@@ -1,15 +1,14 @@
 #include <pxp-agent/action_request.hpp>
 
+#include <leatherman/locale/locale.hpp>
+
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.action_request"
 #include <leatherman/logging/logging.hpp>
 
-#include <boost/format.hpp>
-
-#include <cassert>
-
 namespace PXPAgent {
 
-namespace lth_jc = leatherman::json_container;
+namespace lth_jc  = leatherman::json_container;
+namespace lth_loc = leatherman::locale;
 
 ActionRequest::ActionRequest(RequestType type,
                              const PCPClient::ParsedChunks& parsed_chunks)
@@ -69,12 +68,9 @@ const std::string& ActionRequest::paramsTxt() const {
 
 const std::string& ActionRequest::prettyLabel() const {
     if (pretty_label_.empty())
-        pretty_label_ =
-            (boost::format("%1% '%2% %3%' request (transaction %4%)")
-             % REQUEST_TYPE_NAMES.at(type_)
-             % module_
-             % action_
-             % transaction_id_).str();
+        pretty_label_ = lth_loc::format("{1} '{2} {3}' request (transaction {4})",
+                                        REQUEST_TYPE_NAMES.at(type_), module_,
+                                        action_, transaction_id_);
 
     return pretty_label_;
 }
@@ -85,7 +81,7 @@ void ActionRequest::init() {
     id_ = parsed_chunks_.envelope.get<std::string>("id");
     sender_ = parsed_chunks_.envelope.get<std::string>("sender");
 
-    LOG_DEBUG("Validating %1% request %2% by %3%:\n%4%",
+    LOG_DEBUG("Validating {1} request {2} by {3]:\n{4}",
               REQUEST_TYPE_NAMES.at(type_), id_, sender_, parsed_chunks_.toString());
 
     validateFormat();
@@ -100,12 +96,13 @@ void ActionRequest::init() {
 
 void ActionRequest::validateFormat() {
     if (!parsed_chunks_.has_data)
-        throw ActionRequest::Error { "no data" };
+        throw ActionRequest::Error { lth_loc::translate("no data") };
     if (parsed_chunks_.invalid_data)
-        throw ActionRequest::Error { "invalid data" };
+        throw ActionRequest::Error { lth_loc::translate("invalid data") };
     // NOTE(ale): currently, we don't support ContentType::Binary
     if (parsed_chunks_.data_type != PCPClient::ContentType::Json)
-        throw ActionRequest::Error { "data is not in JSON format" };
+        throw ActionRequest::Error {
+            lth_loc::translate("data is not in JSON format") };
 }
 
 }  // namespace PXPAgent

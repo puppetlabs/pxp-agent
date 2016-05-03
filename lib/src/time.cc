@@ -1,14 +1,16 @@
 #include <pxp-agent/time.hpp>
 
+#include <leatherman/locale/locale.hpp>
+
 #include <boost/date_time/gregorian/greg_date.hpp>
 
 #include <algorithm>  // std::remove_if
-#include <locale>  // std::is_digit
 
 namespace PXPAgent {
 
-namespace pt = boost::posix_time;
+namespace pt   = boost::posix_time;
 namespace greg = boost::gregorian;
+namespace lth_loc = leatherman::locale;
 
 Timestamp::Timestamp(const std::string& past_duration)
         : time_point { Timestamp::getPastInstant(past_duration) }
@@ -20,7 +22,8 @@ static void processDurationString(std::string& past_duration,
                                   char& suffix)
 {
     if (past_duration.size() < 2)
-        throw Timestamp::Error { "invalid duration string: " + past_duration };
+        throw Timestamp::Error {
+            lth_loc::format("invalid duration string: {1}", past_duration) };
 
     suffix = past_duration.back();
     past_duration.pop_back();
@@ -28,8 +31,9 @@ static void processDurationString(std::string& past_duration,
     try {
         value = std::stoi(past_duration);
     } catch (const std::invalid_argument& e) {
-        throw Timestamp::Error { "invalid duration string: "
-                                 + past_duration + suffix };
+        throw Timestamp::Error {
+            lth_loc::format("invalid duration string: {1}{2}",
+                            past_duration, suffix) };
     }
 }
 
@@ -51,7 +55,9 @@ pt::ptime Timestamp::getPastInstant(std::string past_duration)
             instant = instant - pt::minutes(value);
             break;
         default:
-            throw Error { "invalid duration string: " + past_duration + suffix };
+            throw Timestamp::Error {
+                    lth_loc::format("invalid duration string: {1}{2}",
+                                    past_duration, suffix) };
     }
 
     return instant;
@@ -75,7 +81,9 @@ unsigned int Timestamp::getMinutes(std::string past_duration)
             num_minutes = value;
             break;
         default:
-            throw Error { "invalid duration string: " + past_duration + suffix };
+            throw Timestamp::Error {
+                    lth_loc::format("invalid duration string: {1}{2}",
+                                    past_duration, suffix) };
     }
 
     return num_minutes;
@@ -84,10 +92,11 @@ unsigned int Timestamp::getMinutes(std::string past_duration)
 std::string Timestamp::convertToISO(std::string extended_ISO8601_time)
 {
     if (extended_ISO8601_time.empty())
-        throw Error { "empty time string" };
+        throw Error { lth_loc::translate("empty time string") };
 
     if (extended_ISO8601_time.size() < 21 || extended_ISO8601_time.back() != 'Z')
-        throw Error { "invalid time string: " + extended_ISO8601_time };
+        throw Error { lth_loc::format("invalid time string: {1}",
+                                      extended_ISO8601_time) };
 
     // Transform 2016-02-18T19:40:49.711227Z in 20160218T194049.711227
     extended_ISO8601_time.pop_back();
@@ -108,8 +117,10 @@ bool Timestamp::isNewerThan(const std::string& extended_ISO8601_time)
         return time_point > t_p;
     } catch (const std::exception& e) {
         std::string err { e.what() };
-        throw Error { "failed to create a timepoint for " + extended_ISO8601_time
-                      + (err.empty() ? "" : ": " + err) };
+        throw Error {
+            lth_loc::format("failed to create a timepoint for {1}{2}",
+                            extended_ISO8601_time,
+                            (err.empty() ? "" : ": " + err)) };
     }
 }
 

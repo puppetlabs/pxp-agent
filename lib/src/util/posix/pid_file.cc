@@ -6,6 +6,8 @@
 
 #include <leatherman/file_util/file.hpp>
 
+#include <leatherman/locale/locale.hpp>
+
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.util.posix.pid_file"
 #include <leatherman/logging/logging.hpp>
 
@@ -22,6 +24,7 @@ namespace Util {
 
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
+namespace lth_loc  = leatherman::locale;
 
 PIDFile::PIDFile(const std::string& file_path_)
         : dir_path { fs::path(file_path_).parent_path().string() },
@@ -30,11 +33,10 @@ PIDFile::PIDFile(const std::string& file_path_)
           cleanup_when_done { false } {
     pidfile_fd = open(file_path.data(), O_RDWR | O_CREAT, 0640);
 
-    if (pidfile_fd == -1) {
-        std::string msg { "failed to open PID file '" };
-        msg += file_path + "'; errno=" + std::to_string(errno);
-        throw PIDFile::Error { msg };
-    }
+    if (pidfile_fd == -1)
+        throw PIDFile::Error {
+            lth_loc::format("failed to open PID file '{1}'; {2} ({3})",
+                            file_path, strerror(errno), errno) };
 }
 
 PIDFile::~PIDFile() {
@@ -42,7 +44,8 @@ PIDFile::~PIDFile() {
         try {
             cleanup();
         } catch (const std::exception& e) {
-            LOG_ERROR("Failed to clean up PID file %1%: %2%", file_path, e.what());
+            LOG_ERROR("Failed to clean up PID file '{1}': {2}",
+                      file_path, e.what());
         }
     }
 }
@@ -53,7 +56,8 @@ bool PIDFile::isExecuting() {
         return processExists(pid);
     } catch (const PIDFile::Error& e) {
         // NB: processExists() does not throw
-        LOG_DEBUG("Couldn't retrieve PID from file %1%: %2%", file_path, e.what());
+        LOG_DEBUG("Couldn't retrieve PID from file '{1}': {2}",
+                  file_path, e.what());
     }
 
     return false;
@@ -87,40 +91,42 @@ void PIDFile::write(const pid_t& pid) {
     try {
         lth_file::atomic_write_to_file(std::to_string(pid) + "\n", file_path);
     } catch (const std::exception& e) {
-        std::string msg { "failed to write " };
-        throw PIDFile::Error { msg + file_path + ": " + e.what() };
+        throw PIDFile::Error {
+            lth_loc::format("failed to write '{1}': {2}", file_path, e.what()) };
     }
 }
 
 pid_t PIDFile::read() {
     if (!fs::exists(file_path)) {
-        throw PIDFile::Error { "PID file does not exist" };
+        throw PIDFile::Error { lth_loc::translate("PID file does not exist") };
     }
 
     if (!fs::is_regular_file(file_path)) {
-        throw PIDFile::Error { "PID file is not a regular file" };
+        throw PIDFile::Error {
+            lth_loc::translate("PID file is not a regular file") };
     }
 
     if (!lth_file::file_readable(file_path)) {
-        throw PIDFile::Error { "cannot read PID file" };
+        throw PIDFile::Error { lth_loc::translate("cannot read PID file") };
     }
 
     auto pid_txt = lth_file::read(file_path);
 
     if (pid_txt.empty()) {
-        throw PIDFile::Error { "PID file is empty" };
+        throw PIDFile::Error { lth_loc::translate("PID file is empty") };
     }
 
     try {
         auto pid = std::stoi(pid_txt);
         return static_cast<pid_t>(pid);
     } catch (const std::invalid_argument& e) {
-        throw PIDFile::Error { "invalid value stored in PID file" };
+        throw PIDFile::Error {
+            lth_loc::translate("invalid value stored in PID file") };
     }
 }
 
 void PIDFile::cleanup() {
-    LOG_DEBUG("Unlocking PID file %1% and closing its open file descriptor",
+    LOG_DEBUG("Unlocking PID file {1} and closing its open file descriptor",
               file_path);
     PIDFile::unlockFile(pidfile_fd);
     close(pidfile_fd);
@@ -128,15 +134,15 @@ void PIDFile::cleanup() {
     if (fs::exists(file_path) && fs::is_regular_file(file_path)) {
         if (lth_file::file_readable(file_path)) {
             if (std::remove(file_path.data())) {
-                LOG_ERROR("Failed to remove PID file %1%", file_path);
+                LOG_ERROR("Failed to remove PID file '{1}'", file_path);
             } else {
-                LOG_DEBUG("Removed PID file %1%", file_path);
+                LOG_DEBUG("Removed PID file '{1}'", file_path);
             }
         } else {
-            LOG_DEBUG("Cannot access PID file %1%", file_path);
+            LOG_DEBUG("Cannot access PID file '{1}'", file_path);
         }
     } else {
-        LOG_DEBUG("PID file %1% does not exist", file_path);
+        LOG_DEBUG("PID file '{1}' does not exist", file_path);
     }
 }
 
@@ -161,18 +167,16 @@ void PIDFile::lockFile(int fd, int lock_type) {
     assert(lock_type == F_RDLCK || lock_type == F_WRLCK);
 
     if (callFcntl(fd, F_SETLK, lock_type) == -1) {
-        std::string msg;
-
         if (errno == EAGAIN || errno == EACCES) {
-            msg = "incompatible with an existent lock";
+            throw PIDFile::Error {
+                lth_loc::translate("incompatible with an existent lock") };
         } else if (errno == EDEADLK) {
-            msg = "deadlock";
+            throw PIDFile::Error { lth_loc::translate("deadlock") };
         } else {
             // Unexpected; see fcntl's man 2
-            msg = "unexpected error with errno=" + std::to_string(errno);
+            throw PIDFile::Error {
+                lth_loc::format("unexpected error with errno={1}", errno) };
         }
-
-        throw PIDFile::Error { msg };
     }
 }
 
@@ -180,25 +184,21 @@ void PIDFile::lockFileBlocking(int fd, int lock_type) {
     assert(lock_type == F_RDLCK || lock_type == F_WRLCK);
 
     if (callFcntl(fd, F_SETLKW, lock_type) == -1) {
-        std::string msg;
-
         if (errno == EINTR) {
-            msg = "caught an interrupt signal";
+            throw PIDFile::Error {
+                lth_loc::translate("caught an interrupt signal") };
         } else {
             // Unexpected; see fcntl's man 2
-            msg = "unexpected error with errno=" + std::to_string(errno);
+            throw PIDFile::Error {
+                lth_loc::format("unexpected error with errno={1}", errno) };
         }
-
-        throw PIDFile::Error { msg };
     }
 }
 
 void PIDFile::unlockFile(int fd) {
     // NOTE(ale): it is always safe to unlock with fcntl()
-    if (callFcntl(fd, F_SETLK, F_UNLCK) == -1) {
-        std::string msg { "errno=" + std::to_string(errno) };
-        throw PIDFile::Error { msg };
-    }
+    if (callFcntl(fd, F_SETLK, F_UNLCK) == -1)
+        throw PIDFile::Error { lth_loc::format("errno={1}", errno) };
 }
 
 bool PIDFile::canLockFile(int fd, int lock_type) {
@@ -210,11 +210,9 @@ bool PIDFile::canLockFile(int fd, int lock_type) {
     fl.l_start = 0;
     fl.l_len = 0;
 
-    if (fcntl(fd, F_GETLK, &fl) == -1) {
+    if (fcntl(fd, F_GETLK, &fl) == -1)
         // Failure
-        std::string msg { "errno=" + std::to_string(errno) };
-        throw PIDFile::Error { msg };
-    }
+        throw PIDFile::Error { lth_loc::format("errno={1}", errno) };
 
     return (fl.l_type == F_UNLCK);
 }

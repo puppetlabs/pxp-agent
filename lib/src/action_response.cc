@@ -5,18 +5,19 @@
 
 #include <leatherman/util/time.hpp>
 
+#include <leatherman/locale/locale.hpp>
+
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.action_response"
 #include <leatherman/logging/logging.hpp>
-
-#include <boost/format.hpp>
 
 #include <cassert>
 #include <utility>  // std::forward
 
 namespace PXPAgent {
 
-namespace lth_jc = leatherman::json_container;
+namespace lth_jc   = leatherman::json_container;
 namespace lth_util = leatherman::util;
+namespace lth_loc  = leatherman::locale;
 using R_T = ActionResponse::ResponseType;
 
 const std::string ACTION_METADATA_SCHEMA { "action_metdata_schema" };
@@ -111,7 +112,7 @@ ActionResponse::ActionResponse(ModuleType m_t,
           status_query_transaction()
 {
     if (!valid())
-        throw Error { "invalid action metadata" };
+        throw Error { lth_loc::translate("invalid action metadata") };
 }
 
 void ActionResponse::setStatus(ActionStatus status)
@@ -145,12 +146,11 @@ const std::string& ActionResponse::prettyRequestLabel() const
 {
     if (pretty_request_label_.empty())
         pretty_request_label_ =
-            (boost::format("%1% '%2% %3%' request (transaction %4%)")
-                % REQUEST_TYPE_NAMES.at(request_type)
-                % action_metadata.get<std::string>(MODULE)
-                % action_metadata.get<std::string>(ACTION)
-                % action_metadata.get<std::string>(TRANSACTION_ID))
-            .str();
+            lth_loc::format("{1} '{2} {3}' request (transaction {4})",
+                            REQUEST_TYPE_NAMES.at(request_type),
+                            action_metadata.get<std::string>(MODULE),
+                            action_metadata.get<std::string>(ACTION),
+                            action_metadata.get<std::string>(TRANSACTION_ID));
 
     return pretty_request_label_;
 }
@@ -162,7 +162,7 @@ bool ActionResponse::isValidActionMetadata(const lth_jc::JsonContainer& metadata
         validator.validate(metadata, ACTION_METADATA_SCHEMA);
         return true;
     } catch (const PCPClient::validation_error& e) {
-        LOG_TRACE("Invalid action metadata: %1%", e.what());
+        LOG_TRACE("Invalid action metadata: {1}", e.what());
     }
     return false;
 }

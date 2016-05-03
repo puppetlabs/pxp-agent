@@ -156,6 +156,7 @@ class Configuration
     /// Validate logging configuration options and enable logging.
     /// Throw a Configuration::Error: in case of invalid the specified
     /// log file is in a non-esixtent directory.
+    /// Other execeptions are propagated.
     void setupLogging();
 
     /// Ensure all required values are valid. If necessary, expand
@@ -181,15 +182,10 @@ class Configuration
             }
         }
 
-        // Configuration instance not initialized; get default
-        const auto& opt_idx = defaults_.get<Option::ByName>().find(flagname);
 
-        if (opt_idx == defaults_.get<Option::ByName>().end()) {
-            throw Configuration::Error { "no default value for " + flagname };
-        } else {
-            Entry<T>* entry_ptr = (Entry<T>*) opt_idx->ptr.get();
-            return entry_ptr->value;
-        }
+        const auto& opt_idx = getDefaultIndex(flagname);
+        Entry<T>* entry_ptr = (Entry<T>*) opt_idx->ptr.get();
+        return entry_ptr->value;
     }
 
     /// Set the specified value for a given configuration flag.
@@ -200,17 +196,14 @@ class Configuration
     template<typename T>
     void set(std::string flagname, T value)
     {
-        if (!valid_) {
-            throw Configuration::Error { "cannot set configuration value until "
-                                         "configuration is validated" };
-        }
+        checkValidForSetting();
 
         try {
             HorseWhisperer::SetFlag<T>(flagname, value);
         } catch (HorseWhisperer::flag_validation_error) {
-            throw Configuration::Error { "invalid value for " + flagname };
+            throw Configuration::Error { getInvalidFlagError(flagname) };
         } catch (HorseWhisperer::undefined_flag_error) {
-            throw Configuration::Error { "unknown flag name: " + flagname };
+            throw Configuration::Error { getUnknownFlagError(flagname) };
         }
     }
 
@@ -255,6 +248,10 @@ class Configuration
     void validateAndNormalizeWebsocketSettings();
     void validateAndNormalizeOtherSettings();
     void setAgentConfiguration();
+    const Options::iterator getDefaultIndex(const std::string& flagname);
+    std::string getInvalidFlagError(const std::string& flagname);
+    std::string getUnknownFlagError(const std::string& flagname);
+    void checkValidForSetting();
 };
 
 }  // namespace PXPAgent
