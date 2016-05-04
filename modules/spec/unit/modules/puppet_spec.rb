@@ -102,33 +102,37 @@ describe "pxp-module-puppet" do
   end
 
   describe "get_result_from_report" do
+    let(:last_run_report_path) {
+      "/opt/puppetlabs/puppet/cache/state/fake_last_run_report.yaml"
+    }
+
     it "doesn't process the last_run_report if the file doens't exist" do
       allow(File).to receive(:exist?).and_return(false)
-      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
-      expect(get_result_from_report(0, default_configuration, Time.now)).to be ==
+      expect(get_result_from_report(last_run_report_path, 0, default_configuration, Time.now)).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
            "transaction_uuid" => "unknown",
            "environment"      => "unknown",
            "status"           => "unknown",
            "error_type"       => "no_last_run_report",
-           "error"            => "/opt/puppetlabs/puppet/cache/state/last_run_report.yaml doesn't exist",
+           "error"            => "#{last_run_report_path} doesn't exist",
            "exitcode"         => 0,
            "version"          => 1}
     end
 
     it "doesn't process the last_run_report if the file cant be loaded" do
+      start_time = Time.now
+      allow(File).to receive(:mtime).and_return(start_time+1)
       allow(File).to receive(:exist?).and_return(true)
-      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
       allow(YAML).to receive(:load_file).and_raise("error")
-      expect(get_result_from_report(0, default_configuration, Time.now)).to be ==
+      expect(get_result_from_report(last_run_report_path, 0, default_configuration, start_time)).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
            "transaction_uuid" => "unknown",
            "environment"      => "unknown",
            "status"           => "unknown",
            "error_type"       => "invalid_last_run_report",
-           "error"            => "/opt/puppetlabs/puppet/cache/state/last_run_report.yaml could not be loaded: error",
+           "error"            => "#{last_run_report_path} could not be loaded: error",
            "exitcode"         => 0,
            "version"          => 1}
     end
@@ -144,18 +148,18 @@ describe "pxp-module-puppet" do
       allow(last_run_report).to receive(:environment).and_return("production")
       allow(last_run_report).to receive(:status).and_return("changed")
 
+      allow(File).to receive(:mtime).and_return(start_time)
       allow(File).to receive(:exist?).and_return(true)
-      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
-      allow(YAML).to receive(:load_file).and_return(last_run_report)
+      allow(YAML).to receive(:load_file).with(last_run_report_path).and_return(last_run_report)
 
-      expect(get_result_from_report(-1, default_configuration, start_time)).to be ==
+      expect(get_result_from_report(last_run_report_path, -1, default_configuration, start_time)).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
            "transaction_uuid" => "unknown",
            "environment"      => "unknown",
            "status"           => "unknown",
-           "error_type"       => "agent_exit_non_zero",
-           "error"            => "Puppet agent exited with a non 0 exitcode",
+           "error_type"       => "no_last_run_report",
+           "error"            => "#{last_run_report_path} was not written",
            "exitcode"         => -1,
            "version"          => 1}
     end
@@ -171,11 +175,11 @@ describe "pxp-module-puppet" do
       allow(last_run_report).to receive(:environment).and_return("production")
       allow(last_run_report).to receive(:status).and_return("changed")
 
+      allow(File).to receive(:mtime).and_return(start_time+1)
       allow(File).to receive(:exist?).and_return(true)
-      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
-      allow(YAML).to receive(:load_file).and_return(last_run_report)
+      allow(YAML).to receive(:load_file).with(last_run_report_path).and_return(last_run_report)
 
-      expect(get_result_from_report(-1, default_configuration, start_time)).to be ==
+      expect(get_result_from_report(last_run_report_path, -1, default_configuration, start_time)).to be ==
           {"kind"             => "apply",
            "time"             => run_time,
            "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
@@ -198,11 +202,11 @@ describe "pxp-module-puppet" do
       allow(last_run_report).to receive(:environment).and_return("production")
       allow(last_run_report).to receive(:status).and_return("changed")
 
+      allow(File).to receive(:mtime).and_return(start_time+1)
       allow(File).to receive(:exist?).and_return(true)
-      allow_any_instance_of(Object).to receive(:check_config_print).and_return("/opt/puppetlabs/puppet/cache/state/last_run_report.yaml")
-      allow(YAML).to receive(:load_file).and_return(last_run_report)
+      allow(YAML).to receive(:load_file).with(last_run_report_path).and_return(last_run_report)
 
-      expect(get_result_from_report(0, default_configuration, start_time)).to be ==
+      expect(get_result_from_report(last_run_report_path, 0, default_configuration, start_time)).to be ==
           {"kind"             => "apply",
            "time"             => run_time,
            "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
@@ -218,17 +222,25 @@ describe "pxp-module-puppet" do
       double(:runoutcome)
     }
 
+    let(:last_run_report) {
+      "/opt/puppetlabs/puppet/cache/state/last_run_report.yaml"
+    }
+
+    before :each do
+      allow_any_instance_of(Object).to receive(:check_config_print).and_return(last_run_report)
+    end
+
     it "populates output when it terminated normally" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(0)
-      expect_any_instance_of(Object).to receive(:get_result_from_report).with(0, default_configuration, anything)
+      expect_any_instance_of(Object).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
       start_run(default_configuration, default_input)
     end
 
     it "populates output when it terminated with a non 0 code" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(1)
-      expect_any_instance_of(Object).to receive(:get_result_from_report).with(1, default_configuration, anything)
+      expect_any_instance_of(Object).to receive(:get_result_from_report).with(last_run_report, 1, default_configuration, anything)
       start_run(default_configuration, default_input)
     end
 

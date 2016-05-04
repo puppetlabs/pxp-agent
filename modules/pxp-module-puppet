@@ -83,16 +83,15 @@ def make_error_result(exitcode, error_type, error_message)
   return result
 end
 
-def get_result_from_report(exitcode, config, start_time)
-  last_run_report = check_config_print("lastrunreport",config)
-  if last_run_report.empty?
-    return make_error_result(exitcode, Errors::NoLastRunReport,
-                             "could not find the location of the last run report")
-  end
-
+def get_result_from_report(last_run_report, exitcode, config, start_time)
   if !File.exist?(last_run_report)
     return make_error_result(exitcode, Errors::NoLastRunReport,
                              "#{last_run_report} doesn't exist")
+  end
+
+  if start_time && File.mtime(last_run_report) == start_time
+    return make_error_result(exitcode, Errors::NoLastRunReport,
+                             "#{last_run_report} was not written")
   end
 
   last_run_report_yaml = {}
@@ -111,13 +110,11 @@ def get_result_from_report(exitcode, config, start_time)
                                    "Puppet agent exited with a non 0 exitcode")
   end
 
-  if start_time.to_i < last_run_report_yaml.time.to_i
-    run_result["kind"] = last_run_report_yaml.kind
-    run_result["time"] = last_run_report_yaml.time
-    run_result["transaction_uuid"] = last_run_report_yaml.transaction_uuid
-    run_result["environment"] = last_run_report_yaml.environment
-    run_result["status"] = last_run_report_yaml.status
-  end
+  run_result["kind"] = last_run_report_yaml.kind
+  run_result["time"] = last_run_report_yaml.time
+  run_result["transaction_uuid"] = last_run_report_yaml.transaction_uuid
+  run_result["environment"] = last_run_report_yaml.environment
+  run_result["status"] = last_run_report_yaml.status
 
   return run_result
 end
@@ -126,7 +123,13 @@ def start_run(config, action_input)
   exitcode = DEFAULT_EXITCODE
   cmd = make_command_array(config, action_input)
   env = make_environment_hash(action_input)
-  start_time = Time.now
+
+  last_run_report = check_config_print("lastrunreport", config)
+  if last_run_report.empty?
+    return make_error_result(exitcode, Errors::NoLastRunReport,
+                             "could not find the location of the last run report")
+  end
+  start_time = File.mtime(last_run_report) if File.exist?(last_run_report)
 
   run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false,
                                                      :custom_environment => env})
@@ -147,7 +150,7 @@ def start_run(config, action_input)
                              "Puppet agent is already performing a run")
   end
 
-  return get_result_from_report(exitcode, config, start_time)
+  return get_result_from_report(last_run_report, exitcode, config, start_time)
 end
 
 def metadata()
