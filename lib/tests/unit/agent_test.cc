@@ -21,6 +21,7 @@ const std::string SPOOL { std::string { PXP_AGENT_ROOT_PATH }
 TEST_CASE("Agent::Agent", "[agent]") {
     Configuration::Agent agent_configuration { MODULES,
                                                TEST_BROKER_WS_URI,
+                                               "",  // no failover
                                                getCaPath(),
                                                getCertPath(),
                                                getKeyPath(),

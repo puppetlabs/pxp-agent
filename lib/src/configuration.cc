@@ -274,6 +274,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
     agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
         HW::GetFlag<std::string>("broker-ws-uri"),
+        HW::GetFlag<std::string>("failover-ws-uri"),
         HW::GetFlag<std::string>("ssl-ca-cert"),
         HW::GetFlag<std::string>("ssl-cert"),
         HW::GetFlag<std::string>("ssl-key"),
@@ -332,6 +333,15 @@ void Configuration::defineDefaultValues()
                     "broker-ws-uri",
                     "",
                     lth_loc::translate("WebSocket URI of the PCP broker"),
+                    Types::String,
+                    "") } });
+
+    defaults_.insert(
+        Option { "failover-ws-uri",
+                 Base_ptr { new Entry<std::string>(
+                    "failover-ws-uri",
+                    "",
+                    lth_loc::translate("WebSocket URI of the failover PCP broker used when the default is unavailable"),
                     Types::String,
                     "") } });
 
@@ -615,6 +625,16 @@ void Configuration::validateAndNormalizeWebsocketSettings()
     if (broker_ws_uri.find("wss://") != 0)
         throw Configuration::Error {
             lth_loc::translate("broker-ws-uri value must start with wss://") };
+
+    auto failover_ws_uri = HW::GetFlag<std::string>("failover-ws-uri");
+    if (!failover_ws_uri.empty()) {
+        if (broker_ws_uri.empty())
+            throw Configuration::Error {
+                lth_loc::translate("failover-ws-uri requires broker-ws-uri is defined") };
+        if (failover_ws_uri.find("wss://") != 0)
+            throw Configuration::Error {
+                lth_loc::translate("failover-ws-uri value must start with wss://") };
+    }
 
     // Check the SSL options and expand the paths
     auto ca   = check_and_expand_ssl_cert("ssl-ca-cert");
