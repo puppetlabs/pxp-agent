@@ -530,7 +530,7 @@ msgid "Error: {1}"
 msgstr ""
 
 #: lib/src/module.cc:94
-msgid "Unexpected excption."
+msgid "Unexpected exception."
 msgstr ""
 
 #: lib/src/module.cc:98
