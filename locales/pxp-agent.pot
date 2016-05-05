@@ -584,54 +584,54 @@ msgid "Message {1} contained {2} bad debug chunks"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc:61
+#: lib/src/pxp_connector.cc:70
 msgid "Replied to request {1} with a PCP error message"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:64
+#: lib/src/pxp_connector.cc:73
 msgid "Failed to send PCP error message for request {1}: {2}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc:81
+#: lib/src/pxp_connector.cc:90
 msgid "Sent provisional response for the {1} by {2}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:84
+#: lib/src/pxp_connector.cc:93
 msgid ""
 "Failed to send provisional response for the {1} by {2} (no further attempts "
 "will be made): {3}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc:103
-#: lib/src/pxp_connector.cc:122
+#: lib/src/pxp_connector.cc:112
+#: lib/src/pxp_connector.cc:131
 msgid "Replied to {1} by {2}, request ID {3}, with a PXP error message"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:106
-#: lib/src/pxp_connector.cc:127
+#: lib/src/pxp_connector.cc:115
+#: lib/src/pxp_connector.cc:136
 msgid ""
 "Failed to send a PXP error message for the {1} by {2} (no further sending "
 "attempts will be made): {3}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc:165
-#: lib/src/pxp_connector.cc:194
+#: lib/src/pxp_connector.cc:174
+#: lib/src/pxp_connector.cc:203
 msgid "Sent response for the {1} by {2}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:169
+#: lib/src/pxp_connector.cc:178
 msgid "Failed to reply to {1} by {2}, (no further attempts will be made): {3}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:197
+#: lib/src/pxp_connector.cc:206
 msgid "Failed to reply to the {1} by {2}: {3}"
 msgstr ""
 
