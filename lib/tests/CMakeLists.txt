@@ -6,7 +6,6 @@ include_directories(
     ${HORSEWHISPERER_INCLUDE_DIRS}
     ${cpp-pcp-client_INCLUDE_DIR}
     ${LEATHERMAN_CATCH_INCLUDE}
-    ${CATCH_DIRECTORY}
 )
 
 set(COMMON_TEST_SOURCES
