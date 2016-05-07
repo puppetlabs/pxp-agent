@@ -90,27 +90,27 @@ msgstr ""
 msgid "Fatal configuration error: {1}; cannot start pxp-agent"
 msgstr ""
 
-#: lib/src/action_request.cc:71
+#: lib/src/action_request.cc:59
 #: lib/src/action_response.cc:149
 msgid "{1} '{2} {3}' request (transaction {4})"
 msgstr ""
 
 #. debug
-#: lib/src/action_request.cc:84
+#: lib/src/action_request.cc:72
 msgid ""
 "Validating {1} request {2} by {3]:\n"
 "{4}"
 msgstr ""
 
-#: lib/src/action_request.cc:99
+#: lib/src/action_request.cc:87
 msgid "no data"
 msgstr ""
 
-#: lib/src/action_request.cc:101
+#: lib/src/action_request.cc:89
 msgid "invalid data"
 msgstr ""
 
-#: lib/src/action_request.cc:105
+#: lib/src/action_request.cc:93
 msgid "data is not in JSON format"
 msgstr ""
 

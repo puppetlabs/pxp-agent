@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
 
     if (!err_msg.empty()) {
         if (tryLogAndCheckTranslating(err_msg)) {
-            boost::nowide::cout << lth_loc::format("{1}\nCannot start pxp-agent")
+            boost::nowide::cout << lth_loc::format("{1}\nCannot start pxp-agent", err_msg)
                                 << std::endl;
         } else {
             boost::nowide::cout << err_msg << "\n"

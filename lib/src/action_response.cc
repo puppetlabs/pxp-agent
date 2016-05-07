@@ -107,7 +107,7 @@ ActionResponse::ActionResponse(ModuleType m_t,
                                lth_jc::JsonContainer&& a_m)
         : module_type(m_t),
           request_type(r_t),
-          output(out),
+          output(std::move(out)),
           action_metadata(std::forward<lth_jc::JsonContainer>(a_m)),
           status_query_transaction()
 {

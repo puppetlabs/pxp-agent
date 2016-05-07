@@ -11,22 +11,10 @@ namespace lth_jc  = leatherman::json_container;
 namespace lth_loc = leatherman::locale;
 
 ActionRequest::ActionRequest(RequestType type,
-                             const PCPClient::ParsedChunks& parsed_chunks)
+                             PCPClient::ParsedChunks parsed_chunks)
         : type_ { type },
           notify_outcome_ { true },
-          parsed_chunks_ { parsed_chunks },
-          params_ { "{}" },
-          params_txt_ {},
-          pretty_label_ {},
-          results_dir_ {} {
-    init();
-}
-
-ActionRequest::ActionRequest(RequestType type,
-                             PCPClient::ParsedChunks&& parsed_chunks)
-        : type_ { type },
-          notify_outcome_ { true },
-          parsed_chunks_ { parsed_chunks },
+          parsed_chunks_ { std::move(parsed_chunks) },
           params_ { "{}" },
           params_txt_ {},
           pretty_label_ {},
