@@ -25,7 +25,7 @@ extern const std::string DEFAULT_SPOOL_DIR;     // used by unit tests
 // Types
 //
 
-enum Types { Integer, String, Bool, Double };
+using Types = HorseWhisperer::FlagType;
 
 struct EntryBase
 {

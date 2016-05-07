@@ -342,7 +342,7 @@ void Configuration::defineDefaultValues()
                     "",
                     lth_loc::translate("Timeout (in seconds) for establishing "
                                        "a WebSocket connection, default: 5 s"),
-                    Types::Integer,
+                    Types::Int,
                     5) } });
 
     defaults_.insert(
@@ -472,7 +472,7 @@ void Configuration::setDefaultValues()
         }
 
         switch (opt_idx->ptr->type) {
-            case Integer:
+            case Types::Int:
                 {
                     Entry<int>* entry_ptr = (Entry<int>*) opt_idx->ptr.get();
                     HW::DefineGlobalFlag<int>(flag_names, entry_ptr->help,
@@ -482,7 +482,7 @@ void Configuration::setDefaultValues()
                                               });
                 }
                 break;
-            case Bool:
+            case Types::Bool:
                 {
                     Entry<bool>* entry_ptr = (Entry<bool>*) opt_idx->ptr.get();
                     HW::DefineGlobalFlag<bool>(flag_names, entry_ptr->help,
@@ -492,7 +492,7 @@ void Configuration::setDefaultValues()
                                                });
                 }
                 break;
-            case Double:
+            case Types::Double:
                 {
                     Entry<double>* entry_ptr = (Entry<double>*) opt_idx->ptr.get();
                     HW::DefineGlobalFlag<double>(flag_names, entry_ptr->help,
@@ -502,7 +502,7 @@ void Configuration::setDefaultValues()
                                                  });
                 }
                 break;
-            default:
+            case Types::String:
                 {
                     Entry<std::string>* entry_ptr = (Entry<std::string>*) opt_idx->ptr.get();
                     HW::DefineGlobalFlag<std::string>(flag_names, entry_ptr->help,
@@ -511,6 +511,11 @@ void Configuration::setDefaultValues()
                                                           entry_ptr->configured = true;
                                                       });
                 }
+                break;
+            default:
+                // Present because FlagType is not an enum class, and I don't trust
+                // compilers to warn/error about missing cases.
+                assert(false);
         }
     }
 }
@@ -556,21 +561,26 @@ void Configuration::parseConfigFile()
             continue;
 
         switch (opt_idx->ptr->type) {
-            case Integer:
+            case Types::Int:
                 check_key_type(key, "Integer", lth_jc::DataType::Int);
                 HW::SetFlag<int>(key, config_json.get<int>(key));
                 break;
-            case Bool:
+            case Types::Bool:
                 check_key_type(key, "Bool", lth_jc::DataType::Bool);
                 HW::SetFlag<bool>(key, config_json.get<bool>(key));
                 break;
-            case Double:
+            case Types::Double:
                 check_key_type(key, "Double", lth_jc::DataType::Double);
                 HW::SetFlag<double>(key, config_json.get<double>(key));
                 break;
-            default:
+            case Types::String:
                 check_key_type(key, "String", lth_jc::DataType::String);
                 HW::SetFlag<std::string>(key, config_json.get<std::string>(key));
+                break;
+            default:
+                // Present because FlagType is not an enum class, and I don't trust
+                // compilers to warn/error about missing cases.
+                assert(false);
         }
     }
 }
