@@ -13,8 +13,9 @@ step 'Install build dependencies on master' do
 end
 
 step 'Clone pcp-broker to master' do
+  # Temporarily pin to pcp-broker 0.6.1 to avoid failures introduced by PCP-245.
   clone_git_repo_on(master, GIT_CLONE_FOLDER,
-    extract_repo_info_from(build_git_url('pcp-broker', nil, nil, 'https')))
+    extract_repo_info_from(build_git_url('pcp-broker', nil, nil, 'https')).merge({:rev => '0.6.1'}))
 end
 
 step 'Download lein bootstrap' do
