@@ -262,8 +262,13 @@ unsigned int ResultsStorage::purge(
         });
 
     // TODO(ale): deal with locale & plural (PCP-257)
-    LOG_INFO("Removed {1} directories from '{2}'",
-             num_purged_dirs, spool_dir_path_.string());
+    if (num_purged_dirs == 1) {
+        LOG_INFO("Removed {1} directory from '{2}'",
+                 num_purged_dirs, spool_dir_path_.string());
+    } else {
+        LOG_INFO("Removed {1} directories from '{2}'",
+                 num_purged_dirs, spool_dir_path_.string());
+    }
     return num_purged_dirs;
 }
 
