@@ -864,16 +864,15 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
 
 void RequestProcessor::logLoadedModules() const
 {
-    // TODO(ale): deal with locale & plural (PCP-257)
     std::string actions_label { lth_loc::translate("actions") };
 
     for (auto& module : modules_) {
-        std::string txt { lth_loc::translate("found no action") };
         std::string actions_list { "" };
+        size_t count = 0u;
 
         for (auto& action : module.second->actions) {
+            ++count;
             if (actions_list.empty()) {
-                txt = actions_label;
                 actions_list += ": ";
             } else {
                 actions_list += ", ";
@@ -881,6 +880,10 @@ void RequestProcessor::logLoadedModules() const
             actions_list += action;
         }
 
+        // TODO(ale): deal with locale & plural (PCP-257)
+        auto txt = (count == 0) ?  lth_loc::translate("found no action")
+            : ((count == 1) ? lth_loc::translate("action")
+               : lth_loc::translate("actions"));
         LOG_DEBUG("Loaded '{1}' module - {2}{3}", module.first, txt, actions_list);
     }
 }
@@ -894,10 +897,15 @@ void RequestProcessor::spoolDirPurgeTask()
     auto num_minutes = Timestamp::getMinutes(spool_dir_purge_ttl_);
     num_minutes *= 1.2;
     // TODO(ale): deal with locale & plural (PCP-257)
-    LOG_INFO("Starting the task for purging the spool directory every {1} "
-             "minutes; thread id {2}",
-             num_minutes, pcp_util::this_thread::get_id());
-
+    if (num_minutes == 1) {
+        LOG_INFO("Starting the task for purging the spool directory every {1} "
+                 "minute; thread id {2}",
+                 num_minutes, pcp_util::this_thread::get_id());
+    } else {
+        LOG_INFO("Starting the task for purging the spool directory every {1} "
+                 "minutes; thread id {2}",
+                 num_minutes, pcp_util::this_thread::get_id());
+    }
 
     while (true) {
         pcp_util::unique_lock<pcp_util::mutex> the_lock { spool_dir_purge_mutex_ };

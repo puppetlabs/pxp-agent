@@ -561,59 +561,64 @@ msgid "debug entry is not valid JSON"
 msgstr ""
 
 #. warning
-#: lib/src/pxp_connector.cc:23
+#: lib/src/pxp_connector.cc:24
+msgid "Message {1} contained {2} bad debug chunk"
+msgstr ""
+
+#. warning
+#: lib/src/pxp_connector.cc:27
 msgid "Message {1} contained {2} bad debug chunks"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc:56
+#: lib/src/pxp_connector.cc:61
 msgid "Replied to request {1} with a PCP error message"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:59
+#: lib/src/pxp_connector.cc:64
 msgid "Failed to send PCP error message for request {1}: {2}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc:76
+#: lib/src/pxp_connector.cc:81
 msgid "Sent provisional response for the {1} by {2}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:79
+#: lib/src/pxp_connector.cc:84
 msgid ""
 "Failed to send provisional response for the {1} by {2} (no further attempts "
 "will be made): {3}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc:98
-#: lib/src/pxp_connector.cc:117
+#: lib/src/pxp_connector.cc:103
+#: lib/src/pxp_connector.cc:122
 msgid "Replied to {1} by {2}, request ID {3}, with a PXP error message"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:101
-#: lib/src/pxp_connector.cc:122
+#: lib/src/pxp_connector.cc:106
+#: lib/src/pxp_connector.cc:127
 msgid ""
 "Failed to send a PXP error message for the {1} by {2} (no further sending "
 "attempts will be made): {3}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc:160
-#: lib/src/pxp_connector.cc:189
+#: lib/src/pxp_connector.cc:165
+#: lib/src/pxp_connector.cc:194
 msgid "Sent response for the {1} by {2}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:164
+#: lib/src/pxp_connector.cc:169
 msgid "Failed to reply to {1} by {2}, (no further attempts will be made): {3}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:192
+#: lib/src/pxp_connector.cc:197
 msgid "Failed to reply to the {1} by {2}: {3}"
 msgstr ""
 
@@ -911,21 +916,33 @@ msgstr ""
 msgid "Unexpected error when loading {1}"
 msgstr ""
 
-#: lib/src/request_processor.cc:868
+#: lib/src/request_processor.cc:867
+#: lib/src/request_processor.cc:886
 msgid "actions"
 msgstr ""
 
-#: lib/src/request_processor.cc:871
+#: lib/src/request_processor.cc:884
 msgid "found no action"
 msgstr ""
 
+#: lib/src/request_processor.cc:885
+msgid "action"
+msgstr ""
+
 #. debug
-#: lib/src/request_processor.cc:884
+#: lib/src/request_processor.cc:887
 msgid "Loaded '{1}' module - {2}{3}"
 msgstr ""
 
 #. info
-#: lib/src/request_processor.cc:897
+#: lib/src/request_processor.cc:901
+msgid ""
+"Starting the task for purging the spool directory every {1} minute; thread "
+"id {2}"
+msgstr ""
+
+#. info
+#: lib/src/request_processor.cc:905
 msgid ""
 "Starting the task for purging the spool directory every {1} minutes; thread "
 "id {2}"
@@ -1035,7 +1052,12 @@ msgid ""
 msgstr ""
 
 #. info
-#: lib/src/results_storage.cc:265
+#: lib/src/results_storage.cc:266
+msgid "Removed {1} directory from '{2}'"
+msgstr ""
+
+#. info
+#: lib/src/results_storage.cc:269
 msgid "Removed {1} directories from '{2}'"
 msgstr ""
 
@@ -1046,41 +1068,48 @@ msgid ""
 "agent will not terminate gracefully"
 msgstr ""
 
-#: lib/src/thread_container.cc:92
+#: lib/src/thread_container.cc:98
 msgid "thread name is already stored"
 msgstr ""
 
 #. debug
-#: lib/src/thread_container.cc:105
+#: lib/src/thread_container.cc:112
 msgid ""
-"{1} threads stored in the '{2}' ThreadContainer; about to start a the "
+"{1} thread stored in the '{2}' ThreadContainer; about to start the "
 "monitoring thread"
 msgstr ""
 
 #. debug
-#: lib/src/thread_container.cc:110
+#: lib/src/thread_container.cc:115
+msgid ""
+"{1} threads stored in the '{2}' ThreadContainer; about to start the "
+"monitoring thread"
+msgstr ""
+
+#. debug
+#: lib/src/thread_container.cc:121
 msgid "Joining the old (idle) monitoring thread instance"
 msgstr ""
 
 #. debug
-#: lib/src/thread_container.cc:162
+#: lib/src/thread_container.cc:173
 msgid "Starting monitoring task for the '{1}' ThreadContainer, with id {2}"
 msgstr ""
 
 #. debug
-#: lib/src/thread_container.cc:188
+#: lib/src/thread_container.cc:199
 msgid "Deleting thread {1} (named '{2}')"
 msgstr ""
 
 #. debug
-#: lib/src/thread_container.cc:199
+#: lib/src/thread_container.cc:210
 msgid ""
 "Deleted {1} thread objects that have completed their execution; in total, "
 "deleted {2} threads so far"
 msgstr ""
 
 #. debug
-#: lib/src/thread_container.cc:206
+#: lib/src/thread_container.cc:217
 msgid "Stopping the monitoring task"
 msgstr ""
 

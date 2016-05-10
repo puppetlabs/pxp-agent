@@ -83,9 +83,15 @@ void ThreadContainer::add(std::string thread_name,
                           pcp_util::thread task,
                           std::shared_ptr<std::atomic<bool>> is_done) {
     // TODO(ale): deal with locale & plural (PCP-257)
-    LOG_TRACE("Adding thread {1}  (named '{2}') to the '{3}' "
-              "ThreadContainer; added {4} threads so far",
-              task.get_id(), thread_name,  name_, num_added_threads_);
+    if (num_added_threads_ == 1) {
+        LOG_TRACE("Adding thread {1}  (named '{2}') to the '{3}' "
+                  "ThreadContainer; added {4} thread so far",
+                  task.get_id(), thread_name,  name_, num_added_threads_);
+    } else {
+        LOG_TRACE("Adding thread {1}  (named '{2}') to the '{3}' "
+                  "ThreadContainer; added {4} threads so far",
+                  task.get_id(), thread_name,  name_, num_added_threads_);
+    }
     pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
 
     if (findLocked(thread_name))
@@ -102,8 +108,13 @@ void ThreadContainer::add(std::string thread_name,
     // Start the monitoring thread, if necessary
     if (!is_monitoring_ && threads_.size() > threads_threshold) {
         // TODO(ale): deal with locale & plural (PCP-257)
-        LOG_DEBUG("{1} threads stored in the '{2}' ThreadContainer; about "
-                  "to start a the monitoring thread", threads_.size(), name_);
+        if (threads_.size() == 1) {
+            LOG_DEBUG("{1} thread stored in the '{2}' ThreadContainer; about "
+                      "to start the monitoring thread", threads_.size(), name_);
+        } else {
+            LOG_DEBUG("{1} threads stored in the '{2}' ThreadContainer; about "
+                      "to start the monitoring thread", threads_.size(), name_);
+        }
 
         if (monitoring_thread_ptr_ != nullptr
                 && monitoring_thread_ptr_->joinable()) {
