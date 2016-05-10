@@ -1,11 +1,13 @@
 #include <pxp-agent/results_mutex.hpp>
 
-#include <cpp-pcp-client/util/chrono.hpp>
+#include <leatherman/locale/locale.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.results_mutex"
 #include <leatherman/logging/logging.hpp>
 
 namespace PXPAgent {
+
+namespace lth_loc  = leatherman::locale;
 
 // Private ctor
 
@@ -26,26 +28,26 @@ bool ResultsMutex::exists(std::string const& transaction_id) {
 }
 
 ResultsMutex::Mutex_Ptr ResultsMutex::get(std::string const& transaction_id) {
-    if (!exists(transaction_id)) {
-        throw Error { "does not exists" };
-    }
+    if (!exists(transaction_id))
+        throw Error { lth_loc::translate("does not exists") };
+
     return mutexes_[transaction_id];
 }
 
 void ResultsMutex::add(std::string const& transaction_id) {
-    LOG_TRACE("Adding transaction id %1%", transaction_id);
-    if (exists(transaction_id)) {
-        throw Error { "already exists" };
-    }
+    LOG_TRACE("Adding transaction id {1}", transaction_id);
+    if (exists(transaction_id))
+        throw Error { lth_loc::translate("already exists") };
+
     auto mtx = std::make_shared<Mutex>();
     mutexes_.emplace(transaction_id, mtx);
 }
 
 void ResultsMutex::remove(std::string const& transaction_id) {
-    LOG_TRACE("Removing transaction id %1%", transaction_id);
-    if (!exists(transaction_id)) {
-        throw Error { "does not exist" };
-    }
+    LOG_TRACE("Removing transaction id {1}", transaction_id);
+    if (!exists(transaction_id))
+        throw Error { lth_loc::translate("does not exist") };
+
     mutexes_.erase(transaction_id);
 }
 

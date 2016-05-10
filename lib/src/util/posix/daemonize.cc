@@ -25,7 +25,7 @@ static void sigHandler(int sig) {
     // NOTE(ale): if issued by the init process, between SIGTERM and
     // the successive SIGKILL there are only 5 s - must be fast
     auto pidfile = Configuration::Instance().get<std::string>("pidfile");
-    LOG_INFO("Caught signal %1% - removing PID file '%2%'",
+    LOG_INFO("Caught signal {1} - removing PID file '{2}'",
              std::to_string(sig), pidfile);
     PIDFile pidf { pidfile };
     pidf.cleanup();
@@ -38,7 +38,7 @@ std::unique_ptr<PIDFile> daemonize() {
     // Check if we're already a daemon
     if (getppid() == 1) {
         // Parent is init process (PID 1)
-        LOG_INFO("Already a daemon with PID=%1%", std::to_string(getpid()));
+        LOG_INFO("Already a daemon with PID={1}", std::to_string(getpid()));
         return nullptr;
     }
 
@@ -57,7 +57,7 @@ std::unique_ptr<PIDFile> daemonize() {
 
     if (pidf_ptr->isExecuting()) {
         auto pid = pidf_ptr->read();
-        LOG_ERROR("Already running with PID=%1%", pid);
+        LOG_ERROR("Already running with PID={1}", pid);
         removeLockAndExit();
     }
 
@@ -66,7 +66,7 @@ std::unique_ptr<PIDFile> daemonize() {
         LOG_DEBUG("Obtained a read lock for the PID file; no other pxp-agent "
                   "daemon should be executing");
     } catch (const PIDFile::Error& e) {
-        LOG_ERROR("Failed get a read lock for the PID file: %1%", e.what());
+        LOG_ERROR("Failed get a read lock for the PID file: {1}", e.what());
         removeLockAndExit();
     }
 
@@ -80,7 +80,7 @@ std::unique_ptr<PIDFile> daemonize() {
             removeLockAndExit();
         }
     } catch (const PIDFile::Error& e) {
-        LOG_ERROR("Failed to check if we can lock the PID file: %1%", e.what());
+        LOG_ERROR("Failed to check if we can lock the PID file: {1}", e.what());
         removeLockAndExit();
     }
 
@@ -90,12 +90,12 @@ std::unique_ptr<PIDFile> daemonize() {
 
     switch (first_child_pid) {
         case -1:
-            LOG_ERROR("Failed to perform the first fork; %1% (%2%)",
+            LOG_ERROR("Failed to perform the first fork; {1} ({2})",
                       strerror(errno), errno);
             removeLockAndExit();
         case 0:
             // CHILD - will fork and exit soon
-            LOG_DEBUG("First child spawned, with PID=%1%",
+            LOG_DEBUG("First child spawned, with PID={1}",
                       std::to_string(getpid()));
             break;
         default:
@@ -114,7 +114,7 @@ std::unique_ptr<PIDFile> daemonize() {
         pidf_ptr->lockRead();
         LOG_DEBUG("Obtained the read lock after first fork");
     } catch (const PIDFile::Error& e) {
-        LOG_ERROR("Failed get a read lock after first fork: %1%", e.what());
+        LOG_ERROR("Failed get a read lock after first fork: {1}", e.what());
         removeLockAndExit();
     }
 
@@ -123,7 +123,7 @@ std::unique_ptr<PIDFile> daemonize() {
 
     if (setsid() == -1) {
         LOG_ERROR("Failed to create new session for first child process; "
-                  "%1% (%2%)", strerror(errno), errno);
+                  "{1} ({2})", strerror(errno), errno);
         removeLockAndExit();
     }
 
@@ -158,7 +158,7 @@ std::unique_ptr<PIDFile> daemonize() {
 
     switch (second_child_pid) {
         case -1:
-            LOG_ERROR("Failed to perform the second fork; %1% (%2%)",
+            LOG_ERROR("Failed to perform the second fork; {1} ({2})",
                       strerror(errno), errno);
             removeLockAndExit();
         case 0:
@@ -171,7 +171,7 @@ std::unique_ptr<PIDFile> daemonize() {
 
             if (sigsuspend(&empty_mask) == -1 && errno != EINTR) {
                 LOG_ERROR("Unexpected error while waiting for pending signals "
-                          "after second fork; %1% (%2%)", strerror(errno), errno);
+                          "after second fork; {1} ({2})", strerror(errno), errno);
             }
 
             _exit(EXIT_SUCCESS);
@@ -183,7 +183,7 @@ std::unique_ptr<PIDFile> daemonize() {
         pidf_ptr->lockRead();
         LOG_DEBUG("Obtained the read lock after second fork");
     } catch (const PIDFile::Error& e) {
-        LOG_ERROR("Failed get a read lock after second fork: %1%", e.what());
+        LOG_ERROR("Failed get a read lock after second fork: {1}", e.what());
         kill(getppid(), SIGUSR1);
         removeLockAndExit();
     }
@@ -192,12 +192,12 @@ std::unique_ptr<PIDFile> daemonize() {
 
     if (sigprocmask(SIG_SETMASK, &orig_mask, NULL) == -1) {
         LOG_ERROR("Failed to reset signal mask after second fork; "
-                  "%1% (%2%)", strerror(errno), errno);
+                  "{1} ({2})", strerror(errno), errno);
         removeLockAndExit();
     }
 
     auto agent_pid = getpid();
-    LOG_DEBUG("Second child spawned, with PID=%1%", agent_pid);
+    LOG_DEBUG("Second child spawned, with PID={1}", agent_pid);
 
     // Convert the read lock to a write lock and write PID to file
 
@@ -207,7 +207,7 @@ std::unique_ptr<PIDFile> daemonize() {
         pidf_ptr->lockWrite(true);  // blocking call
         LOG_DEBUG("Successfully converted read lock to write lock");
     } catch (const PIDFile::Error& e) {
-        LOG_ERROR("Failed to convert to write lock after second fork: %1%",
+        LOG_ERROR("Failed to convert to write lock after second fork: {1}",
                   e.what());
         removeLockAndExit();
     }
@@ -217,11 +217,11 @@ std::unique_ptr<PIDFile> daemonize() {
     // Change work directory
 
     if (chdir(DEFAULT_DAEMON_WORKING_DIR.data())) {
-        LOG_ERROR("Failed to change work directory to '%1%'; %2% (%3%)",
+        LOG_ERROR("Failed to change work directory to '{1}'; {2} ({3})",
                   DEFAULT_DAEMON_WORKING_DIR, strerror(errno), errno);
         removeLockAndExit();
     } else {
-        LOG_DEBUG("Changed working directory to '%1%'", DEFAULT_DAEMON_WORKING_DIR);
+        LOG_DEBUG("Changed working directory to '{1}'", DEFAULT_DAEMON_WORKING_DIR);
     }
 
     // Change signal dispositions
@@ -229,7 +229,7 @@ std::unique_ptr<PIDFile> daemonize() {
 
     for (auto s : std::vector<int> { SIGINT, SIGTERM, SIGQUIT }) {
         if (signal(s, sigHandler) == SIG_ERR) {
-            LOG_ERROR("Failed to set signal handler for sig %1%", s);
+            LOG_ERROR("Failed to set signal handler for sig {1}", s);
             removeLockAndExit();
         }
     }
@@ -244,21 +244,21 @@ std::unique_ptr<PIDFile> daemonize() {
 
     auto tmpin = freopen("/dev/null", "r", stdin);
     if (tmpin == nullptr) {
-        LOG_WARNING("Failed to redirect stdin to /dev/null; %1% (%2%)",
+        LOG_WARNING("Failed to redirect stdin to /dev/null; {1} ({2})",
                     strerror(errno), errno);
     }
     auto tmpout = freopen("/dev/null", "w", stdout);
     if (tmpout == nullptr) {
-        LOG_WARNING("Failed to redirect stdout to /dev/null; %1% (%2%)",
+        LOG_WARNING("Failed to redirect stdout to /dev/null; {1} ({2})",
                     strerror(errno), errno);
     }
     auto tmperr = freopen("/dev/null", "w", stderr);
     if (tmperr == nullptr) {
-        LOG_WARNING("Failed to redirect stderr to /dev/null; %1% (%2%)",
+        LOG_WARNING("Failed to redirect stderr to /dev/null; {1} ({2})",
                     strerror(errno), errno);
     }
 
-    LOG_INFO("Daemonization completed; pxp-agent PID=%1%, PID lock file in '%2%'",
+    LOG_INFO("Daemonization completed; pxp-agent PID={1}, PID lock file in '{2}'",
              agent_pid, pidfile);
 
     // Set PIDFile dtor to clean itself up and return pointer for RAII

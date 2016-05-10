@@ -1,11 +1,10 @@
 #include <pxp-agent/modules/ping.hpp>
-#include <pxp-agent/module_type.hpp>
+
+#include <leatherman/locale/locale.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include <ctime>
 #include <string>
-#include <sstream>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.modules.ping"
 #include <leatherman/logging/logging.hpp>
@@ -13,7 +12,8 @@
 namespace PXPAgent {
 namespace Modules {
 
-namespace lth_jc = leatherman::json_container;
+namespace lth_jc  = leatherman::json_container;
+namespace lth_loc = leatherman::locale;
 
 static const std::string PING { "ping" };
 
@@ -34,7 +34,7 @@ lth_jc::JsonContainer Ping::ping(const ActionRequest& request) {
 
     if (request.parsedChunks().debug.empty()) {
         LOG_ERROR("Found no debug entry in the request message");
-        throw Module::ProcessingError { "no debug entry" };
+        throw Module::ProcessingError { lth_loc::translate("no debug entry") };
     }
 
     auto& debug_entry = request.parsedChunks().debug[0];
@@ -44,9 +44,10 @@ lth_jc::JsonContainer Ping::ping(const ActionRequest& request) {
                 "request_hops",
                 debug_entry.get<std::vector<lth_jc::JsonContainer>>("hops"));
     } catch (lth_jc::data_parse_error& e) {
-        LOG_ERROR("Failed to parse debug entry: %1%", e.what());
-        LOG_DEBUG("Debug entry: %1%", debug_entry.toString());
-        throw Module::ProcessingError { "debug entry is not valid JSON" };
+        LOG_ERROR("Failed to parse debug entry: {1}", e.what());
+        LOG_DEBUG("Debug entry: {1}", debug_entry.toString());
+        throw Module::ProcessingError {
+            lth_loc::translate("debug entry is not valid JSON") };
     }
     return data;
 }

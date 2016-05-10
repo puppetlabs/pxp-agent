@@ -120,7 +120,7 @@ TEST_CASE("ThreadContainer::monitoringTask", "[async]") {
         REQUIRE_FALSE(container.isMonitoring());
 
         // Add a few more threads to restart the monitoring thread
-        addTasksTo(container, THREADS_THRESHOLD + 4, 0, task_duration_us);
+        addTasksTo(container, THREADS_THRESHOLD + 4, 0, task_duration_us, "more_");
         INFO("should be restarted");
         REQUIRE(container.isMonitoring());
         REQUIRE(container.getNumAddedThreads() == (10 + 1) * THREADS_THRESHOLD + 4);

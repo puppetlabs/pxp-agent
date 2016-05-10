@@ -47,7 +47,9 @@ The following will install most required tools and libraries:
 
 #### Setup on Windows
 
-[MinGW-w64][MinGW-w64] is used for full C++11 support, and [Chocolatey][Chocolatey] can be used to install. You should have at least 2GB of memory for compilation.
+[MinGW-w64][MinGW-w64] is used for full C++11 support, and
+[Chocolatey][Chocolatey] can be used to install. You should have at least 2GB of
+memory for compilation.
 
 * install [CMake][CMake-choco] & [7zip][7zip-choco]
 
@@ -57,7 +59,9 @@ The following will install most required tools and libraries:
 
         choco install mingw --params "/threads:win32"
 
-For the remaining tasks, build commands can be executed in the shell from Start > MinGW-w64 project > Run Terminal
+For the remaining tasks, build commands can be executed in the shell from:
+
+        Start > MinGW-w64 project > Run Terminal
 
 * select an install location for dependencies, such as C:\\tools or cmake\\release\\ext; we'll refer to it as $install
 
@@ -230,6 +234,25 @@ order to establish the WebSocket connection on top of which the PCP
 communication will take place (PCP uses secure WebSocket). Also, the hostname
 used in the WebSocket URI must match the SSL identity used by the broker.
 
+### Testing against a test broker
+
+The simple instructions for setting up a test [PCP broker][pcp-broker] use pre-
+generated certs present in that repo. To connect to this test broker, you'll first
+need to add a hosts config that redirects `broker.example.com` to the broker host
+so that server certificate verification succeeds. Then point pxp-agent at `ca`
+and a client certificate present in [PCP broker][pcp-broker]. Example:
+
+```
+puppet resource host broker.example.com ip=<host ip>
+pxp-agent --broker-ws-uri wss://broker.example.com:8142/pcp \
+          --ssl-ca-cert $pcp_broker/test-resources/ssl/certs/ca.pem \
+          --ssl-cert $pcp_broker/test-resources/ssl/certs/client01.example.com.pem \
+          --ssl-key $pcp_broker/test-resources/ssl/private_keys/client01.example.com.pem \
+          --spool-dir dev-resources/spool \
+          --modules-dir modules \
+          --logfile - --loglevel debug --foreground
+```
+
 #### Logging
 
 By default, log messages will be written to:
@@ -300,6 +323,8 @@ The location where the outcome of non-blocking requests will be stored; the
 default location is:
  - \*nix: */opt/puppetlabs/pxp-agent/spool*
  - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\spool*
+Note that if the specified spool directory does not exist, pxp-agent will create
+it when starting.
 
 **spool-dir-purge-ttl (optional)**
 
@@ -321,18 +346,28 @@ Don't become a daemon and execute on foreground on the associated terminal.
 
 The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 
+## Maintenance
+
+Maintainers: Alessandro Parisi <alessandro@puppet.com>, Michael Smith
+<michael.smith@puppet.com>, Michal Ruzicka <michal.ruzicka@puppet.com>.
+
+Contributing: Please refer to [this][contributing] document.
+
+Tickets: File bug tickets at https://tickets.puppet.com/browse/PCP and add the
+`pxp-agent` component to the ticket.
+
 [cpp-pcp-client]: https://github.com/puppetlabs/cpp-pcp-client
 [leatherman]: https://github.com/puppetlabs/leatherman
 [nssm]: https://nssm.cc
 [modules_docs]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/README.md
 [pcp-broker]: https://github.com/puppetlabs/pcp-broker
-[pcp_specs_root]: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/README.md
+[pcp_specs_root]: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/versions/1.0/README.md
 [pxp-module-puppet_docs]: https://github.com/puppetlabs/pxp-agent/blob/master/lib/tests/resources/modules/reverse_valid
 [pxp-module-puppet_script]: https://github.com/puppetlabs/pxp-agent/blob/master/modules/pxp-module-puppet.md
-[pxp_specs_actions]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/actions.md
-[pxp_specs_request_response]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
-[pxp_specs_root]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/README.md
-[pxp_specs_transaction_status]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md
+[pxp_specs_actions]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/versions/1.0/actions.md
+[pxp_specs_request_response]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/versions/1.0/request_response.md
+[pxp_specs_root]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/versions/1.0/README.md
+[pxp_specs_transaction_status]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/versions/1.0/transaction_status.md
 [websocketpp]: https://github.com/zaphoyd/websocketpp
 [MinGW-w64]: http://mingw-w64.sourceforge.net/
 [Chocolatey]: https://chocolatey.org
@@ -340,3 +375,4 @@ The path of the PID file; the default is */var/run/puppetlabs/pxp-agent.pid*
 [7zip-choco]: https://chocolatey.org/packages/7zip.commandline
 [MinGW-w64-choco]: https://chocolatey.org/packages/mingw
 [Boost-download]: http://sourceforge.net/projects/boost/files/latest/download
+[contributing]: CONTRIBUTING.md

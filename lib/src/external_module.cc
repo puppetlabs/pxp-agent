@@ -3,7 +3,10 @@
 #include <pxp-agent/action_output.hpp>
 
 #include <leatherman/execution/execution.hpp>
+
 #include <leatherman/file_util/file.hpp>
+
+#include <leatherman/locale/locale.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.external_module"
 #include <leatherman/logging/logging.hpp>
@@ -36,7 +39,8 @@ static const int EXTERNAL_MODULE_FILE_ERROR_EC { 5 };
 namespace fs = boost::filesystem;
 namespace lth_exec = leatherman::execution;
 namespace lth_file = leatherman::file_util;
-namespace lth_jc = leatherman::json_container;
+namespace lth_jc   = leatherman::json_container;
+namespace lth_loc  = leatherman::locale;
 namespace pcp_util = PCPClient::Util;
 
 //
@@ -89,15 +93,15 @@ ExternalModule::ExternalModule(const std::string& path,
             registerConfiguration(
                 metadata.get<lth_jc::JsonContainer>(METADATA_CONFIGURATION_ENTRY));
         } else {
-            LOG_DEBUG("Found no configuration schema for module '%1%'", module_name);
+            LOG_DEBUG("Found no configuration schema for module '{1}'", module_name);
         }
 
         registerActions(metadata);
     } catch (lth_jc::data_error& e) {
-        LOG_ERROR("Failed to retrieve metadata of module %1%: %2%",
+        LOG_ERROR("Failed to retrieve metadata of module {1}: {2}",
                   module_name, e.what());
-        std::string err { "invalid metadata of module " + module_name };
-        throw Module::LoadingError { err };
+        throw Module::LoadingError {
+            lth_loc::format("invalid metadata of module {1}", module_name) };
     }
 }
 
@@ -114,10 +118,10 @@ ExternalModule::ExternalModule(const std::string& path,
     try {
        registerActions(metadata);
     } catch (lth_jc::data_error& e) {
-        LOG_ERROR("Failed to retrieve metadata of module %1%: %2%",
+        LOG_ERROR("Failed to retrieve metadata of module {1}: {2}",
                   module_name, e.what());
-        std::string err { "invalid metadata of module " + module_name };
-        throw Module::LoadingError { err };
+        throw Module::LoadingError {
+            lth_loc::format("invalid metadata of module {1}", module_name) };
     }
 }
 
@@ -126,7 +130,7 @@ void ExternalModule::validateConfiguration()
     if (config_validator_.includesSchema(module_name)) {
         config_validator_.validate(config_, module_name);
     } else {
-        LOG_DEBUG("The '%1%' configuration will not be validated; no JSON "
+        LOG_DEBUG("The '{1}' configuration will not be validated; no JSON "
                   "schema is available", module_name);
     }
 }
@@ -140,21 +144,21 @@ const int ExternalModule::OUTPUT_DELAY_MS { 100 };
 void ExternalModule::processOutputAndUpdateMetadata(ActionResponse& response)
 {
     if (response.output.std_out.empty()) {
-        LOG_TRACE("Obtained no results on stdout for the %1%",
+        LOG_TRACE("Obtained no results on stdout for the {1}",
                   response.prettyRequestLabel());
     } else {
-        LOG_TRACE("Results on stdout for the %1%: %2%",
+        LOG_TRACE("Results on stdout for the {1}: {2}",
                   response.prettyRequestLabel(), response.output.std_out);
     }
 
     if (response.output.exitcode != EXIT_SUCCESS) {
-        LOG_TRACE("Execution failure (exit code %1%) for the %2%%3%",
+        LOG_TRACE("Execution failure (exit code {1}) for the {2}{3}",
                   response.output.exitcode, response.prettyRequestLabel(),
                   (response.output.std_err.empty()
-                    ? ""
-                    : "; stderr:\n" + response.output.std_err));
+                        ? ""
+                        : "; stderr:\n" + response.output.std_err));
     } else if (!response.output.std_err.empty()) {
-        LOG_TRACE("Output on stderr for the %1%:\n%2%",
+        LOG_TRACE("Output on stderr for the {1}:\n{2}",
                   response.prettyRequestLabel(), response.output.std_err);
     }
 
@@ -165,17 +169,16 @@ void ExternalModule::processOutputAndUpdateMetadata(ActionResponse& response)
             (response.output.std_out.empty() ? "null" : response.output.std_out) };
         response.setValidResultsAndEnd(std::move(results));
     } catch (lth_jc::data_parse_error& e) {
-        LOG_DEBUG("Obtained invalid JSON on stdout for the %1%; (validation "
-                  "error: %2%); stdout:\n%3%",
+        LOG_DEBUG("Obtained invalid JSON on stdout for the {1}; (validation "
+                  "error: {2}); stdout:\n{3}",
                   response.prettyRequestLabel(), e.what(), response.output.std_out);
-        auto execution_error =
-            (boost::format("The task executed for the %1% returned invalid "
-                           "JSON on stdout - stderr:%2%")
-                % response.prettyRequestLabel()
-                % (response.output.std_err.empty()
-                        ? " (empty)"
-                        : '\n' + response.output.std_err))
-            .str();
+        std::string execution_error {
+            lth_loc::format("The task executed for the {1} returned invalid "
+                            "JSON on stdout - stderr:{2}",
+                            response.prettyRequestLabel(),
+                            (response.output.std_err.empty()
+                                ? lth_loc::translate(" (empty)")
+                                : "\n" + response.output.std_err)) };
         response.setBadResultsAndEnd(execution_error);
     }
 }
@@ -200,27 +203,28 @@ const lth_jc::JsonContainer ExternalModule::getModuleMetadata()
             0, {lth_exec::execution_options::merge_environment});
 
     if (!exec.error.empty()) {
-        LOG_ERROR("Failed to load the external module metadata from %1%: %2%",
+        LOG_ERROR("Failed to load the external module metadata from {1}: {2}",
                   path_, exec.error);
-        throw Module::LoadingError { "failed to load external module metadata" };
+        throw Module::LoadingError {
+            lth_loc::translate("failed to load external module metadata") };
     }
 
     lth_jc::JsonContainer metadata;
 
     try {
         metadata = lth_jc::JsonContainer { exec.output };
-        LOG_DEBUG("External module %1%: metadata is valid JSON", module_name);
+        LOG_DEBUG("External module {1}: metadata is valid JSON", module_name);
     } catch (lth_jc::data_error& e) {
-        throw Module::LoadingError { std::string { "metadata is not in a valid "
-                                        "JSON format: " } + e.what() };
+        throw Module::LoadingError {
+            lth_loc::format("metadata is not in a valid JSON format: {1}", e.what()) };
     }
 
     try {
         metadata_validator_.validate(metadata, METADATA_SCHEMA_NAME);
-        LOG_DEBUG("External module %1%: metadata validation OK", module_name);
+        LOG_DEBUG("External module {1}: metadata validation OK", module_name);
     } catch (PCPClient::validation_error& e) {
-        throw Module::LoadingError { std::string { "metadata validation failure: " }
-                                     + e.what() };
+        throw Module::LoadingError {
+            lth_loc::format("metadata validation failure: {1}", e.what()) };
     }
 
     return metadata;
@@ -230,21 +234,20 @@ void ExternalModule::registerConfiguration(const lth_jc::JsonContainer& config_m
 {
     try {
         PCPClient::Schema configuration_schema { module_name, config_metadata };
-        LOG_DEBUG("Registering module config schema for '%1%'", module_name);
+        LOG_DEBUG("Registering module configuration schema for '{1}'", module_name);
         config_validator_.registerSchema(configuration_schema);
     } catch (PCPClient::schema_error& e) {
-        LOG_ERROR("Failed to parse the configuration schema of module '%1%': %2%",
+        LOG_ERROR("Failed to parse the configuration schema of module '{1}': {2}",
                   module_name, e.what());
-        std::string err { "invalid configuration schema of module " + module_name };
-        throw Module::LoadingError { err };
+        throw Module::LoadingError {
+            lth_loc::format("invalid configuration schema of module {1}", module_name) };
     }
 }
 
 void ExternalModule::registerActions(const lth_jc::JsonContainer& metadata)
 {
     for (auto& action
-            : metadata.get<std::vector<lth_jc::JsonContainer>>(
-                METADATA_ACTIONS_ENTRY))
+            : metadata.get<std::vector<lth_jc::JsonContainer>>(METADATA_ACTIONS_ENTRY))
         registerAction(action);
 }
 
@@ -254,7 +257,7 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action)
 {
     // NOTE(ale): name, input, and output are required action entries
     auto action_name = action.get<std::string>("name");
-    LOG_DEBUG("Validating action '%1% %2%'", module_name, action_name);
+    LOG_DEBUG("Validating action '{1} {2}'", module_name, action_name);
 
     try {
         auto input_schema_json = action.get<lth_jc::JsonContainer>("input");
@@ -264,22 +267,20 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action)
         PCPClient::Schema results_schema { action_name, results_schema_json };
 
         // Metadata schemas are valid JSON; store metadata
-        LOG_DEBUG("Action '%1% %2%' has been validated", module_name, action_name);
+        LOG_DEBUG("Action '{1} {2}' has been validated", module_name, action_name);
         actions.push_back(action_name);
         input_validator_.registerSchema(input_schema);
         results_validator_.registerSchema(results_schema);
     } catch (PCPClient::schema_error& e) {
-        LOG_ERROR("Failed to parse metadata schemas of action '%1% %2%': %3%",
+        LOG_ERROR("Failed to parse metadata schemas of action '{1} {2}': {3}",
                   module_name, action_name, e.what());
-        std::string err { "invalid schemas of '" + module_name + " "
-                          + action_name + "'" };
-        throw Module::LoadingError { err };
+        throw Module::LoadingError {
+            lth_loc::format("invalid schemas of '{1} {2}'", module_name, action_name) };
     } catch (lth_jc::data_error& e) {
-        LOG_ERROR("Failed to retrieve metadata schemas of action '%1% %2%': %3%",
+        LOG_ERROR("Failed to retrieve metadata schemas of action '{1} {2}': {3}",
                   module_name, action_name, e.what());
-        std::string err { "invalid metadata of '" + module_name + " "
-                          + action_name + "'" };
-        throw Module::LoadingError { err };
+        throw Module::LoadingError {
+            lth_loc::format("invalid metadata of '{1} {2}'", module_name, action_name) };
     }
 }
 
@@ -309,8 +310,8 @@ ActionResponse ExternalModule::callBlockingAction(const ActionRequest& request)
     auto action_name = request.action();
     auto action_args = getActionArguments(request);
 
-    LOG_INFO("Executing the %1%", request.prettyLabel());
-    LOG_TRACE("Input for the %1%: %2%", request.prettyLabel(), action_args);
+    LOG_INFO("Executing the {1}", request.prettyLabel());
+    LOG_TRACE("Input for the {1}: {2}", request.prettyLabel(), action_args);
 
     auto exec = lth_exec::execute(
 #ifdef _WIN32
@@ -337,13 +338,15 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
     auto out_file = (results_dir_path / "stdout").string();
     auto err_file = (results_dir_path / "stderr").string();
 
-    LOG_INFO("Starting a task for the %1%; stdout and stderr will be stored in %2%",
+    LOG_INFO("Starting a task for the {1}; stdout and stderr will be stored in {2}",
              request.prettyLabel(), request.resultsDir());
-    LOG_TRACE("Input for the %1%: %2%", request.prettyLabel(), input_txt);
+    LOG_TRACE("Input for the {1}: {2}", request.prettyLabel(), input_txt);
 
     auto exec = lth_exec::execute(
-#ifdef _WIN32
+#if defined(_WIN32)
         "cmd.exe", { "/c", path_, action_name },
+#elif defined(__sun)
+        "/usr/bin/ctrun", { "-l", "child", path_, action_name },
 #else
         path_, { action_name },
 #endif
@@ -356,23 +359,25 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
         0,          // timeout
         { lth_exec::execution_options::merge_environment });  // options
 
-    LOG_INFO("The task for the %1% has completed", request.prettyLabel());
+    LOG_INFO("The task for the {1} has completed", request.prettyLabel());
 
     if (exec.exit_code == EXTERNAL_MODULE_FILE_ERROR_EC) {
         // This is unexpected. The output of the task will not be
         // available for future transaction status requests; we cannot
         // provide a reliable ActionResponse.
-        LOG_WARNING("The task process failed to write output on file for the %1%; "
-                    "stdout: %2%; stderr: %3%",
+        std::string empty_label { lth_loc::translate("(empty)") };
+        LOG_WARNING("The task process failed to write output on file for the {1}; "
+                    "stdout: {2}; stderr: {3}",
                     request.prettyLabel(),
-                    (exec.output.empty() ? "(empty)" : exec.output),
-                    (exec.error.empty() ? "(empty)" : exec.error));
-        throw Module::ProcessingError { "failed to write output on file" };
+                    (exec.output.empty() ? empty_label : exec.output),
+                    (exec.error.empty() ? empty_label : exec.error));
+        throw Module::ProcessingError {
+            lth_loc::translate("failed to write output on file") };
     }
 
     // Wait a bit to relax the requirement for the exitcode file being
     // written before the output ones, when the process completes
-    LOG_TRACE("Waiting %1% ms before retrieving the output of %2%",
+    LOG_TRACE("Waiting {1} ms before retrieving the output of {2}",
               OUTPUT_DELAY_MS, request.prettyLabel());
     pcp_util::this_thread::sleep_for(
         pcp_util::chrono::milliseconds(OUTPUT_DELAY_MS));

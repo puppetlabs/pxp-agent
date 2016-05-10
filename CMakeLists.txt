@@ -77,6 +77,14 @@ leatherman_logging_line_numbers()
 set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS}")
 add_definitions(${LEATHERMAN_DEFINITIONS})
 
+# TODO(ale): enable i18n with add_definitions(-DLEATHERMAN_I18N) - PCP-257
+# TODO(ale): enable translation with set(LEATHERMAN_LOCALES "...;...") and
+# gettext_compile(${CMAKE_CURRENT_SOURCE_DIR}/locales share/locale)
+
+# Configure i18n
+file(GLOB_RECURSE PXP_AGENT_SOURCES lib/src/*.cc lib/inc/*.hpp exe/*.cc)
+gettext_templates(${CMAKE_CURRENT_SOURCE_DIR}/locales ${PXP_AGENT_SOURCES})
+
 # Display a summary of the features
 include(FeatureSummary)
 feature_summary(WHAT ALL)

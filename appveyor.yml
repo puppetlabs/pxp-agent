@@ -11,11 +11,12 @@ install:
   - ps: wget 'https://s3.amazonaws.com/kylo-pl-bucket/boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh.7z' -OutFile "$pwd\boost.7z"
   - ps: 7z.exe x boost.7z -oC:\tools | FIND /V "ing  "
 
-  - ps: wget 'https://s3.amazonaws.com/kylo-pl-bucket/openssl-1.0.0s-x64-windows.tar.lzma' -OutFile "$pwd\openssl.tar.lzma"
+  - ps: wget 'https://s3.amazonaws.com/kylo-pl-bucket/openssl-1.0.2e-x64-windows.tar.lzma' -OutFile "$pwd\openssl.tar.lzma"
   - ps: 7z.exe x openssl.tar.lzma | FIND /V "ing  "
-  - ps: 7z.exe x openssl.tar -oC:\tools | FIND /V "ing  "
-  - SET OPENSSL_ROOT_DIR=C:\tools
-  - SET PATH=C:\tools\bin;%PATH%
+    # Install locally so OpenSSL DLLs are in the same directory as the build artifacts. This avoids
+    # issues from picking up OpenSSL DLLs in C:\Windows\System32.
+  - ps: 7z.exe x openssl.tar | FIND /V "ing  "
+  - SET OPENSSL_ROOT_DIR=%cd%
 
   - ps: wget 'https://s3.amazonaws.com/kylo-pl-bucket/curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh.7z' -OutFile "$pwd\curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh.7z"
   - ps: 7z.exe x "curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh.7z" -oC:\tools | FIND /V "ing "
@@ -29,6 +30,7 @@ install:
   - ps: cmake -G "MinGW Makefiles" -DBOOST_ROOT="C:\tools\boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh" -DBOOST_STATIC=ON -DCURL_STATIC=ON -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh" -Wno-dev -DCMAKE_INSTALL_PREFIX=C:\tools .
   - ps: mingw32-make install
   - cd ..
+  - SET PATH=C:\tools\bin;%PATH%
 
 build_script:
   - ps: cmake -G "MinGW Makefiles" -DBOOST_ROOT="C:\tools\boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh" -DBOOST_STATIC=ON -DCURL_STATIC=ON -Wno-dev -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh;C:\tools;C:\tools\bin" -DCMAKE_INSTALL_PREFIX=C:\tools -DTEST_VIRTUAL=ON .

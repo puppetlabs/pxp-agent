@@ -18,7 +18,7 @@ bool processExists(int pid) {
         return true;
     } else {
         LOG_TRACE("OpenProcess failure while trying to determine the state "
-                  "of PID %1%: %2%", pid, lth_win::system_error());
+                  "of PID {1}: {2}", pid, lth_win::system_error());
     }
     return false;
 }

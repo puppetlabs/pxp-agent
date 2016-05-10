@@ -23,9 +23,7 @@ class ActionRequest {
     /// the data chunk from the specified ParsedChunks or in case of
     /// binary data (currently not supported).
     ActionRequest(RequestType type_,
-                  const PCPClient::ParsedChunks& parsed_chunks_);
-    ActionRequest(RequestType type_,
-                  PCPClient::ParsedChunks&& parsed_chunks_);
+                  PCPClient::ParsedChunks parsed_chunks_);
 
     void setResultsDir(const std::string& results_dir) const;
 
