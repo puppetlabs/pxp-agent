@@ -128,7 +128,7 @@ def assert_eventmachine_thread_running
 end
 
 # Query pcp-broker's inventory of associated clients
-# Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/inventory.md
+# Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pcp/versions/1.0/inventory.md
 # @param broker hostname or beaker host object of the pcp-broker host
 # @param query pattern of client identities that you want to check e.g. pcp://*/agent for all agents, or pcp://*/* for everything
 # @return Ruby array of strings that are the client identities that match the query pattern
@@ -233,7 +233,7 @@ def is_not_associated?(broker, identity, retries = 60)
 end
 
 # Make an rpc_blocking_request to pxp-agent
-# Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
+# Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/versions/1.0/request_response.md
 # @param broker hostname or beaker host object of the machine running PCP broker
 # @param targets array of PCP identities to send request to
 #                e.g. ["pcp://client01.example.com/agent","pcp://client02.example.com/agent"]
@@ -250,7 +250,7 @@ def rpc_blocking_request(broker, targets,
 end
 
 # Make an rpc_non_blocking_request to pxp-agent
-# Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/request_response.md
+# Reference: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/versions/1.0/request_response.md
 # @param broker hostname or beaker host object of the machine running PCP broker
 # @param targets array of PCP identities to send request to
 #                e.g. ["pcp://client01.example.com/agent","pcp://client02.example.com/agent"]

@@ -192,4 +192,4 @@ the [PXP Transaction Response][transaction_status]. The only reserved code is
 `5`; such code should be used in case the `output_files` entry was included, but
 the module failed to write the action's results on file.
 
-[transaction_status]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/transaction_status.md
+[transaction_status]: https://github.com/puppetlabs/pcp-specifications/blob/master/pxp/versions/1.0/transaction_status.md
