@@ -14,8 +14,8 @@
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/file_util/file.hpp>
 #include <leatherman/file_util/directory.hpp>
-#include <leatherman/util/strings.hpp>
 #include <leatherman/util/scope_exit.hpp>
+#include <leatherman/locale/locale.hpp>
 
 #include <cpp-pcp-client/validator/validator.hpp>
 #include <cpp-pcp-client/validator/schema.hpp>
@@ -38,9 +38,10 @@
 namespace PXPAgent {
 
 namespace fs = boost::filesystem;
-namespace lth_jc = leatherman::json_container;
+namespace lth_jc   = leatherman::json_container;
 namespace lth_file = leatherman::file_util;
 namespace lth_util = leatherman::util;
+namespace lth_loc  = leatherman::locale;
 namespace pcp_util = PCPClient::Util;
 
 // Time interval to allow the non-blocking action task to ask for the
@@ -83,7 +84,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
         ResultsMutex::LockGuard a_l { ResultsMutex::Instance().access_mtx };
         if (ResultsMutex::Instance().exists(request.transactionId())) {
             // Mutex already exists; unexpected
-            LOG_DEBUG("Mutex for transaction ID %1% is already cached",
+            LOG_DEBUG("Mutex for transaction ID {1} is already cached",
                       request.transactionId());
         } else {
             ResultsMutex::Instance().add(request.transactionId());
@@ -92,7 +93,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
         }
     } catch (const ResultsMutex::Error& e) {
         // This is unexpected
-        LOG_ERROR("Failed to obtain the mutex pointer for transaction %1%: %2%",
+        LOG_ERROR("Failed to obtain the mutex pointer for transaction {1}: {2}",
                   request.transactionId(), e.what());
     }
 
@@ -108,11 +109,11 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                     // Unexpected; if we have a lock pointer it means
                     // that the mutex was cached
                     LOG_ERROR("Failed to remove the mutex pointer for "
-                              "transaction %1%: %2%",
+                              "transaction {1}: {2}",
                               request.transactionId(), e.what());
                 }
                 lck_ptr->unlock();
-                LOG_TRACE("Unlocked transaction mutex %1%",
+                LOG_TRACE("Unlocked transaction mutex {1}",
                           request.transactionId());
             }
 
@@ -125,17 +126,17 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     assert(response.request_type == RequestType::NonBlocking);
 
     if (lck_ptr != nullptr) {
-        LOG_TRACE("Locking transaction mutex %1%", request.transactionId());
+        LOG_TRACE("Locking transaction mutex {1}", request.transactionId());
         lck_ptr->lock();
     } else {
         // This is unexpected
         LOG_TRACE("We previously failed to obtain the mutex pointer for "
-                  "transaction %1%; we will not lock the access to the "
+                  "transaction {1}; we will not lock the access to the "
                   "metadata file", request.transactionId());
     }
 
     if (response.action_metadata.get<bool>("results_are_valid")) {
-        LOG_INFO("The %1%, request ID %2% by %3%, has successfully completed",
+        LOG_INFO("The {1}, request ID {2} by {3}, has successfully completed",
                  request.prettyLabel(), request.id(), request.sender());
     } else {
         LOG_ERROR(response.action_metadata.get<std::string>("execution_error"));
@@ -153,7 +154,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
         storage_ptr->updateMetadataFile(request.transactionId(),
                                         response.action_metadata);
     } catch (const ResultsStorage::Error& e) {
-        LOG_ERROR("Failed to write metadata of the %1%: %2%",
+        LOG_ERROR("Failed to write metadata of the {1}: {2}",
                   request.prettyLabel(), e.what());
     }
 }
@@ -215,13 +216,13 @@ RequestProcessor::~RequestProcessor()
 void RequestProcessor::processRequest(const RequestType& request_type,
                                       const PCPClient::ParsedChunks& parsed_chunks)
 {
-    LOG_TRACE("About to validate and process PXP request message: %1%",
+    LOG_TRACE("About to validate and process PXP request message: {1}",
               parsed_chunks.toString());
     try {
         // Inspect and validate the request message format
         ActionRequest request { request_type, parsed_chunks };
 
-        LOG_INFO("Processing %1%, request ID %2%, by %3%",
+        LOG_INFO("Processing {1}, request ID {2}, by {3}",
                  request.prettyLabel(), request.id(), request.sender());
 
         try {
@@ -229,14 +230,14 @@ void RequestProcessor::processRequest(const RequestType& request_type,
             validateRequestContent(request);
         } catch (RequestProcessor::Error& e) {
             // Invalid request; send *RPC Error message*
-            LOG_ERROR("Invalid %1%, request ID %2% by %3%. Will reply with an "
-                      "RPC Error message. Error: %4%",
+            LOG_ERROR("Invalid {1}, request ID {2} by {3}. Will reply with an "
+                      "RPC Error message. Error: {4}",
                       request.prettyLabel(), request.id(), request.sender(), e.what());
             connector_ptr_->sendPXPError(request, e.what());
             return;
         }
 
-        LOG_DEBUG("The %1% has been successfully validated", request.prettyLabel());
+        LOG_DEBUG("The {1} has been successfully validated", request.prettyLabel());
 
         try {
             if (isStatusRequest(request)) {
@@ -247,12 +248,12 @@ void RequestProcessor::processRequest(const RequestType& request_type,
                 processNonBlockingRequest(request);
             }
 
-            LOG_DEBUG("The %1%, request ID %2% by %3%, has been successfully processed",
+            LOG_DEBUG("The {1}, request ID {2} by {3}, has been successfully processed",
                       request.prettyLabel(), request.id(), request.sender());
         } catch (std::exception& e) {
             // Process failure; send a *RPC Error message*
-            LOG_ERROR("Failed to process %1%, request ID %2% by %3%. Will reply "
-                      "with an RPC Error message. Error: %4%",
+            LOG_ERROR("Failed to process {1}, request ID {2} by {3}. Will reply "
+                      "with an RPC Error message. Error: {4}",
                       request.prettyLabel(), request.id(), request.sender(), e.what());
             connector_ptr_->sendPXPError(request, e.what());
         }
@@ -262,8 +263,8 @@ void RequestProcessor::processRequest(const RequestType& request_type,
         auto id = parsed_chunks.envelope.get<std::string>("id");
         auto sender = parsed_chunks.envelope.get<std::string>("sender");
         std::vector<std::string> endpoints { sender };
-        LOG_ERROR("Invalid request with ID %1% by %2%. Will reply with a PCP "
-                  "error. Error: %3%",
+        LOG_ERROR("Invalid request with ID {1} by {2}. Will reply with a PCP "
+                  "error. Error: {3}",
                   id, sender, e.what());
         connector_ptr_->sendPCPError(id, e.what(), endpoints);
     }
@@ -283,9 +284,8 @@ std::string RequestProcessor::getModuleConfig(const std::string& module_name) co
 {
     if (!hasModuleConfig(module_name))
         throw RequestProcessor::Error {
-            (boost::format("no configuration loaded for the module '%1%'")
-                % module_name)
-            .str() };
+            lth_loc::format("no configuration loaded for the module '{1}'",
+                            module_name) };
 
     return modules_config_.at(module_name).toString();
 }
@@ -304,12 +304,11 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) cons
         if (!is_status_request
                 && !modules_.at(request.module())->hasAction(request.action()))
             throw RequestProcessor::Error {
-                (boost::format("unknown action '%1%' for module '%2%'")
-                    % request.action()
-                    % request.module())
-                .str() };
+                lth_loc::format("unknown action '{1}' for module '{2}'",
+                                request.action(), request.module()) };
     } catch (std::out_of_range& e) {
-        throw RequestProcessor::Error { "unknown module: " + request.module() };
+        throw RequestProcessor::Error { lth_loc::format("unknown module: {1}",
+                                                        request.module()) };
     }
 
     // If it's an internal module, the request must be blocking
@@ -319,14 +318,13 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) cons
             && (is_status_request
                 || modules_.at(request.module())->type() == ModuleType::Internal))
         throw RequestProcessor::Error {
-            (boost::format("the module '%1%' supports only blocking PXP requests")
-                % request.module())
-            .str() };
+            lth_loc::format("the module '{1}' supports only blocking PXP requests",
+                            request.module()) };
 
 
     // Validate request input params
     try {
-        LOG_DEBUG("Validating input parameters of the %1%, request ID %2% by %3%",
+        LOG_DEBUG("Validating input parameters of the {1}, request ID {2} by {3}",
                   request.prettyLabel(), request.id(), request.sender());
 
         // NB: the registred schemas have the same name as the action
@@ -335,9 +333,10 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) cons
                                 : modules_.at(request.module())->input_validator_);
         validator.validate(request.params(), request.action());
     } catch (PCPClient::validation_error& e) {
-        LOG_DEBUG("Invalid input parameters of the %1%, request ID %2% by %3%: %4%",
+        LOG_DEBUG("Invalid input parameters of the {1}, request ID {2} by {3}: {4}",
                   request.prettyLabel(), request.id(), request.sender(), e.what());
-        throw RequestProcessor::Error { "invalid input for " + request.prettyLabel() };
+        throw RequestProcessor::Error {
+            lth_loc::format("invalid input for {1}", request.prettyLabel()) };
     }
 }
 
@@ -346,7 +345,7 @@ void RequestProcessor::processBlockingRequest(const ActionRequest& request)
     auto response = modules_[request.module()]->executeAction(request);
 
     if (response.action_metadata.get<bool>("results_are_valid")) {
-        LOG_INFO("The %1%, request ID %2% by %3%, has successfully completed",
+        LOG_INFO("The {1}, request ID {2} by {3}, has successfully completed",
                  request.prettyLabel(), request.id(), request.sender());
         connector_ptr_->sendBlockingResponse(response, request);
     } else {
@@ -361,7 +360,7 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
         std::move((spool_dir_path_ / request.transactionId()).string()));
     std::string err_msg {};
 
-    LOG_DEBUG("Preparing the task for the %1%, request ID %2% by %3% (using the "
+    LOG_DEBUG("Preparing the task for the {1}, request ID {2} by {3} (using the "
               "transaction ID as identifier)",
               request.prettyLabel(), request.id(), request.sender());
 
@@ -371,8 +370,9 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
         pcp_util::lock_guard<pcp_util::mutex> lck { thread_container_mutex_ };
 
         if (thread_container_.find(request.transactionId())) {
-            err_msg += "already exists an ongoing task with transaction id ";
-            err_msg += request.transactionId();
+            err_msg =
+                lth_loc::format("already exists an ongoing task with transaction id {1}",
+                                request.transactionId());
         } else {
             try {
                 // Initialize the action metadata file
@@ -380,8 +380,8 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
                 storage_ptr_->initializeMetadataFile(request.transactionId(),
                                                      metadata);
             } catch (const ResultsStorage::Error& e) {
-                err_msg += "Failed to initialize the metadata file: ";
-                err_msg += e.what();
+                err_msg = lth_loc::format("Failed to initialize the metadata file: {1}",
+                                          e.what());
             }
 
             if (err_msg.empty()) {
@@ -403,7 +403,7 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
             }
         }
     } catch (const std::exception& e) {
-        LOG_ERROR("Failed to spawn the action job for transaction %1%; error: %2%",
+        LOG_ERROR("Failed to spawn the action job for transaction {1}; error: {2}",
                   request.transactionId(), e.what());
         err_msg += "failed to start action task: ";
         err_msg += e.what();
@@ -458,9 +458,10 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
     status_results.set<std::string>("status", AS.at(ActionStatus::Unknown));
 
     if (!storage_ptr_->find(t_id)) {
-        LOG_DEBUG("Found no results for the %1%", request.prettyLabel());
-        status_response.setValidResultsAndEnd(std::move(status_results),
-                                              "found no results directory");
+        LOG_DEBUG("Found no results for the {1}", request.prettyLabel());
+        status_response.setValidResultsAndEnd(
+            std::move(status_results),
+            lth_loc::translate("found no results directory"));
         connector_ptr_->sendStatusResponse(status_response, request);
         return;
     }
@@ -477,11 +478,11 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
     bool not_running_by_pid { false };
 
     if (!storage_ptr_->pidFileExists(t_id)) {
-        LOG_DEBUG("The PID file for the transaction %1% task does not exist", t_id);
+        LOG_DEBUG("The PID file for the transaction {1} task does not exist", t_id);
     } else {
         try {
             auto pid = storage_ptr_->getPID(t_id);
-            LOG_DEBUG("The PID of the action process for the transaction %1% is %2%",
+            LOG_DEBUG("The PID of the action process for the transaction {1} is {2}",
                       t_id, pid);
 
             // NOTE(ale): processExists() does not throw
@@ -503,14 +504,14 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
                         pcp_util::chrono::milliseconds(METADATA_RACE_MS));
             }
         } catch (const ResultsStorage::Error& e) {
-            LOG_ERROR("Failed to get the PID for transaction %1%: %2%",
+            LOG_ERROR("Failed to get the PID for transaction {1}: {2}",
                       t_id, e.what());
         }
     }
 
     // Retrieve metadata
 
-    LOG_DEBUG("Retrieving metadata and output for the transaction %1%", t_id);
+    LOG_DEBUG("Retrieving metadata and output for the transaction {1}", t_id);
     std::string metadata_retrieval_error {};
     lth_jc::JsonContainer metadata;
 
@@ -538,19 +539,21 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
         auto mod = metadata.get<std::string>("module");
         auto act = metadata.get<std::string>("action");
         if (!hasModule(mod) || !modules_.at(mod)->hasAction(act))
-            throw Error { "unknow action stored in metadata file: '"
-                          + mod + " " + act + "'" };
+            throw Error {
+                lth_loc::format("unknow action stored in metadata file: '{1} {2}'",
+                                mod, act) };
     } catch (const ResultsStorage::Error& e) {
-        LOG_ERROR("Cannot access the stored metadata for the transaction %1%: %2%",
+        LOG_ERROR("Cannot access the stored metadata for the transaction {1}: {2}",
                   t_id, e.what());
         metadata_retrieval_error = e.what();
     } catch (const std::exception& e) {
         LOG_ERROR("Unexpected failure while retrieving metadata for the "
-                  "transaction %1%: %2%",
+                  "transaction {1}: {2}",
                   t_id, e.what());
         std::string err_msg { e.what() };
-        metadata_retrieval_error = "unexpected failure while retrieving metadata";
-        metadata_retrieval_error += (err_msg.empty() ? "" : ": " + err_msg);
+        metadata_retrieval_error =
+            lth_loc::format("unexpected failure while retrieving metadata{1}",
+                            (err_msg.empty() ? "" : ": " + err_msg));
     }
 
     if (!metadata_retrieval_error.empty()) {
@@ -566,7 +569,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
 
     std::string execution_error {};
     auto stored_status = metadata.get<std::string>("status");
-    LOG_TRACE("The status of the transaction %1% is \"%2%\", as reported in its "
+    LOG_TRACE("The status of the transaction {1} is '{2}', as reported in its "
               "metadata file",
               t_id, stored_status);
 
@@ -588,12 +591,12 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
             // the metadata says that the results were valid
             if (metadata.includes("results_are_valid")
                 && metadata.get<bool>("results_are_valid")) {
-                LOG_ERROR("Failed to get the output of the trasaction %1%: %2%",
+                LOG_ERROR("Failed to get the output of the trasaction {1}: {2}",
                           t_id, e.what());
-                if (execution_error.empty()) {
-                    execution_error = "failed to retrieve the output: ";
-                    execution_error += e.what();
-                }
+                if (execution_error.empty())
+                    execution_error =
+                        lth_loc::format("failed to retrieve the output: {1}",
+                                        e.what());
             }
         }
 
@@ -610,21 +613,22 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
     if (!storage_ptr_->outputIsReady(t_id)) {
         // No output; use the PID information to determine the status
         // and update the metadata if UNDETERMINED
-        LOG_TRACE("The output of the transaction %1% is not ready; using the PID "
+        LOG_TRACE("The output of the transaction {1} is not ready; using the PID "
                   "information to ensure that the action process is running", t_id);
 
         if (running_by_pid) {
             // It's running --> RUNNING
-            LOG_TRACE("The action process of the transaction %1% is running", t_id);
+            LOG_TRACE("The action process of the transaction {1} is running", t_id);
             status_results.set<std::string>("status", AS.at(ActionStatus::Running));
         } else  if (not_running_by_pid) {
             // It's not running --> UNDETERMINED / execution_error
             // TODO(ale): use UNDETERMINED after PXP v2.0 changes
-            LOG_WARNING("The action process of the transaction %1% is not "
-                        "running; updating its status to \"undetermined\" "
+            LOG_WARNING("The action process of the transaction {1} is not "
+                        "running; updating its status to 'undetermined' "
                         "on its metadata file",
                         t_id);
-            execution_error = "task process is not running, but no output is available";
+            execution_error = lth_loc::translate("task process is not running, "
+                                                 "but no output is available");
             metadata.set<std::string>("status", AS.at(ActionStatus::Undetermined));
             if (!metadata.includes("execution_error"))
                 // Update this for the sake of future status requests
@@ -638,16 +642,17 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
                 }
             } catch (const ResultsStorage::Error& err) {
                 LOG_ERROR("Failed to update the metadata file of the "
-                          "transaction %1%: %2%",
+                          "transaction {1}: {2}",
                           t_id, err.what());
             }
         } else {
             // We failed to get any indication from the PID file;
             // leave the status as UNKNOWN as the process may finish
             // later and make its output available
-            LOG_WARNING("We cannot determine the status of the transaction %1% "
+            LOG_WARNING("We cannot determine the status of the transaction {1} "
                         "from the action process' PID", t_id);
-            execution_error = "the task PID and output are not available";
+            execution_error = lth_loc::translate("the PID and output of this "
+                                                 "task are not available");
         }
 
         status_response.setValidResultsAndEnd(std::move(status_results),
@@ -664,25 +669,26 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
     if (running_by_pid) {
         // Wait a bit to relax the requirement for the exitcode file
         // being written before the output ones
-        LOG_DEBUG("The output for the transaction %1% is now available, but the "
-                  "aciton process was still executing when this handler started; "
-                  "wait for %2% ms before retrieving the output from file",
+        LOG_DEBUG("The output for the transaction {1} is now available, but the "
+                  "action process was still executing when this handler started; "
+                  "wait for {2} ms before retrieving the output from file",
                   t_id, ExternalModule::OUTPUT_DELAY_MS);
         pcp_util::this_thread::sleep_for(
             pcp_util::chrono::milliseconds(ExternalModule::OUTPUT_DELAY_MS));
     } else {
-        LOG_TRACE("Output of %1% is ready; retrieving it", t_id);
+        LOG_TRACE("Output of {1} is ready; retrieving it", t_id);
     }
 
     try {
         status_response.output = storage_ptr_->getOutput(t_id);
     } catch (const ResultsStorage::Error& e) {
-        LOG_ERROR("Failed to get the output of the transaction %1% (it status "
-                  "will be updated to \"undetermined\" on its metadata file): %2%",
+        LOG_ERROR("Failed to get the output of the transaction {1} (it status "
+                  "will be updated to 'undetermined' on its metadata file): {2}",
                   t_id, e.what());
         // TODO(ale): use UNDETERMINED after PXP v2.0 changes
-        status_response.setValidResultsAndEnd(std::move(status_results),
-                                              "found no results directory");
+        status_response.setValidResultsAndEnd(
+                std::move(status_results),
+                lth_loc::translate("found no results directory"));
         connector_ptr_->sendStatusResponse(status_response, request);
 
         // Update the metadata with a final 'status' value
@@ -695,7 +701,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
                 storage_ptr_->updateMetadataFile(t_id, metadata);
             }
         } catch (const ResultsStorage::Error& err) {
-            LOG_ERROR("Failed to update metadata for the %1%: %2%",
+            LOG_ERROR("Failed to update metadata for the {1}: {2}",
                       request.prettyLabel(), err.what());
         }
         return;
@@ -721,7 +727,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
         mod_ptr->validateOutputAndUpdateMetadata(a_r);
 
     // Update metadata file while holding the lock (if cached)
-    LOG_INFO("Setting the status of the transaction %1% to \"%2%\" on its "
+    LOG_INFO("Setting the status of the transaction {1} to '{2}' on its "
              "metadata file",
              t_id, a_r.action_metadata.get<std::string>("status"));
     try {
@@ -732,7 +738,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
             storage_ptr_->updateMetadataFile(t_id, a_r.action_metadata);
         }
     } catch (const ResultsStorage::Error& err) {
-        LOG_ERROR("Failed to update metadata of the transaction %1%: %2%",
+        LOG_ERROR("Failed to update metadata of the transaction {1}: {2}",
                   t_id, err.what());
     }
 
@@ -756,7 +762,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
 
 void RequestProcessor::loadModulesConfiguration()
 {
-    LOG_INFO("Loading external modules configuration from %1%",
+    LOG_INFO("Loading external modules configuration from {1}",
              modules_config_dir_);
 
     if (fs::is_directory(modules_config_dir_)) {
@@ -772,13 +778,13 @@ void RequestProcessor::loadModulesConfiguration()
                 try {
                     auto config_json = lth_jc::JsonContainer(lth_file::read(s));
                     modules_config_[module_name] = std::move(config_json);
-                    LOG_DEBUG("Loaded module configuration for module '%1%' "
-                              "from %2%", module_name, s);
+                    LOG_DEBUG("Loaded module configuration for module '{1}' "
+                              "from {2}", module_name, s);
                 } catch (lth_jc::data_parse_error& e) {
-                    LOG_WARNING("Cannot load module config file '%1%'; invalid "
+                    LOG_WARNING("Cannot load module config file '{1}'; invalid "
                                 "JSON format. If the module's metadata contains "
                                 "the 'configuration' entry, the module won't be "
-                                "loaded. Error: '%2%'", s, e.what());
+                                "loaded. Error: '{2}'", s, e.what());
                     modules_config_[module_name] = lth_jc::JsonContainer { "null" };
                 }
                 return true;
@@ -787,7 +793,7 @@ void RequestProcessor::loadModulesConfiguration()
             },
             "\\.conf$");
     } else {
-        LOG_DEBUG("Directory '%1%' specified by modules-config-dir doesn't "
+        LOG_DEBUG("Directory '{1}' specified by modules-config-dir doesn't "
                   "exist; no module configuration file will be loaded",
                   modules_config_dir_);
     }
@@ -802,69 +808,71 @@ void RequestProcessor::loadInternalModules()
 
 void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
 {
-    LOG_INFO("Loading external modules from %1%", dir_path.string());
+    if (!fs::is_directory(dir_path)) {
+        LOG_WARNING("Failed to locate the modules directory '{1}'; no external "
+                            "modules will be loaded", dir_path.string());
+        return;
+    }
 
-    if (fs::is_directory(dir_path)) {
-        fs::directory_iterator end;
+    LOG_INFO("Loading external modules from {1}", dir_path.string());
+    fs::directory_iterator end;
 
-        for (auto f = fs::directory_iterator(dir_path); f != end; ++f) {
-            if (!fs::is_directory(f->status())) {
-                auto f_p = fs::canonical(f->path());
-                auto extension = f_p.extension();
+    for (auto f = fs::directory_iterator(dir_path); f != end; ++f) {
+        if (!fs::is_directory(f->status())) {
+            auto f_p = fs::canonical(f->path());
+            auto extension = f_p.extension();
 
-                // valid module have no extension on *nix, .bat
-                // extensions on Windows
+            // valid module have no extension on *nix, .bat
+            // extensions on Windows
 #ifndef _WIN32
-                if (extension == "") {
+            if (extension == "") {
 #else
-                if (extension == ".bat") {
+            if (extension == ".bat") {
 #endif
-                    try {
-                        ExternalModule* e_m;
-                        auto config_itr = modules_config_.find(f_p.stem().string());
+                try {
+                    ExternalModule* e_m;
+                    auto config_itr = modules_config_.find(f_p.stem().string());
 
-                        if (config_itr != modules_config_.end()) {
-                            e_m = new ExternalModule(f_p.string(),
-                                                     config_itr->second,
-                                                     spool_dir_path_.string());
-                            e_m->validateConfiguration();
-                            LOG_DEBUG("The '%1%' module configuration has been "
-                                      "validated: %2%", e_m->module_name,
-                                      config_itr->second.toString());
-                        } else {
-                            e_m = new ExternalModule(f_p.string(),
-                                                     spool_dir_path_.string());
-                        }
-
-                        modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
-                    } catch (Module::LoadingError& e) {
-                        LOG_ERROR("Failed to load %1%; %2%", f_p, e.what());
-                    } catch (PCPClient::validation_error& e) {
-                        LOG_ERROR("Failed to configure %1%; %2%", f_p, e.what());
-                    } catch (std::exception& e) {
-                        LOG_ERROR("Unexpected error when loading %1%; %2%",
-                                  f_p, e.what());
-                    } catch (...) {
-                        LOG_ERROR("Unexpected error when loading %1%", f_p);
+                    if (config_itr != modules_config_.end()) {
+                        e_m = new ExternalModule(f_p.string(),
+                                                 config_itr->second,
+                                                 spool_dir_path_.string());
+                        e_m->validateConfiguration();
+                        LOG_DEBUG("The '{1}' module configuration has been "
+                                  "validated: {2}", e_m->module_name,
+                                  config_itr->second.toString());
+                    } else {
+                        e_m = new ExternalModule(f_p.string(),
+                                                 spool_dir_path_.string());
                     }
+
+                    modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
+                } catch (Module::LoadingError& e) {
+                    LOG_ERROR("Failed to load {1}; {2}", f_p, e.what());
+                } catch (PCPClient::validation_error& e) {
+                    LOG_ERROR("Failed to configure {1}; {2}", f_p, e.what());
+                } catch (std::exception& e) {
+                    LOG_ERROR("Unexpected error when loading {1}; {2}",
+                              f_p, e.what());
+                } catch (...) {
+                    LOG_ERROR("Unexpected error when loading {1}", f_p);
                 }
             }
         }
-    } else {
-        LOG_WARNING("Failed to locate the modules directory; no external "
-                    "modules will be loaded");
     }
 }
 
 void RequestProcessor::logLoadedModules() const
 {
+    std::string actions_label { lth_loc::translate("actions") };
+
     for (auto& module : modules_) {
-        std::string txt { "found no action" };
         std::string actions_list { "" };
+        size_t count = 0u;
 
         for (auto& action : module.second->actions) {
+            ++count;
             if (actions_list.empty()) {
-                txt = "action";
                 actions_list += ": ";
             } else {
                 actions_list += ", ";
@@ -872,9 +880,11 @@ void RequestProcessor::logLoadedModules() const
             actions_list += action;
         }
 
-        auto txt_suffix = lth_util::plural(module.second->actions.size());
-        LOG_DEBUG("Loaded '%1%' module - %2%%3%%4%",
-                  module.first, txt, txt_suffix, actions_list);
+        // TODO(ale): deal with locale & plural (PCP-257)
+        auto txt = (count == 0) ?  lth_loc::translate("found no action")
+            : ((count == 1) ? lth_loc::translate("action")
+               : lth_loc::translate("actions"));
+        LOG_DEBUG("Loaded '{1}' module - {2}{3}", module.first, txt, actions_list);
     }
 }
 
@@ -886,11 +896,16 @@ void RequestProcessor::spoolDirPurgeTask()
 {
     auto num_minutes = Timestamp::getMinutes(spool_dir_purge_ttl_);
     num_minutes *= 1.2;
-    LOG_INFO("Starting the task for purging the spool directory every %1% "
-             "minute%2%; thread id %3%",
-             num_minutes, lth_util::plural(num_minutes),
-             pcp_util::this_thread::get_id());
-
+    // TODO(ale): deal with locale & plural (PCP-257)
+    if (num_minutes == 1) {
+        LOG_INFO("Starting the task for purging the spool directory every {1} "
+                 "minute; thread id {2}",
+                 num_minutes, pcp_util::this_thread::get_id());
+    } else {
+        LOG_INFO("Starting the task for purging the spool directory every {1} "
+                 "minutes; thread id {2}",
+                 num_minutes, pcp_util::this_thread::get_id());
+    }
 
     while (true) {
         pcp_util::unique_lock<pcp_util::mutex> the_lock { spool_dir_purge_mutex_ };

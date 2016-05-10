@@ -187,7 +187,7 @@ TEST_CASE("Configuration::get", "[configuration]") {
 #endif
             Configuration::Instance().validate();
 
-            REQUIRE(Configuration::Instance().get<bool>("foreground") == false);
+            REQUIRE_FALSE(Configuration::Instance().get<bool>("foreground"));
         }
 
         SECTION("return the correct value after the flag has been set") {
@@ -282,10 +282,40 @@ TEST_CASE("Configuration::validate", "[configuration]") {
                           Configuration::Error);
     }
 
-    SECTION("it fails when --spool-dir is empty") {
+    SECTION("it fails when --modules-dir does not exist") {
+        auto test_modules = SPOOL_DIR + "/testing_modules";
+        HW::SetFlag<std::string>("modules-dir", test_modules);
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::Error);
+    }
+
+    SECTION("it fails when --modules-config-dir is not a directory") {
+        HW::SetFlag<std::string>("modules-dir", CONFIG);
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::Error);
+    }
+
+        SECTION("it fails when --spool-dir is empty") {
         HW::SetFlag<std::string>("spool-dir", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
                           Configuration::Error);
+    }
+
+    SECTION("it fails when --spool-dir exists but is not a directory") {
+        HW::SetFlag<std::string>("spool-dir", CONFIG);
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::Error);
+    }
+
+    SECTION("it creates --spool-dir when needed") {
+        auto test_spool = SPOOL_DIR + "/testing_creation";
+        HW::SetFlag<std::string>("spool-dir", test_spool);
+
+        REQUIRE_FALSE(fs::exists(test_spool));
+        REQUIRE_NOTHROW(Configuration::Instance().validate());
+        REQUIRE(fs::exists(test_spool));
+
+        fs::remove_all(test_spool);
     }
 }
 

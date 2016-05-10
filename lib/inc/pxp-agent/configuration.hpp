@@ -15,8 +15,6 @@
 
 namespace PXPAgent {
 
-namespace HW = HorseWhisperer;
-
 //
 // Tokens
 //
@@ -27,9 +25,10 @@ extern const std::string DEFAULT_SPOOL_DIR;     // used by unit tests
 // Types
 //
 
-enum Types { Integer, String, Bool, Double };
+using Types = HorseWhisperer::FlagType;
 
-struct EntryBase {
+struct EntryBase
+{
     // Config option name
     // HERE: must match one of the flag names and config file option
     std::string name;
@@ -51,7 +50,8 @@ struct EntryBase {
 };
 
 template <typename T>
-struct Entry : EntryBase {
+struct Entry : EntryBase
+{
     // Default value
     T value;
 
@@ -107,18 +107,22 @@ void configure_platform_file_logging();
 // Configuration (singleton)
 //
 
-class Configuration {
+class Configuration
+{
   public:
-    struct Error : public std::runtime_error {
+    struct Error : public std::runtime_error
+    {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
 
-    static Configuration& Instance() {
+    static Configuration& Instance()
+    {
         static Configuration instance {};
         return instance;
     }
 
-    struct Agent {
+    struct Agent
+    {
         std::string modules_dir;
         std::string broker_ws_uri;
         std::string ca;
@@ -147,11 +151,12 @@ class Configuration {
     /// Throw a Configuration::Error: if it fails to parse the CLI
     /// arguments; if the specified config file cannot be parsed or
     /// has any invalid JSON entry.
-    HW::ParseResult parseOptions(int argc, char *argv[]);
+    HorseWhisperer::ParseResult parseOptions(int argc, char *argv[]);
 
     /// Validate logging configuration options and enable logging.
     /// Throw a Configuration::Error: in case of invalid the specified
     /// log file is in a non-esixtent directory.
+    /// Other execeptions are propagated.
     void setupLogging();
 
     /// Ensure all required values are valid. If necessary, expand
@@ -167,24 +172,20 @@ class Configuration {
     /// value in case nd the requested flag is known or throw a
     /// Configuration::Error otherwise.
     template <typename T>
-    T get(std::string flagname) {
+    T get(std::string flagname)
+    {
         if (valid_) {
             try {
-                return HW::GetFlag<T>(flagname);
-            } catch (HW::undefined_flag_error& e) {
+                return HorseWhisperer::GetFlag<T>(flagname);
+            } catch (HorseWhisperer::undefined_flag_error& e) {
                 throw Configuration::Error { std::string { e.what() } };
             }
         }
 
-        // Configuration instance not initialized; get default
-        const auto& opt_idx = defaults_.get<Option::ByName>().find(flagname);
 
-        if (opt_idx == defaults_.get<Option::ByName>().end()) {
-            throw Configuration::Error { "no default value for " + flagname };
-        } else {
-            Entry<T>* entry_ptr = (Entry<T>*) opt_idx->ptr.get();
-            return entry_ptr->value;
-        }
+        const auto& opt_idx = getDefaultIndex(flagname);
+        Entry<T>* entry_ptr = (Entry<T>*) opt_idx->ptr.get();
+        return entry_ptr->value;
     }
 
     /// Set the specified value for a given configuration flag.
@@ -193,18 +194,16 @@ class Configuration {
     /// Throw a Configuration::Error in case the specified flag is
     /// unknown or the value is invalid.
     template<typename T>
-    void set(std::string flagname, T value) {
-        if (!valid_) {
-            throw Configuration::Error { "cannot set configuration value until "
-                                         "configuration is validated" };
-        }
+    void set(std::string flagname, T value)
+    {
+        checkValidForSetting();
 
         try {
-            HW::SetFlag<T>(flagname, value);
-        } catch (HW::flag_validation_error) {
-            throw Configuration::Error { "invalid value for " + flagname };
-        } catch (HW::undefined_flag_error) {
-            throw Configuration::Error { "unknown flag name: " + flagname };
+            HorseWhisperer::SetFlag<T>(flagname, value);
+        } catch (HorseWhisperer::flag_validation_error) {
+            throw Configuration::Error { getInvalidFlagError(flagname) };
+        } catch (HorseWhisperer::undefined_flag_error) {
+            throw Configuration::Error { getUnknownFlagError(flagname) };
         }
     }
 
@@ -249,6 +248,10 @@ class Configuration {
     void validateAndNormalizeWebsocketSettings();
     void validateAndNormalizeOtherSettings();
     void setAgentConfiguration();
+    const Options::iterator getDefaultIndex(const std::string& flagname);
+    std::string getInvalidFlagError(const std::string& flagname);
+    std::string getUnknownFlagError(const std::string& flagname);
+    void checkValidForSetting();
 };
 
 }  // namespace PXPAgent

@@ -1,5 +1,7 @@
 #include <pxp-agent/configuration.hpp>
 
+#include <leatherman/locale/locale.hpp>
+
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.configuration.posix.configuration"
 #include <leatherman/logging/logging.hpp>
 
@@ -8,12 +10,14 @@
 
 namespace PXPAgent {
 
+namespace lth_loc = leatherman::locale;
+
 static void sigLogfileReopen(int signal) {
     LOG_INFO("Caught SIGUSR2 signal - reopening log file");
     try {
         Configuration::Instance().reopenLogfile();
     } catch (const std::exception& e) {
-        LOG_ERROR("Failed to reopen logfile: %1%", e.what());
+        LOG_ERROR("Failed to reopen logfile: {1}", e.what());
     }
 }
 
@@ -21,7 +25,8 @@ void configure_platform_file_logging() {
     // Add the SIGUSR2 handler
     // HERE(ale): we expect that daemonize() will not touch this
     if (signal(SIGUSR2, sigLogfileReopen) == SIG_ERR) {
-        throw Configuration::Error { "failed to set the SIGUSR2 handler" };
+        throw Configuration::Error {
+            lth_loc::translate("failed to set the SIGUSR2 handler") };
     } else {
         LOG_DEBUG("Successfully registered the SIGUSR2 handler to reopen "
                   "the logfile");

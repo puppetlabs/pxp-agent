@@ -2,8 +2,7 @@
 
 #include <cpp-pcp-client/util/chrono.hpp>
 
-#include <algorithm>  // remove_if
-#include <iterator>   // distance
+#include <leatherman/locale/locale.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.thread_container"
 #include <leatherman/logging/logging.hpp>
@@ -11,6 +10,7 @@
 namespace PXPAgent {
 
 namespace pcp_util = PCPClient::Util;
+namespace lth_loc  = leatherman::locale;
 
 // Check if the thread has completed; if so, and if it's joinable,
 // detach it. Return true if completed, false otherwise.
@@ -21,7 +21,7 @@ bool detachIfCompleted(std::shared_ptr<ManagedThread> thread_ptr) {
         if (thread_ptr->the_instance.joinable()) {
             // Detach the thread object; it will be then possible to
             // delete it without triggering std::terminate
-            LOG_TRACE("Detaching thread %1%", thread_ptr->the_instance.get_id());
+            LOG_TRACE("Detaching thread {1}", thread_ptr->the_instance.get_id());
             thread_ptr->the_instance.detach();
         }
 
@@ -74,7 +74,7 @@ ThreadContainer::~ThreadContainer() {
 
     if (!all_detached) {
         // NB: std::terminate will be invoked
-        LOG_WARNING("Not all threads stored by the '%1%' ThreadContainer have "
+        LOG_WARNING("Not all threads stored by the '{1}' ThreadContainer have "
                     "completed; pxp-agent will not terminate gracefully", name_);
     }
 }
@@ -82,13 +82,20 @@ ThreadContainer::~ThreadContainer() {
 void ThreadContainer::add(std::string thread_name,
                           pcp_util::thread task,
                           std::shared_ptr<std::atomic<bool>> is_done) {
-    LOG_TRACE("Adding thread %1%  (named '%2%') to the '%3%' "
-              "ThreadContainer; added %4% threads so far",
-              task.get_id(), thread_name,  name_, num_added_threads_);
+    // TODO(ale): deal with locale & plural (PCP-257)
+    if (num_added_threads_ == 1) {
+        LOG_TRACE("Adding thread {1}  (named '{2}') to the '{3}' "
+                  "ThreadContainer; added {4} thread so far",
+                  task.get_id(), thread_name,  name_, num_added_threads_);
+    } else {
+        LOG_TRACE("Adding thread {1}  (named '{2}') to the '{3}' "
+                  "ThreadContainer; added {4} threads so far",
+                  task.get_id(), thread_name,  name_, num_added_threads_);
+    }
     pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
 
     if (findLocked(thread_name))
-        throw Error { "thread name is already stored" };
+        throw Error { lth_loc::translate("thread name is already stored") };
 
     threads_.insert(
         std::make_pair(
@@ -100,8 +107,14 @@ void ThreadContainer::add(std::string thread_name,
 
     // Start the monitoring thread, if necessary
     if (!is_monitoring_ && threads_.size() > threads_threshold) {
-        LOG_DEBUG("%1% threads stored in the '%2%' ThreadContainer; about "
-                  "to start a the monitoring thread", threads_.size(), name_);
+        // TODO(ale): deal with locale & plural (PCP-257)
+        if (threads_.size() == 1) {
+            LOG_DEBUG("{1} thread stored in the '{2}' ThreadContainer; about "
+                      "to start the monitoring thread", threads_.size(), name_);
+        } else {
+            LOG_DEBUG("{1} threads stored in the '{2}' ThreadContainer; about "
+                      "to start the monitoring thread", threads_.size(), name_);
+        }
 
         if (monitoring_thread_ptr_ != nullptr
                 && monitoring_thread_ptr_->joinable()) {
@@ -157,8 +170,8 @@ bool ThreadContainer::findLocked(const std::string& thread_name) const {
 }
 
 void ThreadContainer::monitoringTask_() {
-    LOG_DEBUG("Starting monitoring task for the '%1%' ThreadContainer, "
-              "with id %2%", name_, pcp_util::this_thread::get_id());
+    LOG_DEBUG("Starting monitoring task for the '{1}' ThreadContainer, "
+              "with id {2}", name_, pcp_util::this_thread::get_id());
 
     while (true) {
         pcp_util::unique_lock<pcp_util::mutex> the_lock { mutex_ };
@@ -183,7 +196,7 @@ void ThreadContainer::monitoringTask_() {
 
         for (auto itr = threads_.begin(); itr != threads_.end();) {
             if (detachIfCompleted(itr->second)) {
-                LOG_DEBUG("Deleting thread %1% (named '%2%')",
+                LOG_DEBUG("Deleting thread {1} (named '{2}')",
                           itr->second->the_instance.get_id(), itr->first);
                 itr = threads_.erase(itr);
                 num_deletions++;
@@ -194,8 +207,8 @@ void ThreadContainer::monitoringTask_() {
 
         if (num_deletions > 0) {
             num_erased_threads_ += num_deletions;
-            LOG_DEBUG("Deleted %1% thread objects that have completed their "
-                      "execution; in total, deleted %2% threads so far",
+            LOG_DEBUG("Deleted {1} thread objects that have completed their "
+                      "execution; in total, deleted {2} threads so far",
                       num_deletions, num_erased_threads_);
         }
 
