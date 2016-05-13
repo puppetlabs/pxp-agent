@@ -236,118 +236,118 @@ msgstr ""
 msgid "PID file path, default: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:532
+#: lib/src/configuration.cc:534
 msgid "cannot parse config file; invalid JSON"
 msgstr ""
 
-#: lib/src/configuration.cc:546
+#: lib/src/configuration.cc:548
 msgid "field '{1}' must be of type {2}"
 msgstr ""
 
-#: lib/src/configuration.cc:555
+#: lib/src/configuration.cc:557
 msgid "field '{1}' is not a valid configuration variable"
 msgstr ""
 
-#: lib/src/configuration.cc:592
+#: lib/src/configuration.cc:594
 msgid "{1} value must be defined"
 msgstr ""
 
-#: lib/src/configuration.cc:597
+#: lib/src/configuration.cc:599
 msgid "{1} file '{2}' not found"
 msgstr ""
 
-#: lib/src/configuration.cc:601
+#: lib/src/configuration.cc:603
 msgid "{1} file '{2}' not readable"
 msgstr ""
 
-#: lib/src/configuration.cc:612
+#: lib/src/configuration.cc:614
 msgid "broker-ws-uri value must be defined"
 msgstr ""
 
-#: lib/src/configuration.cc:615
+#: lib/src/configuration.cc:617
 msgid "broker-ws-uri value must start with wss://"
 msgstr ""
 
 #. info
-#: lib/src/configuration.cc:644
+#: lib/src/configuration.cc:646
 msgid "Creating the {1} '{2}'"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:647
+#: lib/src/configuration.cc:649
 msgid "Failed to create the {1} '{2}': {3}"
 msgstr ""
 
-#: lib/src/configuration.cc:650
+#: lib/src/configuration.cc:652
 msgid "failed to create the {1} '{2}'"
 msgstr ""
 
-#: lib/src/configuration.cc:655
+#: lib/src/configuration.cc:657
 msgid "the {1} '{2}' does not exist"
 msgstr ""
 
-#: lib/src/configuration.cc:660
+#: lib/src/configuration.cc:662
 msgid "the {1} '{2}' is not a directory"
 msgstr ""
 
-#: lib/src/configuration.cc:686
+#: lib/src/configuration.cc:688
 msgid "spool-dir must be defined"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:703
+#: lib/src/configuration.cc:705
 msgid ""
 "Failed to create the test dir in spool path '{1}' duringconfiguration "
 "validation: {2}"
 msgstr ""
 
-#: lib/src/configuration.cc:710
+#: lib/src/configuration.cc:712
 msgid "the spool-dir '{1}' is not writable"
 msgstr ""
 
-#: lib/src/configuration.cc:721
+#: lib/src/configuration.cc:723
 msgid "the PID file '{1}' is not a regular file"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:731
+#: lib/src/configuration.cc:733
 msgid "Creating the PID file directory '{1}'"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:734
+#: lib/src/configuration.cc:736
 msgid "Failed to create '{1}' directory: {2}"
 msgstr ""
 
-#: lib/src/configuration.cc:736
+#: lib/src/configuration.cc:738
 msgid "failed to create the PID file directory"
 msgstr ""
 
-#: lib/src/configuration.cc:743
+#: lib/src/configuration.cc:745
 msgid "'{1}' is not a directory"
 msgstr ""
 
-#: lib/src/configuration.cc:746
+#: lib/src/configuration.cc:748
 msgid "the PID directory '{1}' does not exist; cannot create the PID file"
 msgstr ""
 
-#: lib/src/configuration.cc:758
+#: lib/src/configuration.cc:760
 msgid "invalid spool-dir-purge-ttl: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:767
+#: lib/src/configuration.cc:769
 msgid "no default value for {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:773
+#: lib/src/configuration.cc:775
 msgid "invalid value for {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:778
+#: lib/src/configuration.cc:780
 msgid "unknown flag name: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:785
+#: lib/src/configuration.cc:787
 msgid "cannot set configuration value until configuration is validated"
 msgstr ""
 
