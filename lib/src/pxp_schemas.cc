@@ -1,7 +1,5 @@
 #include <pxp-agent/pxp_schemas.hpp>
 
-#include <cpp-pcp-client/protocol/schemas.hpp>
-
 namespace PXPAgent {
 namespace PXPSchemas {
 
