@@ -27,7 +27,8 @@ describe "pxp-module-puppet" do
   describe "check_config_print" do
     it "returns the result of configprint" do
       cli_vec = ["puppet", "agent", "--configprint", "value"]
-      expect(Puppet::Util::Execution).to receive(:execute).with(cli_vec).and_return("value\n")
+      expect(self).to receive(:get_env_fix_up).and_return({"FIXVAR" => "fixvalue"})
+      expect(Puppet::Util::Execution).to receive(:execute).with(cli_vec, {:custom_environment => {"FIXVAR" => "fixvalue"}}).and_return("value\n")
       expect(check_config_print("value", default_configuration)).to be == "value"
     end
   end
@@ -66,8 +67,9 @@ describe "pxp-module-puppet" do
     it "should correctly add the env entries" do
       input = default_input
       input["env"] = ["FOO=bar", "BAR=foo"]
+      expect(self).to receive(:get_env_fix_up).and_return({"FIXVAR" => "fixvalue"})
       expect(make_environment_hash(input)).to be ==
-        {"FOO" => "bar", "BAR" => "foo"}
+        {"FOO" => "bar", "BAR" => "foo", "FIXVAR" => "fixvalue"}
     end
   end
 
