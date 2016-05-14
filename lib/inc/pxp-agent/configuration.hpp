@@ -125,6 +125,7 @@ class Configuration
     {
         std::string modules_dir;
         std::string broker_ws_uri;
+        std::string failover_ws_uri;
         std::string ca;
         std::string crt;
         std::string key;

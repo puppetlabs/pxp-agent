@@ -168,186 +168,199 @@ msgid "Logging configured"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:294
+#: lib/src/configuration.cc:295
 msgid "Failed to close logfile stream; already closed?"
 msgstr ""
 
 #. error
-#: lib/src/configuration.cc:299
+#: lib/src/configuration.cc:300
 msgid "Failed to open logfile stream"
 msgstr ""
 
-#: lib/src/configuration.cc:325
+#: lib/src/configuration.cc:326
 msgid "Config file, default: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:334
+#: lib/src/configuration.cc:335
 msgid "WebSocket URI of the PCP broker"
 msgstr ""
 
-#: lib/src/configuration.cc:343
+#: lib/src/configuration.cc:344
+msgid ""
+"WebSocket URI of the failover PCP broker used when the default is unavailable"
+msgstr ""
+
+#: lib/src/configuration.cc:353
 msgid ""
 "Timeout (in seconds) for establishing a WebSocket connection, default: 5 s"
 msgstr ""
 
-#: lib/src/configuration.cc:353
+#: lib/src/configuration.cc:363
 msgid "SSL CA certificate"
 msgstr ""
 
-#: lib/src/configuration.cc:362
+#: lib/src/configuration.cc:372
 msgid "pxp-agent SSL certificate"
 msgstr ""
 
-#: lib/src/configuration.cc:371
+#: lib/src/configuration.cc:381
 msgid "pxp-agent private SSL key"
 msgstr ""
 
-#: lib/src/configuration.cc:380
+#: lib/src/configuration.cc:390
 msgid "Log file, default: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:389
+#: lib/src/configuration.cc:399
 msgid ""
 "Valid options are 'none', 'trace', 'debug', 'info','warning', 'error' and "
 "'fatal'. Defaults to 'info'"
 msgstr ""
 
-#: lib/src/configuration.cc:400
+#: lib/src/configuration.cc:410
 msgid "Modules directory, default (relative to the pxp-agent.exe path): {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:413
+#: lib/src/configuration.cc:423
 msgid "Module config files directory, default: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:423
+#: lib/src/configuration.cc:433
 msgid "Spool action results directory, default: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:433
+#: lib/src/configuration.cc:443
 msgid "TTL for action results before being deleted, default: '{1}' (days)"
 msgstr ""
 
-#: lib/src/configuration.cc:444
+#: lib/src/configuration.cc:454
 msgid "Don't daemonize, default: false"
 msgstr ""
 
-#: lib/src/configuration.cc:457
+#: lib/src/configuration.cc:467
 msgid "PID file path, default: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:534
+#: lib/src/configuration.cc:544
 msgid "cannot parse config file; invalid JSON"
 msgstr ""
 
-#: lib/src/configuration.cc:548
+#: lib/src/configuration.cc:558
 msgid "field '{1}' must be of type {2}"
 msgstr ""
 
-#: lib/src/configuration.cc:557
+#: lib/src/configuration.cc:567
 msgid "field '{1}' is not a valid configuration variable"
 msgstr ""
 
-#: lib/src/configuration.cc:594
+#: lib/src/configuration.cc:604
 msgid "{1} value must be defined"
 msgstr ""
 
-#: lib/src/configuration.cc:599
+#: lib/src/configuration.cc:609
 msgid "{1} file '{2}' not found"
 msgstr ""
 
-#: lib/src/configuration.cc:603
+#: lib/src/configuration.cc:613
 msgid "{1} file '{2}' not readable"
 msgstr ""
 
-#: lib/src/configuration.cc:614
+#: lib/src/configuration.cc:624
 msgid "broker-ws-uri value must be defined"
 msgstr ""
 
-#: lib/src/configuration.cc:617
+#: lib/src/configuration.cc:627
 msgid "broker-ws-uri value must start with wss://"
 msgstr ""
 
+#: lib/src/configuration.cc:633
+msgid "failover-ws-uri requires broker-ws-uri is defined"
+msgstr ""
+
+#: lib/src/configuration.cc:636
+msgid "failover-ws-uri value must start with wss://"
+msgstr ""
+
 #. info
-#: lib/src/configuration.cc:646
+#: lib/src/configuration.cc:666
 msgid "Creating the {1} '{2}'"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:649
+#: lib/src/configuration.cc:669
 msgid "Failed to create the {1} '{2}': {3}"
 msgstr ""
 
-#: lib/src/configuration.cc:652
+#: lib/src/configuration.cc:672
 msgid "failed to create the {1} '{2}'"
 msgstr ""
 
-#: lib/src/configuration.cc:657
+#: lib/src/configuration.cc:677
 msgid "the {1} '{2}' does not exist"
 msgstr ""
 
-#: lib/src/configuration.cc:662
+#: lib/src/configuration.cc:682
 msgid "the {1} '{2}' is not a directory"
 msgstr ""
 
-#: lib/src/configuration.cc:688
+#: lib/src/configuration.cc:708
 msgid "spool-dir must be defined"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:705
+#: lib/src/configuration.cc:725
 msgid ""
 "Failed to create the test dir in spool path '{1}' duringconfiguration "
 "validation: {2}"
 msgstr ""
 
-#: lib/src/configuration.cc:712
+#: lib/src/configuration.cc:732
 msgid "the spool-dir '{1}' is not writable"
 msgstr ""
 
-#: lib/src/configuration.cc:723
+#: lib/src/configuration.cc:743
 msgid "the PID file '{1}' is not a regular file"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:733
+#: lib/src/configuration.cc:753
 msgid "Creating the PID file directory '{1}'"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:736
+#: lib/src/configuration.cc:756
 msgid "Failed to create '{1}' directory: {2}"
 msgstr ""
 
-#: lib/src/configuration.cc:738
+#: lib/src/configuration.cc:758
 msgid "failed to create the PID file directory"
 msgstr ""
 
-#: lib/src/configuration.cc:745
+#: lib/src/configuration.cc:765
 msgid "'{1}' is not a directory"
 msgstr ""
 
-#: lib/src/configuration.cc:748
+#: lib/src/configuration.cc:768
 msgid "the PID directory '{1}' does not exist; cannot create the PID file"
 msgstr ""
 
-#: lib/src/configuration.cc:760
+#: lib/src/configuration.cc:780
 msgid "invalid spool-dir-purge-ttl: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:769
+#: lib/src/configuration.cc:789
 msgid "no default value for {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:775
+#: lib/src/configuration.cc:795
 msgid "invalid value for {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:780
+#: lib/src/configuration.cc:800
 msgid "unknown flag name: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:787
+#: lib/src/configuration.cc:807
 msgid "cannot set configuration value until configuration is validated"
 msgstr ""
 
@@ -571,54 +584,54 @@ msgid "Message {1} contained {2} bad debug chunks"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc:61
+#: lib/src/pxp_connector.cc:70
 msgid "Replied to request {1} with a PCP error message"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:64
+#: lib/src/pxp_connector.cc:73
 msgid "Failed to send PCP error message for request {1}: {2}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc:81
+#: lib/src/pxp_connector.cc:90
 msgid "Sent provisional response for the {1} by {2}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:84
+#: lib/src/pxp_connector.cc:93
 msgid ""
 "Failed to send provisional response for the {1} by {2} (no further attempts "
 "will be made): {3}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc:103
-#: lib/src/pxp_connector.cc:122
+#: lib/src/pxp_connector.cc:112
+#: lib/src/pxp_connector.cc:131
 msgid "Replied to {1} by {2}, request ID {3}, with a PXP error message"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:106
-#: lib/src/pxp_connector.cc:127
+#: lib/src/pxp_connector.cc:115
+#: lib/src/pxp_connector.cc:136
 msgid ""
 "Failed to send a PXP error message for the {1} by {2} (no further sending "
 "attempts will be made): {3}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc:165
-#: lib/src/pxp_connector.cc:194
+#: lib/src/pxp_connector.cc:174
+#: lib/src/pxp_connector.cc:203
 msgid "Sent response for the {1} by {2}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:169
+#: lib/src/pxp_connector.cc:178
 msgid "Failed to reply to {1} by {2}, (no further attempts will be made): {3}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc:197
+#: lib/src/pxp_connector.cc:206
 msgid "Failed to reply to the {1} by {2}: {3}"
 msgstr ""
 
