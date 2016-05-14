@@ -69,7 +69,7 @@ void ActionRequest::init() {
     id_ = parsed_chunks_.envelope.get<std::string>("id");
     sender_ = parsed_chunks_.envelope.get<std::string>("sender");
 
-    LOG_DEBUG("Validating {1} request {2} by {3]:\n{4}",
+    LOG_DEBUG("Validating {1} request {2} by {3}:\n{4}",
               REQUEST_TYPE_NAMES.at(type_), id_, sender_, parsed_chunks_.toString());
 
     validateFormat();
