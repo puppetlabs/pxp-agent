@@ -28,7 +28,9 @@ DEFAULT_EXITCODE = -1
 
 env_fix_up = nil
 
-def get_env_fix_up
+# use this way of defining the `get_env_fix_up` method so that it can "see"
+# the `env_fix_up` variable
+self.class.send(:define_method, :get_env_fix_up) do
   # Prepare an environment fix-up to make up for its cleansing performed
   # by the Puppet::Util::Execution.execute function.
   # Without this fix-up it's impossible to run puppet under a non-root
@@ -45,8 +47,11 @@ def get_env_fix_up
       {"USER"    => pwentry.name,
        "LOGNAME" => pwentry.name,
        "HOME"    => pwentry.dir}
-    rescue
+    rescue => e
       # oh well ..., let's give it a try without the environment fix-up
+      myname = File.basename($0)
+      $stderr.puts "#{myname}: Could not fix environment for effective UID #{Process.euid}: #{e.message}"
+      $stderr.puts "#{myname}: Expect puppet run problems"
       {}
     end
   end
