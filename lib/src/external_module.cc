@@ -335,8 +335,6 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
     auto action_name = request.action();
     auto input_txt = getActionArguments(request);
     fs::path results_dir_path { request.resultsDir() };
-    auto out_file = (results_dir_path / "stdout").string();
-    auto err_file = (results_dir_path / "stderr").string();
 
     LOG_INFO("Starting a task for the {1}; stdout and stderr will be stored in {2}",
              request.prettyLabel(), request.resultsDir());
