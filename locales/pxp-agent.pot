@@ -98,7 +98,7 @@ msgstr ""
 #. debug
 #: lib/src/action_request.cc:72
 msgid ""
-"Validating {1} request {2} by {3]:\n"
+"Validating {1} request {2} by {3}:\n"
 "{4}"
 msgstr ""
 
