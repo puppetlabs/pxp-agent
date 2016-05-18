@@ -27,7 +27,7 @@ list(APPEND CMAKE_MODULE_PATH ${VENDOR_DIRECTORY})
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # set a version macro and expand related template
-set(APPLICATION_VERSION_STRING "1.1.4")
+set(APPLICATION_VERSION_STRING "1.2.0")
 configure_file(templates/version-inl.hpp ${CMAKE_BINARY_DIR}/generated/version-inl.hpp)
 
 # Set the root path macro and expand related template
