@@ -5,3 +5,5 @@
 /lib/tests/resources/tmp/
 .idea/
 .DS_Store
+acceptance/empty.rb
+acceptance/tmp
