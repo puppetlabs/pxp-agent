@@ -23,8 +23,9 @@ test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
     applicable_agents.each do |agent|
       agent.reboot
       # BKR-812
+      timeout = 10
       begin
-        Timeout.timeout(10) do
+        Timeout.timeout(timeout) do
           until agent.up?
             sleep 1
           end
