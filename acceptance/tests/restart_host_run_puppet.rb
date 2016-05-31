@@ -22,13 +22,27 @@ test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
   step "restart each agent" do
     applicable_agents.each do |agent|
       agent.reboot
-      assert(agent.up?, "Agent #{agent} should be up after reboot")
-      on(agent, puppet('resource service pxp-agent ')) do |result|
-        assert_match(/ensure => .running.,/, result.stdout,
-                     "pxp-agent service should be running after reboot")
+      # BKR-812
+      timeout = 30
+      begin
+        Timeout.timeout(timeout) do
+          until agent.up?
+            sleep 1
+          end
+        end
+      rescue Timeout::Error => e
+        raise "Agent did not come back up within #{timeout} seconds."
       end
-      assert(is_associated?(master, "pcp://#{agent}/agent"),
-                            "Agent #{agent} should be associated with pcp-broker following host reboot")
+
+      step "wait until pxp-agent is back up and associated on #{agent}" do
+        opts = {
+          :max_retries => 30,
+          :retry_interval => 1,
+        }
+        retry_on(agent, puppet('resource service pxp-agent | grep running'), opts)
+        assert(is_associated?(master, "pcp://#{agent}/agent"),
+               "Agent #{agent} should be associated with pcp-broker following host reboot")
+      end
     end
   end
 
