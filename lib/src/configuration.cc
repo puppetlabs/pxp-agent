@@ -282,7 +282,9 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         HW::GetFlag<std::string>("spool-dir-purge-ttl"),
         HW::GetFlag<std::string>("modules-config-dir"),
         AGENT_CLIENT_TYPE,
-        HW::GetFlag<int>("connection-timeout") * 1000};
+        HW::GetFlag<int>("connection-timeout") * 1000,
+        static_cast<uint32_t >(HW::GetFlag<int>("association-timeout")),
+        static_cast<uint32_t >(HW::GetFlag<int>("pcp-message-timeout")) };
     return agent_configuration_;
 }
 
@@ -341,7 +343,8 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "failover-ws-uri",
                     "",
-                    lth_loc::translate("WebSocket URI of the failover PCP broker used when the default is unavailable"),
+                    lth_loc::translate("WebSocket URI of the failover PCP broker "
+                                       "used when the default is unavailable"),
                     Types::String,
                     "") } });
 
@@ -350,10 +353,30 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<int>(
                     "connection-timeout",
                     "",
-                    lth_loc::translate("Timeout (in seconds) for establishing "
-                                       "a WebSocket connection, default: 5 s"),
+                    lth_loc::translate("Timeout (in seconds) for starting the "
+                                       "WebSocket handshake, default: 5 s"),
                     Types::Int,
                     5) } });
+
+    // Hidden option: TTL of the PCP Association request, default: 10 s
+    defaults_.insert(
+            Option { "association-timeout",
+                     Base_ptr { new Entry<int>(
+                             "association-timeout",
+                             "",
+                             "<hidden>",
+                             Types::Int,
+                             10) } });
+
+    // Hidden option: TTL of the PCP messages, default: 5 s
+    defaults_.insert(
+            Option { "pcp-message-timeout",
+                     Base_ptr { new Entry<int>(
+                             "pcp-message-timeout",
+                             "",
+                             "<hidden>",
+                             Types::Int,
+                             5) } });
 
     defaults_.insert(
         Option { "ssl-ca-cert",
@@ -779,6 +802,14 @@ void Configuration::validateAndNormalizeOtherSettings()
         throw Configuration::Error {
             lth_loc::format("invalid spool-dir-purge-ttl: {1}", e.what()) };
     }
+
+    if (HW::GetFlag<int>("association-timeout") < 0)
+        throw Configuration::Error {
+            lth_loc::translate("association-timeout must be positive") };
+
+    if (HW::GetFlag<int>("pcp-message-timeout") < 0)
+        throw Configuration::Error {
+            lth_loc::translate("pcp-message-timeout must be positive") };
 }
 
 const Options::iterator Configuration::getDefaultIndex(const std::string& flagname)

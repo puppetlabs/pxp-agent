@@ -36,7 +36,9 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   "0d",  // don't purge!
                                                   "",  // modules config dir
                                                   "test_agent",
-                                                  5000 };
+                                                  5000,
+                                                  5,
+                                                  5 };
 
 static const std::string VALID_ENVELOPE_TXT {
     " { \"id\" : \"123456\","

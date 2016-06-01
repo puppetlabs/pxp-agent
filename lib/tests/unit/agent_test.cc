@@ -29,7 +29,7 @@ TEST_CASE("Agent::Agent", "[agent]") {
                                                "0d",  // don't purge!
                                                "",  // modules config dir
                                                "test_agent",
-                                               5000 };
+                                               5000, 5, 5 };
 
     SECTION("does not throw if it fails to find the external modules directory") {
         agent_configuration.modules_dir = MODULES + "/fake_dir";
