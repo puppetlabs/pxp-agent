@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <cstdint>
 
 namespace PXPAgent {
 
@@ -133,7 +134,9 @@ class Configuration
         std::string spool_dir_purge_ttl;
         std::string modules_config_dir;
         std::string client_type;
-        long connection_timeout;
+        long ws_connection_timeout_ms;
+        uint32_t association_timeout_s;
+        uint32_t pcp_message_timeout_s;
     };
 
     /// Reset the HorseWhisperer singleton.

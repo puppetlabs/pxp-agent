@@ -168,199 +168,206 @@ msgid "Logging configured"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:295
+#: lib/src/configuration.cc:297
 msgid "Failed to close logfile stream; already closed?"
 msgstr ""
 
 #. error
-#: lib/src/configuration.cc:300
+#: lib/src/configuration.cc:302
 msgid "Failed to open logfile stream"
 msgstr ""
 
-#: lib/src/configuration.cc:326
+#: lib/src/configuration.cc:328
 msgid "Config file, default: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:335
+#: lib/src/configuration.cc:337
 msgid "WebSocket URI of the PCP broker"
 msgstr ""
 
-#: lib/src/configuration.cc:344
+#: lib/src/configuration.cc:346
 msgid ""
 "WebSocket URI of the failover PCP broker used when the default is unavailable"
 msgstr ""
 
-#: lib/src/configuration.cc:353
-msgid ""
-"Timeout (in seconds) for establishing a WebSocket connection, default: 5 s"
+#: lib/src/configuration.cc:356
+msgid "Timeout (in seconds) for starting the WebSocket handshake, default: 5 s"
 msgstr ""
 
-#: lib/src/configuration.cc:363
+#: lib/src/configuration.cc:386
 msgid "SSL CA certificate"
 msgstr ""
 
-#: lib/src/configuration.cc:372
+#: lib/src/configuration.cc:395
 msgid "pxp-agent SSL certificate"
 msgstr ""
 
-#: lib/src/configuration.cc:381
+#: lib/src/configuration.cc:404
 msgid "pxp-agent private SSL key"
 msgstr ""
 
-#: lib/src/configuration.cc:390
+#: lib/src/configuration.cc:413
 msgid "Log file, default: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:399
+#: lib/src/configuration.cc:422
 msgid ""
 "Valid options are 'none', 'trace', 'debug', 'info','warning', 'error' and "
 "'fatal'. Defaults to 'info'"
 msgstr ""
 
-#: lib/src/configuration.cc:410
+#: lib/src/configuration.cc:433
 msgid "Modules directory, default (relative to the pxp-agent.exe path): {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:423
+#: lib/src/configuration.cc:446
 msgid "Module config files directory, default: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:433
+#: lib/src/configuration.cc:456
 msgid "Spool action results directory, default: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:443
+#: lib/src/configuration.cc:466
 msgid "TTL for action results before being deleted, default: '{1}' (days)"
 msgstr ""
 
-#: lib/src/configuration.cc:454
+#: lib/src/configuration.cc:477
 msgid "Don't daemonize, default: false"
 msgstr ""
 
-#: lib/src/configuration.cc:467
+#: lib/src/configuration.cc:490
 msgid "PID file path, default: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:544
+#: lib/src/configuration.cc:567
 msgid "cannot parse config file; invalid JSON"
 msgstr ""
 
-#: lib/src/configuration.cc:558
+#: lib/src/configuration.cc:581
 msgid "field '{1}' must be of type {2}"
 msgstr ""
 
-#: lib/src/configuration.cc:567
+#: lib/src/configuration.cc:590
 msgid "field '{1}' is not a valid configuration variable"
 msgstr ""
 
-#: lib/src/configuration.cc:604
+#: lib/src/configuration.cc:627
 msgid "{1} value must be defined"
 msgstr ""
 
-#: lib/src/configuration.cc:609
+#: lib/src/configuration.cc:632
 msgid "{1} file '{2}' not found"
 msgstr ""
 
-#: lib/src/configuration.cc:613
+#: lib/src/configuration.cc:636
 msgid "{1} file '{2}' not readable"
 msgstr ""
 
-#: lib/src/configuration.cc:624
+#: lib/src/configuration.cc:647
 msgid "broker-ws-uri value must be defined"
 msgstr ""
 
-#: lib/src/configuration.cc:627
+#: lib/src/configuration.cc:650
 msgid "broker-ws-uri value must start with wss://"
 msgstr ""
 
-#: lib/src/configuration.cc:633
+#: lib/src/configuration.cc:656
 msgid "failover-ws-uri requires broker-ws-uri is defined"
 msgstr ""
 
-#: lib/src/configuration.cc:636
+#: lib/src/configuration.cc:659
 msgid "failover-ws-uri value must start with wss://"
 msgstr ""
 
 #. info
-#: lib/src/configuration.cc:666
+#: lib/src/configuration.cc:689
 msgid "Creating the {1} '{2}'"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:669
+#: lib/src/configuration.cc:692
 msgid "Failed to create the {1} '{2}': {3}"
 msgstr ""
 
-#: lib/src/configuration.cc:672
+#: lib/src/configuration.cc:695
 msgid "failed to create the {1} '{2}'"
 msgstr ""
 
-#: lib/src/configuration.cc:677
+#: lib/src/configuration.cc:700
 msgid "the {1} '{2}' does not exist"
 msgstr ""
 
-#: lib/src/configuration.cc:682
+#: lib/src/configuration.cc:705
 msgid "the {1} '{2}' is not a directory"
 msgstr ""
 
-#: lib/src/configuration.cc:708
+#: lib/src/configuration.cc:731
 msgid "spool-dir must be defined"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:725
+#: lib/src/configuration.cc:748
 msgid ""
 "Failed to create the test dir in spool path '{1}' duringconfiguration "
 "validation: {2}"
 msgstr ""
 
-#: lib/src/configuration.cc:732
+#: lib/src/configuration.cc:755
 msgid "the spool-dir '{1}' is not writable"
 msgstr ""
 
-#: lib/src/configuration.cc:743
+#: lib/src/configuration.cc:766
 msgid "the PID file '{1}' is not a regular file"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:753
+#: lib/src/configuration.cc:776
 msgid "Creating the PID file directory '{1}'"
 msgstr ""
 
 #. debug
-#: lib/src/configuration.cc:756
+#: lib/src/configuration.cc:779
 msgid "Failed to create '{1}' directory: {2}"
 msgstr ""
 
-#: lib/src/configuration.cc:758
+#: lib/src/configuration.cc:781
 msgid "failed to create the PID file directory"
 msgstr ""
 
-#: lib/src/configuration.cc:765
+#: lib/src/configuration.cc:788
 msgid "'{1}' is not a directory"
 msgstr ""
 
-#: lib/src/configuration.cc:768
+#: lib/src/configuration.cc:791
 msgid "the PID directory '{1}' does not exist; cannot create the PID file"
 msgstr ""
 
-#: lib/src/configuration.cc:780
+#: lib/src/configuration.cc:803
 msgid "invalid spool-dir-purge-ttl: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:789
+#: lib/src/configuration.cc:808
+msgid "association-timeout must be positive"
+msgstr ""
+
+#: lib/src/configuration.cc:812
+msgid "pcp-message-timeout must be positive"
+msgstr ""
+
+#: lib/src/configuration.cc:820
 msgid "no default value for {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:795
+#: lib/src/configuration.cc:826
 msgid "invalid value for {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:800
+#: lib/src/configuration.cc:831
 msgid "unknown flag name: {1}"
 msgstr ""
 
-#: lib/src/configuration.cc:807
+#: lib/src/configuration.cc:838
 msgid "cannot set configuration value until configuration is validated"
 msgstr ""
 
@@ -497,28 +504,28 @@ msgid "Executing the {1}"
 msgstr ""
 
 #. info
-#: lib/src/external_module.cc:341
+#: lib/src/external_module.cc:339
 msgid "Starting a task for the {1}; stdout and stderr will be stored in {2}"
 msgstr ""
 
 #. info
-#: lib/src/external_module.cc:362
+#: lib/src/external_module.cc:360
 msgid "The task for the {1} has completed"
 msgstr ""
 
-#: lib/src/external_module.cc:368
+#: lib/src/external_module.cc:366
 #: lib/src/module.cc:61
 msgid "(empty)"
 msgstr ""
 
 #. warning
-#: lib/src/external_module.cc:369
+#: lib/src/external_module.cc:367
 msgid ""
 "The task process failed to write output on file for the {1}; stdout: {2}; "
 "stderr: {3}"
 msgstr ""
 
-#: lib/src/external_module.cc:375
+#: lib/src/external_module.cc:373
 msgid "failed to write output on file"
 msgstr ""
 
@@ -574,12 +581,12 @@ msgid "debug entry is not valid JSON"
 msgstr ""
 
 #. warning
-#: lib/src/pxp_connector.cc:24
+#: lib/src/pxp_connector.cc:22
 msgid "Message {1} contained {2} bad debug chunk"
 msgstr ""
 
 #. warning
-#: lib/src/pxp_connector.cc:27
+#: lib/src/pxp_connector.cc:25
 msgid "Message {1} contained {2} bad debug chunks"
 msgstr ""
 

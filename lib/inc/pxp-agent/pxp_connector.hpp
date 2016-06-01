@@ -18,6 +18,7 @@
 #include <cassert>
 #include <memory>
 #include <vector>
+#include <cstdint>
 
 namespace PXPAgent {
 
@@ -51,6 +52,8 @@ class PXPConnector : public PCPClient::Connector {
     TEST_VIRTUAL_SPECIFIER void sendNonBlockingResponse(const ActionResponse& response);
 
   private:
+    uint32_t pcp_message_timeout_s;
+
     void sendBlockingResponse_(const ActionResponse::ResponseType& response_type,
                                const ActionResponse& response,
                                const ActionRequest& request);
