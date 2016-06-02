@@ -284,7 +284,8 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         AGENT_CLIENT_TYPE,
         HW::GetFlag<int>("connection-timeout") * 1000,
         static_cast<uint32_t >(HW::GetFlag<int>("association-timeout")),
-        static_cast<uint32_t >(HW::GetFlag<int>("pcp-message-timeout")) };
+        static_cast<uint32_t >(HW::GetFlag<int>("pcp-message-timeout")),
+        static_cast<uint32_t >(HW::GetFlag<int>("allowed-keepalive-timeouts")) };
     return agent_configuration_;
 }
 
@@ -358,25 +359,35 @@ void Configuration::defineDefaultValues()
                     Types::Int,
                     5) } });
 
+    // Hidden option: number of ping/pong timeouts to allow before disconnecting, default: 2
+    defaults_.insert(
+        Option { "allowed-keepalive-timeouts",
+                 Base_ptr { new Entry<int>(
+                    "allowed-keepalive-timeouts",
+                    "",
+                    "<hidden>",
+                    Types::Int,
+                    2) } });
+
     // Hidden option: TTL of the PCP Association request, default: 10 s
     defaults_.insert(
-            Option { "association-timeout",
-                     Base_ptr { new Entry<int>(
-                             "association-timeout",
-                             "",
-                             "<hidden>",
-                             Types::Int,
-                             10) } });
+        Option { "association-timeout",
+                 Base_ptr { new Entry<int>(
+                    "association-timeout",
+                    "",
+                    "<hidden>",
+                    Types::Int,
+                    10) } });
 
     // Hidden option: TTL of the PCP messages, default: 5 s
     defaults_.insert(
-            Option { "pcp-message-timeout",
-                     Base_ptr { new Entry<int>(
-                             "pcp-message-timeout",
-                             "",
-                             "<hidden>",
-                             Types::Int,
-                             5) } });
+        Option { "pcp-message-timeout",
+                 Base_ptr { new Entry<int>(
+                    "pcp-message-timeout",
+                    "",
+                    "<hidden>",
+                    Types::Int,
+                    5) } });
 
     defaults_.insert(
         Option { "ssl-ca-cert",
