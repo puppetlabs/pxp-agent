@@ -38,7 +38,8 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   "test_agent",
                                                   5000,
                                                   5,
-                                                  5 };
+                                                  5,
+                                                  2 };
 
 static const std::string VALID_ENVELOPE_TXT {
     " { \"id\" : \"123456\","

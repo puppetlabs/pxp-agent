@@ -137,6 +137,7 @@ class Configuration
         long ws_connection_timeout_ms;
         uint32_t association_timeout_s;
         uint32_t pcp_message_timeout_s;
+        uint32_t allowed_keepalive_timeouts;
     };
 
     /// Reset the HorseWhisperer singleton.

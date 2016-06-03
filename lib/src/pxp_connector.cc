@@ -49,7 +49,8 @@ PXPConnector::PXPConnector(const Configuration::Agent& agent_configuration)
                                agent_configuration.crt,
                                agent_configuration.key,
                                agent_configuration.ws_connection_timeout_ms,
-                               agent_configuration.association_timeout_s),
+                               agent_configuration.association_timeout_s,
+                               agent_configuration.allowed_keepalive_timeouts+1),
           pcp_message_timeout_s { agent_configuration.pcp_message_timeout_s }
 {
 }
