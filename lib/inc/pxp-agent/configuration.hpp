@@ -136,7 +136,8 @@ class Configuration
         std::string client_type;
         long ws_connection_timeout_ms;
         uint32_t association_timeout_s;
-        uint32_t pcp_message_timeout_s;
+        uint32_t association_request_ttl_s;
+        uint32_t pcp_message_ttl_s;
         uint32_t allowed_keepalive_timeouts;
     };
 
