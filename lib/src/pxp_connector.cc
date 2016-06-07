@@ -50,8 +50,9 @@ PXPConnector::PXPConnector(const Configuration::Agent& agent_configuration)
                                agent_configuration.key,
                                agent_configuration.ws_connection_timeout_ms,
                                agent_configuration.association_timeout_s,
+                               agent_configuration.association_request_ttl_s,
                                agent_configuration.allowed_keepalive_timeouts+1),
-          pcp_message_timeout_s { agent_configuration.pcp_message_timeout_s }
+          pcp_message_ttl_s { agent_configuration.pcp_message_ttl_s }
 {
 }
 
@@ -66,7 +67,7 @@ void PXPConnector::sendPCPError(const std::string& request_id,
     try {
         send(endpoints,
              PCPClient::Protocol::ERROR_MSG_TYPE,
-             pcp_message_timeout_s,
+             pcp_message_ttl_s,
              pcp_error_data);
         LOG_INFO("Replied to request {1} with a PCP error message",
                  request_id);
@@ -85,7 +86,7 @@ void PXPConnector::sendProvisionalResponse(const ActionRequest& request)
     try {
         send(std::vector<std::string> { request.sender() },
              PXPSchemas::PROVISIONAL_RESPONSE_TYPE,
-             pcp_message_timeout_s,
+             pcp_message_ttl_s,
              provisional_data,
              debug);
         LOG_INFO("Sent provisional response for the {1} by {2}",
@@ -108,7 +109,7 @@ void PXPConnector::sendPXPError(const ActionRequest& request,
     try {
         send(std::vector<std::string> { request.sender() },
              PXPSchemas::PXP_ERROR_MSG_TYPE,
-             pcp_message_timeout_s,
+             pcp_message_ttl_s,
              pxp_error_data);
         LOG_INFO("Replied to {1} by {2}, request ID {3}, with a PXP error message",
                  request.prettyLabel(), request.sender(), request.id());
@@ -127,7 +128,7 @@ void PXPConnector::sendPXPError(const ActionResponse& response)
         send(std::vector<std::string> {
                 response.action_metadata.get<std::string>("requester") },
              PXPSchemas::PXP_ERROR_MSG_TYPE,
-             pcp_message_timeout_s,
+             pcp_message_ttl_s,
              response.toJSON(ActionResponse::ResponseType::RPCError));
         LOG_INFO("Replied to {1} by {2}, request ID {3}, with a PXP error message",
                  response.prettyRequestLabel(),
@@ -170,7 +171,7 @@ void PXPConnector::sendNonBlockingResponse(const ActionResponse& response)
         send(std::vector<std::string> {
                 response.action_metadata.get<std::string>("requester") },
              PXPSchemas::NON_BLOCKING_RESPONSE_TYPE,
-             pcp_message_timeout_s,
+             pcp_message_ttl_s,
              response.toJSON(ActionResponse::ResponseType::NonBlocking));
         LOG_INFO("Sent response for the {1} by {2}",
                  response.prettyRequestLabel(),
@@ -198,7 +199,7 @@ void PXPConnector::sendBlockingResponse_(
     try {
         send(std::vector<std::string> { request.sender() },
              PXPSchemas::BLOCKING_RESPONSE_TYPE,
-             pcp_message_timeout_s,
+             pcp_message_ttl_s,
              response.toJSON(response_type),
              debug);
         LOG_INFO("Sent response for the {1} by {2}",

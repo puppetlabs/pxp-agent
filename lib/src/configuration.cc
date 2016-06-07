@@ -284,7 +284,8 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         AGENT_CLIENT_TYPE,
         HW::GetFlag<int>("connection-timeout") * 1000,
         static_cast<uint32_t >(HW::GetFlag<int>("association-timeout")),
-        static_cast<uint32_t >(HW::GetFlag<int>("pcp-message-timeout")),
+        static_cast<uint32_t >(HW::GetFlag<int>("association-request-ttl")),
+        static_cast<uint32_t >(HW::GetFlag<int>("pcp-message-ttl")),
         static_cast<uint32_t >(HW::GetFlag<int>("allowed-keepalive-timeouts")) };
     return agent_configuration_;
 }
@@ -359,7 +360,8 @@ void Configuration::defineDefaultValues()
                     Types::Int,
                     5) } });
 
-    // Hidden option: number of ping/pong timeouts to allow before disconnecting, default: 2
+    // Hidden option: number of ping/pong timeouts to allow before
+    // disconnecting, default: 2
     defaults_.insert(
         Option { "allowed-keepalive-timeouts",
                  Base_ptr { new Entry<int>(
@@ -369,7 +371,7 @@ void Configuration::defineDefaultValues()
                     Types::Int,
                     2) } });
 
-    // Hidden option: TTL of the PCP Association request, default: 10 s
+    // Hidden option: PCP Association timeout, default: 15 s
     defaults_.insert(
         Option { "association-timeout",
                  Base_ptr { new Entry<int>(
@@ -377,13 +379,23 @@ void Configuration::defineDefaultValues()
                     "",
                     "<hidden>",
                     Types::Int,
-                    10) } });
+                    15) } });
+
+    // Hidden option: TTL of the PCP Association request, default: 10 s
+    defaults_.insert(
+            Option { "association-request-ttl",
+                     Base_ptr { new Entry<int>(
+                             "association-request-ttl",
+                             "",
+                             "<hidden>",
+                             Types::Int,
+                             10) } });
 
     // Hidden option: TTL of the PCP messages, default: 5 s
     defaults_.insert(
-        Option { "pcp-message-timeout",
+        Option { "pcp-message-ttl",
                  Base_ptr { new Entry<int>(
-                    "pcp-message-timeout",
+                    "pcp-message-ttl",
                     "",
                     "<hidden>",
                     Types::Int,
@@ -818,9 +830,13 @@ void Configuration::validateAndNormalizeOtherSettings()
         throw Configuration::Error {
             lth_loc::translate("association-timeout must be positive") };
 
-    if (HW::GetFlag<int>("pcp-message-timeout") < 0)
+    if (HW::GetFlag<int>("association-request-ttl") < 0)
         throw Configuration::Error {
-            lth_loc::translate("pcp-message-timeout must be positive") };
+                lth_loc::translate("association-request-ttl must be positive") };
+
+    if (HW::GetFlag<int>("pcp-message-ttl") < 0)
+        throw Configuration::Error {
+            lth_loc::translate("association-request-ttl must be positive") };
 }
 
 const Options::iterator Configuration::getDefaultIndex(const std::string& flagname)
