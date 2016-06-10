@@ -63,17 +63,13 @@ void Agent::start() {
         } while (true);
 
         // The agent is now connected and the request handlers are
-        // set; we can now call the monitoring method and then block
+        // set; we can now call the monitoring method that will block
         // this thread of execution.
         // Note that, in case the underlying connection drops, the
         // connector will keep trying to re-establish it indefinitely
         // (the max_connect_attempts is 0 by default).
         LOG_DEBUG("PCP connection established; about to start monitoring it");
-        connector_ptr_->startMonitoring();
-        pcp_util::chrono::seconds pause { 1 };
-
-        while (true)
-            pcp_util::this_thread::sleep_for(pause);
+        connector_ptr_->monitorConnection();
     } catch (const PCPClient::connection_config_error& e) {
         // WebSocket configuration failure
         throw Agent::WebSocketConfigurationError { e.what() };
