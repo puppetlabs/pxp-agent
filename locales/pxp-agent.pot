@@ -187,7 +187,7 @@ msgstr ""
 
 #: lib/src/configuration.cc
 msgid ""
-"WebSocket URI of the failover PCP broker used when the default is unavailable"
+"List of WebSocket URIs of PCP brokers (cannot be used with broker-ws-uri)"
 msgstr ""
 
 #: lib/src/configuration.cc
@@ -265,19 +265,15 @@ msgid "{1} file '{2}' not readable"
 msgstr ""
 
 #: lib/src/configuration.cc
-msgid "broker-ws-uri value must be defined"
+msgid "{1} value \"{2}\" must start with wss://"
 msgstr ""
 
 #: lib/src/configuration.cc
-msgid "broker-ws-uri value must start with wss://"
+msgid "broker-ws-uris must be defined"
 msgstr ""
 
 #: lib/src/configuration.cc
-msgid "failover-ws-uri requires broker-ws-uri is defined"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "failover-ws-uri value must start with wss://"
+msgid "broker-ws-uri and broker-ws-uris cannot both be defined"
 msgstr ""
 
 #. info

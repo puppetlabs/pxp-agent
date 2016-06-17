@@ -33,17 +33,8 @@ wrapDebug(const PCPClient::ParsedChunks& parsed_chunks)
     return debug;
 }
 
-static std::vector<std::string> join_broker_ws_uris(std::string const& a, std::string const& b)
-{
-    if (b.empty())
-        return std::vector<std::string>({a});
-    else
-        return std::vector<std::string>({a, b});
-}
-
 PXPConnector::PXPConnector(const Configuration::Agent& agent_configuration)
-        : PCPClient::Connector(join_broker_ws_uris(agent_configuration.broker_ws_uri,
-                                                   agent_configuration.failover_ws_uri),
+        : PCPClient::Connector(agent_configuration.broker_ws_uris,
                                agent_configuration.client_type,
                                agent_configuration.ca,
                                agent_configuration.crt,

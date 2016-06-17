@@ -125,8 +125,7 @@ class Configuration
     struct Agent
     {
         std::string modules_dir;
-        std::string broker_ws_uri;
-        std::string failover_ws_uri;
+        std::vector<std::string> broker_ws_uris;
         std::string ca;
         std::string crt;
         std::string key;
