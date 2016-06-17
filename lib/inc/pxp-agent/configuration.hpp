@@ -43,10 +43,10 @@ struct EntryBase
     bool configured = false;
 
     EntryBase(std::string _name, std::string _aliases, std::string _help, Types _type)
-            : name { _name },
-              aliases { _aliases },
-              help { _help },
-              type { _type } {
+            : name { std::move(_name) },
+              aliases { std::move(_aliases) },
+              help { std::move(_help) },
+              type { std::move(_type) } {
     }
 };
 
@@ -58,8 +58,8 @@ struct Entry : EntryBase
 
     Entry<T>(std::string _name, std::string _aliases, std::string _help, Types _type,
              T _value)
-            : EntryBase { _name, _aliases, _help, _type },
-              value { _value } {
+            : EntryBase { std::move(_name), std::move(_aliases), std::move(_help), std::move(_type) },
+              value { std::move(_value) } {
     }
 };
 
