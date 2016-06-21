@@ -271,10 +271,13 @@ void Configuration::validate()
 const Configuration::Agent& Configuration::getAgentConfiguration() const
 {
     assert(valid_);
+    auto brokers = HW::GetFlag<std::vector<std::string>>("broker-ws-uris");
+    if (brokers.empty())
+        brokers.push_back(HW::GetFlag<std::string>("broker-ws-uri"));
+
     agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
-        HW::GetFlag<std::string>("broker-ws-uri"),
-        HW::GetFlag<std::string>("failover-ws-uri"),
+        std::move(brokers),
         HW::GetFlag<std::string>("ssl-ca-cert"),
         HW::GetFlag<std::string>("ssl-cert"),
         HW::GetFlag<std::string>("ssl-key"),
@@ -341,14 +344,14 @@ void Configuration::defineDefaultValues()
                     "") } });
 
     defaults_.insert(
-        Option { "failover-ws-uri",
-                 Base_ptr { new Entry<std::string>(
-                    "failover-ws-uri",
+        Option { "broker-ws-uris",
+                 Base_ptr { new Entry<std::vector<std::string>>(
+                    "broker-ws-uris",
                     "",
-                    lth_loc::translate("WebSocket URI of the failover PCP broker "
-                                       "used when the default is unavailable"),
-                    Types::String,
-                    "") } });
+                    lth_loc::translate("List of WebSocket URIs of PCP brokers "
+                                       "(cannot be used with broker-ws-uri)"),
+                    Types::MultiString,
+                    {}) } });
 
     defaults_.insert(
         Option { "connection-timeout",
@@ -568,6 +571,16 @@ void Configuration::setDefaultValues()
                                                       });
                 }
                 break;
+            case Types::MultiString:
+                {
+                    Entry<std::vector<std::string>>* entry_ptr = (Entry<std::vector<std::string>>*) opt_idx->ptr.get();
+                    HW::DefineGlobalFlag<std::vector<std::string>>(flag_names, entry_ptr->help,
+                                                      entry_ptr->value,
+                                                      [entry_ptr] (std::vector<std::string> v) {
+                                                          entry_ptr->configured = true;
+                                                      });
+                }
+                break;
             default:
                 // Present because FlagType is not an enum class, and I don't trust
                 // compilers to warn/error about missing cases.
@@ -633,6 +646,10 @@ void Configuration::parseConfigFile()
                 check_key_type(key, "String", lth_jc::DataType::String);
                 HW::SetFlag<std::string>(key, config_json.get<std::string>(key));
                 break;
+            case Types::MultiString:
+                check_key_type(key, "Array", lth_jc::DataType::Array);
+                HW::SetFlag<std::vector<std::string>>(key, config_json.get<std::vector<std::string>>(key));
+                break;
             default:
                 // Present because FlagType is not an enum class, and I don't trust
                 // compilers to warn/error about missing cases.
@@ -661,25 +678,31 @@ std::string check_and_expand_ssl_cert(const std::string& cert_name)
     return c;
 }
 
+static void validate_wss(std::string const& uri, std::string const& name)
+{
+    if (uri.find("wss://") != 0)
+        throw Configuration::Error {
+            lth_loc::format("{1} value \"{2}\" must start with wss://", name, uri) };
+}
+
 void Configuration::validateAndNormalizeWebsocketSettings()
 {
     // Check the broker's WebSocket URI
     auto broker_ws_uri = HW::GetFlag<std::string>("broker-ws-uri");
-    if (broker_ws_uri.empty())
+    auto broker_ws_uris = HW::GetFlag<std::vector<std::string>>("broker-ws-uris");
+    if (broker_ws_uri.empty() && broker_ws_uris.empty())
         throw Configuration::Error {
-            lth_loc::translate("broker-ws-uri value must be defined") };
-    if (broker_ws_uri.find("wss://") != 0)
+            lth_loc::translate("broker-ws-uris must be defined") };
+    if (!broker_ws_uri.empty() && !broker_ws_uris.empty())
         throw Configuration::Error {
-            lth_loc::translate("broker-ws-uri value must start with wss://") };
+            lth_loc::translate("broker-ws-uri and broker-ws-uris cannot both be defined") };
 
-    auto failover_ws_uri = HW::GetFlag<std::string>("failover-ws-uri");
-    if (!failover_ws_uri.empty()) {
-        if (broker_ws_uri.empty())
-            throw Configuration::Error {
-                lth_loc::translate("failover-ws-uri requires broker-ws-uri is defined") };
-        if (failover_ws_uri.find("wss://") != 0)
-            throw Configuration::Error {
-                lth_loc::translate("failover-ws-uri value must start with wss://") };
+    if (!broker_ws_uri.empty()) {
+        validate_wss(broker_ws_uri, "broker-ws-uri");
+    }
+
+    for (auto const& uri : broker_ws_uris) {
+        validate_wss(uri, "broker-ws-uris");
     }
 
     // Check the SSL options and expand the paths

@@ -10,8 +10,7 @@
 
 namespace PXPAgent {
 
-static const std::string TEST_BROKER_WS_URI { "wss://127.0.0.1:8090/pxp/" };
-static const std::string TEST_FAILOVER_WS_URI { "wss://127.0.0.1:8091/pxp/" };
+static const std::vector<std::string> TEST_BROKER_WS_URIS { "wss://127.0.0.1:8090/pxp/", "wss://127.0.0.1:8091/pxp/" };
 static const std::string CA { getCaPath() };
 static const std::string CERT { getCertPath() };
 static const std::string KEY { getKeyPath() };
@@ -27,8 +26,7 @@ static const std::string SPOOL { PXP_AGENT_ROOT_PATH
             + std::string { "/lib/tests/resources/tmp" } };
 
 static Configuration::Agent AGENT_CONFIGURATION { MODULES,
-                                                  TEST_BROKER_WS_URI,
-                                                  TEST_FAILOVER_WS_URI,
+                                                  TEST_BROKER_WS_URIS,
                                                   CA,
                                                   CERT,
                                                   KEY,
