@@ -27,8 +27,13 @@ namespace lth_util = leatherman::util;
 
 static const std::string CONFIG { std::string { PXP_AGENT_ROOT_PATH }
                                   + "/lib/tests/resources/config/empty-pxp-agent.cfg" };
+static const std::string MULTI_BROKER_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
+                                               + "/lib/tests/resources/config/multi-broker.cfg" };
+static const std::string DUPLICATE_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
+                                            + "/lib/tests/resources/config/duplicate.cfg" };
+static const std::string BAD_URI_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
+                                          + "/lib/tests/resources/config/bad-uri.cfg" };
 static const std::string TEST_BROKER_WS_URI { "wss:///test_c_t_h_u_n_broker" };
-static const std::string TEST_BROKER_WS_ALT_URI { "wss:///test_p_c_p_broker" };
 static const std::string CA { getCaPath() };
 static const std::string CERT { getCertPath() };
 static const std::string KEY { getKeyPath() };
@@ -226,19 +231,6 @@ TEST_CASE("Configuration::validate", "[configuration]") {
                           Configuration::Error);
     }
 
-    SECTION("it throws an Error when broker-ws-uri and broker-ws-uris are defined") {
-        HW::SetFlag<std::vector<std::string>>("broker-ws-uris", {TEST_BROKER_WS_URI});
-        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::Error);
-    }
-
-    SECTION("it throws an Error when broker-ws-uris is invalid") {
-        HW::SetFlag<std::string>("broker-ws-uri", "");
-        HW::SetFlag<std::vector<std::string>>("broker-ws-uris", {"ws://"});
-        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::Error);
-    }
-
     SECTION("it throws an Error ssl-ca-cert is undefined") {
         HW::SetFlag<std::string>("ssl-ca-cert", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
@@ -321,12 +313,6 @@ TEST_CASE("Configuration::validate", "[configuration]") {
                           Configuration::Error);
     }
 
-    SECTION("it allows broker-ws-uris in place of broker-ws-uri") {
-        HW::SetFlag<std::string>("broker-ws-uri", "");
-        HW::SetFlag<std::vector<std::string>>("broker-ws-uris", {TEST_BROKER_WS_URI, TEST_BROKER_WS_URI});
-        REQUIRE_NOTHROW(Configuration::Instance().validate());
-    }
-
     SECTION("it creates --spool-dir when needed") {
         auto test_spool = SPOOL_DIR + "/testing_creation";
         HW::SetFlag<std::string>("spool-dir", test_spool);
@@ -342,8 +328,7 @@ TEST_CASE("Configuration::validate", "[configuration]") {
 TEST_CASE("Configuration::validate broker-ws-uris", "[configuration]") {
     const char* altArgv[] = {
     "test-command",
-    "--config-file", CONFIG.data(),
-    "--broker-ws-uris", TEST_BROKER_WS_URI.data(), TEST_BROKER_WS_ALT_URI.data(),
+    "--config-file", MULTI_BROKER_CONFIG.data(),
     "--ssl-ca-cert", CA.data(),
     "--ssl-cert", CERT.data(),
     "--ssl-key", KEY.data(),
@@ -352,16 +337,70 @@ TEST_CASE("Configuration::validate broker-ws-uris", "[configuration]") {
     "--spool-dir", SPOOL_DIR.data(),
     "--foreground=true",
     nullptr };
-    const int altArgc = 19;
+    const int altArgc = 16;
 
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
     Configuration::Instance().parseOptions(altArgc, const_cast<char**>(altArgv));
 
+    SECTION("it allows broker-ws-uris in place of broker-ws-uri") {
+        HW::SetFlag<std::string>("broker-ws-uri", TEST_BROKER_WS_URI);
+        REQUIRE_NOTHROW(Configuration::Instance().validate());
+        auto uris = Configuration::Instance().get_broker_ws_uris();
+        REQUIRE(uris == std::vector<std::string>({TEST_BROKER_WS_URI}));
+    }
+
     SECTION("it parses multiple arguments to broker-ws-uris") {
         REQUIRE_NOTHROW(Configuration::Instance().validate());
-        auto uris = Configuration::Instance().get<std::vector<std::string>>("broker-ws-uris");
-        REQUIRE(uris == std::vector<std::string>({TEST_BROKER_WS_URI, TEST_BROKER_WS_ALT_URI}));
+        auto uris = Configuration::Instance().get_broker_ws_uris();
+        REQUIRE(uris == std::vector<std::string>({"wss://test_pcp_broker", "wss://alt_pcp_broker"}));
+    }
+}
+
+TEST_CASE("Configuration::parseOptions duplicate broker-ws-uris", "[configuration]") {
+    const char* altArgv[] = {
+    "test-command",
+    "--config-file", DUPLICATE_CONFIG.data(),
+    "--ssl-ca-cert", CA.data(),
+    "--ssl-cert", CERT.data(),
+    "--ssl-key", KEY.data(),
+    "--modules-dir", MODULES_DIR.data(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.data(),
+    "--spool-dir", SPOOL_DIR.data(),
+    "--foreground=true",
+    nullptr };
+    const int altArgc = 16;
+
+    lth_util::scope_exit config_cleaner { resetTest };
+    configureTest();
+
+    SECTION("it throws an Error when broker-ws-uri and broker-ws-uris are defined") {
+        REQUIRE_THROWS_AS(Configuration::Instance().parseOptions(altArgc, const_cast<char**>(altArgv)),
+                          Configuration::Error);
+    }
+}
+
+TEST_CASE("Configuration::validate bad broker-ws-uris", "[configuration]") {
+    const char* altArgv[] = {
+    "test-command",
+    "--config-file", BAD_URI_CONFIG.data(),
+    "--ssl-ca-cert", CA.data(),
+    "--ssl-cert", CERT.data(),
+    "--ssl-key", KEY.data(),
+    "--modules-dir", MODULES_DIR.data(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.data(),
+    "--spool-dir", SPOOL_DIR.data(),
+    "--foreground=true",
+    nullptr };
+    const int altArgc = 16;
+
+    lth_util::scope_exit config_cleaner { resetTest };
+    configureTest();
+    Configuration::Instance().parseOptions(altArgc, const_cast<char**>(altArgv));
+
+    SECTION("it throws an Error when broker-ws-uris is invalid") {
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::Error);
     }
 }
 
