@@ -16,7 +16,6 @@ module HarnessOptions
 
   DEFAULTS = {
     :type => 'aio',
-    :helper => ['lib/helper.rb'],
     :tests  => ['tests'],
     :ssh => {
       :keys => ["~/.ssh/id_rsa-acceptance"],
