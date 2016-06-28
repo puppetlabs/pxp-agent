@@ -109,6 +109,7 @@ void Configuration::initialize(
     HW::SetAppName("pxp-agent");
     HW::SetHelpBanner(lth_loc::translate("Usage: pxp-agent [options]"));
     HW::SetVersion(std::string { PXP_AGENT_VERSION } + "\n");
+    broker_ws_uris_.clear();
     valid_ = false;
 
     // Initialize boost filesystem's locale to a UTF-8 default.
@@ -271,13 +272,9 @@ void Configuration::validate()
 const Configuration::Agent& Configuration::getAgentConfiguration() const
 {
     assert(valid_);
-    auto brokers = HW::GetFlag<std::vector<std::string>>("broker-ws-uris");
-    if (brokers.empty())
-        brokers.push_back(HW::GetFlag<std::string>("broker-ws-uri"));
-
     agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
-        std::move(brokers),
+        broker_ws_uris_,
         HW::GetFlag<std::string>("ssl-ca-cert"),
         HW::GetFlag<std::string>("ssl-cert"),
         HW::GetFlag<std::string>("ssl-key"),
@@ -342,16 +339,6 @@ void Configuration::defineDefaultValues()
                     lth_loc::translate("WebSocket URI of the PCP broker"),
                     Types::String,
                     "") } });
-
-    defaults_.insert(
-        Option { "broker-ws-uris",
-                 Base_ptr { new Entry<std::vector<std::string>>(
-                    "broker-ws-uris",
-                    "",
-                    lth_loc::translate("List of WebSocket URIs of PCP brokers "
-                                       "(cannot be used with broker-ws-uri)"),
-                    Types::MultiString,
-                    {}) } });
 
     defaults_.insert(
         Option { "connection-timeout",
@@ -524,6 +511,7 @@ void Configuration::setDefaultValues()
     for (auto opt_idx = defaults_.get<Option::ByInsertion>().begin();
          opt_idx != defaults_.get<Option::ByInsertion>().end();
          ++opt_idx) {
+        opt_idx->ptr->configured = false;
         std::string flag_names { opt_idx->ptr->name };
 
         if (!opt_idx->ptr->aliases.empty()) {
@@ -618,13 +606,25 @@ void Configuration::parseConfigFile()
                                     key, type_str) };
         };
 
+    bool broker_ws_uri_in_file = false;
+
     for (const auto& key : config_json.keys()) {
         const auto& opt_idx = defaults_.get<Option::ByName>().find(key);
 
-        if (opt_idx == defaults_.get<Option::ByName>().end())
-            throw Configuration::Error {
-                lth_loc::format("field '{1}' is not a valid configuration variable",
-                                key) };
+        if (opt_idx == defaults_.get<Option::ByName>().end()) {
+            // broker-ws-uris is restricted to the config file, so it's handled
+            // specially here. It's not part of defaults_ because all the extra
+            // meta-data for Horsewhisperer isn't needed.
+            if (key == "broker-ws-uris") {
+                check_key_type(key, "Array", lth_jc::DataType::Array);
+                broker_ws_uris_ = config_json.get<std::vector<std::string>>(key);
+                continue;
+            } else {
+                throw Configuration::Error {
+                    lth_loc::format("field '{1}' is not a valid configuration variable",
+                                    key) };
+            }
+        }
 
         if (opt_idx->ptr->configured)
             continue;
@@ -643,18 +643,23 @@ void Configuration::parseConfigFile()
                 HW::SetFlag<double>(key, config_json.get<double>(key));
                 break;
             case Types::String:
+                if (key == "broker-ws-uri") {
+                    broker_ws_uri_in_file = true;
+                }
                 check_key_type(key, "String", lth_jc::DataType::String);
                 HW::SetFlag<std::string>(key, config_json.get<std::string>(key));
-                break;
-            case Types::MultiString:
-                check_key_type(key, "Array", lth_jc::DataType::Array);
-                HW::SetFlag<std::vector<std::string>>(key, config_json.get<std::vector<std::string>>(key));
                 break;
             default:
                 // Present because FlagType is not an enum class, and I don't trust
                 // compilers to warn/error about missing cases.
                 assert(false);
         }
+    }
+
+    if (!broker_ws_uris_.empty() && broker_ws_uri_in_file) {
+        throw Configuration::Error {
+            lth_loc::format("broker-ws-uri and broker-ws-uris cannot both be "
+                            "defined in the config file") };
     }
 }
 
@@ -688,22 +693,23 @@ static void validate_wss(std::string const& uri, std::string const& name)
 void Configuration::validateAndNormalizeWebsocketSettings()
 {
     // Check the broker's WebSocket URI
+    // broker-ws-uri and broker-ws-uris cannot both be configured in the config
+    // file (enforced in parseConfigFile). If broker-ws-uri is set on the CLI,
+    // override whatever was in the config file.
     auto broker_ws_uri = HW::GetFlag<std::string>("broker-ws-uri");
-    auto broker_ws_uris = HW::GetFlag<std::vector<std::string>>("broker-ws-uris");
-    if (broker_ws_uri.empty() && broker_ws_uris.empty())
-        throw Configuration::Error {
-            lth_loc::translate("broker-ws-uris must be defined") };
-    if (!broker_ws_uri.empty() && !broker_ws_uris.empty())
-        throw Configuration::Error {
-            lth_loc::translate("broker-ws-uri and broker-ws-uris cannot both be defined") };
-
     if (!broker_ws_uri.empty()) {
         validate_wss(broker_ws_uri, "broker-ws-uri");
+        broker_ws_uris_.clear();
+        broker_ws_uris_.push_back(std::move(broker_ws_uri));
+    } else {
+        for (auto const& uri : broker_ws_uris_) {
+            validate_wss(uri, "broker-ws-uris");
+        }
     }
 
-    for (auto const& uri : broker_ws_uris) {
-        validate_wss(uri, "broker-ws-uris");
-    }
+    if (broker_ws_uris_.empty())
+        throw Configuration::Error {
+            lth_loc::translate("broker-ws-uri or broker-ws-uris must be defined") };
 
     // Check the SSL options and expand the paths
     auto ca   = check_and_expand_ssl_cert("ssl-ca-cert");

@@ -221,7 +221,7 @@ single JSON object. Example:
 
 ```
 {
-    "broker-ws-uri" : "wss://pcp_broker_cn:8142/pcp/",
+    "broker-ws-uris" : ["wss://pcp_broker_cn:8142/pcp/", "wss://pcp_alt_broker_cn:8142/pcp/"],
     "ssl-key" : "/etc/puppetlabs/puppet/ssl/private_keys/myhost.net.pem",
     "ssl-ca-cert" : "/etc/puppetlabs/puppet/ssl/certs/ca.pem",
     "ssl-cert" : "/etc/puppetlabs/puppet/ssl/certs/myhost.net.pem"
@@ -281,6 +281,15 @@ Specify which config file to use.
 The WebSocket URI of the PXP broker you wish to connect the agent to, in the
 `wss://<broker identity>:8142/pcp/` format; example:
 *wss://pcp_broker_cn:8142/pcp/*
+
+**broker-ws-uris (alternative to broker-ws-uri)**
+
+A config file only alternative to broker-ws-uri, that takes an array
+specifying multiple brokers the agent can connect to. When multiple brokers
+are specified, it will use them in a failover capacity, where if it's unable
+to connect to one it will try the next in the list, and repeat until a
+successful connection is made. In the event of a disconnect, the agent will
+retry that connection before trying a new broker.
 
 **connection-timeout (optional flag)**
 

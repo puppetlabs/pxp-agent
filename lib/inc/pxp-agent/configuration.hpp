@@ -193,6 +193,14 @@ class Configuration
         return entry_ptr->value;
     }
 
+    /// Return the list of configured brokers.
+    /// If called after validate(), this will be overridden by
+    /// broker-ws-uri if it was set.
+    std::vector<std::string> get_broker_ws_uris()
+    {
+        return broker_ws_uris_;
+    }
+
     /// Set the specified value for a given configuration flag.
     /// Throw an Configuration::Error in case the Configuration was
     /// not initialized so far.
@@ -204,7 +212,7 @@ class Configuration
         checkValidForSetting();
 
         try {
-            HorseWhisperer::SetFlag<T>(flagname, value);
+            HorseWhisperer::SetFlag<T>(flagname, std::move(value));
         } catch (HorseWhisperer::flag_validation_error) {
             throw Configuration::Error { getInvalidFlagError(flagname) };
         } catch (HorseWhisperer::undefined_flag_error) {
@@ -236,6 +244,9 @@ class Configuration
 
     // Cache for agent configuration parameters
     mutable Agent agent_configuration_;
+
+    // List of brokers
+    std::vector<std::string> broker_ws_uris_;
 
     // Path to the logfile
     std::string logfile_;
