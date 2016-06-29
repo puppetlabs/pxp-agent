@@ -5,7 +5,7 @@ load File.join(File.dirname(__FILE__), "../", "../", "../", "pxp-module-puppet")
 describe "pxp-module-puppet" do
 
   let(:default_input) {
-    {"env" => [], "flags" => []}
+    {"flags" => []}
   }
 
   let(:default_configuration) {
@@ -65,11 +65,8 @@ describe "pxp-module-puppet" do
 
   describe "make_environment_hash" do
     it "should correctly add the env entries" do
-      input = default_input
-      input["env"] = ["FOO=bar", "BAR=foo"]
       expect(self).to receive(:get_env_fix_up).and_return({"FIXVAR" => "fixvalue"})
-      expect(make_environment_hash(input)).to be ==
-        {"FOO" => "bar", "BAR" => "foo", "FIXVAR" => "fixvalue"}
+      expect(make_environment_hash()).to be == {"FIXVAR" => "fixvalue"}
     end
   end
 
@@ -314,7 +311,7 @@ describe "pxp-module-puppet" do
                   :type => "array",
                 }
               },
-              :required => [:env, :flags]
+              :required => [:flags]
             },
             :results => {
               :type => "object",
@@ -382,15 +379,13 @@ describe "pxp-module-puppet" do
 
     it "fails when the flags of the passed json data are not all whitelisted" do
       passed_args = {"configuration" => default_configuration,
-                     "input" => {"env" => [],
-                                 "flags" => ["--prerun_command", "echo safe"]}}
+                     "input" => {"flags" => ["--prerun_command", "echo safe"]}}
       expect(action_run(passed_args.to_json)["error"]).to be ==
           "The json received on STDIN included a non-permitted flag: --prerun_command"
     end
 
     it "populates flags with the correct defaults" do
-      expected_input = {"env" => [],
-                        "flags" => ["--onetime", "--no-daemonize", "--verbose"]}
+      expected_input = {"flags" => ["--onetime", "--no-daemonize", "--verbose"]}
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
@@ -401,8 +396,7 @@ describe "pxp-module-puppet" do
 
     it "does not allow changing settings of default flags" do
       passed_args = {"configuration" => default_configuration,
-                     "input" => {"env" => [],
-                                 "flags" => ["--daemonize"]}}
+                     "input" => {"flags" => ["--daemonize"]}}
       expect(action_run(passed_args.to_json)["error"]).to be ==
           "The json received on STDIN overrides a default setting with: --daemonize"
     end
@@ -421,10 +415,22 @@ describe "pxp-module-puppet" do
     end
 
     it "allows passing arguments of flags" do
-      expected_input = {"env" => [],
+      expected_input = {"flags" => ["--environment", "/etc/puppetlabs/the_environment",
+                                    "--onetime", "--no-daemonize", "--verbose"]}
+      passed_input = {"flags" => ["--environment", "/etc/puppetlabs/the_environment"]}
+      allow(File).to receive(:exist?).and_return(true)
+      allow_any_instance_of(Object).to receive(:running?).and_return(false)
+      allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
+      expect_any_instance_of(Object).to receive(:start_run).with(default_configuration,
+                                                                 expected_input)
+      action_run({"configuration" => default_configuration, "input" => passed_input}.to_json)
+    end
+
+    it "allows passing the obsolete `env` input array" do
+      expected_input = {"env" => ["MY_PATH", "/some/path"],
                          "flags" => ["--environment", "/etc/puppetlabs/the_environment",
                                     "--onetime", "--no-daemonize", "--verbose"]}
-      passed_input = {"env" => [],
+      passed_input = {"env" => ["MY_PATH", "/some/path"],
                       "flags" => ["--environment", "/etc/puppetlabs/the_environment"]}
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
