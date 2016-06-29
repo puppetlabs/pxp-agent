@@ -1,5 +1,5 @@
 environment:
-  LEATHERMAN_VERSION: 0.7.0
+  LEATHERMAN_VERSION: 0.7.4
 
 install:
   - choco install -y mingw-w64 -Version 4.8.3 -source https://www.myget.org/F/puppetlabs
