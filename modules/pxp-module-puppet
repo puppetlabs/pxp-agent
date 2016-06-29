@@ -33,8 +33,8 @@ env_fix_up = nil
 self.class.send(:define_method, :get_env_fix_up) do
   # Prepare an environment fix-up to make up for its cleansing performed
   # by the Puppet::Util::Execution.execute function.
-  # Without this fix-up it's impossible to run puppet under a non-root
-  # user because it cannot find the user's HOME directory.
+  # This fix-up is meant for running puppet under a non-root user;
+  # puppet cannot find the user's HOME directory otherwise.
   env_fix_up ||= if Puppet.features.microsoft_windows? || Process.euid == 0
     # no environment fix-up is needed on windows or for root
     {}
@@ -82,16 +82,9 @@ def disabled?(run_result)
   !!(run_result =~ /disabled(.*?)Use 'puppet agent --enable' to re-enable/m)
 end
 
-def make_environment_hash(action_input)
-  env_hash = {}
-  action_input["env"].each do |entry|
-    key, value = entry.split('=')
-    env_hash[key] = value
-  end
-
-  env_hash.merge!(get_env_fix_up());
-
-  return env_hash
+def make_environment_hash()
+  # NB: we're ignoring the `env` array for setting the environment
+  return get_env_fix_up()
 end
 
 def make_command_array(config, action_input)
@@ -146,7 +139,7 @@ end
 def start_run(config, action_input)
   exitcode = DEFAULT_EXITCODE
   cmd = make_command_array(config, action_input)
-  env = make_environment_hash(action_input)
+  env = make_environment_hash()
 
   last_run_report = check_config_print("lastrunreport", config)
   if last_run_report.empty?
@@ -177,6 +170,7 @@ def start_run(config, action_input)
   return get_result_from_report(last_run_report, exitcode, config, start_time)
 end
 
+# TODO(ale): remove `env` from input before bumping to the next version
 def metadata()
   return {
     :description => "PXP Puppet module",
@@ -193,7 +187,7 @@ def metadata()
               :type => "array",
             }
           },
-          :required => [:env, :flags]
+          :required => [:flags]
         },
         :results => {
           :type => "object",

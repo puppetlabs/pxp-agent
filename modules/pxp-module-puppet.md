@@ -38,10 +38,8 @@ The module responds to two actions.
 - `metadata` : This is used by the pxp-agent and doesn't need to be called by consumers
 - `run` : This action will attempt to trigger a Puppet run
 
-The `run` action has two required parameters:
+The `run` action has a single input entry:
 
-* `env` : An array of strings that match ".\*=.\*". These are environment variables
-that will be set before running Puppet.
 * `flags` : An array of strings that match "--.\*". These are cli flags that will be passed to the Puppet run. Note that you cannot use the "--.\*=.\*" format for specifying flags arguments; please pass the arguments in separate strings.
 
 You can use only a subset of Puppet's flags, including the "--no-.\*" variant where applicable:
@@ -72,12 +70,12 @@ executable and you can run it like:
 
 ### Posix
 ```
-$ sudo echo "{\"input\":{\"env\":[],\"flags\":[\"--noop\"]}, \"configuration\" : {\"puppet_bin\" : \"/opt/puppetlabs/bin/puppet\"}}" | pxp-module-puppet run
+$ sudo echo "{\"input\":{\"flags\":[\"--noop\"]}, \"configuration\" : {\"puppet_bin\" : \"/opt/puppetlabs/bin/puppet\"}}" | pxp-module-puppet run
 ```
 
 ### Windows (cmd.exe)
 ```
-C:\Program Files\Puppet Labs\Puppet\pxp-agent\modules>echo {"input":{"env":[],"flags":["--noop"]}, "configuration" : {"puppet_bin" : "C\:\\Program Files\\Puppet Labs\\Puppet\\bin\\puppet.bat"}} | pxp-module-puppet.bat run
+C:\Program Files\Puppet Labs\Puppet\pxp-agent\modules>echo {"input":{"flags":["--noop"]}, "configuration" : {"puppet_bin" : "C\:\\Program Files\\Puppet Labs\\Puppet\\bin\\puppet.bat"}} | pxp-module-puppet.bat run
 ```
 
 ## Output
