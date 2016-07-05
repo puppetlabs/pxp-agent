@@ -98,6 +98,13 @@ install(FILES modules/pxp-module-puppet
         DESTINATION ${MODULES_INSTALL_PATH}
         PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
+if (WIN32)
+# Add the module install batch file on windows platforms
+install(FILES modules/pxp-module-puppet.bat
+        DESTINATION ${MODULES_INSTALL_PATH}
+        PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+endif()
+
 # Add the test suite
 enable_testing()
 
