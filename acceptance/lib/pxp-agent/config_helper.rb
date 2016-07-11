@@ -2,9 +2,10 @@ require 'json'
 # This file contains common strings and functions for working with pxp-agent's config file
 
 PXP_CONFIG_DIR_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/etc/'
-PXP_CONFIG_DIR_POSIX = '/etc/puppetlabs/pxp-agent/'
+PXP_CONFIG_DIR_POSIX   = '/etc/puppetlabs/pxp-agent/'
 
-PCP_BROKER_PORT = 8142
+PCP_BROKER_PORTS       = [8142, 8143]
+PCP_BROKER_REPL_PORTS  = [7888, 7889]
 
 def windows?(host)
   host.platform.upcase.start_with?('WINDOWS')
@@ -66,7 +67,7 @@ end
 # @param broker_host the host name or beaker host object for the pcp-broker host
 # @return the broker-ws-uri config string
 def broker_ws_uri(broker_host)
-  "wss://#{broker_host}:#{PCP_BROKER_PORT}/pcp/"
+  "wss://#{broker_host}:#{PCP_BROKER_PORTS[broker_host[:pcp_broker_instance]]}/pcp/"
 end
 
 # @param host the beaker host (to determine the correct path for the OS)
@@ -75,4 +76,23 @@ def pxp_agent_config_file(host)
   windows?(host)?
     "#{PXP_CONFIG_DIR_CYGPATH}pxp-agent.conf" :
     "#{PXP_CONFIG_DIR_POSIX}pxp-agent.conf"
+end
+
+def configure_pcp_broker(host,instance)
+  set_broker_port(host,instance)
+  set_broker_nrepl_port(host,instance)
+end
+
+def set_broker_port(host,instance)
+  broker_config_path = "#{GIT_CLONE_FOLDER}/pcp-broker#{instance}/test-resources/conf.d/webserver.conf"
+  port_config_name  = 'ssl-port'
+  broker_port = PCP_BROKER_PORTS[instance]
+  on(host, "sed --in-place'' --regexp-extended 's/#{port_config_name}:\\s?[0-9]+/#{port_config_name}: #{broker_port}/' #{broker_config_path}")
+end
+
+def set_broker_nrepl_port(host,instance)
+  nrepl_config_path = "#{GIT_CLONE_FOLDER}/pcp-broker#{instance}/test-resources/conf.d/nrepl.conf"
+  port_config_name  = 'port'
+  nrepl_port  = PCP_BROKER_REPL_PORTS[instance]
+  on(host, "sed --in-place'' --regexp-extended 's/#{port_config_name}\\s?=\\s?[0-9]+/#{port_config_name} = #{nrepl_port}/' #{nrepl_config_path}")
 end
