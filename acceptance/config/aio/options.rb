@@ -1,5 +1,7 @@
 {
   :type => 'aio',
+  :log_level => 'verbose',
+  :helper => 'lib/helper.rb',
   :is_puppetserver => true,
   :puppetservice => 'puppetserver',
   :'puppetserver-confdir' => '/etc/puppetlabs/puppetserver/conf.d',

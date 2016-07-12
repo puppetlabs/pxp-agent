@@ -69,10 +69,11 @@ rescue MiniTest::Assertion => exception
 end
 
 # Some helpers for working with a pcp-broker 'lein tk' instance
-def run_pcp_broker(host)
-  on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker; export LEIN_ROOT=ok; lein tk </dev/null >/var/log/pcp-broker.log 2>&1 &")
-  assert(port_open_within?(host, PCP_BROKER_PORT, 60),
-         "pcp-broker port #{PCP_BROKER_PORT.to_s} not open within 1 minutes of starting the broker")
+def run_pcp_broker(host, instance=0)
+  host[:pcp_broker_instance] = instance
+  on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker#{instance}; export LEIN_ROOT=ok; lein tk </dev/null >/var/log/pcp-broker.log 2>&1 &")
+  assert(port_open_within?(host, PCP_BROKER_PORTS[instance], 60),
+         "pcp-broker port #{PCP_BROKER_PORTS[instance].to_s} not open within 1 minutes of starting the broker")
   broker_state = nil
   attempts = 0
   until broker_state == "running" or attempts == 100 do
@@ -93,7 +94,7 @@ def kill_pcp_broker(host)
 end
 
 def get_pcp_broker_status(host)
-  uri = URI.parse("https://#{host}:#{PCP_BROKER_PORT}/status/v1/services/broker-service")
+  uri = URI.parse("https://#{host}:#{PCP_BROKER_PORTS[host[:pcp_broker_instance]]}/status/v1/services/broker-service")
   begin
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
