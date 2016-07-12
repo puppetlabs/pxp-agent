@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2.2)
-project(pxp-agent)
+project(pxp-agent VERSION 1.2.0)
 
 if (NOT CMAKE_BUILD_TYPE)
     message(STATUS "Defaulting to a release build.")
@@ -26,8 +26,7 @@ set(VENDOR_DIRECTORY ${PROJECT_SOURCE_DIR}/vendor)
 list(APPEND CMAKE_MODULE_PATH ${VENDOR_DIRECTORY})
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-# set a version macro and expand related template
-set(APPLICATION_VERSION_STRING "1.2.0")
+# expand template based on PROJECT_VERSION
 configure_file(templates/version-inl.hpp ${CMAKE_BINARY_DIR}/generated/version-inl.hpp)
 
 # Set the root path macro and expand related template
