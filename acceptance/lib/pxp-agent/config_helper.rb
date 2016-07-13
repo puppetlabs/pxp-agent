@@ -67,7 +67,11 @@ end
 # @param broker_host the host name or beaker host object for the pcp-broker host
 # @return the broker-ws-uri config string
 def broker_ws_uri(broker_host)
-  "wss://#{broker_host}:#{PCP_BROKER_PORTS[broker_host[:pcp_broker_instance]]}/pcp/"
+  if broker_host.is_a?(Hash) && broker_host[:pcp_broker_instance]
+    "wss://#{broker_host}:#{PCP_BROKER_PORTS[broker_host[:pcp_broker_instance]]}/pcp/"
+  else
+    "wss://#{broker_host}:#{PCP_BROKER_PORTS[0]}/pcp/"
+  end
 end
 
 # @param host the beaker host (to determine the correct path for the OS)
