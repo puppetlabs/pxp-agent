@@ -147,6 +147,7 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             auto response = reverse_module.executeAction(request);
 
             REQUIRE(response.output.std_out.find("anodaram") != std::string::npos);
+            REQUIRE(response.output.std_err.empty());
         }
     }
 
@@ -172,6 +173,29 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             REQUIRE_FALSE(response.action_metadata.includes("results"));
             REQUIRE(response.action_metadata.includes("results_are_valid"));
             REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
+        }
+
+        SECTION("it should include error output in response") {
+            std::string failure_txt { (DATA_FORMAT % "\"1234987\""
+                                                   % "\"failures_test\""
+                                                   % "\"broken_action\""
+                                                   % "\"maradona\"").str() };
+            PCPClient::ParsedChunks failure_content {
+                    lth_jc::JsonContainer(ENVELOPE_TXT),
+                    lth_jc::JsonContainer(failure_txt),
+                    NO_DEBUG,
+                    0 };
+            ActionRequest request { RequestType::Blocking, failure_content };
+            auto response = test_reverse_module.executeAction(request);
+
+            REQUIRE(response.action_metadata.includes("results"));
+            REQUIRE(response.action_metadata.get<std::string>("results").empty());
+            REQUIRE(response.action_metadata.includes("results_are_valid"));
+            REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
+            REQUIRE(response.action_metadata.includes("execution_error"));
+            REQUIRE(response.action_metadata.get<std::string>("execution_error").find("we failed, sorry :(") != std::string::npos);
+            REQUIRE(response.output.std_out.empty());
+            REQUIRE(response.output.std_err.find("we failed, sorry :(") != std::string::npos);
         }
     }
 }

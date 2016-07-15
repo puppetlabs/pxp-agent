@@ -47,7 +47,7 @@ void Module::validateOutputAndUpdateMetadata(ActionResponse& response)
         } else {
             // Log about the output
             const auto& out = response.output.std_out;
-            const auto& err = response.output.std_out;
+            const auto& err = response.output.std_err;
             err_msg = lth_loc::format("The task executed for the {1} returned ",
                                       response.prettyRequestLabel());
 
