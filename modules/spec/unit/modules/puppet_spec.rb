@@ -28,7 +28,9 @@ describe "pxp-module-puppet" do
     it "returns the result of configprint" do
       cli_vec = ["puppet", "agent", "--configprint", "value"]
       expect(self).to receive(:get_env_fix_up).and_return({"FIXVAR" => "fixvalue"})
-      expect(Puppet::Util::Execution).to receive(:execute).with(cli_vec, {:custom_environment => {"FIXVAR" => "fixvalue"}}).and_return("value\n")
+      expect(Puppet::Util::Execution).to receive(:execute).with(cli_vec,
+                                                                {:custom_environment => {"FIXVAR" => "fixvalue"},
+                                                                 :override_locale => false}).and_return("value\n")
       expect(check_config_print("value", default_configuration)).to be == "value"
     end
   end

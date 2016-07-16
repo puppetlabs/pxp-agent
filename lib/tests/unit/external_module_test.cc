@@ -193,9 +193,9 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
             REQUIRE(response.action_metadata.includes("results_are_valid"));
             REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
             REQUIRE(response.action_metadata.includes("execution_error"));
-            REQUIRE(response.action_metadata.get<std::string>("execution_error").find("we failed, sorry :(") != std::string::npos);
+            REQUIRE(response.action_metadata.get<std::string>("execution_error").find("we failed, sorry ☹") != std::string::npos);
             REQUIRE(response.output.std_out.empty());
-            REQUIRE(response.output.std_err.find("we failed, sorry :(") != std::string::npos);
+            REQUIRE(response.output.std_err.find("we failed, sorry ☹") != std::string::npos);
         }
     }
 }

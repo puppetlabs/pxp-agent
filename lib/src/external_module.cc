@@ -200,7 +200,8 @@ const lth_jc::JsonContainer ExternalModule::getModuleMetadata()
 #else
         lth_exec::execute(path_, { "metadata" },
 #endif
-            0, {lth_exec::execution_options::merge_environment});
+            0, {lth_exec::execution_options::merge_environment,
+                lth_exec::execution_options::inherit_locale});
 
     if (!exec.error.empty()) {
         LOG_ERROR("Failed to load the external module metadata from {1}: {2}",
@@ -322,7 +323,8 @@ ActionResponse ExternalModule::callBlockingAction(const ActionRequest& request)
         action_args,                           // args
         std::map<std::string, std::string>(),  // environment
         0,                                     // timeout
-        { lth_exec::execution_options::merge_environment });  // options
+        { lth_exec::execution_options::merge_environment,
+          lth_exec::execution_options::inherit_locale });  // options
 
     response.output = ActionOutput { exec.exit_code, exec.output, exec.error };
     ExternalModule::processOutputAndUpdateMetadata(response);
@@ -355,7 +357,8 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
             lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file);
         },          // pid callback
         0,          // timeout
-        { lth_exec::execution_options::merge_environment });  // options
+        { lth_exec::execution_options::merge_environment,
+          lth_exec::execution_options::inherit_locale });  // options
 
     LOG_INFO("The task for the {1} has completed", request.prettyLabel());
 
