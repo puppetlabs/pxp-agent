@@ -120,6 +120,7 @@ agents.each do |agent|
 
     step 'Create pxp-agent.conf that connects to pcp-broker using its IP address'
     pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
+    pxp_config.delete('broker-ws-uris')
     pxp_config['broker-ws-uri'] = broker_ws_uri(master.ip)
     create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
 
