@@ -95,6 +95,15 @@ def kill_all_pcp_brokers(host)
   end
 end
 
+def block_pcp_broker(host, instance)
+  on(host, "iptables -A INPUT -p tcp --destination-port #{PCP_BROKER_PORTS[instance].to_s} -j DROP; iptables -S")
+end
+
+def unblock_pcp_broker(host, instance)
+  host[:pcp_broker_instance] = instance
+  on(host, "iptables -D INPUT -p tcp --destination-port #{PCP_BROKER_PORTS[instance].to_s} -j DROP; iptables -S")
+end
+
 def get_pcp_broker_status(host)
   uri = URI.parse("https://#{host}:#{PCP_BROKER_PORTS[host[:pcp_broker_instance]]}/status/v1/services/broker-service")
   begin
