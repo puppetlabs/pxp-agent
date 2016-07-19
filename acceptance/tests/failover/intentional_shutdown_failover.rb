@@ -5,7 +5,7 @@ test_name 'C97934 - agent should use next broker if primary is intentionally shu
 
   teardown do
     broker_instance = 0 # 0 indexed
-    kill_pcp_broker(master)
+    kill_all_pcp_brokers(master)
     run_pcp_broker(master, broker_instance)
   end
 
@@ -26,7 +26,7 @@ test_name 'C97934 - agent should use next broker if primary is intentionally shu
 
   step 'Stop primary broker, start replica' do
     broker_instance = 1 # 0 indexed
-    kill_pcp_broker(master)
+    kill_all_pcp_brokers(master)
     run_pcp_broker(master, broker_instance)
   end
 

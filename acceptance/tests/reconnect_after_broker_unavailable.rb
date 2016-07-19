@@ -17,7 +17,7 @@ step 'Ensure each agent host has pxp-agent running and associated' do
 end
 
 step 'On master, stop then restart the broker' do
-  kill_pcp_broker(master)
+  kill_all_pcp_brokers(master)
   run_pcp_broker(master)
 end
 

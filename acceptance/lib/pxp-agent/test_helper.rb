@@ -86,10 +86,12 @@ def run_pcp_broker(host, instance=0)
   assert_equal("running", broker_state, "Shortly after startup, pcp-broker should report its state as being 'running'")
 end
 
-def kill_pcp_broker(host)
+def kill_all_pcp_brokers(host)
   on(host, "ps -C java -f | grep pcp-broker | sed 's/[^0-9]*//' | cut -d\\  -f1") do |result|
-    pid = result.stdout.chomp
-    on(host, "kill -9 #{pid}")
+    pids = result.stdout.chomp.split("\n")
+    pids.each do |pid|
+      on(host, "kill -9 #{pid}")
+    end
   end
 end
 
