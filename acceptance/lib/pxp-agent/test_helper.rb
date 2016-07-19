@@ -178,7 +178,7 @@ def pcp_broker_inventory(broker, query)
       end
     end
   rescue Timeout::Error
-    raise "Didn't receive a response for PCP inventory request"
+    raise "Didn't receive a response for PCP inventory request in #{inventory_expiry} seconds"
   ensure
     client.close
   end # wait for message
@@ -200,7 +200,8 @@ end
 # @param retries the number of times to retry checking the inventory. Default 60 to allow for slow test VMs. Set to 0 to only check once.
 # @return if the identity is in the broker's inventory within the allowed number of retries
 #         false if the identity remains absent from the broker's inventory after the allowed number of retries
-def is_associated?(broker, identity, retries = 60)
+PCP_INVENTORY_RETRIES = 60
+def is_associated?(broker, identity, retries = PCP_INVENTORY_RETRIES)
   if retries == 0
     return pcp_broker_inventory(broker,identity).include?(identity)
   end
@@ -220,7 +221,7 @@ end
 # @param retries the number of times to retry checking the inventory. Default 60 to allow for slow test VMs. Set to 0 to only check once.
 # @return true if the identity is absent from the broker's inventory within the allowed number of retries
 #         false if the identity persists in the broker's inventory after the allowed number of retries
-def is_not_associated?(broker, identity, retries = 60)
+def is_not_associated?(broker, identity, retries = PCP_INVENTORY_RETRIES)
   if retries == 0
     return !pcp_broker_inventory(broker,identity).include?(identity)
   end
