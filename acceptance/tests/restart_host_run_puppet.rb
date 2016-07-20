@@ -3,8 +3,13 @@ require 'pxp-agent/test_helper.rb'
 test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
 
   applicable_agents = agents.select { |agent| agent['platform'] !~ /aix/}
-  unless applicable_agents then
+  unless applicable_agents.length > 0 then
     skip_test('All agent hosts are AIX and QENG-3629 prevents AIX hosts being restarted')
+  end
+
+  applicable_agents = applicable_agents.select { |agent| agent['platform'] !~ /cisco_nexus/}
+  unless applicable_agents.length > 0 then
+    skip_test('PCP-508 - CiscoNX hosts cannot be restarted')
   end
 
   step 'Ensure each agent host has pxp-agent service running and enabled' do
