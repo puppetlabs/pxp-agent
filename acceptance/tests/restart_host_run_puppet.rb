@@ -12,6 +12,11 @@ test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
     skip_test('PCP-508 - CiscoNX hosts cannot be restarted')
   end
 
+  applicable_agents = applicable_agents.select { |agent| agent['platform'] != "eos-4-i386"}
+  unless applicable_agents.length > 0 then
+    skip_test('PCP-515 - Arista devices will reload their system image on reboot')
+  end  
+
   step 'Ensure each agent host has pxp-agent service running and enabled' do
     applicable_agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
