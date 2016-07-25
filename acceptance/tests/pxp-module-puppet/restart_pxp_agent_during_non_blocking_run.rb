@@ -120,7 +120,9 @@ MODULEPP
         if (!pid || pid == '')
           fail('Did not find a pid for the sleep process holding up Puppet - cannot test PXP response if Puppet isn\'t sleeping')
         end
-        on(agent, "kill SIGALARM #{pid}")
+        agent['platform'] =~ /cisco_nexus/ ?
+          on(agent, "kill -s ALRM #{pid}") :
+          on(agent, "kill SIGALARM #{pid}")
       end
     end
 
