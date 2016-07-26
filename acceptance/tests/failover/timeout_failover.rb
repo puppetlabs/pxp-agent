@@ -6,6 +6,7 @@ test_name 'C97964 - agent should use next broker if primary is timing out' do
   PRIMARY_BROKER_INSTANCE = 0
   REPLICA_BROKER_INSTANCE = 1
   teardown do
+    unblock_pcp_broker(master,PRIMARY_BROKER_INSTANCE)
     kill_all_pcp_brokers(master)
     run_pcp_broker(master,    PRIMARY_BROKER_INSTANCE)
   end
@@ -41,13 +42,9 @@ test_name 'C97964 - agent should use next broker if primary is timing out' do
     end
   end
 
-  step 'Ensure we are not associated with the primary broker' do
-    unblock_pcp_broker(master,PRIMARY_BROKER_INSTANCE)
-    assert_equal(master[:pcp_broker_instance], PRIMARY_BROKER_INSTANCE, "broker instance is not set correctly: #{master[:pcp_broker_instance]}")
-    agents.each do |agent|
-      assert(is_not_associated?(master, "pcp://#{agent}/agent"),
-             "Agent identity pcp://#{agent}/agent for agent host #{agent} appears in pcp-broker's (#{broker_ws_uri(master)}) client inventory, and should not.")
-    end
-  end
+  # We do *not* need to ensure we are not associated with the primary broker
+  #   this requires the primary to receive socket close from the agent, which of course we have restricted above.
+  #   After opening the port the broker may or may not receive the socket close making this test flaky
+  #   In addition, we do not depend upon broker dis-association for any features.
 
 end
