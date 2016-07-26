@@ -86,11 +86,22 @@ def run_pcp_broker(host, instance=0)
   assert_equal("running", broker_state, "Shortly after startup, pcp-broker should report its state as being 'running'")
 end
 
-def kill_pcp_broker(host)
+def kill_all_pcp_brokers(host)
   on(host, "ps -C java -f | grep pcp-broker | sed 's/[^0-9]*//' | cut -d\\  -f1") do |result|
-    pid = result.stdout.chomp
-    on(host, "kill -9 #{pid}")
+    pids = result.stdout.chomp.split("\n")
+    pids.each do |pid|
+      on(host, "kill -9 #{pid}")
+    end
   end
+end
+
+def block_pcp_broker(host, instance)
+  on(host, "iptables -A INPUT -p tcp --destination-port #{PCP_BROKER_PORTS[instance].to_s} -j DROP; iptables -S")
+end
+
+def unblock_pcp_broker(host, instance)
+  host[:pcp_broker_instance] = instance
+  on(host, "iptables -D INPUT -p tcp --destination-port #{PCP_BROKER_PORTS[instance].to_s} -j DROP; iptables -S")
 end
 
 def get_pcp_broker_status(host)
@@ -178,7 +189,7 @@ def pcp_broker_inventory(broker, query)
       end
     end
   rescue Timeout::Error
-    raise "Didn't receive a response for PCP inventory request"
+    raise "Didn't receive a response for PCP inventory request in #{inventory_expiry} seconds"
   ensure
     client.close
   end # wait for message
@@ -200,7 +211,8 @@ end
 # @param retries the number of times to retry checking the inventory. Default 60 to allow for slow test VMs. Set to 0 to only check once.
 # @return if the identity is in the broker's inventory within the allowed number of retries
 #         false if the identity remains absent from the broker's inventory after the allowed number of retries
-def is_associated?(broker, identity, retries = 60)
+PCP_INVENTORY_RETRIES = 60
+def is_associated?(broker, identity, retries = PCP_INVENTORY_RETRIES)
   if retries == 0
     return pcp_broker_inventory(broker,identity).include?(identity)
   end
@@ -220,7 +232,7 @@ end
 # @param retries the number of times to retry checking the inventory. Default 60 to allow for slow test VMs. Set to 0 to only check once.
 # @return true if the identity is absent from the broker's inventory within the allowed number of retries
 #         false if the identity persists in the broker's inventory after the allowed number of retries
-def is_not_associated?(broker, identity, retries = 60)
+def is_not_associated?(broker, identity, retries = PCP_INVENTORY_RETRIES)
   if retries == 0
     return !pcp_broker_inventory(broker,identity).include?(identity)
   end

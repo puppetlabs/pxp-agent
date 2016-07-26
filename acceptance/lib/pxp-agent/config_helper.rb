@@ -49,14 +49,19 @@ def pxp_config_json(broker, agent, ssl_config = {})
   }.to_json
 end
 
-def pxp_config_json_using_puppet_certs(broker, agent)
-  pxp_config_hash_using_puppet_certs(broker, agent).to_json
+def pxp_config_json_using_puppet_certs(broker, agent, num_brokers=1)
+  pxp_config_hash_using_puppet_certs(broker, agent, num_brokers).to_json
 end
 
-def pxp_config_hash_using_puppet_certs(broker, agent)
+def pxp_config_hash_using_puppet_certs(broker, agent, num_brokers=1)
+  broker_uris = []
+  for i in 1..num_brokers
+    broker_uris << broker_ws_uri(master).sub!(PCP_BROKER_PORTS[0].to_s,PCP_BROKER_PORTS[i-1].to_s)
+  end
+
   on(agent, puppet('config print ssldir')) do |result|
     puppet_ssldir = result.stdout.chomp
-    return { "broker-ws-uri" => "#{broker_ws_uri(broker)}",
+    return { "broker-ws-uris" => broker_uris,
       "ssl-key" => "#{puppet_ssldir}/private_keys/#{agent}.pem",
       "ssl-ca-cert" => "#{puppet_ssldir}/certs/ca.pem",
       "ssl-cert" => "#{puppet_ssldir}/certs/#{agent}.pem"
