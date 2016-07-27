@@ -14,7 +14,7 @@ test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
 
   applicable_agents = applicable_agents.select { |agent| agent['platform'] != "eos-4-i386"}
   unless applicable_agents.length > 0 then
-    skip_test('PCP-515 - Arista devices will reload their system image on reboot')
+    skip_test('RE-7673 - Arista hosts cannot be restarted')
   end  
 
   step 'Ensure each agent host has pxp-agent service running and enabled' do
