@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# encoding: UTF-8
 require 'json'
 require_relative './check_output'
 
@@ -63,7 +64,7 @@ end
 def action_broken_action
   args = JSON.load($stdin)
   check_output_files(args)
-  $stderr.puts "we failed, sorry :("
+  $stderr.puts "we failed, sorry ☹"
   raise "ops, we failed!"
 end
 

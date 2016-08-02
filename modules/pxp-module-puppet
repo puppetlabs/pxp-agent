@@ -1,4 +1,5 @@
 #!/opt/puppetlabs/puppet/bin/ruby
+# encoding: UTF-8
 
 require 'json'
 require 'yaml'
@@ -70,7 +71,8 @@ end
 def check_config_print(cli_arg, config)
   command_array = [config["puppet_bin"], "agent", "--configprint", cli_arg]
   process_output = Puppet::Util::Execution.execute(command_array,
-                                                   {:custom_environment => get_env_fix_up()})
+                                                   {:custom_environment => get_env_fix_up(),
+                                                    :override_locale => false})
   return process_output.to_s.chomp
 end
 
@@ -149,7 +151,8 @@ def start_run(config, action_input)
   start_time = File.mtime(last_run_report) if File.exist?(last_run_report)
 
   run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false,
-                                                     :custom_environment => env})
+                                                     :custom_environment => env,
+                                                     :override_locale => false})
 
   if !run_result
     return make_error_result(exitcode, Errors::FailedToStart,
