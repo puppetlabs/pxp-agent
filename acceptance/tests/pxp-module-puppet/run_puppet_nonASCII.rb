@@ -1,17 +1,17 @@
 require 'pxp-agent/test_helper.rb'
 require 'puppet/acceptance/environment_utils'
 
-test_name 'C93062 - Run puppet and expect \'changed\' result' do
+test_name 'C98107 - Run puppet with non-ASCII characters in Puppet code' do
   extend Puppet::Acceptance::EnvironmentUtils
 
   env_name = test_file_name = File.basename(__FILE__, '.*')
   environment_name = mk_tmp_environment(env_name)
 
-  step 'On master, create a new environment that will result in Changed' do
+  step 'On master, create a new environment that includes a non-ASCII character and will result in Changed' do
     site_manifest = "#{environmentpath}/#{environment_name}/manifests/site.pp"
     create_remote_file(master, site_manifest, <<-SITEPP)
 node default {
-  notify {'Notify resources cause a Puppet run to have a \\'changed\\' outcome ☃':}
+  notify {'☃':}
 }
 SITEPP
     on(master, "chmod 644 #{site_manifest}")
