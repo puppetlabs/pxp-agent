@@ -68,12 +68,21 @@ def last_run_result(exitcode)
           "version"          => 1}
 end
 
+def force_unicode(s)
+  # Puppet still returns UTF-8 when locale is C or POSIX, so force encoding to that.
+  if s.encoding == Encoding::ASCII_8BIT
+    s.force_encoding(Encoding::UTF_8)
+  else
+    s
+  end
+end
+
 def check_config_print(cli_arg, config)
   command_array = [config["puppet_bin"], "agent", "--configprint", cli_arg]
   process_output = Puppet::Util::Execution.execute(command_array,
                                                    {:custom_environment => get_env_fix_up(),
                                                     :override_locale => false})
-  return process_output.to_s.chomp
+  return force_unicode(process_output.to_s).chomp
 end
 
 def running?(run_result)
@@ -160,7 +169,7 @@ def start_run(config, action_input)
   end
 
   exitcode = run_result.exitstatus
-  puppet_output = run_result.to_s
+  puppet_output = force_unicode(run_result.to_s)
 
   if disabled?(puppet_output)
     return make_error_result(exitcode, Errors::Disabled,

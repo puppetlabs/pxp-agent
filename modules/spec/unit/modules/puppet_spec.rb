@@ -33,6 +33,16 @@ describe "pxp-module-puppet" do
                                                                  :override_locale => false}).and_return("value\n")
       expect(check_config_print("value", default_configuration)).to be == "value"
     end
+
+    it "returns the result of configprint with UTF-8 even though locale is POSIX" do
+      cli_vec = ["puppet", "agent", "--configprint", "value"]
+      expect(self).to receive(:get_env_fix_up).and_return({"FIXVAR" => "fixvalue"})
+      expect(Puppet::Util::Execution).to receive(:execute).with(cli_vec,
+                                                                {:custom_environment => {"FIXVAR" => "fixvalue"},
+                                                                 :override_locale => false}).
+                                                                 and_return("value☃".force_encoding(Encoding::ASCII_8BIT))
+      expect(check_config_print("value", default_configuration)).to be == "value☃"
+    end
   end
 
   describe "running?" do
@@ -107,7 +117,7 @@ describe "pxp-module-puppet" do
       "/opt/puppetlabs/puppet/cache/state/fake_last_run_report.yaml"
     }
 
-    it "doesn't process the last_run_report if the file doens't exist" do
+    it "doesn't process the last_run_report if the file doesn't exist" do
       allow(File).to receive(:exist?).and_return(false)
       expect(get_result_from_report(last_run_report_path, 0, default_configuration, Time.now)).to be ==
           {"kind"             => "unknown",
@@ -259,12 +269,21 @@ describe "pxp-module-puppet" do
       start_run(default_configuration, default_input)
     end
 
-    it "populates the output when puppet is alreaady running" do
+    it "populates the output when puppet is already running" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(1)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
       allow_any_instance_of(Object).to receive(:running?).and_return(true)
       expect_any_instance_of(Object).to receive(:make_error_result).with(1, Errors::AlreadyRunning, anything)
+      start_run(default_configuration, default_input)
+    end
+
+    it "processes output when puppet's output is ASCII_8BIT (POSIX or C locale) and contains non-ASCII" do
+      output = "everything normal, we're all fine here ☃".force_encoding(Encoding::ASCII_8BIT)
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(output)
+      allow(output).to receive(:exitstatus).and_return(0)
+      allow(output).to receive(:to_s).and_return(output)
+      expect_any_instance_of(Object).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
       start_run(default_configuration, default_input)
     end
   end

@@ -2,6 +2,7 @@ language: cpp
 compiler:
   - gcc
 sudo: false
+ruby: '2.1.9'
 addons:
   apt:
     sources:
@@ -28,6 +29,7 @@ before_install:
   # Install pxp-agent's dependencies
   - wget https://github.com/puppetlabs/leatherman/releases/download/${LEATHERMAN_VERSION}/leatherman.tar.gz
   - tar xzvf leatherman.tar.gz -C $USERDIR
+  - rvm install 2.1.9
 
 script:
   - ./.travis_target.sh
