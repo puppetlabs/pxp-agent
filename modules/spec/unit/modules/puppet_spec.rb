@@ -1,6 +1,8 @@
 #!/usr/bin/env rspec
+require 'time'
 
 load File.join(File.dirname(__FILE__), "../", "../", "../", "pxp-module-puppet")
+FIXTURE_DIR = File.join(File.expand_path(File.dirname(__FILE__)), '../', '../', 'fixtures')
 
 describe "pxp-module-puppet" do
 
@@ -104,7 +106,7 @@ describe "pxp-module-puppet" do
 
   describe "get_result_from_report" do
     let(:last_run_report_path) {
-      "/opt/puppetlabs/puppet/cache/state/fake_last_run_report.yaml"
+      File.join(FIXTURE_DIR, 'last_run_report.yaml')
     }
 
     it "doesn't process the last_run_report if the file doens't exist" do
@@ -125,7 +127,7 @@ describe "pxp-module-puppet" do
       start_time = Time.now
       allow(File).to receive(:mtime).and_return(start_time+1)
       allow(File).to receive(:exist?).and_return(true)
-      allow(YAML).to receive(:load_file).and_raise("error")
+      allow_any_instance_of(Object).to receive(:parse_report).and_raise("error")
       expect(get_result_from_report(last_run_report_path, 0, default_configuration, start_time)).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
@@ -143,15 +145,15 @@ describe "pxp-module-puppet" do
       run_time = Time.now - 10
       last_run_report = double(:last_run_report)
 
-      allow(last_run_report).to receive(:kind).and_return("apply")
-      allow(last_run_report).to receive(:time).and_return(run_time)
-      allow(last_run_report).to receive(:transaction_uuid).and_return("ac59acbe-6a0f-49c9-8ece-f781a689fda9")
-      allow(last_run_report).to receive(:environment).and_return("production")
-      allow(last_run_report).to receive(:status).and_return("changed")
+      allow(last_run_report).to receive(:[]).with('kind').and_return("apply")
+      allow(last_run_report).to receive(:[]).with('time').and_return(run_time)
+      allow(last_run_report).to receive(:[]).with('transaction_uuid').and_return("ac59acbe-6a0f-49c9-8ece-f781a689fda9")
+      allow(last_run_report).to receive(:[]).with('environment').and_return("production")
+      allow(last_run_report).to receive(:[]).with('status').and_return("changed")
 
       allow(File).to receive(:mtime).and_return(start_time)
       allow(File).to receive(:exist?).and_return(true)
-      allow(YAML).to receive(:load_file).with(last_run_report_path).and_return(last_run_report)
+      allow_any_instance_of(Object).to receive(:parse_report).with(last_run_report_path).and_return(last_run_report)
 
       expect(get_result_from_report(last_run_report_path, -1, default_configuration, start_time)).to be ==
           {"kind"             => "unknown",
@@ -170,15 +172,15 @@ describe "pxp-module-puppet" do
       run_time = Time.now + 10
       last_run_report = double(:last_run_report)
 
-      allow(last_run_report).to receive(:kind).and_return("apply")
-      allow(last_run_report).to receive(:time).and_return(run_time)
-      allow(last_run_report).to receive(:transaction_uuid).and_return("ac59acbe-6a0f-49c9-8ece-f781a689fda9")
-      allow(last_run_report).to receive(:environment).and_return("production")
-      allow(last_run_report).to receive(:status).and_return("changed")
+      allow(last_run_report).to receive(:[]).with('kind').and_return("apply")
+      allow(last_run_report).to receive(:[]).with('time').and_return(run_time)
+      allow(last_run_report).to receive(:[]).with('transaction_uuid').and_return("ac59acbe-6a0f-49c9-8ece-f781a689fda9")
+      allow(last_run_report).to receive(:[]).with('environment').and_return("production")
+      allow(last_run_report).to receive(:[]).with('status').and_return("changed")
 
       allow(File).to receive(:mtime).and_return(start_time+1)
       allow(File).to receive(:exist?).and_return(true)
-      allow(YAML).to receive(:load_file).with(last_run_report_path).and_return(last_run_report)
+      allow_any_instance_of(Object).to receive(:parse_report).with(last_run_report_path).and_return(last_run_report)
 
       expect(get_result_from_report(last_run_report_path, -1, default_configuration, start_time)).to be ==
           {"kind"             => "apply",
@@ -197,15 +199,15 @@ describe "pxp-module-puppet" do
       run_time = Time.now + 10
       last_run_report = double(:last_run_report)
 
-      allow(last_run_report).to receive(:kind).and_return("apply")
-      allow(last_run_report).to receive(:time).and_return(run_time)
-      allow(last_run_report).to receive(:transaction_uuid).and_return("ac59acbe-6a0f-49c9-8ece-f781a689fda9")
-      allow(last_run_report).to receive(:environment).and_return("production")
-      allow(last_run_report).to receive(:status).and_return("changed")
+      allow(last_run_report).to receive(:[]).with('kind').and_return("apply")
+      allow(last_run_report).to receive(:[]).with('time').and_return(run_time)
+      allow(last_run_report).to receive(:[]).with('transaction_uuid').and_return("ac59acbe-6a0f-49c9-8ece-f781a689fda9")
+      allow(last_run_report).to receive(:[]).with('environment').and_return("production")
+      allow(last_run_report).to receive(:[]).with('status').and_return("changed")
 
       allow(File).to receive(:mtime).and_return(start_time+1)
       allow(File).to receive(:exist?).and_return(true)
-      allow(YAML).to receive(:load_file).with(last_run_report_path).and_return(last_run_report)
+      allow_any_instance_of(Object).to receive(:parse_report).with(last_run_report_path).and_return(last_run_report)
 
       expect(get_result_from_report(last_run_report_path, 0, default_configuration, start_time)).to be ==
           {"kind"             => "apply",
@@ -215,6 +217,18 @@ describe "pxp-module-puppet" do
            "status"           => "changed",
            "exitcode"         => 0,
            "version"          => 1}
+    end
+
+    it 'processes a last_run_report containing unknown Ruby objects' do
+      start_time = Time.parse('2016-01-01')
+      expect(get_result_from_report(last_run_report_path, 0, default_configuration, start_time)).to be ==
+          {'kind'             => 'apply',
+           'time'             => Time.parse('2016-02-24 23:07:21.694017000 +00:00'),
+           'transaction_uuid' => '691f00ee-86fa-4563-8b53-f60c1fdae601',
+           'environment'      => 'production',
+           'status'           => 'changed',
+           'exitcode'         => 0,
+           'version'          => 1}
     end
   end
 
