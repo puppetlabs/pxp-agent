@@ -29,7 +29,7 @@ end
 step 'Run lein deps to download dependencies' do
   # 'lein tk' will download dependencies automatically, but downloading them will take
   # some time and will eat into the polling period we allow for the broker to start
-  on master, "cd #{GIT_CLONE_FOLDER}/pcp-broker; export LEIN_ROOT=ok; lein deps"
+  on master, "cd #{GIT_CLONE_FOLDER}/pcp-broker; export LEIN_ROOT=ok; lein with-profile internal-mirrors deps"
 end
 
 step 'Replace PCP test certs with the Puppet certs of this SUT' do
