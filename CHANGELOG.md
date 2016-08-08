@@ -1,8 +1,150 @@
+## 1.2.0
+
+This version introduces new features and maintains compatibility with the
+[PXP v1.0 protocol](https://github.com/puppetlabs/pcp-specifications/tree/master/pxp/versions/1.0).
+
+* [PCP-542](https://tickets.puppetlabs.com/browse/PCP-542) Allow parsing last_run_report with Puppet
+objects
+* [#464](https://github.com/puppetlabs/pxp-agent/pull/464) Acceptance: fix path for pxp-agent using
+new Windows MSI layout
+* [PCP-494](https://tickets.puppetlabs.com/browse/PCP-494) Fix external module and pxp-module-puppet
+unicode handling
+* [PCP-457](https://tickets.puppetlabs.com/browse/PCP-457) Acceptance: remove primary
+dis-association check
+* [PCP-457](https://tickets.puppetlabs.com/browse/PCP-457) Acceptance: automate pxp-agent broker
+timeout failover test
+* [PCP-514](https://tickets.puppetlabs.com/browse/PCP-514) Fix acceptance tests on Cisco Nexus
+* [PCP-515](https://tickets.puppetlabs.com/browse/PCP-515) Acceptance: skip
+restart_host_run_puppet.rb on Arista
+* [PCP-508](https://tickets.puppetlabs.com/browse/PCP-508) Skip host restart test for CiscoNX
+* [#455](https://github.com/puppetlabs/pxp-agent/pull/455) Fix gettext in Travis CI
+* [PCP-493](https://tickets.puppetlabs.com/browse/PCP-493) Ensure stderr is returned in module
+response
+* [PCP-430](https://tickets.puppetlabs.com/browse/PCP-430) Automate pxp-agent broker failover
+acceptance test
+* [PCP-431](https://tickets.puppetlabs.com/browse/PCP-431) pxp agent acceptance should support a
+failover pcp broker
+* [PCP-479](https://tickets.puppetlabs.com/browse/PCP-479) Update pxp-agent to install batch
+wrapper
+* [PCP-478](https://tickets.puppetlabs.com/browse/PCP-478) Acceptance pre-suite should skip timesync
+for Ubuntu
+* [PCP-472](https://tickets.puppetlabs.com/browse/PCP-472) Ignore pxp-module-puppet `env` input arg
+* [PCP-405](https://tickets.puppetlabs.com/browse/PCP-405) Make broker-ws-uris a config file only
+option
+* [#440](https://github.com/puppetlabs/pxp-agent/pull/440) Add libpxp-agent dependency on
+horsewhisperer
+* [PCP-463](https://tickets.puppetlabs.com/browse/PCP-463) Restore blocking monitor action
+* [PCP-452](https://tickets.puppetlabs.com/browse/PCP-452) Add option to configure Association
+timeout
+* [PCP-454](https://tickets.puppetlabs.com/browse/PCP-454) Block execution thread once monitoring
+starts
+* [PCP-423](https://tickets.puppetlabs.com/browse/PCP-423) Add `allowed-keepalive-timeouts` option
+* [PCP-416](https://tickets.puppetlabs.com/browse/PCP-416) Configure PCP message TTL; update HW
+* [PCP-349](https://tickets.puppetlabs.com/browse/PCP-349) support running puppet as non-root
+* [#428](https://github.com/puppetlabs/pxp-agent/pull/428) Remove unused local variables
+* [#426](https://github.com/puppetlabs/pxp-agent/pull/426) Fix ActionRequest's log message format
+* [PCP-383](https://tickets.puppetlabs.com/browse/PCP-383) Add broker failover
+* [#425](https://github.com/puppetlabs/pxp-agent/pull/425) Remove unused include from pxp_schemas.cc
+
+## 1.1.4
+
+This is a maintenance release.
+
+* [#456](https://github.com/puppetlabs/pxp-agent/pull/456) Fix version number
+* [#449](https://github.com/puppetlabs/pxp-agent/pull/449) Switch to using project version
+* [PCP-478](https://tickets.puppetlabs.com/browse/PCP-478) Acceptance pre-suite should skip timesync
+* for Ubuntu
+* [#443](https://github.com/puppetlabs/pxp-agent/pull/443) Test against Leatherman 0.7.4
+* [PCP-453](https://tickets.puppetlabs.com/browse/PCP-453) Only kill pxp-agent if it's running in
+* logrotate
+* [PCP-428](https://tickets.puppetlabs.com/browse/PCP-428) fix restart_host test on windows agents
+* [PCP-428](https://tickets.puppetlabs.com/browse/PCP-428) define missing variable in
+* restart_host_run_puppet test
+* [PCP-428](https://tickets.puppetlabs.com/browse/PCP-428) restart_host_run_puppet.rb transient fails
+* on ubuntu1404
+* [PCP-228](https://tickets.puppetlabs.com/browse/PCP-228) Acceptance - run puppet and expect failure
+
+## 1.1.3
+
+This is a maintenance release.
+
+* [#422](https://github.com/puppetlabs/pxp-agent/pull/422) Restore pluralized messages
+* [PCP-306](https://tickets.puppetlabs.com/browse/PCP-306) Use last_run_report mtime to check for
+updates
+* [#419](https://github.com/puppetlabs/pxp-agent/pull/419) C++ Style Cleanup
+* [#418](https://github.com/puppetlabs/pxp-agent/pull/418) Cleanup HorseWhisperer enum use
+* [#421](https://github.com/puppetlabs/pxp-agent/pull/421) Remove old Catch installation
+* [#417](https://github.com/puppetlabs/pxp-agent/pull/417) Add cpplint to Travis's target matrix
+* [#414](https://github.com/puppetlabs/pxp-agent/pull/414) Fix up AppVeyor
+* [PCP-381](https://tickets.puppetlabs.com/browse/PCP-381) Fix usage of env values in acceptance
+Rakefile
+* [PCP-371](https://tickets.puppetlabs.com/browse/PCP-371) Spike i18n support
+* [PCP-196](https://tickets.puppetlabs.com/browse/PCP-196) Fix log rotation on Ubuntu 14.04 LTS
+* [#407](https://github.com/puppetlabs/pxp-agent/pull/407) Download CMake from our S3 bucket
+* [#406](https://github.com/puppetlabs/pxp-agent/pull/406) Enable builds with static cpp-pcp-client
+* [PCP-230](https://tickets.puppetlabs.com/browse/PCP-230) Acceptance - restart pxp-agent during
+Puppet run
+* [#404](https://github.com/puppetlabs/pxp-agent/pull/404) Look for .dylib in
+Findcpp-pcp-client.cmake
+* [#403](https://github.com/puppetlabs/pxp-agent/pull/403) Add CONTRIBUTING and Maintenance doc
+sections
+* [PCP-379](https://tickets.puppetlabs.com/browse/PCP-379) Store expanded --spool-dir in HW
+singleton
+* [#400](https://github.com/puppetlabs/pxp-agent/pull/400) Add README section on running against a
+test broker
+* [#396](https://github.com/puppetlabs/pxp-agent/pull/396) Make tests compatible with leatherman 0.4
+and 0.5
+* [PCP-374](https://tickets.puppetlabs.com/browse/PCP-374) Update Catch configuration
+* [PCP-370](https://tickets.puppetlabs.com/browse/PCP-370) Remove sets of SSL certificates
+* [PCP-345](https://tickets.puppetlabs.com/browse/PCP-345) Create spool dir if needed
+* [#388](https://github.com/puppetlabs/pxp-agent/pull/388) Refactor Configuration
+* [PCP-284](https://tickets.puppetlabs.com/browse/PCP-284) In modules interface, specify "metadata"
+arg
+* [#374](https://github.com/puppetlabs/pxp-agent/pull/374) Add name prefix for ThreadContainer unit
+tests
+* [PCP-344](https://tickets.puppetlabs.com/browse/PCP-344) Rely on cpp-pcp-client's ttl_expired
+callback
+* [#373](https://github.com/puppetlabs/pxp-agent/pull/373) Remove move() when returning unique_ptr
+* [PCP-338](https://tickets.puppetlabs.com/browse/PCP-338) Handle Associate Session errors
+* [PCP-340](https://tickets.puppetlabs.com/browse/PCP-340) Wait for the module completion in
+component tests
+* [PCP-308](https://tickets.puppetlabs.com/browse/PCP-308) run modules in own contracts on Solaris
+* [#365](https://github.com/puppetlabs/pxp-agent/pull/365) Consider output processing delay in
+component test
+
 ## 1.1.2
+
+This is a maintenance release.
+
+* [#397](https://github.com/puppetlabs/pxp-agent/pull/397) Fixes for Leatherman 0.6.0 on stable
+* [PCP-376](https://tickets.puppetlabs.com/browse/PCP-376) Acceptance - do not attempt timesync on OSX
+* [#392](https://github.com/puppetlabs/pxp-agent/pull/397) Update ruby-pcp-client to 0.4.0 in testing
+* [PCP-375](https://tickets.puppetlabs.com/browse/PCP-375) Remove usage of test fixture SSL files from
+acceptance tests
+* [PCP-355](https://tickets.puppetlabs.com/browse/PCP-355) Show logs on acceptance test failures
+* [PCP-307](https://tickets.puppetlabs.com/browse/PCP-307) Acceptance tests should expect
+'maintenance' service state on Solaris
+* [PCP-363](https://tickets.puppetlabs.com/browse/PCP-363) Skip test that restarts host for AIX
+agents
+* [PCP-329](https://tickets.puppetlabs.com/browse/PCP-329) Update ruby-pcp-client to pick up
+EventMachine improvements
+* [PCP-364](https://tickets.puppetlabs.com/browse/PCP-364) Acceptance - sync system time on hosts
+* [PCP-359](https://tickets.puppetlabs.com/browse/PCP-359) Fix confusion between EL and CentOS in
+acceptance host generation
+* [PCP-305](https://tickets.puppetlabs.com/browse/PCP-305) Acceptance tests on OSX should not expect
+a stopped service
+* [PCP-360](https://tickets.puppetlabs.com/browse/PCP-360) Acceptance: puppet-agent should use
+beaker hostname as certname
+* [#377](https://github.com/puppetlabs/pxp-agent/pull/377) Acceptance - remove static host config
+for Cumulus
+* [PCP-232](https://tickets.puppetlabs.com/browse/PCP-232) Acceptance - ensure pxp-agent is usable
+after restarting host
+* [PCP-225](https://tickets.puppetlabs.com/browse/PCP-225) Acceptance test for attempting puppet run
+on a disabled agent
 
 ## 1.1.1
 
-This version integrates the changes made for 1.0.3
+This version integrates the changes made for 1.0.3.
 
 ## 1.1.0
 
@@ -59,7 +201,7 @@ modules' documentation
 
 ## 1.0.3
 
-This is a security release
+This is a security release.
 
 * [PCP-326](https://tickets.puppetlabs.com/browse/PCP-326) add acceptance tests
  for SSL validation
@@ -70,7 +212,7 @@ This is a security release
 
 ## 1.0.2
 
-This is a maintenance release
+This is a maintenance release.
 
 * [PCP-238](https://tickets.puppetlabs.com/browse/PCP-238) Fixed a bug that prevented pxp-agent from
 loading modules' configuration files named with ".conf" suffix
@@ -85,7 +227,7 @@ loading modules' configuration files named with ".conf" suffix
 
 ## 1.0.1
 
-This is a maintenance release
+This is a maintenance release.
 
 * [PCP-172](https://tickets.puppetlabs.com/browse/PCP-172) Fixed a race condition
   when checking the status of an action after the action finished but before
@@ -99,4 +241,4 @@ This is a maintenance release
 
 ## 1.0.0
 
-This is the first release
+This is the first release.
