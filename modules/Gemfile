@@ -1,7 +1,5 @@
 source 'https://rubygems.org'
 
-# Older json_pure required to work with Ruby 1.9
-gem 'json_pure', '~> 1.8'
 gem 'puppet', '~> 4.2'
 
 group :test do
