@@ -1,10 +1,15 @@
+## 1.2.1
+
+This is a maintenance release.
+
+* [PCP-542](https://tickets.puppetlabs.com/browse/PCP-542) Allow parsing last_run_report with Puppet
+objects
+
 ## 1.2.0
 
 This version introduces new features and maintains compatibility with the
 [PXP v1.0 protocol](https://github.com/puppetlabs/pcp-specifications/tree/master/pxp/versions/1.0).
 
-* [PCP-542](https://tickets.puppetlabs.com/browse/PCP-542) Allow parsing last_run_report with Puppet
-objects
 * [#464](https://github.com/puppetlabs/pxp-agent/pull/464) Acceptance: fix path for pxp-agent using
 new Windows MSI layout
 * [PCP-494](https://tickets.puppetlabs.com/browse/PCP-494) Fix external module and pxp-module-puppet
