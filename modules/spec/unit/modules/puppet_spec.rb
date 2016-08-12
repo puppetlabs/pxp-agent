@@ -42,7 +42,7 @@ describe "pxp-module-puppet" do
       expect(Puppet::Util::Execution).to receive(:execute).with(cli_vec,
                                                                 {:custom_environment => {"FIXVAR" => "fixvalue"},
                                                                  :override_locale => false}).
-                                                                 and_return("value☃".force_encoding(Encoding::ASCII_8BIT))
+                                                                 and_return("value☃".force_encoding(Encoding::US_ASCII))
       expect(check_config_print("value", default_configuration)).to be == "value☃"
     end
   end
@@ -292,8 +292,8 @@ describe "pxp-module-puppet" do
       start_run(default_configuration, default_input)
     end
 
-    it "processes output when puppet's output is ASCII_8BIT (POSIX or C locale) and contains non-ASCII" do
-      output = "everything normal, we're all fine here ☃".force_encoding(Encoding::ASCII_8BIT)
+    it "processes output when puppet's output is US_ASCII (POSIX or C locale) and contains non-ASCII" do
+      output = "everything normal, we're all fine here ☃".force_encoding(Encoding::US_ASCII)
       allow(Puppet::Util::Execution).to receive(:execute).and_return(output)
       allow(output).to receive(:exitstatus).and_return(0)
       allow(output).to receive(:to_s).and_return(output)
