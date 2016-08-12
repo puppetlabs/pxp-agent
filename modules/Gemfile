@@ -1,6 +1,16 @@
 source 'https://rubygems.org'
 
-gem 'puppet', '~> 4.2'
+def vanagon_location_for(place)
+  if place =~ /^(git[:@][^#]*)#(.*)/
+    [{ :git => $1, :branch => $2, :require => false }]
+  elsif place =~ /^file:\/\/(.*)/
+    ['>= 0', { :path => File.expand_path($1), :require => false }]
+  else
+    [place, { :require => false }]
+  end
+end
+
+gem 'puppet', *vanagon_location_for(ENV['PUPPET_LOCATION'] || '~> 4.6')
 
 group :test do
   gem 'rspec', '~> 3.1'
