@@ -49,8 +49,11 @@ class RequestProcessor {
     /// containing the action outcome, after the action is done. The
     /// task will also write the action outcome and request metadata
     /// to disk.
-    void processRequest(const RequestType& request_type,
-                        const PCPClient::ParsedChunks& parsed_chunks);
+    void processRequest(RequestType request_type,
+                        std::string id,
+                        std::string sender,
+                        leatherman::json_container::JsonContainer data,
+                        std::vector<leatherman::json_container::JsonContainer> debug);
 
     /// Whether the specified module was loaded
     bool hasModule(const std::string& module_name) const;

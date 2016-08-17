@@ -212,60 +212,52 @@ RequestProcessor::~RequestProcessor()
         spool_dir_purge_thread_ptr_->join();
 }
 
-void RequestProcessor::processRequest(const RequestType& request_type,
-                                      const PCPClient::ParsedChunks& parsed_chunks)
+void RequestProcessor::processRequest(RequestType request_type,
+                                      std::string id,
+                                      std::string sender,
+                                      leatherman::json_container::JsonContainer data,
+                                      std::vector<leatherman::json_container::JsonContainer> debug)
 {
-    LOG_TRACE("About to validate and process PXP request message: {1}",
-              parsed_chunks.toString());
+    LOG_TRACE("Process PXP request message {1} from {2}: {3}",
+              id, sender, data.toString());
+
+    // Inspect and validate the request message format
+    ActionRequest request { request_type, std::move(id), std::move(sender), std::move(data), std::move(debug) };
+
+    LOG_INFO("Processing {1}, request ID {2}, by {3}",
+             request.prettyLabel(), request.id(), request.sender());
+
     try {
-        // Inspect and validate the request message format
-        ActionRequest request { request_type, parsed_chunks };
+        // We can access the request content; validate it
+        validateRequestContent(request);
+    } catch (RequestProcessor::Error& e) {
+        // Invalid request; send *RPC Error message*
+        LOG_ERROR("Invalid {1}, request ID {2} by {3}. Will reply with an "
+                  "RPC Error message. Error: {4}",
+                  request.prettyLabel(), request.id(), request.sender(), e.what());
+        connector_ptr_->sendPXPError(request, e.what());
+        return;
+    }
 
-        LOG_INFO("Processing {1}, request ID {2}, by {3}",
-                 request.prettyLabel(), request.id(), request.sender());
+    LOG_DEBUG("The {1} has been successfully validated", request.prettyLabel());
 
-        try {
-            // We can access the request content; validate it
-            validateRequestContent(request);
-        } catch (RequestProcessor::Error& e) {
-            // Invalid request; send *RPC Error message*
-            LOG_ERROR("Invalid {1}, request ID {2} by {3}. Will reply with an "
-                      "RPC Error message. Error: {4}",
-                      request.prettyLabel(), request.id(), request.sender(), e.what());
-            connector_ptr_->sendPXPError(request, e.what());
-            return;
+    try {
+        if (isStatusRequest(request)) {
+            processStatusRequest(request);
+        } else if (request.type() == RequestType::Blocking) {
+            processBlockingRequest(request);
+        } else {
+            processNonBlockingRequest(request);
         }
 
-        LOG_DEBUG("The {1} has been successfully validated", request.prettyLabel());
-
-        try {
-            if (isStatusRequest(request)) {
-                processStatusRequest(request);
-            } else if (request.type() == RequestType::Blocking) {
-                processBlockingRequest(request);
-            } else {
-                processNonBlockingRequest(request);
-            }
-
-            LOG_DEBUG("The {1}, request ID {2} by {3}, has been successfully processed",
-                      request.prettyLabel(), request.id(), request.sender());
-        } catch (std::exception& e) {
-            // Process failure; send a *RPC Error message*
-            LOG_ERROR("Failed to process {1}, request ID {2} by {3}. Will reply "
-                      "with an RPC Error message. Error: {4}",
-                      request.prettyLabel(), request.id(), request.sender(), e.what());
-            connector_ptr_->sendPXPError(request, e.what());
-        }
-    } catch (ActionRequest::Error& e) {
-        // Failed to instantiate ActionRequest - bad message;
-        // send a *PCP error*
-        auto id = parsed_chunks.envelope.get<std::string>("id");
-        auto sender = parsed_chunks.envelope.get<std::string>("sender");
-        std::vector<std::string> endpoints { sender };
-        LOG_ERROR("Invalid request with ID {1} by {2}. Will reply with a PCP "
-                  "error. Error: {3}",
-                  id, sender, e.what());
-        connector_ptr_->sendPCPError(id, e.what(), endpoints);
+        LOG_DEBUG("The {1}, request ID {2} by {3}, has been successfully processed",
+                  request.prettyLabel(), request.id(), request.sender());
+    } catch (std::exception& e) {
+        // Process failure; send a *RPC Error message*
+        LOG_ERROR("Failed to process {1}, request ID {2} by {3}. Will reply "
+                  "with an RPC Error message. Error: {4}",
+                  request.prettyLabel(), request.id(), request.sender(), e.what());
+        connector_ptr_->sendPXPError(request, e.what());
     }
 }
 

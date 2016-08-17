@@ -15,8 +15,6 @@ namespace lth_jc  = leatherman::json_container;
 namespace lth_loc = leatherman::locale;
 
 Module::Module()
-        : input_validator_ {},
-          results_validator_ {}
 {
 }
 

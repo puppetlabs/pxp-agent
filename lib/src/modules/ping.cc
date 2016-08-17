@@ -32,12 +32,13 @@ Ping::Ping() {
 lth_jc::JsonContainer Ping::ping(const ActionRequest& request) {
     lth_jc::JsonContainer data {};
 
-    if (request.parsedChunks().debug.empty()) {
-        LOG_ERROR("Found no debug entry in the request message");
-        throw Module::ProcessingError { lth_loc::translate("no debug entry") };
+    if (request.debug().empty()) {
+        LOG_DEBUG("Found no debug entry in the request message");
+        data.set<std::vector<lth_jc::JsonContainer>>("request_hops", {});
+        return data;
     }
 
-    auto& debug_entry = request.parsedChunks().debug[0];
+    auto& debug_entry = request.debug()[0];
 
     try {
         data.set<std::vector<lth_jc::JsonContainer>>(

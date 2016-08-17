@@ -11,15 +11,24 @@ namespace lth_jc  = leatherman::json_container;
 namespace lth_loc = leatherman::locale;
 
 ActionRequest::ActionRequest(RequestType type,
-                             PCPClient::ParsedChunks parsed_chunks)
+                             std::string message_id,
+                             std::string sender,
+                             lth_jc::JsonContainer data,
+                             std::vector<lth_jc::JsonContainer> debug)
         : type_ { type },
-          notify_outcome_ { true },
-          parsed_chunks_ { std::move(parsed_chunks) },
+          id_ { std::move(message_id) },
+          sender_ { std::move(sender) },
+          transaction_id_ { data.get<std::string>("transaction_id") },
+          module_ { data.get<std::string>("module") },
+          action_ { data.get<std::string>("action") },
+          notify_outcome_ { type == RequestType::NonBlocking ?
+              data.get<bool>("notify_outcome") : true },
+          data_ { std::move(data) },
+          debug_ { std::move(debug) },
           params_ { "{}" },
           params_txt_ {},
           pretty_label_ {},
           results_dir_ {} {
-    init();
 }
 
 void ActionRequest::setResultsDir(const std::string& results_dir) const {
@@ -34,15 +43,14 @@ const std::string& ActionRequest::module() const { return module_; }
 const std::string& ActionRequest::action() const { return action_; }
 const bool& ActionRequest::notifyOutcome() const { return notify_outcome_; }
 
-const PCPClient::ParsedChunks& ActionRequest::parsedChunks() const {
-    return parsed_chunks_;
-}
-
 const std::string& ActionRequest::resultsDir() const { return results_dir_; }
 
+const std::vector<leatherman::json_container::JsonContainer>&
+ActionRequest::debug() const { return debug_; }
+
 const lth_jc::JsonContainer& ActionRequest::params() const {
-    if (params_.empty() && parsed_chunks_.data.includes("params"))
-        params_ = parsed_chunks_.data.get<lth_jc::JsonContainer>("params");
+    if (params_.empty() && data_.includes("params"))
+        params_ = data_.get<lth_jc::JsonContainer>("params");
 
     return params_;
 }
@@ -61,36 +69,6 @@ const std::string& ActionRequest::prettyLabel() const {
                                         action_, transaction_id_);
 
     return pretty_label_;
-}
-
-// Private interface
-
-void ActionRequest::init() {
-    id_ = parsed_chunks_.envelope.get<std::string>("id");
-    sender_ = parsed_chunks_.envelope.get<std::string>("sender");
-
-    LOG_DEBUG("Validating {1} request {2} by {3}:\n{4}",
-              REQUEST_TYPE_NAMES.at(type_), id_, sender_, parsed_chunks_.toString());
-
-    validateFormat();
-
-    transaction_id_ = parsed_chunks_.data.get<std::string>("transaction_id");
-    module_ = parsed_chunks_.data.get<std::string>("module");
-    action_ = parsed_chunks_.data.get<std::string>("action");
-
-    if (type_ == RequestType::NonBlocking)
-        notify_outcome_ = parsed_chunks_.data.get<bool>("notify_outcome");
-}
-
-void ActionRequest::validateFormat() {
-    if (!parsed_chunks_.has_data)
-        throw ActionRequest::Error { lth_loc::translate("no data") };
-    if (parsed_chunks_.invalid_data)
-        throw ActionRequest::Error { lth_loc::translate("invalid data") };
-    // NOTE(ale): currently, we don't support ContentType::Binary
-    if (parsed_chunks_.data_type != lth_jc::ContentType::Json)
-        throw ActionRequest::Error {
-            lth_loc::translate("data is not in JSON format") };
 }
 
 }  // namespace PXPAgent

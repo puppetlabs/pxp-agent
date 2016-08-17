@@ -3,8 +3,6 @@
 #include <pxp-agent/modules/echo.hpp>
 #include <pxp-agent/module_type.hpp>
 
-#include <cpp-pcp-client/protocol/chunks.hpp>       // ParsedChunks
-
 #include <leatherman/json_container/json_container.hpp>
 
 #include <catch.hpp>
@@ -26,12 +24,6 @@ static const std::string ECHO_TXT {
                  % "\"echo\""
                  % "\"echo\""
                  % "{ \"argument\" : \"maradona\" }").str() };
-
-static const PCPClient::ParsedChunks PARSED_CHUNKS {
-                lth_jc::JsonContainer(ENVELOPE_TXT),
-                lth_jc::JsonContainer(ECHO_TXT),
-                NO_DEBUG,
-                0 };
 
 TEST_CASE("Module::type", "[modules]") {
     Modules::Echo echo_module {};
@@ -57,7 +49,8 @@ TEST_CASE("Module::executeAction", "[modules]") {
     Modules::Echo echo_module {};
 
     SECTION("it should correctly call echo") {
-        ActionRequest request { RequestType::Blocking, PARSED_CHUNKS };
+        lth_jc::JsonContainer data { ECHO_TXT };
+        ActionRequest request { RequestType::Blocking, MESSAGE_ID, SENDER, data };
         auto response = echo_module.executeAction(request);
         auto txt = response.action_metadata.get<std::string>({ "results", "outcome" });
         REQUIRE(txt == "maradona");

@@ -29,8 +29,12 @@ static boost::format NON_BLOCKING_DATA_FORMAT {
     "}"
 };
 
+static const std::string MESSAGE_ID { "123456" };
+
+static const std::string SENDER { "pcp://controller/test_controller" };
+
 static const std::string ENVELOPE_TXT {
-    (ENVELOPE_FORMAT % "\"123456\""
+    (ENVELOPE_FORMAT % ("\""+MESSAGE_ID+"\"")
                      % "\"test_message\""
                      % "\"2015-06-26T22:57:09Z\""
-                     % "\"pcp://controller/test_controller\"").str() };
+                     % ("\""+SENDER+"\"")).str() };

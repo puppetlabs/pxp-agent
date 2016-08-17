@@ -717,6 +717,7 @@ void Configuration::validateAndNormalizeWebsocketSettings()
     auto key  = check_and_expand_ssl_cert("ssl-key");
 
     // Ensure client certs are good
+    // TODO: should these be moved to Leatherman?
     try {
         PCPClient::getCommonNameFromCert(cert);
         PCPClient::validatePrivateKeyCertPair(key, cert);
