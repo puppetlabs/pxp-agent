@@ -45,6 +45,8 @@ SITEPP
     agents.each_with_index do |agent|
       step "Check Run Puppet response for #{agent}" do
         identity = "pcp://#{agent}/agent"
+        assert(responses[identity][:data].has_key?("results"),
+              "Agent #{agent} received a response for rpc_blocking_request but it is missing a 'results' entry: #{responses[identity]}")
         action_result = responses[identity][:data]["results"]
         # The test's pass/fail criteria is only the value of 'status'. However, if something goes wrong and Puppet needs to default
         # the environment to 'production' and results in 'unchanged' then it's better to fail specifically on the environment.
