@@ -169,9 +169,13 @@ def get_result_from_report(last_run_report, exitcode, config, start_time)
   return run_result
 end
 
-def wait_for_lockfile(lockfile = '')
-  while File.exist?(lockfile)
-    sleep 0.1
+# Wait for the lockfile to be removed. If it hasn't after 30 seconds, give up.
+def wait_for_lockfile(lockfile = '', check_interval = 0.1, give_up_after = 30)
+  number_of_tries = give_up_after / check_interval
+  count = 0
+  while File.exist?(lockfile) && count < number_of_tries
+    sleep check_interval
+    count += 1
   end
 end
 

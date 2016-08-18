@@ -302,6 +302,21 @@ describe "pxp-module-puppet" do
       start_run(default_configuration, default_input)
     end
 
+    it "retries puppet after 30 seconds if lockfile still present" do
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
+      allow(runoutcome).to receive(:exitstatus).and_return(1, 0)
+      allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
+      expect_any_instance_of(Object).to receive(:running?).and_return(true, false)
+
+      allow(File).to receive(:exist?).with(last_run_report).and_return(false)
+      expect(File).to receive(:exist?).with('').and_return(false)
+      expect(File).to receive(:exist?).with(lockfile).exactly(301).times.and_return(true)
+      expect_any_instance_of(Object).to receive(:sleep).with(0.1).exactly(300).times
+
+      expect_any_instance_of(Object).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
+      start_run(default_configuration, default_input)
+    end
+
     it "populates the output if the lockfile cannot be identified" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(1)
