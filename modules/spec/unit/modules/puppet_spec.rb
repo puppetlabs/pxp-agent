@@ -251,8 +251,13 @@ describe "pxp-module-puppet" do
       "/opt/puppetlabs/puppet/cache/state/last_run_report.yaml"
     }
 
+    let(:lockfile) {
+      "/opt/puppetlabs/puppet/cache/state/agent_catalog_run.lock"
+    }
+
     before :each do
-      allow_any_instance_of(Object).to receive(:check_config_print).and_return(last_run_report)
+      allow_any_instance_of(Object).to receive(:check_config_print).with('lastrunreport', anything).and_return(last_run_report)
+      allow_any_instance_of(Object).to receive(:check_config_print).with('agent_catalog_run_lockfile', anything).and_return(lockfile)
     end
 
     it "populates output when it terminated normally" do
@@ -278,16 +283,32 @@ describe "pxp-module-puppet" do
     it "populates the output if puppet is disabled" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(1)
-      allow_any_instance_of(Object).to receive(:disabled?).and_return(true)
+      expect_any_instance_of(Object).to receive(:disabled?).and_return(true)
       expect_any_instance_of(Object).to receive(:make_error_result).with(1, Errors::Disabled, anything)
       start_run(default_configuration, default_input)
     end
 
-    it "populates the output when puppet is already running" do
+    it "waits for puppet to finish if already running" do
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
+      allow(runoutcome).to receive(:exitstatus).and_return(1, 0)
+      allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
+      expect_any_instance_of(Object).to receive(:running?).and_return(true, false)
+
+      allow(File).to receive(:exist?).with(last_run_report).and_return(false)
+      expect(File).to receive(:exist?).with('').and_return(false)
+      expect(File).to receive(:exist?).with(lockfile).and_return(true, false)
+
+      expect_any_instance_of(Object).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
+      start_run(default_configuration, default_input)
+    end
+
+    it "populates the output if the lockfile cannot be identified" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(1)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
-      allow_any_instance_of(Object).to receive(:running?).and_return(true)
+      expect_any_instance_of(Object).to receive(:running?).and_return(true)
+
+      allow_any_instance_of(Object).to receive(:check_config_print).with('agent_catalog_run_lockfile', anything).and_return('')
       expect_any_instance_of(Object).to receive(:make_error_result).with(1, Errors::AlreadyRunning, anything)
       start_run(default_configuration, default_input)
     end
