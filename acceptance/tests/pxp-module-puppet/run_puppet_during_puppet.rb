@@ -1,6 +1,10 @@
 require 'pxp-agent/test_helper.rb'
 require 'puppet/acceptance/environment_utils'
 
+SECONDS_TO_SLEEP = 500 # The test will use SIGALARM to end this as soon as required
+STATUS_QUERY_MAX_RETRIES = 60
+STATUS_QUERY_INTERVAL_SECONDS = 1
+
 test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completion' do
   extend Puppet::Acceptance::EnvironmentUtils
 
@@ -9,18 +13,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
 
   step 'On master, create a new environment that will result in a slow run' do
     site_manifest = "#{environmentpath}/#{environment_name}/manifests/site.pp"
-    create_remote_file(master, site_manifest, <<-SITEPP)
-node default {
-  case $::osfamily {
-    'windows': { exec { 'sleep':
-                        command => 'true',
-                        unless  => 'sleep 10', #PUP-5806
-                        path    => 'C:\\cygwin64\\bin',} }
-    default:  { exec { '/bin/sleep 10': } }
-  }
-}
-SITEPP
-    on(master, "chmod 644 #{site_manifest}")
+    create_sleep_manifest(master, site_manifest, SECONDS_TO_SLEEP)
   end
 
   step 'Ensure each agent host has pxp-agent running and associated' do
@@ -35,36 +28,16 @@ SITEPP
     end
   end
 
-  lockfiles = []
-  agents.each do |agent|
-    step "Get lockfile location for #{agent}" do
-      on agent, puppet('agent', '--configprint', 'agent_catalog_run_lockfile') do |result|
-        lockfiles << result.stdout.chomp
-      end
-    end
-  end
-
-  agents.each do |agent|
-    step "Start a long-running Puppet agent job on #{agent}" do
+  step 'Start long-running Puppet agent jobs' do
+    agents.each do |agent|
       on agent, puppet('agent', '--test', '--environment', environment_name, '--server', "#{master}",
                        '>/dev/null & echo $!')
     end
   end
 
-  # TODO: switch to checking all agents after each sleep
-  step 'Check for lockfile on agents' do
-    agents.zip(lockfiles).each do |agent, lockfile|
-      step "Check for lockfile on #{agent}" do
-        lockfile_exists = false
-        for i in 1..50
-          lockfile_exists |= agent.file_exist?(lockfile)
-          if lockfile_exists
-            break
-          end
-          sleep 0.2
-        end
-        assert(lockfile_exists, 'Agent run did not generate a lock file')
-      end
+  step 'Wait until Puppet starts executing' do
+    agents.each do |agent|
+      wait_for_sleep_process(agent)
     end
   end
 
@@ -72,24 +45,21 @@ SITEPP
   agents.each do |agent|
     target_identities << "pcp://#{agent}/agent"
   end
-  responses = nil # Declare here so not local to begin/rescue below
 
-  step "Run Puppet on agents" do
-    begin
-      responses = rpc_blocking_request(master, target_identities,
-                                       'pxp-module-puppet', 'run',
-                                       {:flags => ['--onetime',
-                                                   '--no-daemonize']})
-    rescue => exception
-      fail("Exception occurred when trying to run Puppet on all agents: #{exception.message}")
-    end
+  transaction_ids = []
+  step 'Run Puppet on agents' do
+    transaction_ids = start_puppet_non_blocking_request(master, target_identities)
   end
 
-  target_identities.each do |identity|
-    step "Check response to blocking request for #{identity}" do
-      action_result = responses[identity][:data]["results"]
-      assert(action_result.has_key?('status'), "Results for pxp-module-puppet run on #{identity} should contain a 'status' field")
-      assert_equal('unchanged', action_result['status'], "Result of pxp-module-puppet run on #{identity} should be 'unchanged'")
+  step 'Signal sleep process to end so 1st Puppet run will complete' do
+    stop_sleep_process(agents)
+  end
+
+  target_identities.zip(transaction_ids).each do |identity, transaction_id|
+    step "Check response to non-blocking request for #{identity}" do
+      check_puppet_non_blocking_response(identity, transaction_id,
+                                         STATUS_QUERY_MAX_RETRIES, STATUS_QUERY_INTERVAL_SECONDS,
+                                         'unchanged')
     end
   end
 end
