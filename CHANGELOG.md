@@ -2,8 +2,15 @@
 
 This is a maintenance release.
 
+* [PCP-545](https://tickets.puppetlabs.com/browse/PCP-545) Force Puppet output to UTF-8 when unknown
+* [PCP-558](https://tickets.puppetlabs.com/browse/PCP-558) Acceptance: give UTF-8 test case its own
+acceptance test
 * [PCP-542](https://tickets.puppetlabs.com/browse/PCP-542) Allow parsing last_run_report with Puppet
 objects
+* [PCP-354](https://tickets.puppetlabs.com/browse/PCP-354) Acceptance: pcp-broker should use
+internal mirror for deps
+* [PCP-515](https://tickets.puppetlabs.com/browse/PCP-515) Acceptance: update ticket reference for
+skipped test on Arista
 
 ## 1.2.0
 
