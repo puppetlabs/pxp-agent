@@ -11,7 +11,7 @@ test_name 'C98107 - Run puppet with non-ASCII characters in Puppet code' do
     site_manifest = "#{environmentpath}/#{environment_name}/manifests/site.pp"
     create_remote_file(master, site_manifest, <<-SITEPP)
 node default {
-  notify {'☃':}
+  notify {'ᚠᛇᚻ☃':}
 }
 SITEPP
     on(master, "chmod 644 #{site_manifest}")
