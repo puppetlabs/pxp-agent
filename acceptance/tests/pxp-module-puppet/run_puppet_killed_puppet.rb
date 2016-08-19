@@ -2,8 +2,9 @@ require 'pxp-agent/test_helper.rb'
 require 'pxp-agent/config_helper.rb'
 require 'puppet/acceptance/environment_utils'
 
-STATUS_QUERY_MAX_RETRIES = 60
-STATUS_QUERY_INTERVAL_SECONDS = 1
+SECONDS_TO_SLEEP = 500 # The test will use SIGALARM to end this as soon as required
+STATUS_QUERY_MAX_RETRIES = 50
+STATUS_QUERY_INTERVAL_SECONDS = 2
 
 test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for it to be killed' do
   extend Puppet::Acceptance::EnvironmentUtils
@@ -13,18 +14,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for it to be
 
   step 'On master, create a new environment that will result in a slow run' do
     site_manifest = "#{environmentpath}/#{environment_name}/manifests/site.pp"
-    create_remote_file(master, site_manifest, <<-SITEPP)
-node default {
-  case $::osfamily {
-    'windows': { exec { 'sleep':
-                        command => 'true',
-                        unless  => 'sleep 10', #PUP-5806
-                        path    => 'C:\\cygwin64\\bin',} }
-    default:  { exec { '/bin/sleep 30': } }
-  }
-}
-SITEPP
-    on(master, "chmod 644 #{site_manifest}")
+    create_sleep_manifest(master, site_manifest, SECONDS_TO_SLEEP)
   end
 
   step 'Ensure each agent host has pxp-agent running and associated' do
@@ -39,34 +29,17 @@ SITEPP
     end
   end
 
-  lockfiles = []
-  agents.each do |agent|
-    step "Get lockfile location for #{agent}" do
-      on agent, puppet('agent', '--configprint', 'agent_catalog_run_lockfile') do |result|
-        lockfiles << result.stdout.chomp
-      end
-    end
-  end
+  step 'Start long-running Puppet agent jobs' do
 
-  agents.each do |agent|
-    step "Start a long-running Puppet agent job on #{agent}" do
+    agents.each do |agent|
       on agent, puppet('agent', '--test', '--environment', environment_name, '--server', "#{master}",
                        '>/dev/null & echo $!')
     end
   end
 
-  # TODO: switch to checking all agents after each sleep
-  agents.zip(lockfiles).each do |agent, lockfile|
-    step "Check for lockfile on #{agent}" do
-      lockfile_exists = false
-      for i in 1..50
-        lockfile_exists |= agent.file_exist?(lockfile)
-        if lockfile_exists
-          break
-        end
-        sleep 0.2
-      end
-      assert(lockfile_exists, 'Agent run did not generate a lock file')
+  step 'Wait until Puppet starts executing' do
+    agents.each do |agent|
+      wait_for_sleep_process(agent)
     end
   end
 
@@ -76,57 +49,37 @@ SITEPP
   end
 
   transaction_ids = []
-  step "Run Puppet on #{agent}" do
-    provisional_responses = rpc_non_blocking_request(master, target_identities,
-                                                     'pxp-module-puppet', 'run',
-                                                     {:flags => ['--onetime',
-                                                                 '--no-daemonize']})
-    target_identities.each do |identity|
-      assert_equal("http://puppetlabs.com/rpc_provisional_response",
-                   provisional_responses[identity][:envelope][:message_type],
-                   "Did not receive expected rpc_provisional_response in reply to non-blocking request")
-      transaction_ids << provisional_responses[identity][:data]["transaction_id"]
-    end
+  step 'Run Puppet on agents' do
+    transaction_ids = start_puppet_non_blocking_request(master, target_identities)
   end
 
-  # Ensure time has passed for pxp-module-puppet to begin waiting
-  sleep 3
+  teardown do
+    # Make sure we stop sleep processes when the test finishes, to avoid leaving stranded processes running.
+    stop_sleep_process(agents)
+  end
 
-  agents.zip(lockfiles).each do |agent, lockfile|
+  agents.each do |agent|
     step "Kill the first agent run on #{agent}" do
+      lockfile = nil
+      on agent, puppet('agent', '--configprint', 'agent_catalog_run_lockfile') do |result|
+        lockfile = result.stdout.chomp
+      end
+
       assert(agent.file_exist?(lockfile), 'First agent run completed before non-blocking-request returned')
       if windows?(agent)
-        on agent, "taskkill /pid `cat #{lockfile}`"
+        on agent, "taskkill /F /pid `cat #{lockfile}`"
       else
         on agent, "kill -9 `cat #{lockfile}`"
       end
     end
   end
 
+  # Note this will take 30+ seconds, as pxp-module-puppet waits that long to retry.
   target_identities.zip(transaction_ids).each do |identity, transaction_id|
     step "Check response to blocking request for #{identity}" do
-      puppet_run_result = nil
-      query_attempts = 0
-      until (query_attempts == STATUS_QUERY_MAX_RETRIES || puppet_run_result) do
-        query_responses = rpc_blocking_request(master, [identity],
-                                               'status', 'query', {:transaction_id => transaction_id})
-        action_result = query_responses[identity][:data]["results"]
-        if (action_result.has_key?('stdout') && (action_result['stdout'] != ""))
-          rpc_action_status = action_result['status']
-          puppet_run_result = JSON.parse(action_result['stdout'])['status']
-        end
-        query_attempts += 1
-        if (!puppet_run_result)
-          sleep STATUS_QUERY_INTERVAL_SECONDS
-        end
-      end
-      if (!puppet_run_result)
-        fail("Run puppet non-blocking transaction did not contain stdout of puppet run after #{query_attempts} attempts " \
-             "and #{query_attempts * STATUS_QUERY_INTERVAL_SECONDS} seconds")
-      else
-        assert_equal("success", rpc_action_status, "PXP run puppet action did not have expected 'success' result")
-        assert_equal("unchanged", puppet_run_result, "Puppet run did not have expected result of 'unchanged'")
-      end
+      check_puppet_non_blocking_response(identity, transaction_id,
+                                         STATUS_QUERY_MAX_RETRIES, STATUS_QUERY_INTERVAL_SECONDS,
+                                         'unchanged')
     end
   end
 end

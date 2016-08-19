@@ -395,3 +395,112 @@ def have_all_rpc_responses?(targets, responses)
   end
   return true
 end
+
+# A suite of functions for creating a manifest that sleeps for a long period
+# and interacting with Puppet runs of that manifest.
+def create_sleep_manifest(master, manifest, seconds_to_sleep)
+    create_remote_file(master, manifest, <<-MODULEPP)
+node default {
+  case $::osfamily {
+    'windows': { exec { 'sleep': command => 'C:/Windows/system32/ping.exe 127.0.0.1 -n #{seconds_to_sleep}', returns => 1 } }
+    'Darwin':  { exec { 'sleep': command => '/bin/sleep #{seconds_to_sleep} || /usr/bin/true', } }
+    default:   { exec { 'sleep': command => '/bin/sleep #{seconds_to_sleep} || /bin/true', } }
+  }
+}
+MODULEPP
+    on(master, "chmod 644 #{manifest}")
+end
+
+def wait_for_sleep_process(target)
+  begin
+    ps_cmd = target['platform'] =~ /win/ ? 'ps -efW' : 'ps -ef'
+    sleep_process = target['platform'] =~ /win/ ? 'PING' : '/bin/sleep'
+    retry_on(target, "#{ps_cmd} | grep '#{sleep_process}' | grep -v 'grep'", {:max_retries => 15, :retry_interval => 2})
+  rescue
+    fail("After triggering a puppet run on #{target} the expected sleep process did not appear in process list")
+  end
+end
+
+def stop_sleep_process(targets)
+  targets = [targets].flatten
+
+  targets.each do |target|
+    case target['platform']
+    when /osx/
+      command = "ps -e -o pid,comm | grep sleep | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
+    when /win/
+      command = "ps -efW | grep PING | sed 's/^[^0-9]*[0-9]*[^0-9]*//g' | cut -d ' ' -f1"
+    else
+      command = "ps -ef | grep 'bin/sleep ' | grep -v 'grep' | grep -v 'true' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
+    end
+
+    # A failed test may leave an orphaned sleep process, handle multiple matches.
+    pids = nil
+    on(target, command) do |output|
+      pids = output.stdout.chomp.split
+      if pids.empty?
+        fail('Did not find a pid for the sleep process holding up Puppet - cannot test PXP response if Puppet isn\'t sleeping')
+      end
+    end
+
+    pids.each do |pid|
+      target['platform'] =~ /win/ ?
+        on(target, "taskkill /F /pid #{pid}") :
+        on(target, "kill -s ALRM #{pid}")
+    end
+  end
+end
+
+# Initiates an rpc_non_blocking_request, verifies that it receives a provisional response for each target,
+# and returns the transaction ids.
+def start_puppet_non_blocking_request(broker, targets, environment = 'production')
+  transaction_ids = []
+
+  provisional_responses = nil
+  begin
+    provisional_responses = rpc_non_blocking_request(broker, targets,
+                                                     'pxp-module-puppet', 'run',
+                                                     {:flags => ['--onetime',
+                                                                 '--no-daemonize',
+                                                                 '--environment', environment]})
+  rescue => exception
+    fail("Exception occured when trying to send rpc_non_blocking_request to all agents: #{exception}")
+  end
+
+  targets.each do |identity|
+    assert_equal("http://puppetlabs.com/rpc_provisional_response",
+                 provisional_responses[identity][:envelope][:message_type],
+                 "Did not receive expected rpc_provisional_response in reply to non-blocking request")
+    transaction_ids << provisional_responses[identity][:data]["transaction_id"]
+  end
+  transaction_ids
+end
+
+def check_puppet_non_blocking_response(identity, transaction_id, max_retries, query_interval,
+                                       expected_result, expected_environment = 'production')
+  puppet_run_result = nil
+  query_attempts = 0
+  until (query_attempts == max_retries || puppet_run_result) do
+    query_responses = rpc_blocking_request(master, [identity],
+                                           'status', 'query', {:transaction_id => transaction_id})
+    action_result = query_responses[identity][:data]["results"]
+    assert(action_result, "Response to status query was an error: #{query_responses[identity][:data]}")
+    if (action_result.has_key?('stdout') && (action_result['stdout'] != ""))
+      rpc_action_status = action_result['status']
+      puppet_run_result = JSON.parse(action_result['stdout'])['status']
+      puppet_run_environment = JSON.parse(action_result['stdout'])['environment']
+    end
+    query_attempts += 1
+    if (!puppet_run_result)
+      sleep query_interval
+    end
+  end
+  if (!puppet_run_result)
+    fail("Run puppet non-blocking transaction did not contain stdout of puppet run after #{query_attempts} attempts " \
+         "and #{query_attempts * query_interval} seconds")
+  else
+    assert_equal("success", rpc_action_status, "PXP run puppet action did not have expected 'success' result")
+    assert_equal(expected_environment, puppet_run_environment, "Puppet run did not use the expected environment")
+    assert_equal(expected_result, puppet_run_result, "Puppet run did not have expected result of '#{expected_result}'")
+  end
+end
