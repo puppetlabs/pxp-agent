@@ -32,13 +32,19 @@ env_fix_up = nil
 # use this way of defining the `get_env_fix_up` method so that it can "see"
 # the `env_fix_up` variable
 self.class.send(:define_method, :get_env_fix_up) do
+  # If running in a C or POSIX locale, ask Puppet to use UTF-8
+  base_env = {}
+  if Encoding.default_external == Encoding::US_ASCII
+    base_env = {"RUBYOPT" => "#{ENV['RUBYOPT']} -EUTF-8"}
+  end
+
   # Prepare an environment fix-up to make up for its cleansing performed
   # by the Puppet::Util::Execution.execute function.
   # This fix-up is meant for running puppet under a non-root user;
   # puppet cannot find the user's HOME directory otherwise.
   env_fix_up ||= if Puppet.features.microsoft_windows? || Process.euid == 0
     # no environment fix-up is needed on windows or for root
-    {}
+    base_env
   else
     begin
       require 'etc'
@@ -47,13 +53,13 @@ self.class.send(:define_method, :get_env_fix_up) do
 
       {"USER"    => pwentry.name,
        "LOGNAME" => pwentry.name,
-       "HOME"    => pwentry.dir}
+       "HOME"    => pwentry.dir}.merge base_env
     rescue => e
       # oh well ..., let's give it a try without the environment fix-up
       myname = File.basename($0)
       $stderr.puts "#{myname}: Could not fix environment for effective UID #{Process.euid}: #{e.message}"
       $stderr.puts "#{myname}: Expect puppet run problems"
-      {}
+      base_env
     end
   end
 end
@@ -69,11 +75,13 @@ def last_run_result(exitcode)
 end
 
 def force_unicode(s)
-  # Puppet still returns UTF-8 when locale is C or POSIX, so force encoding to that.
-  if s.encoding == Encoding::ASCII_8BIT
+  begin
+    # Later comparisons assume UTF-8. Convert to that encoding now.
+    s.encode(Encoding::UTF_8)
+  rescue Encoding::InvalidByteSequenceError
+    # Found non-native characters, hope it's a UTF-8 string. Since this is Puppet, and
+    # incorrect characters probably means we're in a C or POSIX locale, this is usually safe.
     s.force_encoding(Encoding::UTF_8)
-  else
-    s
   end
 end
 
