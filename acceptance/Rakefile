@@ -88,7 +88,7 @@ EOS
 
   target = ENV['TEST_TARGET']
   master_host = ENV['MASTER_TEST_TARGET'] || 'redhat7-64m'
-  if !target.start_with?(master_host)
+  if target && !target.start_with?(master_host)
     target = "#{master_host}-#{target}"
   end
   if config and File.exists?(config)
