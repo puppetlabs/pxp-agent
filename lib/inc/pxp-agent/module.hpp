@@ -5,10 +5,7 @@
 #include <pxp-agent/action_request.hpp>
 #include <pxp-agent/module_type.hpp>
 
-#include <cpp-pcp-client/protocol/chunks.hpp>      // ParsedChunks
-#include <cpp-pcp-client/validator/validator.hpp>  // Validator
-
-#include <leatherman/json_container/json_container.hpp>
+#include <leatherman/json_container/validator.hpp>  // Validator
 
 #include <vector>
 #include <string>
@@ -31,9 +28,9 @@ class Module {
 
     std::string module_name;
     std::vector<std::string> actions;
-    PCPClient::Validator config_validator_;
-    PCPClient::Validator input_validator_;
-    PCPClient::Validator results_validator_;
+    leatherman::json_container::Validator config_validator_;
+    leatherman::json_container::Validator input_validator_;
+    leatherman::json_container::Validator results_validator_;
 
     Module();
 

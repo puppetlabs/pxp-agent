@@ -20,7 +20,6 @@
 namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
-namespace pcp_util = PCPClient::Util;
 namespace fs = boost::filesystem;
 
 TEST_CASE("RequestProcessor::RequestProcessor", "[agent]") {

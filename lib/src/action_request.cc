@@ -88,7 +88,7 @@ void ActionRequest::validateFormat() {
     if (parsed_chunks_.invalid_data)
         throw ActionRequest::Error { lth_loc::translate("invalid data") };
     // NOTE(ale): currently, we don't support ContentType::Binary
-    if (parsed_chunks_.data_type != PCPClient::ContentType::Json)
+    if (parsed_chunks_.data_type != lth_jc::ContentType::Json)
         throw ActionRequest::Error {
             lth_loc::translate("data is not in JSON format") };
 }

@@ -17,10 +17,10 @@
 #include <leatherman/util/scope_exit.hpp>
 #include <leatherman/locale/locale.hpp>
 
-#include <cpp-pcp-client/validator/validator.hpp>
-#include <cpp-pcp-client/validator/schema.hpp>
-#include <cpp-pcp-client/util/thread.hpp>   // this_thread::sleep_for
-#include <cpp-pcp-client/util/chrono.hpp>
+#include <leatherman/json_container/validator.hpp>
+#include <leatherman/json_container/schema.hpp>
+#include <leatherman/util/thread.hpp>   // this_thread::sleep_for
+#include <leatherman/util/chrono.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.request_processor"
 #include <leatherman/logging/logging.hpp>
@@ -42,7 +42,6 @@ namespace lth_jc   = leatherman::json_container;
 namespace lth_file = leatherman::file_util;
 namespace lth_util = leatherman::util;
 namespace lth_loc  = leatherman::locale;
-namespace pcp_util = PCPClient::Util;
 
 // Time interval to allow the non-blocking action task to ask for the
 // named mutex lock, before updating the metadata
@@ -59,11 +58,11 @@ static bool isStatusRequest(const ActionRequest& request)
 
 static const std::string STATUS_QUERY_SCHEMA { "query" };
 
-static PCPClient::Validator getStatusQueryValidator()
+static lth_jc::Validator getStatusQueryValidator()
 {
-    PCPClient::Schema sch { STATUS_QUERY_SCHEMA };
-    sch.addConstraint("transaction_id", PCPClient::TypeConstraint::String, true);
-    PCPClient::Validator validator {};
+    lth_jc::Schema sch { STATUS_QUERY_SCHEMA };
+    sch.addConstraint("transaction_id", lth_jc::TypeConstraint::String, true);
+    lth_jc::Validator validator {};
     validator.registerSchema(sch);
     return validator;
 }
@@ -89,7 +88,7 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
         } else {
             ResultsMutex::Instance().add(request.transactionId());
             mtx_ptr = ResultsMutex::Instance().get(request.transactionId());
-            lck_ptr.reset(new ResultsMutex::Lock(*mtx_ptr, pcp_util::defer_lock));
+            lck_ptr.reset(new ResultsMutex::Lock(*mtx_ptr, lth_util::defer_lock));
         }
     } catch (const ResultsMutex::Error& e) {
         // This is unexpected
@@ -196,14 +195,14 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
         storage_ptr_->purge(spool_dir_purge_ttl_,
                             thread_container_.getThreadNames());
         spool_dir_purge_thread_ptr_.reset(
-            new pcp_util::thread(&RequestProcessor::spoolDirPurgeTask, this));
+            new lth_util::thread(&RequestProcessor::spoolDirPurgeTask, this));
     }
 }
 
 RequestProcessor::~RequestProcessor()
 {
     {
-        pcp_util::lock_guard<pcp_util::mutex> the_lock { spool_dir_purge_mutex_ };
+        lth_util::lock_guard<lth_util::mutex> the_lock { spool_dir_purge_mutex_ };
         is_destructing_ = true;
         spool_dir_purge_cond_var_.notify_one();
     }
@@ -296,7 +295,7 @@ std::string RequestProcessor::getModuleConfig(const std::string& module_name) co
 
 void RequestProcessor::validateRequestContent(const ActionRequest& request) const
 {
-    static PCPClient::Validator status_query_validator { getStatusQueryValidator() };
+    static lth_jc::Validator status_query_validator { getStatusQueryValidator() };
 
     auto is_status_request = isStatusRequest(request);
 
@@ -332,7 +331,7 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) cons
                                 ? status_query_validator
                                 : modules_.at(request.module())->input_validator_);
         validator.validate(request.params(), request.action());
-    } catch (PCPClient::validation_error& e) {
+    } catch (lth_jc::validation_error& e) {
         LOG_DEBUG("Invalid input parameters of the {1}, request ID {2} by {3}: {4}",
                   request.prettyLabel(), request.id(), request.sender(), e.what());
         throw RequestProcessor::Error {
@@ -367,7 +366,7 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
     try {
         // NB: this locked check prevents multiple requests with the
         // same transaction_id
-        pcp_util::lock_guard<pcp_util::mutex> lck { thread_container_mutex_ };
+        lth_util::lock_guard<lth_util::mutex> lck { thread_container_mutex_ };
 
         if (thread_container_.find(request.transactionId())) {
             err_msg =
@@ -393,7 +392,7 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
                 // NB: we got the_lock, so we're sure this will not throw
                 // due to another stored thread with the same name
                 thread_container_.add(request.transactionId(),
-                                      pcp_util::thread(&nonBlockingActionTask,
+                                      lth_util::thread(&nonBlockingActionTask,
                                                        modules_[request.module()],
                                                        request,
                                                        connector_ptr_,
@@ -500,8 +499,8 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
                     // mutex is still cached - wait a bit before
                     // reading the metadata to allow the non-blocking
                     // task to lock its mutex and update the metadata
-                    pcp_util::this_thread::sleep_for(
-                        pcp_util::chrono::milliseconds(METADATA_RACE_MS));
+                    lth_util::this_thread::sleep_for(
+                        lth_util::chrono::milliseconds(METADATA_RACE_MS));
             }
         } catch (const ResultsStorage::Error& e) {
             LOG_ERROR("Failed to get the PID for transaction {1}: {2}",
@@ -673,8 +672,8 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
                   "action process was still executing when this handler started; "
                   "wait for {2} ms before retrieving the output from file",
                   t_id, ExternalModule::OUTPUT_DELAY_MS);
-        pcp_util::this_thread::sleep_for(
-            pcp_util::chrono::milliseconds(ExternalModule::OUTPUT_DELAY_MS));
+        lth_util::this_thread::sleep_for(
+            lth_util::chrono::milliseconds(ExternalModule::OUTPUT_DELAY_MS));
     } else {
         LOG_TRACE("Output of {1} is ready; retrieving it", t_id);
     }
@@ -849,7 +848,7 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
                     modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
                 } catch (Module::LoadingError& e) {
                     LOG_ERROR("Failed to load {1}; {2}", f_p, e.what());
-                } catch (PCPClient::validation_error& e) {
+                } catch (lth_jc::validation_error& e) {
                     LOG_ERROR("Failed to configure {1}; {2}", f_p, e.what());
                 } catch (std::exception& e) {
                     LOG_ERROR("Unexpected error when loading {1}; {2}",
@@ -900,21 +899,21 @@ void RequestProcessor::spoolDirPurgeTask()
     if (num_minutes == 1) {
         LOG_INFO("Starting the task for purging the spool directory every {1} "
                  "minute; thread id {2}",
-                 num_minutes, pcp_util::this_thread::get_id());
+                 num_minutes, lth_util::this_thread::get_id());
     } else {
         LOG_INFO("Starting the task for purging the spool directory every {1} "
                  "minutes; thread id {2}",
-                 num_minutes, pcp_util::this_thread::get_id());
+                 num_minutes, lth_util::this_thread::get_id());
     }
 
     while (true) {
-        pcp_util::unique_lock<pcp_util::mutex> the_lock { spool_dir_purge_mutex_ };
-        auto now = pcp_util::chrono::system_clock::now();
+        lth_util::unique_lock<lth_util::mutex> the_lock { spool_dir_purge_mutex_ };
+        auto now = lth_util::chrono::system_clock::now();
 
         if (!is_destructing_)
             spool_dir_purge_cond_var_.wait_until(
                 the_lock,
-                now + pcp_util::chrono::minutes(num_minutes));
+                now + lth_util::chrono::minutes(num_minutes));
 
         if (is_destructing_)
             return;

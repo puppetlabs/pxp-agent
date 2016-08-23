@@ -8,7 +8,7 @@
 #include <pxp-agent/configuration.hpp>
 #include <pxp-agent/results_storage.hpp>
 
-#include <cpp-pcp-client/util/thread.hpp>
+#include <leatherman/util/thread.hpp>
 
 #include <boost/filesystem/path.hpp>
 
@@ -67,7 +67,7 @@ class RequestProcessor {
     /// Manages the lifecycle of non-blocking action jobs
     ThreadContainer thread_container_;
 
-    PCPClient::Util::mutex thread_container_mutex_;
+    leatherman::util::mutex thread_container_mutex_;
 
     /// PXP Connector pointer
     std::shared_ptr<PXPConnector> connector_ptr_;
@@ -92,9 +92,9 @@ class RequestProcessor {
     std::map<std::string, leatherman::json_container::JsonContainer> modules_config_;
 
     /// To manage the spool purge task
-    std::unique_ptr<PCPClient::Util::thread> spool_dir_purge_thread_ptr_;
-    PCPClient::Util::mutex spool_dir_purge_mutex_;
-    PCPClient::Util::condition_variable spool_dir_purge_cond_var_;
+    std::unique_ptr<leatherman::util::thread> spool_dir_purge_thread_ptr_;
+    leatherman::util::mutex spool_dir_purge_mutex_;
+    leatherman::util::condition_variable spool_dir_purge_cond_var_;
 
     /// Flag; set to true if the dtor has been called
     bool is_destructing_;

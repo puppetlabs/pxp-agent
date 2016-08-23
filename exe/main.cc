@@ -3,9 +3,6 @@
 
 #include <pxp-agent/util/daemonize.hpp>
 
-#include <cpp-pcp-client/util/thread.hpp>
-#include <cpp-pcp-client/util/chrono.hpp>
-
 #include <leatherman/locale/locale.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.main"

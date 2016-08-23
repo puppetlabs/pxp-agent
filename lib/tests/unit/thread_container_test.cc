@@ -1,6 +1,6 @@
 #include <pxp-agent/thread_container.hpp>
 
-#include <cpp-pcp-client/util/chrono.hpp>
+#include <leatherman/util/chrono.hpp>
 
 #include <catch.hpp>
 
@@ -13,7 +13,7 @@
 
 namespace PXPAgent {
 
-namespace pcp_util = PCPClient::Util;
+namespace lth_util = leatherman::util;
 
 TEST_CASE("ThreadContainer::ThreadContainer", "[utils]") {
     SECTION("can successfully instantiate a container") {
@@ -23,8 +23,8 @@ TEST_CASE("ThreadContainer::ThreadContainer", "[utils]") {
 
 void testTask(std::shared_ptr<std::atomic<bool>> a,
               const uint32_t task_duration_us) {
-    pcp_util::this_thread::sleep_for(
-        pcp_util::chrono::microseconds(task_duration_us));
+    lth_util::this_thread::sleep_for(
+        lth_util::chrono::microseconds(task_duration_us));
     *a = true;
 }
 
@@ -37,7 +37,7 @@ void addTasksTo(ThreadContainer& container,
     for (idx = 0; idx < num_tasks; idx++) {
         auto task_name = prefix + std::to_string(idx);
         std::shared_ptr<std::atomic<bool>> a { new  std::atomic<bool> { false } };
-        auto t = pcp_util::thread(testTask, a, task_duration_us);
+        auto t = lth_util::thread(testTask, a, task_duration_us);
         container.add(task_name, std::move(t), a);
     }
 
@@ -46,12 +46,12 @@ void addTasksTo(ThreadContainer& container,
         // when it's suppose to finish immediately (that could happen
         // due to thread processing ovehead for the OS), otherwise a
         // terminate call will abort the tests... See below
-        pcp_util::this_thread::sleep_for(
-            pcp_util::chrono::microseconds(10000));
+        lth_util::this_thread::sleep_for(
+            lth_util::chrono::microseconds(10000));
     }
 
-    pcp_util::this_thread::sleep_for(
-        pcp_util::chrono::microseconds(caller_duration_us));
+    lth_util::this_thread::sleep_for(
+        lth_util::chrono::microseconds(caller_duration_us));
 }
 
 TEST_CASE("ThreadContainer::add, ~ThreadContainer", "[async]") {
@@ -113,8 +113,8 @@ TEST_CASE("ThreadContainer::monitoringTask", "[async]") {
 
         // Wait for two monitoring intervals plus the task duration;
         // all threads should be done by then
-        pcp_util::this_thread::sleep_for(
-            pcp_util::chrono::microseconds(
+        lth_util::this_thread::sleep_for(
+            lth_util::chrono::microseconds(
                 2 * monitoring_interval_us + task_duration_us));
         INFO("should be stopped");
         REQUIRE_FALSE(container.isMonitoring());
@@ -128,8 +128,8 @@ TEST_CASE("ThreadContainer::monitoringTask", "[async]") {
         // Threads can't outlive the caller otherwise std::terminate()
         // will be invoked; sleep for an interval greater than the
         // duration
-        pcp_util::this_thread::sleep_for(
-            pcp_util::chrono::microseconds(2 * task_duration_us));
+        lth_util::this_thread::sleep_for(
+            lth_util::chrono::microseconds(2 * task_duration_us));
     }
 
     SECTION("the monitoring thread can delete threads") {
@@ -140,8 +140,8 @@ TEST_CASE("ThreadContainer::monitoringTask", "[async]") {
         REQUIRE(container.getNumAddedThreads() == THREADS_THRESHOLD + 4);
 
         // Pause, to let the monitoring thread erase
-        pcp_util::this_thread::sleep_for(
-            pcp_util::chrono::microseconds(2 * monitoring_interval_us));
+        lth_util::this_thread::sleep_for(
+            lth_util::chrono::microseconds(2 * monitoring_interval_us));
         REQUIRE_FALSE(container.isMonitoring());
 
         // NB: we cannot be certain about the number of erased threads
@@ -161,8 +161,8 @@ TEST_CASE("ThreadContainer::monitoringTask", "[async]") {
 
         REQUIRE_NOTHROW(addTasksTo(container, 10, 0, 0, "bis_"));
         REQUIRE(container.getNumAddedThreads() == THREADS_THRESHOLD + 4 + 10);
-        pcp_util::this_thread::sleep_for(
-            pcp_util::chrono::microseconds(2 * task_duration_us));
+        lth_util::this_thread::sleep_for(
+            lth_util::chrono::microseconds(2 * task_duration_us));
     }
 }
 

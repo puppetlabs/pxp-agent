@@ -11,8 +11,8 @@
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/util/timer.hpp>
 
-#include <cpp-pcp-client/util/thread.hpp>   // this_thread::sleep_for
-#include <cpp-pcp-client/util/chrono.hpp>
+#include <leatherman/util/thread.hpp>   // this_thread::sleep_for
+#include <leatherman/util/chrono.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -25,7 +25,6 @@ namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 namespace lth_util = leatherman::util;
-namespace pcp_util = PCPClient::Util;
 namespace fs = boost::filesystem;
 
 static const std::string REVERSE_VALID_MODULE_NAME { "reverse_valid" };
@@ -80,8 +79,8 @@ void wait_for_module(ResultsStorage& storage, const std::string& t_id)
     while (!storage.outputIsReady(t_id)) {
         if (t.elapsed_seconds() > 10)
             FAIL("External Module ran out of time");
-        pcp_util::this_thread::sleep_for(
-            pcp_util::chrono::milliseconds(10));
+        lth_util::this_thread::sleep_for(
+            lth_util::chrono::milliseconds(10));
     }
 }
 
@@ -150,8 +149,8 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
             // Wait to let the execution thread  process the output
             // (there's a OUTPUT_DELAY_MS pause) and send the
             // non-blocking response
-            pcp_util::this_thread::sleep_for(
-                pcp_util::chrono::milliseconds(100 + ExternalModule::OUTPUT_DELAY_MS));
+            lth_util::this_thread::sleep_for(
+                lth_util::chrono::milliseconds(100 + ExternalModule::OUTPUT_DELAY_MS));
 
             REQUIRE_FALSE(c_ptr->sent_non_blocking_response);
         }
@@ -179,8 +178,8 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
             // Wait to let the execution thread  process the output
             // (there's a OUTPUT_DELAY_MS pause) and send the
             // non-blocking response
-            pcp_util::this_thread::sleep_for(
-                pcp_util::chrono::milliseconds(100 + ExternalModule::OUTPUT_DELAY_MS));
+            lth_util::this_thread::sleep_for(
+                lth_util::chrono::milliseconds(100 + ExternalModule::OUTPUT_DELAY_MS));
 
             REQUIRE(c_ptr->sent_non_blocking_response);
         }

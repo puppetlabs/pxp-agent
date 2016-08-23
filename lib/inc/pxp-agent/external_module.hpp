@@ -67,7 +67,7 @@ class ExternalModule : public Module {
     ResultsStorage storage_;
 
     /// Metadata validator
-    static const PCPClient::Validator metadata_validator_;
+    static const leatherman::json_container::Validator metadata_validator_;
 
     const leatherman::json_container::JsonContainer getModuleMetadata();
 

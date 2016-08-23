@@ -3,8 +3,8 @@
 
 #include <cpp-pcp-client/protocol/schemas.hpp>
 
-#include <cpp-pcp-client/util/thread.hpp>   // this_thread::sleep_for
-#include <cpp-pcp-client/util/chrono.hpp>
+#include <leatherman/util/thread.hpp>   // this_thread::sleep_for
+#include <leatherman/util/chrono.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.agent"
 #include <leatherman/logging/logging.hpp>
@@ -15,7 +15,7 @@
 
 namespace PXPAgent {
 
-namespace pcp_util = PCPClient::Util;
+namespace lth_util = leatherman::util;
 
 // Pause between PCP connection attempts after Association errors
 static const uint32_t ASSOCIATE_SESSION_TIMEOUT_PAUSE_S { 5 };
@@ -57,8 +57,8 @@ void Agent::start() {
                 LOG_WARNING("Error during the PCP Session Association ({1}); "
                             "will retry to connect in {2} s",
                             e.what(), num_seconds);
-                pcp_util::this_thread::sleep_for(
-                    pcp_util::chrono::seconds(num_seconds));
+                lth_util::this_thread::sleep_for(
+                    lth_util::chrono::seconds(num_seconds));
             }
         } while (true);
 

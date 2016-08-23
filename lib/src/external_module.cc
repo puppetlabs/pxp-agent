@@ -11,8 +11,8 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.external_module"
 #include <leatherman/logging/logging.hpp>
 
-#include <cpp-pcp-client/util/thread.hpp>   // this_thread::sleep_for
-#include <cpp-pcp-client/util/chrono.hpp>
+#include <leatherman/util/thread.hpp>   // this_thread::sleep_for
+#include <leatherman/util/chrono.hpp>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -41,26 +41,26 @@ namespace lth_exec = leatherman::execution;
 namespace lth_file = leatherman::file_util;
 namespace lth_jc   = leatherman::json_container;
 namespace lth_loc  = leatherman::locale;
-namespace pcp_util = PCPClient::Util;
+namespace lth_util = leatherman::util;
 
 //
 // Free functions
 //
 
 // Provides the module metadata validator
-PCPClient::Validator getMetadataValidator()
+lth_jc::Validator getMetadataValidator()
 {
     // Metadata schema
-    PCPClient::Schema metadata_schema { METADATA_SCHEMA_NAME,
-                                          PCPClient::ContentType::Json };
-    using T_C = PCPClient::TypeConstraint;
+    lth_jc::Schema metadata_schema { METADATA_SCHEMA_NAME,
+                                     lth_jc::ContentType::Json };
+    using T_C = lth_jc::TypeConstraint;
     metadata_schema.addConstraint("description", T_C::String, true);
     metadata_schema.addConstraint(METADATA_CONFIGURATION_ENTRY, T_C::Object, false);
     metadata_schema.addConstraint(METADATA_ACTIONS_ENTRY, T_C::Array, true);
 
     // 'actions' is an array of actions; define the action sub_schema
-    PCPClient::Schema action_schema { ACTION_SCHEMA_NAME,
-                                      PCPClient::ContentType::Json };
+    lth_jc::Schema action_schema { ACTION_SCHEMA_NAME,
+                                   lth_jc::ContentType::Json };
     action_schema.addConstraint("description", T_C::String, false);
     action_schema.addConstraint("name", T_C::String, true);
     action_schema.addConstraint("input", T_C::Object, true);
@@ -68,7 +68,7 @@ PCPClient::Validator getMetadataValidator()
 
     metadata_schema.addConstraint(METADATA_ACTIONS_ENTRY, action_schema, false);
 
-    PCPClient::Validator validator {};
+    lth_jc::Validator validator {};
     validator.registerSchema(metadata_schema);
     return validator;
 }
@@ -188,7 +188,7 @@ void ExternalModule::processOutputAndUpdateMetadata(ActionResponse& response)
 //
 
 // Metadata validator (static member)
-const PCPClient::Validator ExternalModule::metadata_validator_ {
+const lth_jc::Validator ExternalModule::metadata_validator_ {
         getMetadataValidator() };
 
 // Retrieve and validate the module's metadata
@@ -223,7 +223,7 @@ const lth_jc::JsonContainer ExternalModule::getModuleMetadata()
     try {
         metadata_validator_.validate(metadata, METADATA_SCHEMA_NAME);
         LOG_DEBUG("External module {1}: metadata validation OK", module_name);
-    } catch (PCPClient::validation_error& e) {
+    } catch (lth_jc::validation_error& e) {
         throw Module::LoadingError {
             lth_loc::format("metadata validation failure: {1}", e.what()) };
     }
@@ -234,10 +234,10 @@ const lth_jc::JsonContainer ExternalModule::getModuleMetadata()
 void ExternalModule::registerConfiguration(const lth_jc::JsonContainer& config_metadata)
 {
     try {
-        PCPClient::Schema configuration_schema { module_name, config_metadata };
+        lth_jc::Schema configuration_schema { module_name, config_metadata };
         LOG_DEBUG("Registering module configuration schema for '{1}'", module_name);
         config_validator_.registerSchema(configuration_schema);
-    } catch (PCPClient::schema_error& e) {
+    } catch (lth_jc::schema_error& e) {
         LOG_ERROR("Failed to parse the configuration schema of module '{1}': {2}",
                   module_name, e.what());
         throw Module::LoadingError {
@@ -262,17 +262,17 @@ void ExternalModule::registerAction(const lth_jc::JsonContainer& action)
 
     try {
         auto input_schema_json = action.get<lth_jc::JsonContainer>("input");
-        PCPClient::Schema input_schema { action_name, input_schema_json };
+        lth_jc::Schema input_schema { action_name, input_schema_json };
 
         auto results_schema_json = action.get<lth_jc::JsonContainer>("results");
-        PCPClient::Schema results_schema { action_name, results_schema_json };
+        lth_jc::Schema results_schema { action_name, results_schema_json };
 
         // Metadata schemas are valid JSON; store metadata
         LOG_DEBUG("Action '{1} {2}' has been validated", module_name, action_name);
         actions.push_back(action_name);
         input_validator_.registerSchema(input_schema);
         results_validator_.registerSchema(results_schema);
-    } catch (PCPClient::schema_error& e) {
+    } catch (lth_jc::schema_error& e) {
         LOG_ERROR("Failed to parse metadata schemas of action '{1} {2}': {3}",
                   module_name, action_name, e.what());
         throw Module::LoadingError {
@@ -380,8 +380,8 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
     // written before the output ones, when the process completes
     LOG_TRACE("Waiting {1} ms before retrieving the output of {2}",
               OUTPUT_DELAY_MS, request.prettyLabel());
-    pcp_util::this_thread::sleep_for(
-        pcp_util::chrono::milliseconds(OUTPUT_DELAY_MS));
+    lth_util::this_thread::sleep_for(
+        lth_util::chrono::milliseconds(OUTPUT_DELAY_MS));
 
     // Stdout / stderr output should be on file; read it
     response.output = storage_.getOutput(request.transactionId(), exec.exit_code);

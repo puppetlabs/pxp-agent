@@ -20,10 +20,10 @@ static const std::string PING { "ping" };
 Ping::Ping() {
     module_name = PING;
     actions.push_back(PING);
-    PCPClient::Schema input_schema { PING };
+    lth_jc::Schema input_schema { PING };
     input_schema.addConstraint("sender_timestamp",
-                               PCPClient::TypeConstraint::String);
-    PCPClient::Schema output_schema { PING };
+                               lth_jc::TypeConstraint::String);
+    lth_jc::Schema output_schema { PING };
 
     input_validator_.registerSchema(input_schema);
     results_validator_.registerSchema(output_schema);

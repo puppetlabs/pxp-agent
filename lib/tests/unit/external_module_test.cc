@@ -299,7 +299,7 @@ TEST_CASE("ExternalModule::validateConfiguration", "[modules][configuration]") {
             SPOOL_DIR };
 
         REQUIRE_THROWS_AS(e_m.validateConfiguration(),
-                          PCPClient::validation_error);
+                          lth_jc::validation_error);
     }
 }
 

@@ -1,6 +1,6 @@
 #include <pxp-agent/results_mutex.hpp>
 
-#include <cpp-pcp-client/util/thread.hpp>
+#include <leatherman/util/thread.hpp>
 
 #include <catch.hpp>
 
@@ -28,7 +28,7 @@ TEST_CASE("ResultsMutex::get", "[async]") {
         ResultsMutex::Instance().add("spam");
         ResultsMutex::Mutex_Ptr mtx_ptr;
         ResultsMutex::Lock lck { ResultsMutex::Instance().access_mtx,
-                                 PCPClient::Util::defer_lock };
+                                 leatherman::util::defer_lock };
         REQUIRE_FALSE(lck.owns_lock());
         lck.lock();
         REQUIRE(lck.owns_lock());
