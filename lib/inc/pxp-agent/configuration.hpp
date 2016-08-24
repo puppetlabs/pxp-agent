@@ -251,8 +251,14 @@ class Configuration
     // Path to the logfile
     std::string logfile_;
 
+    // Path to the PCP Access file
+    std::string pcp_access_logfile_;
+
     // Stream abstraction object for the logfile
     mutable boost::nowide::ofstream logfile_fstream_;
+
+    // Stream abstraction object for the PCP Access logfile
+    mutable std::shared_ptr<std::ofstream> pcp_access_fstream_ptr_;
 
     // Defines the default values
     Configuration();
