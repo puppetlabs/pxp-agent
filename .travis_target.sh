@@ -14,7 +14,7 @@ export CC=gcc-4.8 CXX=g++-4.8
 get_gettext() {
   wget https://s3.amazonaws.com/kylo-pl-bucket/gettext-0.19.6_install.tar.bz2
   tar xjvf gettext-0.19.6_install.tar.bz2 --strip 1 -C $USERDIR
-  rm -f ../locales/cpp-pcp-client.pot
+  rm -f ../locales/pxp-agent.pot
 }
 
 if [ ${TRAVIS_TARGET} == CPPCHECK ]; then
