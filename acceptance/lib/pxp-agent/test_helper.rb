@@ -71,7 +71,8 @@ end
 # Some helpers for working with a pcp-broker 'lein tk' instance
 def run_pcp_broker(host, instance=0)
   host[:pcp_broker_instance] = instance
-  on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker#{instance}; export LEIN_ROOT=ok; lein tk </dev/null >/var/log/pcp-broker.log 2>&1 &")
+  on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker#{instance}; export LEIN_ROOT=ok; \
+     lein with-profile internal-mirrors tk </dev/null >/var/log/pcp-broker.log 2>&1 &")
   assert(port_open_within?(host, PCP_BROKER_PORTS[instance], 60),
          "pcp-broker port #{PCP_BROKER_PORTS[instance].to_s} not open within 1 minutes of starting the broker")
   broker_state = nil
