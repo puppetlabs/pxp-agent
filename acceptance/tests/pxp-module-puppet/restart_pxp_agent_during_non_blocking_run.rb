@@ -18,7 +18,7 @@ test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent serv
 
   teardown do
     unless master_environment_path.to_s == ''
-      on(master, "rm -rf #{master_environment_path}/#{ENVIRONMENT_NAME}")
+      retry_on(master, "rm -rf #{master_environment_path}/#{ENVIRONMENT_NAME}")
     end
     if (!applicable_agents.empty?)
       applicable_agents.each do |agent|
@@ -67,7 +67,7 @@ MODULEPP
     on(master, "chmod 644 #{module_manifest}")
 
     step 'Link the environment\'s temp dir to the actual Puppet environmentpath'
-    on(master, "rm -rf #{master_environment_path}/#{ENVIRONMENT_NAME}") # Ensure folder does not pre-exist, or ln will create link inside it
+    retry_on(master, "rm -rf #{master_environment_path}/#{ENVIRONMENT_NAME}") # Ensure folder does not pre-exist, or ln will create link inside it
     on(master, "ln -s #{tmp_environment_dir} #{master_environment_path}/#{ENVIRONMENT_NAME}")
   end
 
