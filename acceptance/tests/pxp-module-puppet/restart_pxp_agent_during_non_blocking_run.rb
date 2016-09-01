@@ -14,6 +14,12 @@ test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent serv
     skip_test('Skipping - All agent hosts are Windows and are not applicable to this test (see PCP-276)')
   end
 
+  teardown do
+    unless applicable_agents.empty? then
+      stop_sleep_process(applicable_agents, true)
+    end
+  end  
+
   env_name = test_file_name = File.basename(__FILE__, '.*')
   environment_name = mk_tmp_environment(env_name)
 

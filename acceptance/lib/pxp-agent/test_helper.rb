@@ -421,7 +421,7 @@ def wait_for_sleep_process(target)
   end
 end
 
-def stop_sleep_process(targets)
+def stop_sleep_process(targets, accept_no_pid_found = false)
   targets = [targets].flatten
 
   targets.each do |target|
@@ -438,15 +438,15 @@ def stop_sleep_process(targets)
     pids = nil
     on(target, command) do |output|
       pids = output.stdout.chomp.split
-      if pids.empty?
-        fail('Did not find a pid for the sleep process holding up Puppet - cannot test PXP response if Puppet isn\'t sleeping')
+      if pids.empty? && !accept_no_pid_found
+        raise("Did not find a pid for a sleep process on #{target}")
       end
     end
 
     pids.each do |pid|
       target['platform'] =~ /win/ ?
         on(target, "taskkill /F /pid #{pid}") :
-        on(target, "kill -s ALRM #{pid}")
+        on(target, "kill -s TERM #{pid}")
     end
   end
 end

@@ -11,6 +11,10 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
   env_name = test_file_name = File.basename(__FILE__, '.*')
   environment_name = mk_tmp_environment(env_name)
 
+  teardown do
+    stop_sleep_process(agents, true)
+  end
+
   step 'On master, create a new environment that will result in a slow run' do
     site_manifest = "#{environmentpath}/#{environment_name}/manifests/site.pp"
     create_sleep_manifest(master, site_manifest, SECONDS_TO_SLEEP)
