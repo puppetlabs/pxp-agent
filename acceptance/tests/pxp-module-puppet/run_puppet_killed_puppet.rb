@@ -66,10 +66,15 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for it to be
       end
 
       assert(agent.file_exist?(lockfile), 'First agent run completed before non-blocking-request returned')
+      pid = nil
+      on agent, "cat #{lockfile}" do |result|
+        pid = result.stdout.chomp
+      end
+
       if windows?(agent)
-        on agent, "taskkill /F /pid `cat #{lockfile}`"
+        on agent, "taskkill /F /pid #{pid}"
       else
-        on agent, "kill -9 `cat #{lockfile}`"
+        on agent, "kill -9 #{pid}"
       end
     end
   end
