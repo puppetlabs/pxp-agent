@@ -192,6 +192,7 @@ void Configuration::setupLogging()
 {
     logfile_ = HW::GetFlag<std::string>("logfile");
     pcp_access_logfile_ = HW::GetFlag<std::string>("pcp-access-logfile");
+    auto log_access = HW::GetFlag<bool>("log-pcp-access");
     auto log_on_stdout = (logfile_ == "-");
     auto loglevel = HW::GetFlag<std::string>("loglevel");
     std::ostream *log_stream = nullptr;
@@ -199,19 +200,21 @@ void Configuration::setupLogging()
     if (!log_on_stdout) {
         // We should log on file
         logfile_ = lth_file::tilde_expand(logfile_);
-        pcp_access_logfile_ = lth_file::tilde_expand(pcp_access_logfile_);
 
         // NOTE(ale): we must validate the logfile path since we set
         // up logging before calling validateAndNormalizeConfiguration
         validateLogDirPath(logfile_);
-        validateLogDirPath(pcp_access_logfile_);
-
         logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
         log_stream = &logfile_fstream_;
-        pcp_access_fstream_ptr_.reset(new std::ofstream(pcp_access_logfile_.c_str(),
-                                                        std::ios_base::app));
     } else {
         log_stream = &boost::nowide::cout;
+    }
+
+    if (log_access) {
+        pcp_access_logfile_ = lth_file::tilde_expand(pcp_access_logfile_);
+        validateLogDirPath(pcp_access_logfile_);
+        pcp_access_fstream_ptr_.reset(new std::ofstream(pcp_access_logfile_.c_str(),
+                                                        std::ios_base::app));
     }
 
 #ifndef _WIN32
@@ -452,6 +455,15 @@ void Configuration::defineDefaultValues()
                                        "'fatal'. Defaults to 'info'"),
                     Types::String,
                     "info") } });
+
+    defaults_.insert(
+            Option { "log-pcp-access",
+                     Base_ptr { new Entry<bool>(
+                             "log-pcp-access",
+                             "",
+                             lth_loc::translate("Enable PCP access logging, default: false"),
+                             Types::Bool,
+                             false) } });
 
     defaults_.insert(
             Option { "pcp-access-logfile",

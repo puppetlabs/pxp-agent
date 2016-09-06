@@ -212,6 +212,14 @@ msgid ""
 msgstr ""
 
 #: lib/src/configuration.cc
+msgid "Enable PCP access logging, default: false"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "PCP Access Log file, default: {1}"
+msgstr ""
+
+#: lib/src/configuration.cc
 msgid "Modules directory, default (relative to the pxp-agent.exe path): {1}"
 msgstr ""
 

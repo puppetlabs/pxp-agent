@@ -271,7 +271,7 @@ using the `--loglevel` option with one of the following strings: `none`,
 #### PCP Access Logging
 
 The `pcp_access` logger provides information about incoming PCP messages.
-To enable it you must set the logging level to INFO, DEBUG, or TRACE.
+You can enable it by setting the `log-pcp-access` flag.
 
 The default location of the `pcp_access` log file is:
  - \*nix: */var/log/puppetlabs/pxp-agent/pxp-access.log*
@@ -295,10 +295,9 @@ The second entry gives the outcome of the message validation; possible values
 are:
 
 | validation outcome | description
-|--------------------|-----------|------------
+|--------------------|------------
 | DESERIALIZATION_ERROR | invalid PCP message that can't be deserialized
 | AUTHORIZATION_SUCCESS | the message will be processed by pxp-agent
-
 
 #### List of all configuration options
 
@@ -323,7 +322,7 @@ to connect to one it will try the next in the list, and repeat until a
 successful connection is made. In the event of a disconnect, the agent will
 retry that connection before trying a new broker.
 
-**connection-timeout (optional flag)**
+**connection-timeout (optional)**
 
 Maximum amount of time that may elapse when trying to establish a connection to
 the broker in seconds. Defaults to 5 seconds.
@@ -349,6 +348,14 @@ The path of the log file.
 
 Specify one of the following logging levels: *none*, *trace*, *debug*, *info*,
 *warning*, *error*, or *fatal*; the default one is *info*
+
+**log-pcp-access (optional flag)**
+
+Enable PCP access logging; the default is *false*.
+
+**pcp-access-logfile (optional)**
+
+The path of the PCP access log file.
 
 **modules-dir (optional)**
 
