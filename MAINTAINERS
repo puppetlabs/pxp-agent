@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "file_format": "This MAINTAINERS file format is described at http://pup.pt/maintainers",
+  "issues": "https://tickets.puppet.com/browse/PCP",
+  "people": [
+    {
+      "github": "MikaelSmith",
+      "email": "michael.smith@puppet.com",
+      "name": "Michael Smith"
+    },
+    {
+      "github": "kylog",
+      "email": "kylo@puppet.com",
+      "name": "Kylo Ginsberg"
+    },
+    {
+      "github": "er0ck",
+      "email": "eric.thompson@puppet.com",
+      "name": "Eric Thompson"
+    },
+    {
+      "github": "mruzicka",
+      "name": "Michal Růžička"
+    },
+    {
+      "github": "james-stocks",
+      "email": "james.stocks@puppet.com",
+      "name": "James Stocks"
+    },
+    {
+      "github": "parisiale",
+      "email": "alessandro@puppet.com",
+      "name": "Alessandro Parisi"
+    }
+  ]
+}
