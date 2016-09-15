@@ -7,8 +7,22 @@ test_name 'Service Start stop/start, with configuration)'
 # On teardown, restore configuration file on each agent
 teardown do
   agents.each do |agent|
+    # Create a valid config file
+    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
+
+    # Ensure pxp-agent service is running
+    # PUP-6702 - on Windows, the service may be in the Paused state
+    # 'puppet resource service pxp-agent' will not work as expected
+    # Workaround: stop/start it using net
+    if(windows?(agent)) then
+      on(agent, 'net stop pxp-agent', :fail_on_fail => false) # Will error if already stopped, ignore
+      on(agent, 'net start pxp-agent')
+    end
+    on(agent, puppet('resource service pxp-agent ensure=running'))
+
+    # If the test left behind a temporary config file, remove it
     if agent.file_exist?(@pxp_temp_file)
-      on(agent, "mv #{@pxp_temp_file} #{pxp_agent_config_file(agent)}")
+      on(agent, "rm #{@pxp_temp_file}")
     end
   end
 end
