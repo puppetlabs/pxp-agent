@@ -344,6 +344,9 @@ describe "pxp-module-puppet" do
                 },
                 :flags => {
                   :type => "array",
+                  :items => {
+                    :type => "string"
+                  }
                 }
               },
               :required => [:flags]
