@@ -344,6 +344,9 @@ describe "pxp-module-puppet" do
                 },
                 :flags => {
                   :type => "array",
+                  :items => {
+                    :type => "string"
+                  }
                 }
               },
               :required => [:flags]
@@ -415,6 +418,13 @@ describe "pxp-module-puppet" do
     it "fails when the flags of the passed json data are not all whitelisted" do
       passed_args = {"configuration" => default_configuration,
                      "input" => {"flags" => ["--prerun_command", "echo safe"]}}
+      expect(action_run(passed_args.to_json)["error"]).to be ==
+          "The json received on STDIN included a non-permitted flag: --prerun_command"
+    end
+
+    it "fails when a non-whitelisted flag of the passed json data has whitespace padding" do
+      passed_args = {"configuration" => default_configuration,
+                     "input" => {"flags" => ["  --prerun_command", "echo safe"]}}
       expect(action_run(passed_args.to_json)["error"]).to be ==
           "The json received on STDIN included a non-permitted flag: --prerun_command"
     end
