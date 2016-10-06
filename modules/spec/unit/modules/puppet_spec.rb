@@ -429,6 +429,20 @@ describe "pxp-module-puppet" do
           "The json received on STDIN included a non-permitted flag: --prerun_command"
     end
 
+    it "fails when a non-whitelisted flag of the passed json data has unicode padding" do
+      passed_args = {"configuration" => default_configuration,
+                     "input" => {"flags" => [" --prerun_command", "echo safe"]}}
+      expect(action_run(passed_args.to_json)["error"]).to be ==
+          "The json received on STDIN contained characters not present in valid flags:  --prerun_command"
+    end
+
+    it "fails when a non-whitelisted flag of the passed json data has escaped padding" do
+      passed_args = {"configuration" => default_configuration,
+                     "input" => {"flags" => ["\\t--prerun_command", "echo safe"]}}
+      expect(action_run(passed_args.to_json)["error"]).to be ==
+          "The json received on STDIN contained characters not present in valid flags: \\t--prerun_command"
+    end
+
     it "populates flags with the correct defaults" do
       expected_input = {"flags" => ["--onetime", "--no-daemonize", "--verbose"]}
       allow(File).to receive(:exist?).and_return(true)
@@ -460,9 +474,9 @@ describe "pxp-module-puppet" do
     end
 
     it "allows passing arguments of flags" do
-      expected_input = {"flags" => ["--environment", "/etc/puppetlabs/the_environment",
+      expected_input = {"flags" => ["--environment", "the_environment",
                                     "--onetime", "--no-daemonize", "--verbose"]}
-      passed_input = {"flags" => ["--environment", "/etc/puppetlabs/the_environment"]}
+      passed_input = {"flags" => ["--environment", "the_environment"]}
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
@@ -473,10 +487,10 @@ describe "pxp-module-puppet" do
 
     it "allows passing the obsolete `env` input array" do
       expected_input = {"env" => ["MY_PATH", "/some/path"],
-                         "flags" => ["--environment", "/etc/puppetlabs/the_environment",
+                         "flags" => ["--environment", "the_environment",
                                     "--onetime", "--no-daemonize", "--verbose"]}
       passed_input = {"env" => ["MY_PATH", "/some/path"],
-                      "flags" => ["--environment", "/etc/puppetlabs/the_environment"]}
+                      "flags" => ["--environment", "the_environment"]}
       allow(File).to receive(:exist?).and_return(true)
       allow_any_instance_of(Object).to receive(:running?).and_return(false)
       allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
