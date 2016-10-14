@@ -213,8 +213,9 @@ void Configuration::setupLogging()
     if (log_access) {
         pcp_access_logfile_ = lth_file::tilde_expand(pcp_access_logfile_);
         validateLogDirPath(pcp_access_logfile_);
-        pcp_access_fstream_ptr_.reset(new std::ofstream(pcp_access_logfile_.c_str(),
-                                                        std::ios_base::app));
+        pcp_access_fstream_ptr_.reset(
+            new boost::nowide::ofstream(pcp_access_logfile_.c_str(),
+                                        std::ios_base::app));
     }
 
 #ifndef _WIN32

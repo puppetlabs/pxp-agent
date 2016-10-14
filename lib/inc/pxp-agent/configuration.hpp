@@ -258,7 +258,7 @@ class Configuration
     mutable boost::nowide::ofstream logfile_fstream_;
 
     // Stream abstraction object for the PCP Access logfile
-    mutable std::shared_ptr<std::ofstream> pcp_access_fstream_ptr_;
+    mutable std::shared_ptr<boost::nowide::ofstream> pcp_access_fstream_ptr_;
 
     // Defines the default values
     Configuration();
