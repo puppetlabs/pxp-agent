@@ -411,6 +411,30 @@ MODULEPP
     on(master, "chmod 644 #{manifest}")
 end
 
+def get_puppet_agent_pids(host)
+  pids = []
+
+  case host['platform']
+  when /osx/
+    command = "ps -e -o pid,command | grep 'puppet agent' | grep -v 'grep' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
+  when /win/
+    # Puppet agent just appears as Ruby.exe in cygwin ps
+    # Need to check ruby's command line string to check it is actually puppet agent
+    # because pxp-module-puppet will also appear in ps as Ruby.exe
+    command = "cmd.exe /C WMIC path win32_process WHERE Name=\\\"Ruby.exe\\\" get CommandLine,ProcessId | "\
+              "grep 'puppet agent' | egrep -o '[0-9]+\s*$'"
+  else
+    command = "ps -ef | grep -e 'puppet agent' | grep -v 'grep' | grep -v 'true' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
+  end
+    
+  on(host, command, :accept_all_exit_codes => true) do |output|
+    pids = output.stdout.chomp.split
+  end
+    
+  pids
+
+end  
+
 def wait_for_sleep_process(target)
   begin
     ps_cmd = target['platform'] =~ /win/ ? 'ps -efW' : 'ps -ef'
