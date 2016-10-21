@@ -2,9 +2,11 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
 
+  # A number of platforms in our vmpooler have an issue with being rebooted via beaker.
+  # The statements below exclude agent hosts that have an issue, and call skip_test if no valid agent hosts remain
   applicable_agents = agents.select { |agent| agent['platform'] !~ /aix/ && !agent['roles'].include?('master') }
   unless applicable_agents.length > 0 then
-    skip_test('All agent hosts are AIX and QENG-3629 prevents AIX hosts being restarted')
+    skip_test('QENG-3629 - AIX hosts cannot be restarted')
   end
 
   applicable_agents = applicable_agents.select { |agent| agent['platform'] !~ /cisco_nexus/}
@@ -27,6 +29,10 @@ test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
     skip_test('QENG-4371 - Fedora hosts reboot time exceeds test timeout')
   end
 
+  applicable_agents = applicable_agents.select { |agent| agent['platform'] !~ /huaweios/}
+  unless applicable_agents.length > 0 then
+    skip_test('BKR-958 - Huawei hosts cannot be restarted')
+  end
 
   step 'Ensure each agent host has pxp-agent service running and enabled' do
     applicable_agents.each do |agent|

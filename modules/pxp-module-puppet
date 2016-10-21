@@ -244,6 +244,9 @@ def metadata()
             },
             :flags => {
               :type => "array",
+              :items => {
+                :type => "string"
+              }
             }
           },
           :required => [:flags]
@@ -340,6 +343,14 @@ WHITELISTED_FLAGS_NAMES = [
   "use_cached_catalog", "usecacheonfailure",
   "waitforcert"]
 
+# All flags and valid arguments to them should be caught by this.
+#  It was constructed for the following argument types:
+#  "timeout": /\A\d+[mhdy]?\Z/,
+#  "environment": /\A[a-z0-9_]+\Z/,
+#  "tag": /\A[a-z0-9_][a-z0-9_:\.\-]*\Z/,
+#  "ordering": /\Atitle-hash|manifest|random\Z/
+VALID_FLAG_REGEX = /\A[a-zA-Z0-9_:,\.\-]+\Z/
+
 # This asserts that the flag has a valid prefix
 def get_flag_name(flag)
   if flag.start_with?("--no-")
@@ -359,7 +370,12 @@ def get_action_input(args)
 
   if action_input.has_key?("flags")
     action_input["flags"].each do |flag|
-      if flag.is_a?(String) and flag.start_with?("--")
+      flag = flag.strip
+      unless flag =~ VALID_FLAG_REGEX
+        raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN contained characters not present in valid flags: #{flag}")
+      end
+
+      if flag.start_with?("--")
         flag_name = get_flag_name(flag)
 
         if DEFAULT_FLAGS_NAMES.include?(flag_name)

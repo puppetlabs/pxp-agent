@@ -18,7 +18,7 @@ test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent serv
     unless applicable_agents.empty? then
       stop_sleep_process(applicable_agents, true)
     end
-  end  
+  end
 
   env_name = test_file_name = File.basename(__FILE__, '.*')
   environment_name = mk_tmp_environment(env_name)
@@ -59,7 +59,7 @@ test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent serv
                                       'pxp-module-puppet', 'run',
                                       {:env => [], :flags => ['--onetime',
                                                               '--no-daemonize',
-                                                              "--environment", "'#{environment_name}'"]})
+                                                              "--environment", "#{environment_name}"]})
       assert_equal(provisional_responses[agent_identity][:envelope][:message_type],
                    "http://puppetlabs.com/rpc_provisional_response",
                    "Did not receive expected rpc_provisional_response in reply to non-blocking request")
