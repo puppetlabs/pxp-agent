@@ -53,62 +53,6 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
     transaction_ids_2 = start_puppet_non_blocking_request(master, target_identities)
   end
 
-  # Wait for the 2nd puppet agent process to exit
-  #
-  # Passing case: 2nd puppet process starts, exits on puppet_already_running error, pxp-module-puppet waits to retry.
-  # Failing case: 2nd puppet process starts, exits on puppet_already_running error, pxp-module-puppet gives up.
-  #
-  # If the test continued without waiting for the 2nd instance to exit, the 1st agent instance might exit before the
-  # 2nd agent instance was fully started; causing a false positive test result.
-  # 
-  # Because beaker's sampling of the puppet agent PIDs might begin before the 2nd puppet agent appears, OR
-  # it might begin after the 2nd puppet agent has already shut down; this step needs to use a heuristic approach.
-  # It succeeds if either:
-  #   a. It observes 2 PIDs on one sample, then only 1 PID on the subsequent sample
-  #   b. It observes 1 PID for at least 10 concurrent samples
-  #
-  step 'Wait for only one puppet agent PID to exist' do
-    agents.each do |agent|
-
-      satisfied = false
-      pid_counting_attempts = 0
-      MAX_PID_COUNTING_ATTEMPTS = 30
-      concurrent_samples_of_1_pid = 0
-      REQUIRED_SAMPLES_OF_1_PID = 10
-      two_pids_observed = false
-
-      while pid_counting_attempts < MAX_PID_COUNTING_ATTEMPTS do
-        puppet_agent_pids = get_puppet_agent_pids(agent)
-        if puppet_agent_pids.length == 1 then
-          concurrent_samples_of_1_pid += 1
-          if two_pids_observed then
-            logger.debug "Determined that 2nd agent just stopped, there were 2 pids and now there is only 1."
-            satisfied = true
-          end
-          if !satisfied && concurrent_samples_of_1_pid >= REQUIRED_SAMPLES_OF_1_PID then
-            logger.debug "Assuming 2nd agent has stopped due to #{concurrent_samples_of_1_pid} concurrent "\
-                         "pid checks that only returned 1 running agent pid"
-            satisfied = true
-          end
-        elsif puppet_agent_pids.length == 2 then
-          concurrent_samples_of_1_pid = 0
-          two_pids_observed = true
-        else
-          # If there is not 1 or 2 pids then the test has lost control and should error
-          raise("Test relies on there being either 1 or 2 puppet-agent pids, "\
-                "but somehow #{puppet_agent_pids.length.to_s} pids were detected")
-        end
-        break if satisfied
-        pid_counting_attempts += 1
-        sleep 1
-      end
-
-      unless satisfied then
-        fail("After #{MAX_PID_COUNTING_ATTEMPTS} times checking, could not determine that the 2nd agent had stopped")
-      end
-    end
-  end
-
   step 'Signal sleep process to end so 1st Puppet run will complete' do
     stop_sleep_process(agents)
   end
