@@ -1,3 +1,39 @@
+## 1.3.0
+
+This version introduces new features and maintains compatibility with the
+[PXP v1.0 protocol](https://github.com/puppetlabs/pcp-specifications/tree/master/pxp/versions/1.0).
+
+* [PCP-614](https://tickets.puppetlabs.com/browse/PCP-614) Update beaker version to 3.1.0
+* [BKR-960](https://tickets.puppetlabs.com/browse/BKR-960) Skip timesync for ciscoxr-64a
+* [PCP-605](https://tickets.puppetlabs.com/browse/PCP-605) Disable restart_host_run_puppet on Fedora
+* [PCP-549](https://tickets.puppetlabs.com/browse/PCP-549) Wait for other Puppet runs to finish
+
+## 1.2.2
+
+This is a maintenance release.
+
+* [BKR-958](https://tickets.puppetlabs.com/browse/BKR-958) Do not execute host restart test on
+huaweios
+* [PCP-601](https://tickets.puppetlabs.com/browse/PCP-601) Limit arguments to pxp-puppet flags to
+needed characters
+* [PCP-608](https://tickets.puppetlabs.com/browse/PCP-608) Bump version to 1.2.2
+* [PCP-607](https://tickets.puppetlabs.com/browse/PCP-607) Delete accidentally merged acceptance
+tests
+* [PCP-601](https://tickets.puppetlabs.com/browse/PCP-601) Require command line flags be strings
+and not include leading whitespace
+* [PCP-576](https://tickets.puppetlabs.com/browse/PCP-576) Ensure cisconx tests can read lock file
+* [PCP-572](https://tickets.puppetlabs.com/browse/PCP-572) Update how acceptance terminates sleep
+processes
+* [PCP-571](https://tickets.puppetlabs.com/browse/PCP-571) Fix tests failing with Puppet timing out
+* [PCP-577](https://tickets.puppetlabs.com/browse/PCP-577) Don't run tests that restart the broker
+on the master role
+* [PCP-286](https://tickets.puppetlabs.com/browse/PCP-286) Fix occasional acceptance test failures
+from pxp-agent service being left in the Paused state on Windows.
+* [PCP-557](https://tickets.puppetlabs.com/browse/PCP-557) Ensure pcp-broker runs with internal
+mirrors during testing
+* [#475](https://github.com/puppetlabs/pxp-agent/pull/475) Fix Rakefile when specifying
+BEAKER_HOSTS
+
 ## 1.2.1
 
 This is a maintenance release.
