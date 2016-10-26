@@ -41,10 +41,17 @@ step "Install puppetserver..." do
   end
 end
 
-# make sure install is sane, beaker has already added puppet and ruby
-# to PATH in ~/.ssh/environment
-agents.each do |agent|
-  on agent, puppet('--version')
-  ruby = Puppet::Acceptance::CommandUtils.ruby_command(agent)
-  on agent, "#{ruby} --version"
+step 'Make sure install is sane' do 
+  # beaker has already added puppet and ruby to PATH in ~/.ssh/environment
+  agents.each do |agent|
+    on agent, puppet('--version')
+    ruby = Puppet::Acceptance::CommandUtils.ruby_command(agent)
+    on agent, "#{ruby} --version"
+  end
+end
+
+step 'Ensure puppet is not running or enabled as a service' do
+  # This step should not be needed as puppet should be stopped/disabled on install
+  # But pxp-agent tests should not fail if the installer gets this wrong. e.g. PA-654
+  on(agents, puppet('resource service puppet ensure=stopped enable=false'))
 end
