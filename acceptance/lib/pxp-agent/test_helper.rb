@@ -424,7 +424,7 @@ def get_puppet_agent_pids(host)
     command = "cmd.exe /C WMIC path win32_process WHERE Name=\\\"Ruby.exe\\\" get CommandLine,ProcessId | "\
               "grep 'puppet agent' | egrep -o '[0-9]+\s*$'"
   else
-    command = "ps -ef | grep -e 'puppet agent' | grep -v 'grep' | grep -v 'true' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
+    command = "ps -ef | grep 'puppet agent' | grep -v 'grep' | grep -v 'true' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
   end
     
   on(host, command, :accept_all_exit_codes => true) do |output|
