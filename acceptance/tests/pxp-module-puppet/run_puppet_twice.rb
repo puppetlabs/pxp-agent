@@ -32,6 +32,10 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
     end
   end
 
+  step 'Ensure puppet is not currently running as a service (PCP-632)' do
+    on(agents, puppet('resource service puppet ensure=stopped enable=false'))
+  end
+
   target_identities = []
   agents.each do |agent|
     target_identities << "pcp://#{agent}/agent"
@@ -75,13 +79,13 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
       MAX_PID_COUNTING_ATTEMPTS = 30
       concurrent_samples_of_1_pid = 0
       REQUIRED_SAMPLES_OF_1_PID = 10
-      two_pids_observed = false
+      at_least_two_pids_observed = false
 
       while pid_counting_attempts < MAX_PID_COUNTING_ATTEMPTS do
         puppet_agent_pids = get_puppet_agent_pids(agent)
         if puppet_agent_pids.length == 1 then
           concurrent_samples_of_1_pid += 1
-          if two_pids_observed then
+          if at_least_two_pids_observed then
             logger.debug "Determined that 2nd agent just stopped, there were 2 pids and now there is only 1."
             satisfied = true
           end
@@ -90,13 +94,13 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
                          "pid checks that only returned 1 running agent pid"
             satisfied = true
           end
-        elsif puppet_agent_pids.length == 2 then
+        elsif puppet_agent_pids.length >= 2 then
           concurrent_samples_of_1_pid = 0
-          two_pids_observed = true
+          at_least_two_pids_observed = true
         else
-          # If there is not 1 or 2 pids then the test has lost control and should error
-          raise("Test relies on there being either 1 or 2 puppet-agent pids, "\
-                "but somehow #{puppet_agent_pids.length.to_s} pids were detected")
+          # If there are 0 pids then something has gone wrong
+          raise("Test relies on there being at least 1  puppet-agent pid, "\
+                "but somehow 0 pids were detected")
         end
         break if satisfied
         pid_counting_attempts += 1
