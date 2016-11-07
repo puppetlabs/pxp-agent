@@ -223,10 +223,11 @@ class Configuration
     /// Return an object containing all agent configuration options
     const Agent& getAgentConfiguration() const;
 
-    /// Try to close the log file stream,  then try to open the log
-    /// file in append mode and associate it to the log file stream.
+    /// Try to close the log file streams,  then try to open the log
+    /// files (pxp-agent app log and PCP access log) in append mode
+    /// and  associate them to the relative log file streams.
     /// All possible exceptions will be filtered.
-    void reopenLogfile() const;
+    void reopenLogfiles() const;
 
   private:
     // Whether the Configuration singleton has successfully validated

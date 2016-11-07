@@ -305,21 +305,40 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
     return agent_configuration_;
 }
 
-void Configuration::reopenLogfile() const
+void Configuration::reopenLogfiles() const
 {
-    // TODO(ale): consider reopening PCP access file
-
     if (!logfile_.empty() && logfile_ != "-") {
+        LOG_INFO("Reopening the pxp-agent log file");
+
         try {
             logfile_fstream_.close();
         } catch (const std::exception& e) {
-            LOG_DEBUG("Failed to close logfile stream; already closed?");
+            LOG_DEBUG("Failed to close the pxp-agent log file stream; already closed?");
         }
         try {
             logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
         } catch (const std::exception& e) {
-            LOG_ERROR("Failed to open logfile stream");
+            LOG_ERROR("Failed to open the pxp-agent log file stream");
         }
+    } else {
+        LOG_DEBUG("pxp-agent logging was not configured; no file will be reopened");
+    }
+
+    if (HW::GetFlag<bool>("log-pcp-access")) {
+        LOG_INFO("Reopening the PCP Access log file");
+
+        try {
+            pcp_access_fstream_ptr_->close();
+        } catch (const std::exception& e) {
+            LOG_DEBUG("Failed to close the PCP Access log file stream; already closed?");
+        }
+        try {
+            pcp_access_fstream_ptr_->open(pcp_access_logfile_.c_str(), std::ios_base::app);
+        } catch (const std::exception& e) {
+            LOG_ERROR("Failed to open the PCP Access log file stream");
+        }
+    } else {
+        LOG_DEBUG("PCP Access logging was not configured; no file will be reopened");
     }
 }
 
@@ -462,7 +481,7 @@ void Configuration::defineDefaultValues()
                      Base_ptr { new Entry<bool>(
                              "log-pcp-access",
                              "",
-                             lth_loc::translate("Enable PCP access logging, default: false"),
+                             lth_loc::translate("Enable PCP Access logging, default: false"),
                              Types::Bool,
                              false) } });
 
@@ -471,7 +490,7 @@ void Configuration::defineDefaultValues()
                      Base_ptr { new Entry<std::string>(
                              "pcp-access-logfile",
                              "",
-                             lth_loc::format("PCP Access Log file, default: {1}",
+                             lth_loc::format("PCP Access log file, default: {1}",
                                              DEFAULT_PCP_ACCESS_FILE),
                              Types::String,
                              DEFAULT_PCP_ACCESS_FILE) } });
