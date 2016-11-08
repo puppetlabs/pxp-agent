@@ -167,14 +167,34 @@ msgstr ""
 msgid "Logging configured"
 msgstr ""
 
+#. info
+#: lib/src/configuration.cc
+msgid "Reopening pxp-agent log file"
+msgstr ""
+
 #. debug
 #: lib/src/configuration.cc
-msgid "Failed to close logfile stream; already closed?"
+msgid "Failed to close the pxp-agent log file stream; already closed?"
 msgstr ""
 
 #. error
 #: lib/src/configuration.cc
-msgid "Failed to open logfile stream"
+msgid "Failed to open the pxp-agent log file stream"
+msgstr ""
+
+#. info
+#: lib/src/configuration.cc
+msgid "Reopening PCP Access log file"
+msgstr ""
+
+#. debug
+#: lib/src/configuration.cc
+msgid "Failed to close the PCP Access log file stream; already closed?"
+msgstr ""
+
+#. error
+#: lib/src/configuration.cc
+msgid "Failed to open the PCP Access log file stream"
 msgstr ""
 
 #: lib/src/configuration.cc
@@ -209,6 +229,14 @@ msgstr ""
 msgid ""
 "Valid options are 'none', 'trace', 'debug', 'info','warning', 'error' and "
 "'fatal'. Defaults to 'info'"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "Enable PCP Access logging, default: false"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "PCP Access log file, default: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
@@ -365,7 +393,7 @@ msgstr ""
 
 #. info
 #: lib/src/configuration/posix/configuration.cc
-msgid "Caught SIGUSR2 signal - reopening log file"
+msgid "Caught SIGUSR2 signal"
 msgstr ""
 
 #. error
@@ -775,7 +803,7 @@ msgid "Retrieving metadata and output for the transaction {1}"
 msgstr ""
 
 #: lib/src/request_processor.cc
-msgid "unknow action stored in metadata file: '{1} {2}'"
+msgid "unknown action stored in metadata file: '{1} {2}'"
 msgstr ""
 
 #. error
