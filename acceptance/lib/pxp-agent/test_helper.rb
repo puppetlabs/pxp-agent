@@ -480,6 +480,7 @@ def check_puppet_non_blocking_response(identity, transaction_id, max_retries, qu
                                        expected_result, expected_environment = 'production')
   puppet_run_result = nil
   query_attempts = 0
+  unknown_count = 0
   until (query_attempts == max_retries || puppet_run_result) do
     query_responses = rpc_blocking_request(master, [identity],
                                            'status', 'query', {:transaction_id => transaction_id})
@@ -487,8 +488,14 @@ def check_puppet_non_blocking_response(identity, transaction_id, max_retries, qu
     assert(action_result, "Response to status query was an error: #{query_responses[identity][:data]}")
     if (action_result.has_key?('stdout') && (action_result['stdout'] != ""))
       rpc_action_status = action_result['status']
-      puppet_run_result = JSON.parse(action_result['stdout'])['status']
-      puppet_run_environment = JSON.parse(action_result['stdout'])['environment']
+      if rpc_action_status == 'unknown' && unknown_count < 3
+        # pxp-agent will sometimes respond unknown if the puppet process has not yet started
+        # allow a few unknowns before giving up
+        unknown_count += 1
+      else
+        puppet_run_result = JSON.parse(action_result['stdout'])['status']
+        puppet_run_environment = JSON.parse(action_result['stdout'])['environment']
+      end
     end
     query_attempts += 1
     if (!puppet_run_result)
