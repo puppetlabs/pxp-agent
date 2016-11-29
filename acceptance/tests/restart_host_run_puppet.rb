@@ -48,23 +48,7 @@ test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
 
   step "restart each agent" do
     applicable_agents.each do |agent|
-      # Work-around reboot hanging on reply (BKR-971)
-      rebooter = Thread.start { agent.reboot }
-      sleep 5
-
-      # For the truly paranoid, we handle exceptions for closing the SSH connection and rejoining thread separately.
-      begin
-        agent.close
-      rescue Exception => e
-        logger.debug "Exception closing agent connection after reboot: #{e}"
-      end
-
-      begin
-        rebooter.join
-      rescue Exception => e
-        logger.debug "Exception waiting for ssh close after reboot: #{e}"
-      end
-
+      agent.reboot
       # BKR-812
       timeout = 30
       begin
