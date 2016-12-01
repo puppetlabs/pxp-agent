@@ -343,10 +343,8 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
     LOG_TRACE("Input for the {1}: {2}", request.prettyLabel(), input_txt);
 
     auto exec = lth_exec::execute(
-#if defined(_WIN32)
+#ifdef _WIN32
         "cmd.exe", { "/c", path_, action_name },
-#elif defined(__sun)
-        "/usr/bin/ctrun", { "-l", "child", path_, action_name },
 #else
         path_, { action_name },
 #endif
@@ -357,7 +355,11 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
             lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file);
         },          // pid callback
         0,          // timeout
-        { lth_exec::execution_options::merge_environment,
+        {
+#ifndef _WIN32
+          lth_exec::execution_options::create_detached_process,
+#endif
+          lth_exec::execution_options::merge_environment,
           lth_exec::execution_options::inherit_locale });  // options
 
     LOG_INFO("The task for the {1} has completed", request.prettyLabel());
