@@ -342,6 +342,10 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
              request.prettyLabel(), request.resultsDir());
     LOG_TRACE("Input for the {1}: {2}", request.prettyLabel(), input_txt);
 
+    // NOTE(ale): to avoid terminating the entire process tree when
+    // the pxp-agent service stops, on Solaris we use ctrun and on
+    // Windows we create a new Process Group for the child process
+
     auto exec = lth_exec::execute(
 #if defined(_WIN32)
         "cmd.exe", { "/c", path_, action_name },
@@ -350,7 +354,7 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
 #else
         path_, { action_name },
 #endif
-        input_txt,  // input
+        input_txt,  // input arguments, passed via stdin
         std::map<std::string, std::string>(),  // environment
         [results_dir_path](size_t pid) {
             auto pid_file = (results_dir_path / "pid").string();
@@ -358,6 +362,9 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
         },          // pid callback
         0,          // timeout
         { lth_exec::execution_options::merge_environment,
+#if defined(_WIN32)
+          lth_exec::execution_options::create_new_process_group,
+#endif
           lth_exec::execution_options::inherit_locale });  // options
 
     LOG_INFO("The task for the {1} has completed", request.prettyLabel());
