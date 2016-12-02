@@ -169,7 +169,7 @@ msgstr ""
 
 #. info
 #: lib/src/configuration.cc
-msgid "Reopening pxp-agent log file"
+msgid "Reopening the pxp-agent log file"
 msgstr ""
 
 #. debug
@@ -182,9 +182,14 @@ msgstr ""
 msgid "Failed to open the pxp-agent log file stream"
 msgstr ""
 
+#. debug
+#: lib/src/configuration.cc
+msgid "pxp-agent logging was not configured; no file will be reopened"
+msgstr ""
+
 #. info
 #: lib/src/configuration.cc
-msgid "Reopening PCP Access log file"
+msgid "Reopening the PCP Access log file"
 msgstr ""
 
 #. debug
@@ -195,6 +200,11 @@ msgstr ""
 #. error
 #: lib/src/configuration.cc
 msgid "Failed to open the PCP Access log file stream"
+msgstr ""
+
+#. debug
+#: lib/src/configuration.cc
+msgid "PCP Access logging was not configured; no file will be reopened"
 msgstr ""
 
 #: lib/src/configuration.cc
