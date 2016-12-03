@@ -1,3 +1,16 @@
+## 1.3.1
+
+This is a maintenance release.
+
+* [PCP-276](https://tickets.puppetlabs.com/browse/PCP-276) Create new process group for external
+modules on Windows
+* [PCP-657](https://tickets.puppetlabs.com/browse/PCP-657) Allow unknown status in acceptance tests
+* [PCP-625](https://tickets.puppetlabs.com/browse/PCP-625) Skip beaker time sync on Windows Server
+2016
+* [#514](https://github.com/puppetlabs/pxp-agent/pull/514) Change test to avoid depending on
+delayed message delivery
+* [#506](https://github.com/puppetlabs/pxp-agent/pull/506) Add beaker-abs compatible with beaker 2-3
+
 ## 1.3.0
 
 This version introduces new features and maintains compatibility with the
