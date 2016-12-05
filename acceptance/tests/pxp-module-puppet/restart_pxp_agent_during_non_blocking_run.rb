@@ -9,10 +9,7 @@ STATUS_QUERY_INTERVAL_SECONDS = 5
 test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent service during run' do
   extend Puppet::Acceptance::EnvironmentUtils
 
-  applicable_agents = agents.select { |agent| agent['platform'] !~ /win/}
-  if applicable_agents.empty? then
-    skip_test('Skipping - All agent hosts are Windows and are not applicable to this test (see PCP-276)')
-  end
+  applicable_agents = agents
 
   teardown do
     unless applicable_agents.empty? then
