@@ -1,0 +1,9 @@
+.vagrant
+tmp
+empty.rb
+.bundle
+Gemfile.local
+Gemfile.lock
+log/
+merged_options.rb
+hosts.yaml
