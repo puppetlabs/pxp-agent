@@ -342,9 +342,11 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
              request.prettyLabel(), request.resultsDir());
     LOG_TRACE("Input for the {1}: {2}", request.prettyLabel(), input_txt);
 
-    // NOTE(ale): to avoid terminating the entire process tree when
-    // the pxp-agent service stops, on Solaris we use ctrun and on
-    // Windows we create a new Process Group for the child process
+    // NOTE(ale,mruzicka): to avoid terminating the entire process
+    // tree when the pxp-agent service stops, we use the
+    // `create_detached_process` execution option which ensures
+    // the child process is executed in a new process contract
+    // on Solaris and a new process group on Windows
 
     auto exec = lth_exec::execute(
 #ifdef _WIN32
@@ -359,8 +361,7 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
             lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file);
         },          // pid callback
         0,          // timeout
-        {
-          lth_exec::execution_options::create_detached_process,
+        { lth_exec::execution_options::create_detached_process,
           lth_exec::execution_options::merge_environment,
           lth_exec::execution_options::inherit_locale });  // options
 
