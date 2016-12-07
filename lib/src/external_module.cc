@@ -342,6 +342,12 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
              request.prettyLabel(), request.resultsDir());
     LOG_TRACE("Input for the {1}: {2}", request.prettyLabel(), input_txt);
 
+    // NOTE(ale,mruzicka): to avoid terminating the entire process
+    // tree when the pxp-agent service stops, we use the
+    // `create_detached_process` execution option which ensures
+    // the child process is executed in a new process contract
+    // on Solaris
+
     auto exec = lth_exec::execute(
 #ifdef _WIN32
         "cmd.exe", { "/c", path_, action_name },
