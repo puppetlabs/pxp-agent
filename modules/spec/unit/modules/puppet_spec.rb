@@ -336,6 +336,15 @@ describe "pxp-module-puppet" do
       expect_any_instance_of(Object).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
       start_run(default_configuration, default_input)
     end
+
+    it "processes output when puppet's output contains potentially syntax-significant characters" do
+      output = "Who knows what Puppet might do '\"&+/\\()?,.\#!@$_-~'"
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(output)
+      allow(output).to receive(:exitstatus).and_return(0)
+      allow(output).to receive(:to_s).and_return(output)
+      expect_any_instance_of(Object).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
+      start_run(default_configuration, default_input)
+    end
   end
 
   describe "get_flag_name" do
