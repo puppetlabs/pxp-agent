@@ -71,8 +71,8 @@ test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent serv
     end
 
     step "Restart pxp-agent service on #{agent}" do
-      on agent, puppet('resource service pxp-agent ensure=stopped')
-      on agent, puppet('resource service pxp-agent ensure=running')
+      bounce_service(agent, 'pxp-agent')
+
       # Wait for the service to be reconnected
       unless is_associated?(master, agent_identity) then
         fail("Agent has not reconnected after #{PCP_INVENTORY_RETRIES} inventory queries")
