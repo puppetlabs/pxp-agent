@@ -118,6 +118,16 @@ msgstr ""
 msgid "invalid action metadata"
 msgstr ""
 
+#. info
+#: lib/src/agent.cc
+msgid "Connecting using PCP v1"
+msgstr ""
+
+#. info
+#: lib/src/agent.cc
+msgid "Connecting using PCP v2"
+msgstr ""
+
 #. warning
 #: lib/src/agent.cc
 msgid ""
@@ -216,6 +226,10 @@ msgid "WebSocket URI of the PCP broker"
 msgstr ""
 
 #: lib/src/configuration.cc
+msgid "PCP version to use for communication"
+msgstr ""
+
+#: lib/src/configuration.cc
 msgid "Timeout (in seconds) for starting the WebSocket handshake, default: 5 s"
 msgstr ""
 
@@ -308,6 +322,10 @@ msgstr ""
 
 #: lib/src/configuration.cc
 msgid "broker-ws-uri or broker-ws-uris must be defined"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "pcp-version must be either '1' or '2'"
 msgstr ""
 
 #. info
@@ -609,61 +627,70 @@ msgid "debug entry is not valid JSON"
 msgstr ""
 
 #. warning
-#: lib/src/pxp_connector.cc
+#: lib/src/pxp_connector_v1.cc
 msgid "Message {1} contained {2} bad debug chunk"
 msgstr ""
 
 #. warning
-#: lib/src/pxp_connector.cc
+#: lib/src/pxp_connector_v1.cc
 msgid "Message {1} contained {2} bad debug chunks"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Replied to request {1} with a PCP error message"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Failed to send PCP error message for request {1}: {2}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Sent provisional response for the {1} by {2}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid ""
 "Failed to send provisional response for the {1} by {2} (no further attempts "
 "will be made): {3}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Replied to {1} by {2}, request ID {3}, with a PXP error message"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid ""
 "Failed to send a PXP error message for the {1} by {2} (no further sending "
 "attempts will be made): {3}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Sent response for the {1} by {2}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Failed to reply to {1} by {2}, (no further attempts will be made): {3}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Failed to reply to the {1} by {2}: {3}"
 msgstr ""
 

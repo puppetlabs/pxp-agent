@@ -43,9 +43,7 @@ if [ ${TRAVIS_TARGET} == DEBUG ]; then
   TARGET_OPTS="-DCMAKE_BUILD_TYPE=Debug -DCOVERALLS=ON"
 fi
 
-# NB: TEST_VIRTUAL enables virtual functions in PXPConnector and the
-# unit tests that rely on them for mocking cpp-pcp-client's Connector.
-cmake $TARGET_OPTS -DCMAKE_PREFIX_PATH=$USERDIR -DCMAKE_INSTALL_PREFIX=$USERDIR -DTEST_VIRTUAL=ON .
+cmake $TARGET_OPTS -DCMAKE_PREFIX_PATH=$USERDIR -DCMAKE_INSTALL_PREFIX=$USERDIR .
 
 if [ ${TRAVIS_TARGET} == CPPLINT ]; then
   make cpplint

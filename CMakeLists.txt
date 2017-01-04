@@ -7,12 +7,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Define further options
-option(TEST_VIRTUAL "ON - certain class member functions became virtual to enable mocking for unit tests" OFF)
 option(DEV_LOG_COLOR "Enable colorization for logging (development setting)" OFF)
-
-if(TEST_VIRTUAL)
-    add_definitions(-DTEST_VIRTUAL)
-endif()
 
 if(DEV_LOG_COLOR)
     add_definitions(-DDEV_LOG_COLOR)

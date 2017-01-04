@@ -18,6 +18,8 @@ set(COMMON_TEST_SOURCES
     unit/configuration_test.cc
     unit/external_module_test.cc
     unit/module_test.cc
+    unit/pxp_connector_v1_test.cc
+    unit/pxp_connector_v2_test.cc
     unit/request_processor_test.cc
     unit/results_mutex_test.cc
     unit/results_storage_test.cc

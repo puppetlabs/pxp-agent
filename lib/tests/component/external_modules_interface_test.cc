@@ -21,8 +21,6 @@
 
 namespace PXPAgent {
 
-#ifdef TEST_VIRTUAL
-
 namespace lth_jc = leatherman::json_container;
 namespace lth_util = leatherman::util;
 namespace pcp_util = PCPClient::Util;
@@ -188,7 +186,5 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
 
     fs::remove_all(SPOOL);
 }
-
-#endif  // TEST_VIRTUAL
 
 }  // namespace PXPAgent

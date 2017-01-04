@@ -48,6 +48,7 @@ static const char* ARGV[] = {
     "test-command",
     "--config-file", CONFIG.data(),
     "--broker-ws-uri", TEST_BROKER_WS_URI.data(),
+    "--pcp-version=2",
     "--ssl-ca-cert", CA.data(),
     "--ssl-cert", CERT.data(),
     "--ssl-key", KEY.data(),
@@ -56,7 +57,7 @@ static const char* ARGV[] = {
     "--spool-dir", SPOOL_DIR.data(),
     "--foreground=true",
     nullptr };
-static const int ARGC = 18;
+static const int ARGC = 19;
 
 static void configureTest() {
     if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR)) {
@@ -186,8 +187,8 @@ TEST_CASE("Configuration::get", "[configuration]") {
         }
 
         SECTION("return the default value if the flag was not set") {
-            // NB: ignoring --foreground in ARGV since argc is set to 17
-            Configuration::Instance().parseOptions(17, const_cast<char**>(ARGV));
+            // NB: ignoring --foreground in ARGV since argc is set to 19
+            Configuration::Instance().parseOptions(18, const_cast<char**>(ARGV));
 #ifndef _WIN32
             HW::SetFlag<std::string>("pidfile", SPOOL_DIR + "/test.pid");
 #endif
@@ -227,6 +228,12 @@ TEST_CASE("Configuration::validate", "[configuration]") {
 
     SECTION("it throws an Error when the broker WebSocket URi is invalid") {
         HW::SetFlag<std::string>("broker-ws-uri", "ws://");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::Error);
+    }
+
+    SECTION("it throws an Error when the PCP version is invalid") {
+        HW::SetFlag<std::string>("pcp-version", "3");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
                           Configuration::Error);
     }

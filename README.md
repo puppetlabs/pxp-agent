@@ -95,10 +95,8 @@ Build
 
   Thanks to the CMake, the project can be built out-of-source tree, which allows for
   multiple independent builds.
-  Aside from the standard CMake switches the build supports the following options:
+  Aside from the standard CMake switches the build supports the following option:
 
-   * **TEST_VIRTUAL** when set to _ON_ certain class member functions become virtual
-     to enable mocking for unit tests (default _OFF_)
    * **DEV_LOG_COLOR** enables colorization for logging (development setting)
      (default _OFF_)
 
@@ -113,7 +111,7 @@ Build
 
       mkdir debug
       cd debug
-      cmake -DCMAKE_BUILD_TYPE=Debug -DTEST_VIRTUAL=ON -DDEV_LOG_COLOR=ON ..
+      cmake -DCMAKE_BUILD_TYPE=Debug -DDEV_LOG_COLOR=ON ..
       make
 
 Usage
