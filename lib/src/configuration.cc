@@ -301,7 +301,8 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         static_cast<uint32_t >(HW::GetFlag<int>("association-timeout")),
         static_cast<uint32_t >(HW::GetFlag<int>("association-request-ttl")),
         static_cast<uint32_t >(HW::GetFlag<int>("pcp-message-ttl")),
-        static_cast<uint32_t >(HW::GetFlag<int>("allowed-keepalive-timeouts")) };
+        static_cast<uint32_t >(HW::GetFlag<int>("allowed-keepalive-timeouts")),
+        static_cast<uint32_t >(HW::GetFlag<int>("ping-interval")) };
     return agent_configuration_;
 }
 
@@ -398,6 +399,16 @@ void Configuration::defineDefaultValues()
                     "<hidden>",
                     Types::Int,
                     2) } });
+
+    // Hidden option: interval between pings, default 15 s
+    defaults_.insert(
+        Option { "ping-interval",
+                 Base_ptr { new Entry<int>(
+                    "ping-interval",
+                    "",
+                    "<hidden>",
+                    Types::Int,
+                    15) } });
 
     // Hidden option: PCP Association timeout, default: 15 s
     defaults_.insert(
