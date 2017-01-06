@@ -16,6 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
 #. error
 #: exe/main.cc
@@ -95,39 +96,8 @@ msgstr ""
 msgid "{1} '{2} {3}' request (transaction {4})"
 msgstr ""
 
-#. debug
-#: lib/src/action_request.cc
-msgid ""
-"Validating {1} request {2} by {3}:\n"
-"{4}"
-msgstr ""
-
-#: lib/src/action_request.cc
-msgid "no data"
-msgstr ""
-
-#: lib/src/action_request.cc
-msgid "invalid data"
-msgstr ""
-
-#: lib/src/action_request.cc
-msgid "data is not in JSON format"
-msgstr ""
-
 #: lib/src/action_response.cc
 msgid "invalid action metadata"
-msgstr ""
-
-#. warning
-#: lib/src/agent.cc
-msgid ""
-"Error during the PCP Session Association ({1}); will retry to connect in {2} "
-"s"
-msgstr ""
-
-#. debug
-#: lib/src/agent.cc
-msgid "PCP connection established; about to start monitoring it"
 msgstr ""
 
 #: lib/src/configuration.cc
@@ -585,13 +555,9 @@ msgstr ""
 msgid "Failed to execute the task for the {1}. {2}"
 msgstr ""
 
-#. error
+#. debug
 #: lib/src/modules/ping.cc
 msgid "Found no debug entry in the request message"
-msgstr ""
-
-#: lib/src/modules/ping.cc
-msgid "no debug entry"
 msgstr ""
 
 #. error
@@ -606,26 +572,6 @@ msgstr ""
 
 #: lib/src/modules/ping.cc
 msgid "debug entry is not valid JSON"
-msgstr ""
-
-#. warning
-#: lib/src/pxp_connector.cc
-msgid "Message {1} contained {2} bad debug chunk"
-msgstr ""
-
-#. warning
-#: lib/src/pxp_connector.cc
-msgid "Message {1} contained {2} bad debug chunks"
-msgstr ""
-
-#. info
-#: lib/src/pxp_connector.cc
-msgid "Replied to request {1} with a PCP error message"
-msgstr ""
-
-#. error
-#: lib/src/pxp_connector.cc
-msgid "Failed to send PCP error message for request {1}: {2}"
 msgstr ""
 
 #. info
@@ -662,9 +608,55 @@ msgstr ""
 msgid "Failed to reply to {1} by {2}, (no further attempts will be made): {3}"
 msgstr ""
 
+#. warning
+#: lib/src/pxp_connector.cc
+msgid ""
+"Error during the PCP Session Association ({1}); will retry to connect in {2} "
+"s"
+msgstr ""
+
+#. debug
+#: lib/src/pxp_connector.cc
+msgid "PCP connection established; about to start monitoring it"
+msgstr ""
+
+#: lib/src/pxp_connector.cc
+msgid "Message {1} contained {2} bad debug chunk"
+msgid_plural "Message {1} contained {2} bad debug chunks"
+msgstr[0] ""
+msgstr[1] ""
+
 #. error
 #: lib/src/pxp_connector.cc
 msgid "Failed to reply to the {1} by {2}: {3}"
+msgstr ""
+
+#. info
+#: lib/src/pxp_connector.cc
+msgid "Replied to request {1} with a PCP error message"
+msgstr ""
+
+#. error
+#: lib/src/pxp_connector.cc
+msgid "Failed to send PCP error message for request {1}: {2}"
+msgstr ""
+
+#: lib/src/pxp_connector.cc
+msgid "no data"
+msgstr ""
+
+#: lib/src/pxp_connector.cc
+msgid "invalid data"
+msgstr ""
+
+#: lib/src/pxp_connector.cc
+msgid "data is not in JSON format"
+msgstr ""
+
+#. error
+#: lib/src/pxp_connector.cc
+msgid ""
+"Invalid request with ID {1} by {2}. Will reply with a PCP error. Error: {3}"
 msgstr ""
 
 #. debug
@@ -725,12 +717,6 @@ msgstr ""
 msgid ""
 "Failed to process {1}, request ID {2} by {3}. Will reply with an RPC Error "
 "message. Error: {4}"
-msgstr ""
-
-#. error
-#: lib/src/request_processor.cc
-msgid ""
-"Invalid request with ID {1} by {2}. Will reply with a PCP error. Error: {3}"
 msgstr ""
 
 #: lib/src/request_processor.cc

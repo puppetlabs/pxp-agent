@@ -1,7 +1,7 @@
 #include <pxp-agent/action_response.hpp>
 
-#include <cpp-pcp-client/validator/validator.hpp>
-#include <cpp-pcp-client/validator/schema.hpp>
+#include <leatherman/json_container/validator.hpp>
+#include <leatherman/json_container/schema.hpp>
 
 #include <leatherman/util/time.hpp>
 
@@ -36,10 +36,10 @@ const std::string RESULTS { "results" };
 const std::string RESULTS_ARE_VALID { "results_are_valid" };
 const std::string EXECUTION_ERROR { "execution_error" };
 
-static PCPClient::Validator getActionMetadataValidator()
+static lth_jc::Validator getActionMetadataValidator()
 {
-    using T_C = PCPClient::TypeConstraint;
-    PCPClient::Schema sch { ACTION_METADATA_SCHEMA, PCPClient::ContentType::Json };
+    using T_C = lth_jc::TypeConstraint;
+    lth_jc::Schema sch { ACTION_METADATA_SCHEMA, lth_jc::ContentType::Json };
 
     // Entries created during initialization (all mandatory)
     sch.addConstraint(REQUESTER, T_C::String, true);
@@ -58,7 +58,7 @@ static PCPClient::Validator getActionMetadataValidator()
     sch.addConstraint(RESULTS_ARE_VALID, T_C::Bool, false);
     sch.addConstraint(EXECUTION_ERROR, T_C::String, false);
 
-    PCPClient::Validator validator {};
+    lth_jc::Validator validator {};
     validator.registerSchema(sch);
     return validator;
 }
@@ -157,11 +157,11 @@ const std::string& ActionResponse::prettyRequestLabel() const
 
 bool ActionResponse::isValidActionMetadata(const lth_jc::JsonContainer& metadata)
 {
-    static PCPClient::Validator validator { getActionMetadataValidator() };
+    static lth_jc::Validator validator { getActionMetadataValidator() };
     try {
         validator.validate(metadata, ACTION_METADATA_SCHEMA);
         return true;
-    } catch (const PCPClient::validation_error& e) {
+    } catch (const lth_jc::validation_error& e) {
         LOG_TRACE("Invalid action metadata: {1}", e.what());
     }
     return false;

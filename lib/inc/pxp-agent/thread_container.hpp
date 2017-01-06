@@ -1,7 +1,7 @@
 #ifndef SRC_THREAD_CONTAINER_H_
 #define SRC_THREAD_CONTAINER_H_
 
-#include <cpp-pcp-client/util/thread.hpp>
+#include <leatherman/util/thread.hpp>
 
 #include <vector>
 #include <unordered_map>
@@ -19,7 +19,7 @@ static const uint32_t THREADS_THRESHOLD { 10 };
 
 struct ManagedThread {
     /// Thread object
-    PCPClient::Util::thread the_instance;
+    leatherman::util::thread the_instance;
 
     /// Flag that indicates whether or not the thread has finished its
     /// execution
@@ -61,7 +61,7 @@ class ThreadContainer {
     /// Throw an Error in case a thread instance with the same name
     /// already exists.
     void add(std::string thread_name,
-             PCPClient::Util::thread task,
+             leatherman::util::thread task,
              std::shared_ptr<std::atomic<bool>> done);
 
     /// Return true if a task with the specified name is currently
@@ -81,10 +81,10 @@ class ThreadContainer {
   private:
     std::string name_;
     std::unordered_map<std::string, std::shared_ptr<ManagedThread>> threads_;
-    std::unique_ptr<PCPClient::Util::thread> monitoring_thread_ptr_;
+    std::unique_ptr<leatherman::util::thread> monitoring_thread_ptr_;
     bool destructing_;
-    mutable PCPClient::Util::mutex mutex_;
-    PCPClient::Util::condition_variable cond_var_;
+    mutable leatherman::util::mutex mutex_;
+    leatherman::util::condition_variable cond_var_;
     bool is_monitoring_;
     uint32_t num_added_threads_;
     uint32_t num_erased_threads_;

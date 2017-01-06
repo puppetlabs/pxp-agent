@@ -11,26 +11,33 @@
 #include <pxp-agent/action_response.hpp>
 #include <pxp-agent/configuration.hpp>
 
-#include <cpp-pcp-client/connector/connector.hpp>
-
 #include <leatherman/json_container/json_container.hpp>
+#include <leatherman/json_container/schema.hpp>
 
 #include <cassert>
 #include <memory>
 #include <vector>
 #include <cstdint>
+#include <string>
+#include <functional>
+
+namespace PCPClient {
+    class Connector;
+    struct ParsedChunks;
+}
 
 namespace PXPAgent {
 
 // In case of failure, the send() methods will only log the failure;
 // no exception will be propagated.
-class PXPConnector : public PCPClient::Connector {
+class PXPConnector {
   public:
-    PXPConnector(const Configuration::Agent& agent_configuration);
+    using MessageCallback = std::function<void(std::string id,
+                                               std::string sender,
+                                               leatherman::json_container::JsonContainer data,
+                                               std::vector<leatherman::json_container::JsonContainer> debug)>;
 
-    TEST_VIRTUAL_SPECIFIER void sendPCPError(const std::string& request_id,
-                                             const std::string& description,
-                                             const std::vector<std::string>& endpoints);
+    PXPConnector(const Configuration::Agent& agent_configuration);
 
     TEST_VIRTUAL_SPECIFIER void sendProvisionalResponse(const ActionRequest& request);
 
@@ -51,12 +58,27 @@ class PXPConnector : public PCPClient::Connector {
     // Asserts that the ActionResponse arg has all needed entries.
     TEST_VIRTUAL_SPECIFIER void sendNonBlockingResponse(const ActionResponse& response);
 
+    // Establishes a connection
+    TEST_VIRTUAL_SPECIFIER void connect();
+
+    TEST_VIRTUAL_SPECIFIER void registerMessageCallback(const leatherman::json_container::Schema& schema,
+                                                        MessageCallback callback);
+
   private:
     uint32_t pcp_message_ttl_s;
+    std::shared_ptr<PCPClient::Connector> pcp_connector_;
 
     void sendBlockingResponse_(const ActionResponse::ResponseType& response_type,
                                const ActionResponse& response,
                                const ActionRequest& request);
+
+    void sendPCPError_(const std::string& request_id,
+                       const std::string& description,
+                       const std::vector<std::string>& endpoints);
+
+    bool validateFormat_(const std::string& id,
+                         const std::string& sender,
+                         const PCPClient::ParsedChunks& parsed_chunks);
 };
 
 }  // namespace PXPAgent

@@ -6,8 +6,6 @@
 #include <pxp-agent/pxp_connector.hpp>
 #include <pxp-agent/configuration.hpp>
 
-#include <cpp-pcp-client/protocol/chunks.hpp>      // ParsedChunk
-
 #include <memory>
 #include <string>
 
@@ -19,8 +17,8 @@ class Agent {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
 
-    struct PCPConfigurationError : public Error {
-        explicit PCPConfigurationError(std::string const& msg) : Error(msg) {}
+    struct ConfigurationError : public Error {
+        explicit ConfigurationError(std::string const& msg) : Error(msg) {}
     };
 
     struct WebSocketConfigurationError : public Error {
@@ -43,7 +41,7 @@ class Agent {
 
     // Start the agent and loop indefinitely, by:
     //  - registering message callbacks;
-    //  - connecting to the PCP broker;
+    //  - connecting to the broker;
     //  - monitoring the state of the connection;
     //  - re-establishing the connection when requested.
     //
@@ -59,21 +57,6 @@ class Agent {
 
     // Request Processor
     RequestProcessor request_processor_;
-
-    // Callback for PCPClient::Connector handling incoming PXP
-    // blocking requests; it will execute the requested action and,
-    // once finished, reply to the sender with an PXP blocking
-    // response containing the action outcome.
-    void blockingRequestCallback(const PCPClient::ParsedChunks& parsed_chunks);
-
-    // Callback for PCPClient::Connector handling incoming PXP
-    // non-blocking requests; it will start a job for the requested
-    // action and reply with a provisional response containing the job
-    // id. The reults will be stored in files in spool-dir.
-    // In case the request has the notify_outcome field flagged, it
-    // will send a PXP non-blocking response containing the action
-    // outcome when finished.
-    void nonBlockingRequestCallback(const PCPClient::ParsedChunks& parsed_chunks);
 };
 
 }  // namespace PXPAgent

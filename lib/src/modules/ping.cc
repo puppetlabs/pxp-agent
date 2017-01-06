@@ -20,10 +20,10 @@ static const std::string PING { "ping" };
 Ping::Ping() {
     module_name = PING;
     actions.push_back(PING);
-    PCPClient::Schema input_schema { PING };
+    lth_jc::Schema input_schema { PING };
     input_schema.addConstraint("sender_timestamp",
-                               PCPClient::TypeConstraint::String);
-    PCPClient::Schema output_schema { PING };
+                               lth_jc::TypeConstraint::String);
+    lth_jc::Schema output_schema { PING };
 
     input_validator_.registerSchema(input_schema);
     results_validator_.registerSchema(output_schema);
@@ -32,12 +32,13 @@ Ping::Ping() {
 lth_jc::JsonContainer Ping::ping(const ActionRequest& request) {
     lth_jc::JsonContainer data {};
 
-    if (request.parsedChunks().debug.empty()) {
-        LOG_ERROR("Found no debug entry in the request message");
-        throw Module::ProcessingError { lth_loc::translate("no debug entry") };
+    if (request.debug().empty()) {
+        LOG_DEBUG("Found no debug entry in the request message");
+        data.set<std::vector<lth_jc::JsonContainer>>("request_hops", {});
+        return data;
     }
 
-    auto& debug_entry = request.parsedChunks().debug[0];
+    auto& debug_entry = request.debug()[0];
 
     try {
         data.set<std::vector<lth_jc::JsonContainer>>(

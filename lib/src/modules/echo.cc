@@ -13,10 +13,10 @@ static const std::string ECHO { "echo" };
 Echo::Echo() {
     module_name = ECHO;
     actions.push_back(ECHO);
-    PCPClient::Schema input_schema { ECHO };
-    input_schema.addConstraint("argument", PCPClient::TypeConstraint::String,
+    lth_jc::Schema input_schema { ECHO };
+    input_schema.addConstraint("argument", lth_jc::TypeConstraint::String,
                                true);
-    PCPClient::Schema output_schema { ECHO };
+    lth_jc::Schema output_schema { ECHO };
 
     input_validator_.registerSchema(input_schema);
     results_validator_.registerSchema(output_schema);

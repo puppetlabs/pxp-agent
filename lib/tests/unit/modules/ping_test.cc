@@ -2,8 +2,6 @@
 
 #include <pxp-agent/modules/ping.hpp>
 
-#include <cpp-pcp-client/protocol/chunks.hpp>       // ParsedChunks
-
 #include <leatherman/json_container/json_container.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -25,19 +23,10 @@ static const std::string PING_TXT {
                  % "\"ping\""
                  % "{}").str() };
 
-static const std::vector<lth_jc::JsonContainer> DEBUG {
-    lth_jc::JsonContainer { "{\"hops\" : []}" }
-};
-
-static const PCPClient::ParsedChunks PARSED_CHUNKS {
-                    lth_jc::JsonContainer(ENVELOPE_TXT),
-                    lth_jc::JsonContainer(PING_TXT),
-                    DEBUG,
-                    0 };
-
 TEST_CASE("Modules::Ping::executeAction", "[modules]") {
     Modules::Ping ping_module {};
-    ActionRequest request { RequestType::Blocking, PARSED_CHUNKS };
+    lth_jc::JsonContainer data { PING_TXT };
+    ActionRequest request { RequestType::Blocking, MESSAGE_ID, SENDER, data };
 
     SECTION("the ping module is correctly named") {
         REQUIRE(ping_module.module_name == "ping");
@@ -64,6 +53,15 @@ TEST_CASE("Modules::Ping::executeAction", "[modules]") {
 TEST_CASE("Modules::Ping::ping", "[modules]") {
     Modules::Ping ping_module {};
 
+    SECTION("it should respond with an empty hops entry") {
+        lth_jc::JsonContainer data { PING_TXT };
+        ActionRequest other_request { RequestType::Blocking, MESSAGE_ID, SENDER, data };
+
+        auto result = ping_module.ping(other_request);
+        auto hops = result.get<std::vector<lth_jc::JsonContainer>>("request_hops");
+        REQUIRE(hops.empty());
+    }
+
     boost::format data_format {
         "{  \"transaction_id\" : \"1234123412\","
         "   \"module\" : \"ping\","
@@ -83,16 +81,11 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
             lth_jc::JsonContainer { debug_txt }
         };
 
-        PCPClient::ParsedChunks other_chunks {
-                    lth_jc::JsonContainer(ENVELOPE_TXT),
-                    lth_jc::JsonContainer(PING_TXT),
-                    other_debug,
-                    0 };
-        ActionRequest other_request { RequestType::Blocking, other_chunks };
+        lth_jc::JsonContainer data { data_txt };
+        ActionRequest other_request { RequestType::Blocking, MESSAGE_ID, SENDER, data, other_debug };
 
         auto result = ping_module.ping(other_request);
-        auto hops = result.get<std::vector<lth_jc::JsonContainer>>(
-                        "request_hops");
+        auto hops = result.get<std::vector<lth_jc::JsonContainer>>("request_hops");
         REQUIRE(hops.empty());
     }
 
@@ -117,16 +110,11 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
             lth_jc::JsonContainer { debug_txt }
         };
 
-        PCPClient::ParsedChunks other_chunks {
-                lth_jc::JsonContainer(ENVELOPE_TXT),
-                lth_jc::JsonContainer(data_txt),
-                other_debug,
-                0 };
-        ActionRequest other_request { RequestType::Blocking, other_chunks };
+        lth_jc::JsonContainer data { data_txt };
+        ActionRequest other_request { RequestType::Blocking, MESSAGE_ID, SENDER, data, other_debug };
 
         auto result = ping_module.ping(other_request);
-        auto hops = result.get<std::vector<lth_jc::JsonContainer>>(
-                        "request_hops");
+        auto hops = result.get<std::vector<lth_jc::JsonContainer>>("request_hops");
 
         REQUIRE(hops.size() == 4u);
         REQUIRE(hops[3].get<std::string>("time") == "007");

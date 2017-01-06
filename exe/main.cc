@@ -3,9 +3,6 @@
 
 #include <pxp-agent/util/daemonize.hpp>
 
-#include <cpp-pcp-client/util/thread.hpp>
-#include <cpp-pcp-client/util/chrono.hpp>
-
 #include <leatherman/locale/locale.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.main"
@@ -68,7 +65,7 @@ int startAgent(std::vector<std::string> arguments) {
     try {
         Agent agent { Configuration::Instance().getAgentConfiguration() };
         agent.start();
-    } catch (const Agent::PCPConfigurationError& e) {
+    } catch (const Agent::ConfigurationError& e) {
         exit_code = PXP_AGENT_CONFIGURATION_FAILURE;
         LOG_ERROR("PCP configuration error: {1}", e.what());
     } catch (const Agent::WebSocketConfigurationError& e) {

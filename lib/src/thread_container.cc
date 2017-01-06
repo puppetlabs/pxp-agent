@@ -1,6 +1,6 @@
 #include <pxp-agent/thread_container.hpp>
 
-#include <cpp-pcp-client/util/chrono.hpp>
+#include <leatherman/util/chrono.hpp>
 
 #include <leatherman/locale/locale.hpp>
 
@@ -9,7 +9,7 @@
 
 namespace PXPAgent {
 
-namespace pcp_util = PCPClient::Util;
+namespace lth_util = leatherman::util;
 namespace lth_loc  = leatherman::locale;
 
 // Check if the thread has completed; if so, and if it's joinable,
@@ -55,7 +55,7 @@ ThreadContainer::ThreadContainer(const std::string& name,
 
 ThreadContainer::~ThreadContainer() {
     {
-        pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
+        lth_util::lock_guard<lth_util::mutex> the_lock { mutex_ };
         destructing_ = true;
         cond_var_.notify_one();
     }
@@ -80,7 +80,7 @@ ThreadContainer::~ThreadContainer() {
 }
 
 void ThreadContainer::add(std::string thread_name,
-                          pcp_util::thread task,
+                          lth_util::thread task,
                           std::shared_ptr<std::atomic<bool>> is_done) {
     // TODO(ale): deal with locale & plural (PCP-257)
     if (num_added_threads_ == 1) {
@@ -92,7 +92,7 @@ void ThreadContainer::add(std::string thread_name,
                   "ThreadContainer; added {4} threads so far",
                   task.get_id(), thread_name,  name_, num_added_threads_);
     }
-    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
+    lth_util::lock_guard<lth_util::mutex> the_lock { mutex_ };
 
     if (findLocked(thread_name))
         throw Error { lth_loc::translate("thread name is already stored") };
@@ -124,32 +124,32 @@ void ThreadContainer::add(std::string thread_name,
 
         is_monitoring_ = true;
         monitoring_thread_ptr_.reset(
-            new pcp_util::thread(&ThreadContainer::monitoringTask_, this));
+            new lth_util::thread(&ThreadContainer::monitoringTask_, this));
     }
 }
 
 bool ThreadContainer::find(const std::string& thread_name) const {
-    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
+    lth_util::lock_guard<lth_util::mutex> the_lock { mutex_ };
     return findLocked(thread_name);
 }
 
 bool ThreadContainer::isMonitoring() const {
-    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
+    lth_util::lock_guard<lth_util::mutex> the_lock { mutex_ };
     return is_monitoring_;
 }
 
 uint32_t ThreadContainer::getNumAddedThreads() const {
-    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
+    lth_util::lock_guard<lth_util::mutex> the_lock { mutex_ };
     return num_added_threads_;
 }
 
 uint32_t ThreadContainer::getNumErasedThreads() const {
-    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
+    lth_util::lock_guard<lth_util::mutex> the_lock { mutex_ };
     return num_erased_threads_;
 }
 
 std::vector<std::string> ThreadContainer::getThreadNames() const {
-    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
+    lth_util::lock_guard<lth_util::mutex> the_lock { mutex_ };
     std::vector<std::string> names;
     for (auto itr = threads_.begin(); itr != threads_.end(); itr++)
         names.push_back(itr->first);
@@ -157,7 +157,7 @@ std::vector<std::string> ThreadContainer::getThreadNames() const {
 }
 
 void ThreadContainer::setName(const std::string& name) {
-    pcp_util::lock_guard<pcp_util::mutex> the_lock { mutex_ };
+    lth_util::lock_guard<lth_util::mutex> the_lock { mutex_ };
     name_ = name;
 }
 
@@ -171,15 +171,15 @@ bool ThreadContainer::findLocked(const std::string& thread_name) const {
 
 void ThreadContainer::monitoringTask_() {
     LOG_DEBUG("Starting monitoring task for the '{1}' ThreadContainer, "
-              "with id {2}", name_, pcp_util::this_thread::get_id());
+              "with id {2}", name_, lth_util::this_thread::get_id());
 
     while (true) {
-        pcp_util::unique_lock<pcp_util::mutex> the_lock { mutex_ };
-        auto now = pcp_util::chrono::system_clock::now();
+        lth_util::unique_lock<lth_util::mutex> the_lock { mutex_ };
+        auto now = lth_util::chrono::system_clock::now();
 
         // Wait for thread objects or for the check interval timeout
         cond_var_.wait_until(the_lock,
-                             now + pcp_util::chrono::milliseconds(check_interval));
+                             now + lth_util::chrono::milliseconds(check_interval));
 
         if (destructing_) {
             // The dtor has been invoked

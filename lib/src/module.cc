@@ -15,8 +15,6 @@ namespace lth_jc  = leatherman::json_container;
 namespace lth_loc = leatherman::locale;
 
 Module::Module()
-        : input_validator_ {},
-          results_validator_ {}
 {
 }
 
@@ -37,7 +35,7 @@ void Module::validateOutputAndUpdateMetadata(ActionResponse& response)
             response.action_metadata.get<std::string>("action"));
         LOG_TRACE("Successfully validated the results for the {1}",
                   response.prettyRequestLabel());
-    } catch (PCPClient::validation_error) {
+    } catch (lth_jc::validation_error) {
         // Modify the response metadata to indicate the failure
         if (type() == ModuleType::Internal) {
             // This is unexpected

@@ -6,8 +6,6 @@
 #include <pxp-agent/configuration.hpp>
 #include <pxp-agent/util/process.hpp>
 
-#include <cpp-pcp-client/protocol/chunks.hpp>       // ParsedChunks
-
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/util/scope_exit.hpp>
 #include <leatherman/file_util/file.hpp>
@@ -48,20 +46,6 @@ static const std::string NON_BLOCKING_REVERSE_TXT {
                               % "\"string\""
                               % "{\"argument\" : \"zico\"}"
                               % "false").str() };
-
-static const std::vector<lth_jc::JsonContainer> NO_DEBUG {};
-
-static const PCPClient::ParsedChunks CONTENT {
-                    lth_jc::JsonContainer(ENVELOPE_TXT),  // envelope
-                    lth_jc::JsonContainer(REVERSE_TXT),   // data
-                    NO_DEBUG,   // debug
-                    0 };        // num invalid debug chunks
-
-static const PCPClient::ParsedChunks NON_BLOCKING_CONTENT {
-                    lth_jc::JsonContainer(ENVELOPE_TXT),              // envelope
-                    lth_jc::JsonContainer(NON_BLOCKING_REVERSE_TXT),  // data
-                    NO_DEBUG,   // debug
-                    0 };        // num invalid debug chunks
 
 TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
     SECTION("can successfully instantiate from a valid external module") {
@@ -141,9 +125,10 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
                                         "/lib/tests/resources//modules/reverse_valid"
                                         EXTENSION,
                                         SPOOL_DIR };
+        lth_jc::JsonContainer data { REVERSE_TXT };
 
         SECTION("correctly call the reverse module") {
-            ActionRequest request { RequestType::Blocking, CONTENT };
+            ActionRequest request { RequestType::Blocking, MESSAGE_ID, SENDER, data };
             auto response = reverse_module.executeAction(request);
 
             REQUIRE(response.output.std_out.find("anodaram") != std::string::npos);
@@ -162,12 +147,8 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
                                                    % "\"failures_test\""
                                                    % "\"get_an_invalid_result\""
                                                    % "\"maradona\"").str() };
-            PCPClient::ParsedChunks failure_content {
-                    lth_jc::JsonContainer(ENVELOPE_TXT),
-                    lth_jc::JsonContainer(failure_txt),
-                    NO_DEBUG,
-                    0 };
-            ActionRequest request { RequestType::Blocking, failure_content };
+            lth_jc::JsonContainer data { failure_txt };
+            ActionRequest request { RequestType::Blocking, MESSAGE_ID, SENDER, data };
             auto response = test_reverse_module.executeAction(request);
 
             REQUIRE_FALSE(response.action_metadata.includes("results"));
@@ -180,12 +161,8 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
                                                    % "\"failures_test\""
                                                    % "\"broken_action\""
                                                    % "\"maradona\"").str() };
-            PCPClient::ParsedChunks failure_content {
-                    lth_jc::JsonContainer(ENVELOPE_TXT),
-                    lth_jc::JsonContainer(failure_txt),
-                    NO_DEBUG,
-                    0 };
-            ActionRequest request { RequestType::Blocking, failure_content };
+            lth_jc::JsonContainer data { failure_txt };
+            ActionRequest request { RequestType::Blocking, MESSAGE_ID, SENDER, data };
             auto response = test_reverse_module.executeAction(request);
 
             REQUIRE(response.action_metadata.includes("results"));
@@ -209,7 +186,8 @@ TEST_CASE("ExternalModule::callAction - non blocking", "[modules]") {
                              "/lib/tests/resources/modules/reverse_valid"
                              EXTENSION,
                              SPOOL_DIR };
-        ActionRequest request { RequestType::NonBlocking, NON_BLOCKING_CONTENT };
+        lth_jc::JsonContainer data { NON_BLOCKING_REVERSE_TXT };
+        ActionRequest request { RequestType::NonBlocking, MESSAGE_ID, SENDER, data };
         fs::path spool_path { SPOOL_DIR };
         auto results_dir = (spool_path / request.transactionId()).string();
         fs::create_directories(results_dir);
@@ -299,7 +277,7 @@ TEST_CASE("ExternalModule::validateConfiguration", "[modules][configuration]") {
             SPOOL_DIR };
 
         REQUIRE_THROWS_AS(e_m.validateConfiguration(),
-                          PCPClient::validation_error);
+                          lth_jc::validation_error);
     }
 }
 
@@ -319,12 +297,8 @@ TEST_CASE("ExternalModule::executeAction", "[modules][output]") {
                                         % "\"convert_test\""
                                         % "\"convert\""
                                         % "{\"amount\" : 1000}").str();
-        PCPClient::ParsedChunks convert_content {
-            lth_jc::JsonContainer(ENVELOPE_TXT),
-            lth_jc::JsonContainer(convert_txt),
-            NO_DEBUG,
-            0 };
-        ActionRequest request { RequestType::Blocking, convert_content };
+        lth_jc::JsonContainer data { convert_txt };
+        ActionRequest request { RequestType::Blocking, MESSAGE_ID, SENDER, data };
 
         try {
             REQUIRE(e_m.executeAction(request)
@@ -347,12 +321,8 @@ TEST_CASE("ExternalModule::executeAction", "[modules][output]") {
                                         % "\"convert_test\""
                                         % "\"convert2\""
                                         % "{\"amount\" : 10000}").str();
-        PCPClient::ParsedChunks convert_content {
-            lth_jc::JsonContainer(ENVELOPE_TXT),
-            lth_jc::JsonContainer(convert_txt),
-            NO_DEBUG,
-            0 };
-        ActionRequest request { RequestType::Blocking, convert_content };
+        lth_jc::JsonContainer data { convert_txt };
+        ActionRequest request { RequestType::Blocking, MESSAGE_ID, SENDER, data };
 
         auto response = e_m.executeAction(request);
 

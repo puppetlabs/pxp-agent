@@ -2,8 +2,6 @@
 
 #include <pxp-agent/action_request.hpp>
 
-#include <cpp-pcp-client/protocol/chunks.hpp>
-
 #include <leatherman/json_container/json_container.hpp>
 
 #include <catch.hpp>
@@ -21,62 +19,24 @@ static const std::string DATA_TXT {
                  % "{ \"some key\" : \"some value\" }").str() };
 
 TEST_CASE("ActionRequest::ActionRequest", "[request]") {
-    lth_jc::JsonContainer envelope { ENVELOPE_TXT };
     lth_jc::JsonContainer data { DATA_TXT };
-    std::vector<lth_jc::JsonContainer> debug {};
 
     SECTION("successfully instantiates with valid arguments") {
-        const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
-
-        REQUIRE_NOTHROW(ActionRequest(RequestType::Blocking, p_c));
-    }
-
-    SECTION("throw a ActionRequest::Error if no data") {
-        const PCPClient::ParsedChunks p_c { envelope, debug, 0 };
-
-        REQUIRE_THROWS_AS(ActionRequest(RequestType::Blocking, p_c),
-                          ActionRequest::Error);
-    }
-
-    SECTION("throw a ActionRequest::Error if binary data") {
-        const PCPClient::ParsedChunks p_c { envelope, "bin data", debug, 0 };
-
-        REQUIRE_THROWS_AS(ActionRequest(RequestType::Blocking, p_c),
-                          ActionRequest::Error);
-    }
-
-    SECTION("throw a ActionRequest::Error if invalid data") {
-        const PCPClient::ParsedChunks p_c { envelope, false, debug, 0 };
-
-        REQUIRE_THROWS_AS(ActionRequest(RequestType::Blocking, p_c),
-                          ActionRequest::Error);
+        REQUIRE_NOTHROW(ActionRequest(RequestType::Blocking, MESSAGE_ID, SENDER, data));
     }
 }
 
-static std::string pxp_data_txt {
-    " { \"transaction_id\" : \"42\","
-    "   \"module\" : \"test_module\","
-    "   \"action\" : \"test_action\","
-    "   \"params\" : { \"path\" : \"/tmp\","
-    "                  \"urgent\" : true }"
-    " }" };
+static const std::string pxp_data_txt {
+    (DATA_FORMAT % "\"42\""
+                 % "\"test_module\""
+                 % "\"test_action\""
+                 % "{ \"path\" : \"/tmp\", \"urgent\" : true }").str() };
 
 TEST_CASE("ActionRequest getters", "[request]") {
-    lth_jc::JsonContainer envelope { ENVELOPE_TXT };
     lth_jc::JsonContainer data { pxp_data_txt };
-    std::vector<lth_jc::JsonContainer> debug {};
 
     SECTION("successfully get values") {
-        const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
-        ActionRequest a_r { RequestType::Blocking, p_c };
-
-        SECTION("parsedChunks") {
-            // NB: JsonContainer does not define == operation
-            REQUIRE(a_r.parsedChunks().envelope.toString()
-                    == p_c.envelope.toString());
-            REQUIRE(a_r.parsedChunks().data.toString()
-                    == p_c.data.toString());
-        }
+        ActionRequest a_r { RequestType::Blocking, MESSAGE_ID, SENDER, data };
 
         SECTION("type") {
             REQUIRE(a_r.type() == RequestType::Blocking);
@@ -120,11 +80,8 @@ TEST_CASE("ActionRequest getters", "[request]") {
 }
 
 TEST_CASE("ActionRequest results_dir setter / getter", "[request]") {
-    lth_jc::JsonContainer envelope { ENVELOPE_TXT };
     lth_jc::JsonContainer data { pxp_data_txt };
-    std::vector<lth_jc::JsonContainer> debug {};
-    const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
-    ActionRequest a_r { RequestType::Blocking, p_c };
+    ActionRequest a_r { RequestType::Blocking, MESSAGE_ID, SENDER, data };
 
     SECTION("getter returns an empty string without a previous setter call") {
         auto results_dir = a_r.resultsDir();

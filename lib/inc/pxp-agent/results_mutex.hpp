@@ -1,7 +1,7 @@
 #ifndef SRC_AGENT_RESULTS_MUTEX_HPP_
 #define SRC_AGENT_RESULTS_MUTEX_HPP_
 
-#include <cpp-pcp-client/util/thread.hpp>
+#include <leatherman/util/thread.hpp>
 
 #include <map>
 #include <string>
@@ -28,10 +28,10 @@ class ResultsMutex {
         return instance;
     }
 
-    using Mutex = PCPClient::Util::mutex;
-    using Mutex_Ptr = std::shared_ptr<PCPClient::Util::mutex>;
-    using Lock = PCPClient::Util::unique_lock<PCPClient::Util::mutex>;
-    using LockGuard = PCPClient::Util::lock_guard<PCPClient::Util::mutex>;
+    using Mutex = leatherman::util::mutex;
+    using Mutex_Ptr = std::shared_ptr<leatherman::util::mutex>;
+    using Lock = leatherman::util::unique_lock<leatherman::util::mutex>;
+    using LockGuard = leatherman::util::lock_guard<leatherman::util::mutex>;
 
     // Singleton users should lock this class mutex before accessing
     // the cache.

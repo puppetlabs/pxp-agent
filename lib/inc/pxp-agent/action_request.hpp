@@ -3,27 +3,22 @@
 
 #include <pxp-agent/request_type.hpp>
 
-#include <cpp-pcp-client/protocol/chunks.hpp>      // ParsedChunk
-
 #include <leatherman/json_container/json_container.hpp>
 
 #include <stdexcept>
 #include <string>
 #include <map>
+#include <vector>
 
 namespace PXPAgent {
 
 class ActionRequest {
   public:
-    struct Error : public std::runtime_error {
-        explicit Error(std::string const& msg) : std::runtime_error(msg) {}
-    };
-
-    /// Throws an ActionRequest::Error in case it fails to retrieve
-    /// the data chunk from the specified ParsedChunks or in case of
-    /// binary data (currently not supported).
     ActionRequest(RequestType type_,
-                  PCPClient::ParsedChunks parsed_chunks_);
+                  std::string id_,
+                  std::string sender_,
+                  leatherman::json_container::JsonContainer data_,
+                  std::vector<leatherman::json_container::JsonContainer> debug_ = {});
 
     void setResultsDir(const std::string& results_dir) const;
 
@@ -34,8 +29,8 @@ class ActionRequest {
     const std::string& module() const;
     const std::string& action() const;
     const bool& notifyOutcome() const;
-    const PCPClient::ParsedChunks& parsedChunks() const;
     const std::string& resultsDir() const;
+    const std::vector<leatherman::json_container::JsonContainer>& debug() const;
 
     // The following accessors perform lazy initialization
     // The params entry is not required; in case it's not included
@@ -52,7 +47,8 @@ class ActionRequest {
     std::string module_;
     std::string action_;
     bool notify_outcome_;
-    PCPClient::ParsedChunks parsed_chunks_;
+    leatherman::json_container::JsonContainer data_;
+    std::vector<leatherman::json_container::JsonContainer> debug_;
 
     // Lazy initialized; no setter is available
     mutable leatherman::json_container::JsonContainer params_;
@@ -61,9 +57,6 @@ class ActionRequest {
 
     // This has its own setter - it's not part of request's state
     mutable std::string results_dir_;
-
-    void init();
-    void validateFormat();
 };
 
 }  // namespace PXPAgent
