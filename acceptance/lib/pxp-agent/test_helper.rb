@@ -363,13 +363,15 @@ def connect_pcp_client(broker)
     # https://github.com/puppetlabs/ruby-pcp-client
     assert_eventmachine_thread_running
 
+    client_type = "ruby-pcp-client-#{$$}"
     client = PCP::Client.new({
-      :server => broker_ws_uri(broker),
+      :server => broker_ws_uri(broker)+client_type,
       :ssl_ca_cert => "tmp/ssl/certs/ca.pem",
       :ssl_cert => "tmp/ssl/certs/#{hostname.downcase}.pem",
       :ssl_key => "tmp/ssl/private_keys/#{hostname.downcase}.pem",
       :logger => PCP::SimpleLogger.new,
-      :loglevel => logger.is_debug? ? Logger::DEBUG : Logger::WARN
+      :loglevel => logger.is_debug? ? Logger::DEBUG : Logger::WARN,
+      :type => client_type
     })
     connected = client.connect(5)
     retries += 1
