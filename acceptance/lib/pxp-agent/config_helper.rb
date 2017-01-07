@@ -7,6 +7,8 @@ PXP_CONFIG_DIR_POSIX   = '/etc/puppetlabs/pxp-agent/'
 PCP_BROKER_PORTS       = [8142, 8143]
 PCP_BROKER_REPL_PORTS  = [7888, 7889]
 
+PCP_VERSION = ENV['PCP_VERSION'] || '1'
+
 def windows?(host)
   host.platform.upcase.start_with?('WINDOWS')
 end
@@ -43,6 +45,7 @@ def pxp_config_json(broker, agent, ssl_config = {})
     ssl_config[:broker_ws_uri] = broker_ws_uri(broker)
   end
   { "broker-ws-uri" => ssl_config[:broker_ws_uri],
+    "pcp-version" => PCP_VERSION,
     "ssl-key" => ssl_config[:ssl_key],
     "ssl-ca-cert" => ssl_config[:ssl_ca_cert],
     "ssl-cert" => ssl_config[:ssl_cert]
@@ -61,7 +64,9 @@ def pxp_config_hash_using_puppet_certs(broker, agent, num_brokers=1)
 
   on(agent, puppet('config print ssldir')) do |result|
     puppet_ssldir = result.stdout.chomp
-    return { "broker-ws-uris" => broker_uris,
+    return {
+      "broker-ws-uris" => broker_uris,
+      "pcp-version" => PCP_VERSION,
       "ssl-key" => "#{puppet_ssldir}/private_keys/#{agent}.pem",
       "ssl-ca-cert" => "#{puppet_ssldir}/certs/ca.pem",
       "ssl-cert" => "#{puppet_ssldir}/certs/#{agent}.pem"
@@ -71,11 +76,18 @@ end
 
 # @param broker_host the host name or beaker host object for the pcp-broker host
 # @return the broker-ws-uri config string
-def broker_ws_uri(broker_host)
-  if broker_host.is_a?(Unix::Host) && broker_host[:pcp_broker_instance]
-    "wss://#{broker_host}:#{PCP_BROKER_PORTS[broker_host[:pcp_broker_instance]]}/pcp/"
+def broker_ws_uri(broker_host, version = nil)
+  version = version || PCP_VERSION.to_i
+  if version == 2
+    path = 'pcp2'
   else
-    "wss://#{broker_host}:#{PCP_BROKER_PORTS[0]}/pcp/"
+    path = 'pcp'
+  end
+
+  if broker_host.is_a?(Unix::Host) && broker_host[:pcp_broker_instance]
+    "wss://#{broker_host}:#{PCP_BROKER_PORTS[broker_host[:pcp_broker_instance]]}/#{path}/"
+  else
+    "wss://#{broker_host}:#{PCP_BROKER_PORTS[0]}/#{path}/"
   end
 end
 
