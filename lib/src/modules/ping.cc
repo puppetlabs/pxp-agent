@@ -33,21 +33,21 @@ lth_jc::JsonContainer Ping::ping(const ActionRequest& request) {
     lth_jc::JsonContainer data {};
 
     if (request.parsedChunks().debug.empty()) {
-        LOG_ERROR("Found no debug entry in the request message");
-        throw Module::ProcessingError { lth_loc::translate("no debug entry") };
-    }
+        LOG_DEBUG("Found no debug entry in the request message");
+        data.set<std::vector<lth_jc::JsonContainer>>("request_hops", {});
+    } else {
+        auto& debug_entry = request.parsedChunks().debug[0];
 
-    auto& debug_entry = request.parsedChunks().debug[0];
-
-    try {
-        data.set<std::vector<lth_jc::JsonContainer>>(
+        try {
+            data.set<std::vector<lth_jc::JsonContainer>>(
                 "request_hops",
                 debug_entry.get<std::vector<lth_jc::JsonContainer>>("hops"));
-    } catch (lth_jc::data_parse_error& e) {
-        LOG_ERROR("Failed to parse debug entry: {1}", e.what());
-        LOG_DEBUG("Debug entry: {1}", debug_entry.toString());
-        throw Module::ProcessingError {
-            lth_loc::translate("debug entry is not valid JSON") };
+        } catch (lth_jc::data_parse_error& e) {
+            LOG_ERROR("Failed to parse debug entry: {1}", e.what());
+            LOG_DEBUG("Debug entry: {1}", debug_entry.toString());
+            throw Module::ProcessingError {
+                lth_loc::translate("debug entry is not valid JSON") };
+        }
     }
     return data;
 }
