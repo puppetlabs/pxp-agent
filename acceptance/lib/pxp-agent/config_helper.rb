@@ -7,7 +7,7 @@ PXP_CONFIG_DIR_POSIX   = '/etc/puppetlabs/pxp-agent/'
 PCP_BROKER_PORTS       = [8142, 8143]
 PCP_BROKER_REPL_PORTS  = [7888, 7889]
 
-PCP_VERSION = ENV['PCP_VERSION'] || '1'
+PCP_VERSION = ENV['PCP_VERSION'] || '2'
 
 def windows?(host)
   host.platform.upcase.start_with?('WINDOWS')
