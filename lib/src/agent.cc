@@ -23,7 +23,8 @@ static const uint32_t ASSOCIATE_SESSION_TIMEOUT_PAUSE_S { 5 };
 Agent::Agent(const Configuration::Agent& agent_configuration)
         try
             : connector_ptr_ { new PXPConnector(agent_configuration) },
-              request_processor_ { connector_ptr_, agent_configuration } {
+              request_processor_ { connector_ptr_, agent_configuration },
+              ping_interval_s_ { agent_configuration.ping_interval_s } {
 } catch (const PCPClient::connection_config_error& e) {
     throw Agent::WebSocketConfigurationError { e.what() };
 }
@@ -69,7 +70,7 @@ void Agent::start() {
         // connector will keep trying to re-establish it indefinitely
         // (the max_connect_attempts is 0 by default).
         LOG_DEBUG("PCP connection established; about to start monitoring it");
-        connector_ptr_->monitorConnection();
+        connector_ptr_->monitorConnection(0, ping_interval_s_);
     } catch (const PCPClient::connection_config_error& e) {
         // WebSocket configuration failure
         throw Agent::WebSocketConfigurationError { e.what() };

@@ -60,6 +60,9 @@ class Agent {
     // Request Processor
     RequestProcessor request_processor_;
 
+    // Ping interval in seconds
+    uint32_t ping_interval_s_;
+
     // Callback for PCPClient::Connector handling incoming PXP
     // blocking requests; it will execute the requested action and,
     // once finished, reply to the sender with an PXP blocking
