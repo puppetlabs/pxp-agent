@@ -1,64 +1,55 @@
-#ifndef SRC_AGENT_PXP_CONNECTOR_HPP_
-#define SRC_AGENT_PXP_CONNECTOR_HPP_
+#pragma once
 
-#ifdef TEST_VIRTUAL
-#define TEST_VIRTUAL_SPECIFIER virtual
-#else
-#define TEST_VIRTUAL_SPECIFIER
-#endif
-
-#include <pxp-agent/action_request.hpp>
-#include <pxp-agent/action_response.hpp>
-#include <pxp-agent/configuration.hpp>
-
-#include <cpp-pcp-client/connector/connector.hpp>
-
-#include <leatherman/json_container/json_container.hpp>
-
-#include <cassert>
-#include <memory>
 #include <vector>
-#include <cstdint>
+#include <string>
+#include <functional>
+
+namespace PCPClient {
+struct ParsedChunks;
+class Schema;
+}  // namespace PCPClient
 
 namespace PXPAgent {
 
+class ActionRequest;
+class ActionResponse;
+
+using MessageCallback = std::function<void(const PCPClient::ParsedChunks& parsed_chunks)>;
+
 // In case of failure, the send() methods will only log the failure;
 // no exception will be propagated.
-class PXPConnector : public PCPClient::Connector {
+class PXPConnector {
   public:
-    PXPConnector(const Configuration::Agent& agent_configuration);
+    virtual void sendPCPError(const std::string& request_id,
+                              const std::string& description,
+                              const std::vector<std::string>& endpoints) = 0;
 
-    TEST_VIRTUAL_SPECIFIER void sendPCPError(const std::string& request_id,
-                                             const std::string& description,
-                                             const std::vector<std::string>& endpoints);
-
-    TEST_VIRTUAL_SPECIFIER void sendProvisionalResponse(const ActionRequest& request);
-
-    TEST_VIRTUAL_SPECIFIER void sendPXPError(const ActionRequest& request,
-                                             const std::string& description);
+    virtual void sendPXPError(const ActionRequest& request,
+                              const std::string& description) = 0;
 
     // Asserts that the ActionResponse arg has all needed entries.
-    TEST_VIRTUAL_SPECIFIER void sendPXPError(const ActionResponse& response);
+    virtual void sendPXPError(const ActionResponse& response) = 0;
 
     // Asserts that the ActionResponse arg has all needed entries.
-    TEST_VIRTUAL_SPECIFIER void sendBlockingResponse(const ActionResponse& response,
-                                                     const ActionRequest& request);
+    virtual void sendBlockingResponse(const ActionResponse& response,
+                                      const ActionRequest& request) = 0;
 
     // Asserts that the ActionResponse arg has all needed entries.
-    TEST_VIRTUAL_SPECIFIER void sendStatusResponse(const ActionResponse& response,
-                                                   const ActionRequest& request);
+    virtual void sendStatusResponse(const ActionResponse& response,
+                                    const ActionRequest& request) = 0;
 
     // Asserts that the ActionResponse arg has all needed entries.
-    TEST_VIRTUAL_SPECIFIER void sendNonBlockingResponse(const ActionResponse& response);
+    virtual void sendNonBlockingResponse(const ActionResponse& response) = 0;
 
-  private:
-    uint32_t pcp_message_ttl_s;
+    virtual void sendProvisionalResponse(const ActionRequest& request) = 0;
 
-    void sendBlockingResponse_(const ActionResponse::ResponseType& response_type,
-                               const ActionResponse& response,
-                               const ActionRequest& request);
+    virtual void connect(int max_connect_attempts = 0) = 0;
+
+    virtual void monitorConnection(uint32_t max_connect_attempts = 0,
+                                   uint32_t connection_check_interval_s = 15) = 0;
+
+    virtual void registerMessageCallback(const PCPClient::Schema& schema,
+                                         MessageCallback callback) = 0;
 };
 
 }  // namespace PXPAgent
-
-#endif  // SRC_AGENT_PXP_CONNECTOR_HPP_

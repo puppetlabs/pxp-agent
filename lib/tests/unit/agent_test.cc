@@ -21,6 +21,7 @@ const std::string SPOOL { std::string { PXP_AGENT_ROOT_PATH }
 TEST_CASE("Agent::Agent", "[agent]") {
     Configuration::Agent agent_configuration { MODULES,
                                                TEST_BROKER_WS_URIS,
+                                               "1",  // PCPv1
                                                getCaPath(),
                                                getCertPath(),
                                                getKeyPath(),
@@ -28,7 +29,7 @@ TEST_CASE("Agent::Agent", "[agent]") {
                                                "0d",  // don't purge!
                                                "",  // modules config dir
                                                "test_agent",
-                                               5000, 10, 5, 5, 2 };
+                                               5000, 10, 5, 5, 2, 15 };
 
     SECTION("does not throw if it fails to find the external modules directory") {
         agent_configuration.modules_dir = MODULES + "/fake_dir";

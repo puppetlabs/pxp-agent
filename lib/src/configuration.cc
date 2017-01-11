@@ -96,6 +96,7 @@ static const std::string DEFAULT_MODULES_CONF_DIR {
     (DEFAULT_CONF_DIR / "modules").string() };
 static const std::string DEFAULT_CONFIG_FILE {
     (DEFAULT_CONF_DIR / "pxp-agent.conf").string() };
+static const std::string DEFAULT_PCP_VERSION { "1" };
 static const std::string DEFAULT_SPOOL_DIR_PURGE_TTL { "14d" };
 
 static const std::string AGENT_CLIENT_TYPE { "agent" };
@@ -290,6 +291,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
     agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
         broker_ws_uris_,
+        HW::GetFlag<std::string>("pcp-version"),
         HW::GetFlag<std::string>("ssl-ca-cert"),
         HW::GetFlag<std::string>("ssl-cert"),
         HW::GetFlag<std::string>("ssl-key"),
@@ -378,6 +380,15 @@ void Configuration::defineDefaultValues()
                     lth_loc::translate("WebSocket URI of the PCP broker"),
                     Types::String,
                     "") } });
+
+    defaults_.insert(
+        Option { "pcp-version",
+                 Base_ptr { new Entry<std::string>(
+                    "pcp-version",
+                    "",
+                    lth_loc::translate("PCP version to use for communication"),
+                    Types::String,
+                    DEFAULT_PCP_VERSION) } });
 
     defaults_.insert(
         Option { "connection-timeout",
@@ -778,6 +789,12 @@ void Configuration::validateAndNormalizeWebsocketSettings()
     if (broker_ws_uris_.empty())
         throw Configuration::Error {
             lth_loc::translate("broker-ws-uri or broker-ws-uris must be defined") };
+
+    auto pcp_version = HW::GetFlag<std::string>("pcp-version");
+    if (pcp_version != "1" && pcp_version != "2") {
+        throw Configuration::Error {
+            lth_loc::translate("pcp-version must be either '1' or '2'") };
+    }
 
     // Check the SSL options and expand the paths
     auto ca   = check_and_expand_ssl_cert("ssl-ca-cert");

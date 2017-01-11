@@ -126,6 +126,7 @@ class Configuration
     {
         std::string modules_dir;
         std::vector<std::string> broker_ws_uris;
+        std::string pcp_version;
         std::string ca;
         std::string crt;
         std::string key;
