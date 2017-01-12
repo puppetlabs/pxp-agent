@@ -1,3 +1,14 @@
+## 1.2.3
+
+This is a maintenance release. It fixes several CI-related issues.
+
+## 1.2.2
+
+This is a maintenance and security release. It fixes several CI-related issues.
+
+* [PCP-601](https://tickets.puppetlabs.com/browse/PCP-601) Fix vulnerability that allowed bypassing
+PXP command whitelist
+
 ## 1.2.1
 
 This is a maintenance release.
