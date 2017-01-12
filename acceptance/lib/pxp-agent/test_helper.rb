@@ -365,7 +365,7 @@ def connect_pcp_client(broker)
 
     client_type = "ruby-pcp-client-#{$$}"
     client = PCP::Client.new({
-      :server => broker_ws_uri(broker)+client_type,
+      :server => broker_ws_uri(broker, 1)+client_type,
       :ssl_ca_cert => "tmp/ssl/certs/ca.pem",
       :ssl_cert => "tmp/ssl/certs/#{hostname.downcase}.pem",
       :ssl_key => "tmp/ssl/private_keys/#{hostname.downcase}.pem",
