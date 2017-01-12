@@ -21,6 +21,10 @@ This version introduces new features and maintains compatibility with the
 * [PCP-605](https://tickets.puppetlabs.com/browse/PCP-605) Disable restart_host_run_puppet on Fedora
 * [PCP-549](https://tickets.puppetlabs.com/browse/PCP-549) Wait for other Puppet runs to finish
 
+## 1.2.3
+
+This is a maintenance release. It fixes several CI-related issues.
+
 ## 1.2.2
 
 This is a maintenance release.
