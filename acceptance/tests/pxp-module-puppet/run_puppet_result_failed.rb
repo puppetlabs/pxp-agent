@@ -2,6 +2,13 @@ require 'pxp-agent/test_helper.rb'
 require 'puppet/acceptance/environment_utils'
 
 test_name 'C93063 - pxp-module-puppet run expect puppet failure' do
+
+  agents.each do |agent|
+    if agent.platform =~ /^cisco_ios_xr/
+      skip_test 'PCP-685: Skip Cisco XR Platform'
+    end
+  end
+
   extend Puppet::Acceptance::EnvironmentUtils
 
   app_type = test_file_name = File.basename(__FILE__, '.*')

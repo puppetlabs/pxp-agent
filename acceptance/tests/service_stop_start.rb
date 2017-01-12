@@ -2,6 +2,12 @@ require 'pxp-agent/config_helper.rb'
 
 test_name 'Service Start stop/start, with configuration)'
 
+  agents.each do |agent|
+    if agent.platform =~ /^cisco_ios_xr/
+      skip_test 'PCP-685: Skip Cisco XR Platform'
+    end
+  end
+
 @pxp_temp_file = '~/pxp-agent.conf'
 
 # On teardown, restore configuration file on each agent
