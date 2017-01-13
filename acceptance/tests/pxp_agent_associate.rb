@@ -2,6 +2,12 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'C93807 - Associate pxp-agent with a PCP broker'
 
+  agents.each do |agent|
+    if agent.platform =~ /^cisco_ios_xr/
+      skip_test 'PCP-685: Skip Cisco XR Platform'
+    end
+  end
+
 agents.each do |agent|
 
   create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
