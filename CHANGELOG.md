@@ -1,3 +1,12 @@
+## 1.3.2
+
+This is a maintenance and bug fix release. It fixes several CI-related issues.
+
+* [PCP-657](https://tickets.puppetlabs.com/browse/PCP-657) Previous fix for PCP-657 was incomplete.
+Fixes detached processes on Solaris by invoking a detached process directly rather than using
+`ctrun`. Using `ctrun` obfuscated the process ID of the task, causing its status to be reported
+incorrectly.
+
 ## 1.3.1
 
 This is a maintenance release.
