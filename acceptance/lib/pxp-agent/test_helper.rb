@@ -115,7 +115,7 @@ def get_pcp_broker_status(host)
     document = JSON.load(res.body)
     return document["state"]
   rescue => e
-    puts e.inspect
+    logger.trace "Could not get pcp-broker status. This may happen if pcp-broker is still starting up. Exception is: #{e.inspect}"
     return nil
   end
 end
@@ -131,7 +131,7 @@ def assert_eventmachine_thread_running
     begin
       EventMachine.run
     rescue Exception => e
-      puts "Problem in eventmachine reactor thread: ", e.message, e.backtrace.join("\n\t")
+      logger.error "Problem in eventmachine reactor thread: #{e.message} Backtrace: #{e.backtrace.join("\n\t")}"
     end
   end
 
@@ -297,7 +297,7 @@ def rpc_request(broker, targets,
         :data     => JSON.load(message.data)
       }
       responses[resp[:envelope][:sender]] = resp
-      print resp
+      logger.debug "Received response from #{resp[:envelope][:sender]}: #{resp}"
       have_response.signal
     end
   end
