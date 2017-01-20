@@ -369,6 +369,7 @@ The location where the outcome of non-blocking requests will be stored; the
 default location is:
  - \*nix: */opt/puppetlabs/pxp-agent/spool*
  - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\spool*
+
 Note that if the specified spool directory does not exist, pxp-agent will create
 it when starting.
 
@@ -380,6 +381,7 @@ The TTL value must be an integer with one of the following suffixes:
  - 'm' - minutes
  - 'h' - hours
  - 'd' - days
+
 The default TTL value is "14d" (14 days). Specifying a 0, with any of the above
 suffixes, will disable the purge functionality. Note that the purge will take
 place when pxp-agent starts and will be repeated at each 1.2*TTL interval.
