@@ -320,6 +320,10 @@ to connect to one it will try the next in the list, and repeat until a
 successful connection is made. In the event of a disconnect, the agent will
 retry that connection before trying a new broker.
 
+**pcp-version (optional)**
+
+Specifies whether to use PCP version 1 or 2. Only accepts '1' or '2'. Defaults to '1'.
+
 **connection-timeout (optional)**
 
 Maximum amount of time that may elapse when trying to establish a connection to
