@@ -4,12 +4,6 @@ require 'json'
 
 test_name 'Attempt to start pxp-agent with invalid SSL config'
 
-  agents.each do |agent|
-    if agent.platform =~ /^cisco_ios_xr/
-      skip_test 'PCP-685: Skip Cisco XR Platform'
-    end
-  end
-
 # On teardown, restore valid config file on each agent
 teardown do
   agents.each do |agent|

@@ -2,12 +2,6 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'C93065 - Run puppet and expect puppet agent disabled' do
 
-  agents.each do |agent|
-    if agent.platform =~ /^cisco_ios_xr/
-      skip_test 'PCP-685: Skip Cisco XR Platform'
-    end
-  end
-
   teardown do
     on agents, puppet('agent --enable')
   end
