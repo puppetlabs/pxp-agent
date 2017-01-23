@@ -115,7 +115,7 @@ def get_pcp_broker_status(host)
     document = JSON.load(res.body)
     return document["state"]
   rescue => e
-    puts e.inspect
+    logger.trace "Could not get pcp-broker status. This may happen if pcp-broker is still starting up. Exception is: #{e.inspect}"
     return nil
   end
 end
@@ -131,7 +131,7 @@ def assert_eventmachine_thread_running
     begin
       EventMachine.run
     rescue Exception => e
-      puts "Problem in eventmachine reactor thread: ", e.message, e.backtrace.join("\n\t")
+      logger.error "Problem in eventmachine reactor thread: #{e.message} Backtrace: #{e.backtrace.join("\n\t")}"
     end
   end
 
@@ -297,7 +297,7 @@ def rpc_request(broker, targets,
         :data     => JSON.load(message.data)
       }
       responses[resp[:envelope][:sender]] = resp
-      print resp
+      logger.debug "Received response from #{resp[:envelope][:sender]}: #{resp}"
       have_response.signal
     end
   end
@@ -441,9 +441,9 @@ def wait_for_sleep_process(target)
   begin
     ps_cmd = target['platform'] =~ /win/ ? 'ps -efW' : 'ps -ef'
     sleep_process = target['platform'] =~ /win/ ? 'PING' : '/bin/sleep'
-    retry_on(target, "#{ps_cmd} | grep '#{sleep_process}' | grep -v 'grep'", {:max_retries => 15, :retry_interval => 2})
+    retry_on(target, "#{ps_cmd} | grep '#{sleep_process}' | grep -v 'grep'", {:max_retries => 120, :retry_interval => 1})
   rescue
-    fail("After triggering a puppet run on #{target} the expected sleep process did not appear in process list")
+    raise("After triggering a puppet run on #{target} the expected sleep process did not appear in process list")
   end
 end
 
