@@ -415,9 +415,9 @@ def wait_for_sleep_process(target)
   begin
     ps_cmd = target['platform'] =~ /win/ ? 'ps -efW' : 'ps -ef'
     sleep_process = target['platform'] =~ /win/ ? 'PING' : '/bin/sleep'
-    retry_on(target, "#{ps_cmd} | grep '#{sleep_process}' | grep -v 'grep'", {:max_retries => 15, :retry_interval => 2})
+    retry_on(target, "#{ps_cmd} | grep '#{sleep_process}' | grep -v 'grep'", {:max_retries => 120, :retry_interval => 1})
   rescue
-    fail("After triggering a puppet run on #{target} the expected sleep process did not appear in process list")
+    raise("After triggering a puppet run on #{target} the expected sleep process did not appear in process list")
   end
 end
 
