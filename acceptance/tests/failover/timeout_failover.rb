@@ -3,12 +3,6 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'C97964 - agent should use next broker if primary is timing out' do
 
-  agents.each do |agent|
-    if agent.platform =~ /^cisco_ios_xr/
-      skip_test 'PCP-685: Skip Cisco XR Platform'
-    end
-  end
-
   PRIMARY_BROKER_INSTANCE = 0
   REPLICA_BROKER_INSTANCE = 1
   teardown do

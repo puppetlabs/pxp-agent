@@ -3,12 +3,6 @@ require 'puppet/acceptance/environment_utils'
 
 test_name 'C93062 - Run puppet and expect \'changed\' result' do
 
-  agents.each do |agent|
-    if agent.platform =~ /^cisco_ios_xr/
-      skip_test 'PCP-685: Skip Cisco XR Platform'
-    end
-  end
-
   extend Puppet::Acceptance::EnvironmentUtils
 
   env_name = test_file_name = File.basename(__FILE__, '.*')

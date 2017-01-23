@@ -1,11 +1,5 @@
 test_name 'C93828 - pxp-agent - File paths from spec'
 
-  agents.each do |agent|
-    if agent.platform =~ /^cisco_ios_xr/
-      skip_test 'PCP-685: Skip Cisco XR Platform'
-    end
-  end
-
 # verify that the installed file paths match those of the
 # puppet specification.
 # https://github.com/puppetlabs/puppet-specifications/blob/master/file_paths.md

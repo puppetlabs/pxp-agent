@@ -8,12 +8,6 @@ STATUS_QUERY_INTERVAL_SECONDS = 5
 
 test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent service during run' do
 
-  agents.each do |agent|
-    if agent.platform =~ /^cisco_ios_xr/
-      skip_test 'PCP-685: Skip Cisco XR Platform'
-    end
-  end
-
   extend Puppet::Acceptance::EnvironmentUtils
 
   applicable_agents = agents
