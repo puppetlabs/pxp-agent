@@ -165,7 +165,7 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
             REQUIRE_FALSE(c_ptr->sent_non_blocking_response);
         }
 
-        SECTION("send a pxp error when a duplicate request for an active"
+        SECTION("send a provisional response when a duplicate request for an active"
                 " action is received") {
             REQUIRE_FALSE(c_ptr->sent_provisional_response);
 
@@ -193,8 +193,9 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
             test_storage.updateMetadataFile(t_id, dummy_metadata);
 
             // Resend the same request
-            REQUIRE_THROWS_AS(r_p.processRequest(RequestType::NonBlocking, p_c),
-                              MockConnector::pxpError_msg);
+            c_ptr->sent_provisional_response = false;
+            REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
+            REQUIRE(c_ptr->sent_provisional_response);
 
             // Verify metadata file wasn't updated, i.e. no action was run.
             REQUIRE(dummy_metadata.toString() == test_storage.getActionMetadata(t_id).toString());
@@ -233,8 +234,8 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
             REQUIRE_NOTHROW(r_p2.processRequest(RequestType::NonBlocking, p_c));
             REQUIRE(c_ptr->sent_provisional_response);
 
-            // Verify metadata file was updated, i.e. the action was re-run.
-            REQUIRE(dummy_metadata.toString() != test_storage.getActionMetadata(t_id).toString());
+            // Verify metadata file wasn't updated, i.e. no action was run.
+            REQUIRE(dummy_metadata.toString() == test_storage.getActionMetadata(t_id).toString());
         }
 
         SECTION("send a non-blocking response when the requested action succeeds") {

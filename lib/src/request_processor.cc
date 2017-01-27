@@ -369,10 +369,11 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
         // same transaction_id
         pcp_util::lock_guard<pcp_util::mutex> lck { thread_container_mutex_ };
 
+        // If the task has already been started or run, return a provisional response again.
         if (thread_container_.find(request.transactionId())) {
-            err_msg =
-                lth_loc::format("already exists an ongoing task with transaction id {1}",
-                                request.transactionId());
+            LOG_DEBUG("already exists an ongoing task with transaction id {1}", request.transactionId());
+        } else if (storage_ptr_->find(request.transactionId())) {
+            LOG_DEBUG("already exists a previous task with transaction id {1}", request.transactionId());
         } else {
             try {
                 // Initialize the action metadata file
