@@ -95,6 +95,17 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
     std::vector<lth_jc::JsonContainer> debug {};
     lth_jc::JsonContainer data {};
 
+    lth_jc::JsonContainer dummy_metadata {};
+    dummy_metadata.set<std::string>("requester", "foo");
+    dummy_metadata.set<std::string>("module", "reverse_valid");
+    dummy_metadata.set<std::string>("action", "string");
+    dummy_metadata.set<std::string>("request_params", "{}");
+    dummy_metadata.set<std::string>("transaction_id", "0");
+    dummy_metadata.set<std::string>("request_id", "0");
+    dummy_metadata.set<bool>("notify_outcome", false);
+    dummy_metadata.set<std::string>("start", "2017-01-27T23:16:12.459948Z");
+    dummy_metadata.set<std::string>("status", "failed");
+
     SECTION("correctly process blocking requests") {
         SECTION("send a blocking response when the requested action succeeds") {
             REQUIRE(!c_ptr->sent_blocking_response);
@@ -145,13 +156,85 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
 
             REQUIRE(c_ptr->sent_provisional_response);
 
-            // Wait to let the execution thread  process the output
+            // Wait to let the execution thread process the output
             // (there's a OUTPUT_DELAY_MS pause) and send the
             // non-blocking response
             pcp_util::this_thread::sleep_for(
                 pcp_util::chrono::milliseconds(100 + ExternalModule::OUTPUT_DELAY_MS));
 
             REQUIRE_FALSE(c_ptr->sent_non_blocking_response);
+        }
+
+        SECTION("send a pxp error when a duplicate request for an active"
+                " action is received") {
+            REQUIRE_FALSE(c_ptr->sent_provisional_response);
+
+            const std::string t_id { "192" };
+            data.set<std::string>("transaction_id", t_id);
+            data.set<std::string>("module", "reverse_valid");
+            data.set<bool>("notify_outcome", false);
+            data.set<std::string>("action", "string");
+            lth_jc::JsonContainer params {};
+            params.set<std::string>("argument", "lemon");
+            data.set<lth_jc::JsonContainer>("params", params);
+            const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
+
+            REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
+            REQUIRE(c_ptr->sent_provisional_response);
+
+            wait_for_module(test_storage, t_id);
+
+            // Wait to let the execution thread process the output
+            // (there's a OUTPUT_DELAY_MS pause) and update metadata
+            pcp_util::this_thread::sleep_for(
+                pcp_util::chrono::milliseconds(100 + ExternalModule::OUTPUT_DELAY_MS));
+
+            // Update metadata file
+            test_storage.updateMetadataFile(t_id, dummy_metadata);
+
+            // Resend the same request
+            REQUIRE_THROWS_AS(r_p.processRequest(RequestType::NonBlocking, p_c),
+                              MockConnector::pxpError_msg);
+
+            // Verify metadata file wasn't updated, i.e. no action was run.
+            REQUIRE(dummy_metadata.toString() == test_storage.getActionMetadata(t_id).toString());
+        }
+
+        SECTION("send a provisional response when a duplicate request for a forgotten"
+                " action is received") {
+            REQUIRE_FALSE(c_ptr->sent_provisional_response);
+
+            const std::string t_id { "256" };
+            data.set<std::string>("transaction_id", t_id);
+            data.set<std::string>("module", "reverse_valid");
+            data.set<bool>("notify_outcome", false);
+            data.set<std::string>("action", "string");
+            lth_jc::JsonContainer params {};
+            params.set<std::string>("argument", "lemon");
+            data.set<lth_jc::JsonContainer>("params", params);
+            const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
+
+            REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
+            REQUIRE(c_ptr->sent_provisional_response);
+
+            wait_for_module(test_storage, t_id);
+
+            // Wait to let the execution thread process the output
+            // (there's a OUTPUT_DELAY_MS pause) and update metadata
+            pcp_util::this_thread::sleep_for(
+                pcp_util::chrono::milliseconds(100 + ExternalModule::OUTPUT_DELAY_MS));
+
+            // Update metadata file
+            test_storage.updateMetadataFile(t_id, dummy_metadata);
+
+            // Create a new request processor and send the same request
+            RequestProcessor r_p2 { c_ptr, AGENT_CONFIGURATION };
+            c_ptr->sent_provisional_response = false;
+            REQUIRE_NOTHROW(r_p2.processRequest(RequestType::NonBlocking, p_c));
+            REQUIRE(c_ptr->sent_provisional_response);
+
+            // Verify metadata file was updated, i.e. the action was re-run.
+            REQUIRE(dummy_metadata.toString() != test_storage.getActionMetadata(t_id).toString());
         }
 
         SECTION("send a non-blocking response when the requested action succeeds") {
@@ -174,7 +257,7 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
 
             REQUIRE(c_ptr->sent_provisional_response);
 
-            // Wait to let the execution thread  process the output
+            // Wait to let the execution thread process the output
             // (there's a OUTPUT_DELAY_MS pause) and send the
             // non-blocking response
             pcp_util::this_thread::sleep_for(
