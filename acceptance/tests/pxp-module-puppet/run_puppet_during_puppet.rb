@@ -6,6 +6,7 @@ STATUS_QUERY_MAX_RETRIES = 60
 STATUS_QUERY_INTERVAL_SECONDS = 1
 
 test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completion' do
+
   extend Puppet::Acceptance::EnvironmentUtils
 
   env_name = test_file_name = File.basename(__FILE__, '.*')

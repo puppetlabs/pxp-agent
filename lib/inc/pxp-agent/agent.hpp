@@ -2,16 +2,16 @@
 #define SRC_AGENT_ENDPOINT_H_
 
 #include <pxp-agent/request_processor.hpp>
-#include <pxp-agent/action_request.hpp>
-#include <pxp-agent/pxp_connector.hpp>
 #include <pxp-agent/configuration.hpp>
 
-#include <cpp-pcp-client/protocol/chunks.hpp>      // ParsedChunk
+#include <cpp-pcp-client/protocol/parsed_chunks.hpp>
 
 #include <memory>
 #include <string>
 
 namespace PXPAgent {
+
+class PXPConnector;
 
 class Agent {
   public:
@@ -60,11 +60,14 @@ class Agent {
     // Request Processor
     RequestProcessor request_processor_;
 
+    // Ping interval in seconds
+    uint32_t ping_interval_s_;
+
     // Callback for PCPClient::Connector handling incoming PXP
     // blocking requests; it will execute the requested action and,
     // once finished, reply to the sender with an PXP blocking
     // response containing the action outcome.
-    void blockingRequestCallback(const PCPClient::ParsedChunks& parsed_chunks);
+    void blockingRequestCallback(const PCPClient::v1::ParsedChunks&);
 
     // Callback for PCPClient::Connector handling incoming PXP
     // non-blocking requests; it will start a job for the requested
@@ -73,7 +76,7 @@ class Agent {
     // In case the request has the notify_outcome field flagged, it
     // will send a PXP non-blocking response containing the action
     // outcome when finished.
-    void nonBlockingRequestCallback(const PCPClient::ParsedChunks& parsed_chunks);
+    void nonBlockingRequestCallback(const PCPClient::v1::ParsedChunks&);
 };
 
 }  // namespace PXPAgent

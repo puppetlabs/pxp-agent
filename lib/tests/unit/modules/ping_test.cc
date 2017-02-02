@@ -74,6 +74,22 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
         "}"
     };
 
+    SECTION("it should respond when debug chunks are omitted") {
+        auto data_txt = (data_format % "").str();
+        PCPClient::ParsedChunks other_chunks {
+                    lth_jc::JsonContainer(ENVELOPE_TXT),
+                    lth_jc::JsonContainer(PING_TXT),
+                    std::vector<lth_jc::JsonContainer>{},
+                    0 };
+        ActionRequest other_request { RequestType::Blocking, other_chunks };
+
+        auto result = ping_module.ping(other_request);
+        std::cout << result.toString() << std::endl;
+        auto hops = result.get<std::vector<lth_jc::JsonContainer>>(
+                        "request_hops");
+        REQUIRE(hops.empty());
+    }
+
     boost::format debug_format { "{ \"hops\" : %1% }" };  // vector<JsonContainer>
 
     SECTION("it should copy an empty hops entry") {

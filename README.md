@@ -95,10 +95,8 @@ Build
 
   Thanks to the CMake, the project can be built out-of-source tree, which allows for
   multiple independent builds.
-  Aside from the standard CMake switches the build supports the following options:
+  Aside from the standard CMake switches the build supports the following option:
 
-   * **TEST_VIRTUAL** when set to _ON_ certain class member functions become virtual
-     to enable mocking for unit tests (default _OFF_)
    * **DEV_LOG_COLOR** enables colorization for logging (development setting)
      (default _OFF_)
 
@@ -113,7 +111,7 @@ Build
 
       mkdir debug
       cd debug
-      cmake -DCMAKE_BUILD_TYPE=Debug -DTEST_VIRTUAL=ON -DDEV_LOG_COLOR=ON ..
+      cmake -DCMAKE_BUILD_TYPE=Debug -DDEV_LOG_COLOR=ON ..
       make
 
 Usage
@@ -268,6 +266,37 @@ The default log level is `info`. You can specify a different log level by
 using the `--loglevel` option with one of the following strings: `none`,
 `trace`, `debug`, `info`, `warning`, `error`, `fatal`.
 
+#### PCP Access Logging
+
+The `pcp_access` logger provides information about incoming PCP messages.
+You can enable it by setting the `log-pcp-access` flag.
+
+The default location of the `pcp_access` log file is:
+ - \*nix: */var/log/puppetlabs/pxp-agent/pxp-access.log*
+ - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\log\pxp-access.log*.
+You can specify a different file with the `pcp-access-logfile` option.
+
+Each pcp_access entry is composed of 6 fields:
+
+```
+[<date time>] <access outcome> <broker: WS URI> <sender: PCP URI> <PCP messagetype> <PCP message id>
+```
+
+For example:
+
+```
+[2016-08-24 13:56:10.737760] AUTHORIZATION_SUCCESS wss://localhost:8142/pcp pcp:///server http://puppetlabs.com/associate_response 9766ba60-a51f-4910-9921-c76990aa9b38
+[2016-08-24 14:07:51.859244] AUTHORIZATION_SUCCESS wss://localhost:8142/pcp/vNext pcp://peg.example.com/peg-controller http://puppetlabs.com/rpc_blocking_request a06e371a-08a2-47f0-913c-15780d668e2f
+```
+
+The second entry gives the outcome of the message validation; possible values
+are:
+
+| validation outcome | description
+|--------------------|------------
+| DESERIALIZATION_ERROR | invalid PCP message that can't be deserialized
+| AUTHORIZATION_SUCCESS | the message will be processed by pxp-agent
+
 #### List of all configuration options
 
 The PXP agent has the following configuration options
@@ -291,7 +320,11 @@ to connect to one it will try the next in the list, and repeat until a
 successful connection is made. In the event of a disconnect, the agent will
 retry that connection before trying a new broker.
 
-**connection-timeout (optional flag)**
+**pcp-version (optional)**
+
+Specifies whether to use PCP version 1 or 2. Only accepts '1' or '2'. Defaults to '1'.
+
+**connection-timeout (optional)**
 
 Maximum amount of time that may elapse when trying to establish a connection to
 the broker in seconds. Defaults to 5 seconds.
@@ -318,6 +351,14 @@ The path of the log file.
 Specify one of the following logging levels: *none*, *trace*, *debug*, *info*,
 *warning*, *error*, or *fatal*; the default one is *info*
 
+**log-pcp-access (optional flag)**
+
+Enable PCP access logging; the default is *false*.
+
+**pcp-access-logfile (optional)**
+
+The path of the PCP access log file.
+
 **modules-dir (optional)**
 
 Specify the directory where modules are stored
@@ -332,6 +373,7 @@ The location where the outcome of non-blocking requests will be stored; the
 default location is:
  - \*nix: */opt/puppetlabs/pxp-agent/spool*
  - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\var\spool*
+
 Note that if the specified spool directory does not exist, pxp-agent will create
 it when starting.
 
@@ -343,6 +385,7 @@ The TTL value must be an integer with one of the following suffixes:
  - 'm' - minutes
  - 'h' - hours
  - 'd' - days
+
 The default TTL value is "14d" (14 days). Specifying a 0, with any of the above
 suffixes, will disable the purge functionality. Note that the purge will take
 place when pxp-agent starts and will be repeated at each 1.2*TTL interval.

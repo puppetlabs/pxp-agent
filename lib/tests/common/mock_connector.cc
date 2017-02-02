@@ -2,11 +2,8 @@
 
 namespace PXPAgent {
 
-#ifdef TEST_VIRTUAL
-
 MockConnector::MockConnector()
-        : PXPConnector { AGENT_CONFIGURATION },
-          sent_provisional_response { false },
+        : sent_provisional_response { false },
           sent_non_blocking_response { false },
           sent_blocking_response { false }
 {
@@ -36,6 +33,12 @@ void MockConnector::sendBlockingResponse(const ActionResponse&,
     sent_blocking_response = true;
 }
 
+void MockConnector::sendStatusResponse(const ActionResponse& response,
+                                       const ActionRequest& request)
+{
+    throw MockConnector::pxpError_msg {};
+}
+
 void MockConnector::sendNonBlockingResponse(const ActionResponse&)
 {
     sent_non_blocking_response = true;
@@ -46,6 +49,21 @@ void MockConnector::sendProvisionalResponse(const ActionRequest&)
     sent_provisional_response = true;
 }
 
-#endif  // TEST_VIRTUAL
+void MockConnector::connect(int max_connect_attempts)
+{
+    throw MockConnector::pxpError_msg {};
+}
+
+void MockConnector::monitorConnection(uint32_t max_connect_attempts,
+                                      uint32_t connection_check_interval_s)
+{
+    throw MockConnector::pxpError_msg {};
+}
+
+void MockConnector::registerMessageCallback(const PCPClient::Schema& schema,
+                                            MessageCallback callback)
+{
+    throw MockConnector::pxpError_msg {};
+}
 
 }  // namespace PXPAgent

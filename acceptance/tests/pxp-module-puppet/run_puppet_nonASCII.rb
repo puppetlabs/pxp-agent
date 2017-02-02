@@ -2,6 +2,7 @@ require 'pxp-agent/test_helper.rb'
 require 'puppet/acceptance/environment_utils'
 
 test_name 'C98107 - Run puppet with non-ASCII characters in Puppet code' do
+
   extend Puppet::Acceptance::EnvironmentUtils
 
   env_name = test_file_name = File.basename(__FILE__, '.*')

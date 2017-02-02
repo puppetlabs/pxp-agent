@@ -126,6 +126,7 @@ class Configuration
     {
         std::string modules_dir;
         std::vector<std::string> broker_ws_uris;
+        std::string pcp_version;
         std::string ca;
         std::string crt;
         std::string key;
@@ -138,6 +139,7 @@ class Configuration
         uint32_t association_request_ttl_s;
         uint32_t pcp_message_ttl_s;
         uint32_t allowed_keepalive_timeouts;
+        uint32_t ping_interval_s;
     };
 
     /// Reset the HorseWhisperer singleton.
@@ -223,10 +225,11 @@ class Configuration
     /// Return an object containing all agent configuration options
     const Agent& getAgentConfiguration() const;
 
-    /// Try to close the log file stream,  then try to open the log
-    /// file in append mode and associate it to the log file stream.
+    /// Try to close the log file streams,  then try to open the log
+    /// files (pxp-agent app log and PCP access log) in append mode
+    /// and  associate them to the relative log file streams.
     /// All possible exceptions will be filtered.
-    void reopenLogfile() const;
+    void reopenLogfiles() const;
 
   private:
     // Whether the Configuration singleton has successfully validated
@@ -251,8 +254,14 @@ class Configuration
     // Path to the logfile
     std::string logfile_;
 
+    // Path to the PCP Access file
+    std::string pcp_access_logfile_;
+
     // Stream abstraction object for the logfile
     mutable boost::nowide::ofstream logfile_fstream_;
+
+    // Stream abstraction object for the PCP Access logfile
+    mutable std::shared_ptr<boost::nowide::ofstream> pcp_access_fstream_ptr_;
 
     // Defines the default values
     Configuration();

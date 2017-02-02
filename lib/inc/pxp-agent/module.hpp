@@ -5,7 +5,6 @@
 #include <pxp-agent/action_request.hpp>
 #include <pxp-agent/module_type.hpp>
 
-#include <cpp-pcp-client/protocol/chunks.hpp>      // ParsedChunks
 #include <cpp-pcp-client/validator/validator.hpp>  // Validator
 
 #include <leatherman/json_container/json_container.hpp>

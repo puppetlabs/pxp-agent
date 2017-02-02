@@ -13,10 +13,11 @@ namespace PXPAgent {
 namespace lth_loc = leatherman::locale;
 
 static void sigLogfileReopen(int signal) {
-    LOG_INFO("Caught SIGUSR2 signal - reopening log file");
+    LOG_INFO("Caught SIGUSR2 signal");
     try {
-        Configuration::Instance().reopenLogfile();
+        Configuration::Instance().reopenLogfiles();
     } catch (const std::exception& e) {
+        // NB(ale): Configuration::reopenLogfiles should be exception safe...
         LOG_ERROR("Failed to reopen logfile: {1}", e.what());
     }
 }

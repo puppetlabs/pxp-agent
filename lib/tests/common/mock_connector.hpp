@@ -4,13 +4,18 @@
 #include "root_path.hpp"
 
 #include <pxp-agent/configuration.hpp>
-#include <pxp-agent/pxp_connector.hpp>  // TEST_VIRTUAL, PXPConnector
+#include <pxp-agent/pxp_connector.hpp>  // PXPConnector
 #include <pxp-agent/action_request.hpp>
 #include <pxp-agent/action_response.hpp>
+
+#include <atomic>
+#include <vector>
+#include <string>
 
 namespace PXPAgent {
 
 static const std::vector<std::string> TEST_BROKER_WS_URIS { "wss://127.0.0.1:8090/pxp/", "wss://127.0.0.1:8091/pxp/" };
+static const std::string PCP_VERSION { "1" };
 static const std::string CA { getCaPath() };
 static const std::string CERT { getCertPath() };
 static const std::string KEY { getKeyPath() };
@@ -27,6 +32,7 @@ static const std::string SPOOL { PXP_AGENT_ROOT_PATH
 
 static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   TEST_BROKER_WS_URIS,
+                                                  PCP_VERSION,
                                                   CA,
                                                   CERT,
                                                   KEY,
@@ -38,7 +44,8 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   10,    // association timeout
                                                   5,     // association ttl
                                                   5,     // general PCP ttl
-                                                  2 };   // keepalive timeouts
+                                                  2,
+                                                  15 };   // keepalive timeouts
 
 static const std::string VALID_ENVELOPE_TXT {
     " { \"id\" : \"123456\","
@@ -48,8 +55,6 @@ static const std::string VALID_ENVELOPE_TXT {
     "   \"sender\" : \"pcp://controller/test_controller\","
     "   \"destination_report\" : false"
     " }" };
-
-#ifdef TEST_VIRTUAL
 
 class MockConnector : public PXPConnector {
   public:
@@ -64,23 +69,32 @@ class MockConnector : public PXPConnector {
 
     MockConnector();
 
-    virtual void sendPCPError(const std::string&,
-                              const std::string&,
-                              const std::vector<std::string>&);
+    void sendPCPError(const std::string&,
+                      const std::string&,
+                      const std::vector<std::string>&) override;
 
-    virtual void sendPXPError(const ActionRequest&,
-                              const std::string&);
+    void sendPXPError(const ActionRequest&,
+                      const std::string&) override;
 
-    virtual void sendPXPError(const ActionResponse&);
+    void sendPXPError(const ActionResponse&) override;
 
-    virtual void sendBlockingResponse(const ActionResponse&,
-                                      const ActionRequest&);
+    void sendBlockingResponse(const ActionResponse&,
+                              const ActionRequest&) override;
 
-    virtual void sendNonBlockingResponse(const ActionResponse&);
+    void sendStatusResponse(const ActionResponse& response,
+                            const ActionRequest& request) override;
 
-    virtual void sendProvisionalResponse(const ActionRequest&);
+    void sendNonBlockingResponse(const ActionResponse&) override;
+
+    void sendProvisionalResponse(const ActionRequest&) override;
+
+    void connect(int max_connect_attempts = 0) override;
+
+    void monitorConnection(uint32_t max_connect_attempts = 0,
+                           uint32_t connection_check_interval_s = 15) override;
+
+    void registerMessageCallback(const PCPClient::Schema& schema,
+                                 MessageCallback callback) override;
 };
-
-#endif  // TEST_VIRTUAL
 
 }  // namespace PXPAgent

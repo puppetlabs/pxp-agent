@@ -346,7 +346,7 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
     // tree when the pxp-agent service stops, we use the
     // `create_detached_process` execution option which ensures
     // the child process is executed in a new process contract
-    // on Solaris
+    // on Solaris and a new process group on Windows
 
     auto exec = lth_exec::execute(
 #ifdef _WIN32
