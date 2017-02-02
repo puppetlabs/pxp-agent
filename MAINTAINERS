@@ -22,6 +22,11 @@
       "github": "parisiale",
       "email": "alessandro@puppet.com",
       "name": "Alessandro Parisi"
+    },
+    {
+      "github": "McDonaldSeanp",
+      "email": "sean.mcdonald@puppet.com",
+      "name": "Sean McDonald"
     }
   ]
 }
