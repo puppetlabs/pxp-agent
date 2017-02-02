@@ -1,3 +1,16 @@
+## 1.4.0
+
+This is a feature release.
+
+* [PCP-647](https://tickets.puppetlabs.com/browse/PCP-647) Add PCP version 2, an update that
+changes to a simpler text-based protocol that only supports immediate delivery (no message
+expiration) to a single target. It can be enabled by setting the "pcp-version" option to "2" and
+connecting it to a version of pcp-broker supporting PCP v2.
+* [PCP-469](https://tickets.puppetlabs.com/browse/PCP-469) Add a hidden option for configuring the
+ping interval used to keep websocket connections alive.
+* [PCP-624](https://tickets.puppetlabs.com/browse/PCP-624) Add a log file for messages delivered to
+pxp-agent. It can be enabled using the `log-pcp-access` option.
+
 ## 1.3.2
 
 This is a maintenance and bug fix release. It fixes several CI-related issues.

@@ -60,6 +60,8 @@ namespace lth_util = leatherman::util;
     const std::string DEFAULT_SPOOL_DIR { (DATA_DIR / "var" / "spool").string() };
     static const std::string DEFAULT_LOG_FILE {
         (DATA_DIR / "var" / "log" / "pxp-agent.log").string() };
+    static const std::string DEFAULT_PCP_ACCESS_FILE {
+        (DATA_DIR / "var" / "log" / "pcp-access.log").string() };
 
     static const std::string DEFAULT_MODULES_DIR = []() {
         wchar_t szPath[MAX_PATH];
@@ -86,6 +88,7 @@ namespace lth_util = leatherman::util;
     const std::string DEFAULT_SPOOL_DIR { "/opt/puppetlabs/pxp-agent/spool" };
     static const std::string DEFAULT_PID_FILE { "/var/run/puppetlabs/pxp-agent.pid" };
     static const std::string DEFAULT_LOG_FILE { "/var/log/puppetlabs/pxp-agent/pxp-agent.log" };
+    static const std::string DEFAULT_PCP_ACCESS_FILE { "/var/log/puppetlabs/pxp-agent/pcp-access.log" };
     static const std::string DEFAULT_MODULES_DIR { "/opt/puppetlabs/pxp-agent/modules" };
 #endif
 
@@ -93,6 +96,7 @@ static const std::string DEFAULT_MODULES_CONF_DIR {
     (DEFAULT_CONF_DIR / "modules").string() };
 static const std::string DEFAULT_CONFIG_FILE {
     (DEFAULT_CONF_DIR / "pxp-agent.conf").string() };
+static const std::string DEFAULT_PCP_VERSION { "1" };
 static const std::string DEFAULT_SPOOL_DIR_PURGE_TTL { "14d" };
 
 static const std::string AGENT_CLIENT_TYPE { "agent" };
@@ -188,22 +192,31 @@ static void validateLogDirPath(const std::string& logfile)
 void Configuration::setupLogging()
 {
     logfile_ = HW::GetFlag<std::string>("logfile");
+    pcp_access_logfile_ = HW::GetFlag<std::string>("pcp-access-logfile");
+    auto log_access = HW::GetFlag<bool>("log-pcp-access");
     auto log_on_stdout = (logfile_ == "-");
     auto loglevel = HW::GetFlag<std::string>("loglevel");
-    std::ostream *stream = nullptr;
+    std::ostream *log_stream = nullptr;
 
     if (!log_on_stdout) {
         // We should log on file
         logfile_ = lth_file::tilde_expand(logfile_);
 
-        // NOTE(ale): we must validate the logifle path since we set
+        // NOTE(ale): we must validate the logfile path since we set
         // up logging before calling validateAndNormalizeConfiguration
         validateLogDirPath(logfile_);
-
         logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
-        stream = &logfile_fstream_;
+        log_stream = &logfile_fstream_;
     } else {
-        stream = &boost::nowide::cout;
+        log_stream = &boost::nowide::cout;
+    }
+
+    if (log_access) {
+        pcp_access_logfile_ = lth_file::tilde_expand(pcp_access_logfile_);
+        validateLogDirPath(pcp_access_logfile_);
+        pcp_access_fstream_ptr_.reset(
+            new boost::nowide::ofstream(pcp_access_logfile_.c_str(),
+                                        std::ios_base::app));
     }
 
 #ifndef _WIN32
@@ -236,7 +249,7 @@ void Configuration::setupLogging()
     }
 
     // Configure logging for pxp-agent
-    lth_log::setup_logging(*stream);
+    lth_log::setup_logging(*log_stream);
     lth_log::set_level(lvl);
 
 #ifdef DEV_LOG_COLOR
@@ -250,7 +263,10 @@ void Configuration::setupLogging()
 #endif  // DEV_LOG_COLOR
 
     // Configure logging for cpp-pcp-client
-    PCPClient::Util::setupLogging(*stream, force_colorization, loglevel);
+    PCPClient::Util::setupLogging(*log_stream,
+                                  force_colorization,
+                                  loglevel,
+                                  pcp_access_fstream_ptr_);
 
     LOG_DEBUG("Logging configured");
 
@@ -275,6 +291,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
     agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
         broker_ws_uris_,
+        HW::GetFlag<std::string>("pcp-version"),
         HW::GetFlag<std::string>("ssl-ca-cert"),
         HW::GetFlag<std::string>("ssl-cert"),
         HW::GetFlag<std::string>("ssl-key"),
@@ -286,23 +303,45 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         static_cast<uint32_t >(HW::GetFlag<int>("association-timeout")),
         static_cast<uint32_t >(HW::GetFlag<int>("association-request-ttl")),
         static_cast<uint32_t >(HW::GetFlag<int>("pcp-message-ttl")),
-        static_cast<uint32_t >(HW::GetFlag<int>("allowed-keepalive-timeouts")) };
+        static_cast<uint32_t >(HW::GetFlag<int>("allowed-keepalive-timeouts")),
+        static_cast<uint32_t >(HW::GetFlag<int>("ping-interval")) };
     return agent_configuration_;
 }
 
-void Configuration::reopenLogfile() const
+void Configuration::reopenLogfiles() const
 {
     if (!logfile_.empty() && logfile_ != "-") {
+        LOG_INFO("Reopening the pxp-agent log file");
+
         try {
             logfile_fstream_.close();
         } catch (const std::exception& e) {
-            LOG_DEBUG("Failed to close logfile stream; already closed?");
+            LOG_DEBUG("Failed to close the pxp-agent log file stream; already closed?");
         }
         try {
             logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
         } catch (const std::exception& e) {
-            LOG_ERROR("Failed to open logfile stream");
+            LOG_ERROR("Failed to open the pxp-agent log file stream");
         }
+    } else {
+        LOG_DEBUG("pxp-agent logging was not configured; no file will be reopened");
+    }
+
+    if (HW::GetFlag<bool>("log-pcp-access")) {
+        LOG_INFO("Reopening the PCP Access log file");
+
+        try {
+            pcp_access_fstream_ptr_->close();
+        } catch (const std::exception& e) {
+            LOG_DEBUG("Failed to close the PCP Access log file stream; already closed?");
+        }
+        try {
+            pcp_access_fstream_ptr_->open(pcp_access_logfile_.c_str(), std::ios_base::app);
+        } catch (const std::exception& e) {
+            LOG_ERROR("Failed to open the PCP Access log file stream");
+        }
+    } else {
+        LOG_DEBUG("PCP Access logging was not configured; no file will be reopened");
     }
 }
 
@@ -315,7 +354,9 @@ Configuration::Configuration() : valid_ { false },
                                  config_file_ { "" },
                                  agent_configuration_ {},
                                  logfile_ { "" },
-                                 logfile_fstream_ {}
+                                 pcp_access_logfile_ { "" },
+                                 logfile_fstream_ {},
+                                 pcp_access_fstream_ptr_ { nullptr }
 {
     defineDefaultValues();
 }
@@ -341,6 +382,15 @@ void Configuration::defineDefaultValues()
                     "") } });
 
     defaults_.insert(
+        Option { "pcp-version",
+                 Base_ptr { new Entry<std::string>(
+                    "pcp-version",
+                    "",
+                    lth_loc::translate("PCP version to use for communication"),
+                    Types::String,
+                    DEFAULT_PCP_VERSION) } });
+
+    defaults_.insert(
         Option { "connection-timeout",
                  Base_ptr { new Entry<int>(
                     "connection-timeout",
@@ -360,6 +410,16 @@ void Configuration::defineDefaultValues()
                     "<hidden>",
                     Types::Int,
                     2) } });
+
+    // Hidden option: interval between pings, default 15 s
+    defaults_.insert(
+        Option { "ping-interval",
+                 Base_ptr { new Entry<int>(
+                    "ping-interval",
+                    "",
+                    "<hidden>",
+                    Types::Int,
+                    15) } });
 
     // Hidden option: PCP Association timeout, default: 15 s
     defaults_.insert(
@@ -437,6 +497,25 @@ void Configuration::defineDefaultValues()
                                        "'fatal'. Defaults to 'info'"),
                     Types::String,
                     "info") } });
+
+    defaults_.insert(
+            Option { "log-pcp-access",
+                     Base_ptr { new Entry<bool>(
+                             "log-pcp-access",
+                             "",
+                             lth_loc::translate("Enable PCP Access logging, default: false"),
+                             Types::Bool,
+                             false) } });
+
+    defaults_.insert(
+            Option { "pcp-access-logfile",
+                     Base_ptr { new Entry<std::string>(
+                             "pcp-access-logfile",
+                             "",
+                             lth_loc::format("PCP Access log file, default: {1}",
+                                             DEFAULT_PCP_ACCESS_FILE),
+                             Types::String,
+                             DEFAULT_PCP_ACCESS_FILE) } });
 
     defaults_.insert(
         Option { "modules-dir",
@@ -710,6 +789,12 @@ void Configuration::validateAndNormalizeWebsocketSettings()
     if (broker_ws_uris_.empty())
         throw Configuration::Error {
             lth_loc::translate("broker-ws-uri or broker-ws-uris must be defined") };
+
+    auto pcp_version = HW::GetFlag<std::string>("pcp-version");
+    if (pcp_version != "1" && pcp_version != "2") {
+        throw Configuration::Error {
+            lth_loc::translate("pcp-version must be either '1' or '2'") };
+    }
 
     // Check the SSL options and expand the paths
     auto ca   = check_and_expand_ssl_cert("ssl-ca-cert");

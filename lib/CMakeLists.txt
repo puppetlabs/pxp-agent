@@ -18,7 +18,8 @@ set(LIBRARY_COMMON_SOURCES
     src/configuration.cc
     src/external_module.cc
     src/module.cc
-    src/pxp_connector.cc
+    src/pxp_connector_v1.cc
+    src/pxp_connector_v2.cc
     src/pxp_schemas.cc
     src/request_processor.cc
     src/results_mutex.cc

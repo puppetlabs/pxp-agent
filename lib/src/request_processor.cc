@@ -540,7 +540,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
         auto act = metadata.get<std::string>("action");
         if (!hasModule(mod) || !modules_.at(mod)->hasAction(act))
             throw Error {
-                lth_loc::format("unknow action stored in metadata file: '{1} {2}'",
+                lth_loc::format("unknown action stored in metadata file: '{1} {2}'",
                                 mod, act) };
     } catch (const ResultsStorage::Error& e) {
         LOG_ERROR("Cannot access the stored metadata for the transaction {1}: {2}",

@@ -41,10 +41,11 @@ step "Install puppetserver..." do
   end
 end
 
-# make sure install is sane, beaker has already added puppet and ruby
-# to PATH in ~/.ssh/environment
-agents.each do |agent|
-  on agent, puppet('--version')
-  ruby = Puppet::Acceptance::CommandUtils.ruby_command(agent)
-  on agent, "#{ruby} --version"
+step 'Make sure install is sane' do 
+  # beaker has already added puppet and ruby to PATH in ~/.ssh/environment
+  agents.each do |agent|
+    on agent, puppet('--version')
+    ruby = Puppet::Acceptance::CommandUtils.ruby_command(agent)
+    on agent, "#{ruby} --version"
+  end
 end

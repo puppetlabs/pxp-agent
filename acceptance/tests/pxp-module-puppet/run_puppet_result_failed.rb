@@ -2,6 +2,7 @@ require 'pxp-agent/test_helper.rb'
 require 'puppet/acceptance/environment_utils'
 
 test_name 'C93063 - pxp-module-puppet run expect puppet failure' do
+
   extend Puppet::Acceptance::EnvironmentUtils
 
   app_type = test_file_name = File.basename(__FILE__, '.*')
