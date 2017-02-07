@@ -7,7 +7,7 @@ step 'Ensure each agent host has pxp-agent running and associated' do
   agents.each do |agent|
     on agent, puppet('resource service pxp-agent ensure=stopped')
     create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
-    retry_on(agent, "rm -rf #{logfile(agent)}")
+    reset_logfile(agent)
     on agent, puppet('resource service pxp-agent ensure=running')
     show_pcp_logs_on_failure do
       assert(is_associated?(master, "pcp://#{agent}/agent"),

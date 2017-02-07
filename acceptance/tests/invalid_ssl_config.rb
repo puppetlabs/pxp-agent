@@ -43,7 +43,7 @@ agents.each do |agent|
 
   step 'Setup - Stop pxp-agent service and wipe its log' do
     on agent, puppet('resource service pxp-agent ensure=stopped')
-    retry_on(agent, "rm -rf #{logfile(agent)}")
+    reset_logfile(agent)
   end
 
   step "Setup - Change pxp-agent config to use a cert that doesn't match private key" do
@@ -66,7 +66,7 @@ agents.each do |agent|
 
   step "Ensure pxp-agent service is stopped, and wipe log" do
     on agent, puppet('resource service pxp-agent ensure=stopped')
-    retry_on(agent, "rm -rf #{logfile(agent)}")
+    reset_logfile(agent)
   end
 
   step "Change pxp-agent config so the cert and key match but they are of a different ca than the broker" do
@@ -96,7 +96,7 @@ agents.each do |agent|
 
     step 'Stop pxp-agent and wipe its existing log file'
     on agent, puppet('resource service pxp-agent ensure=stopped')
-    retry_on(agent, "rm -rf #{logfile(agent)}")
+    reset_logfile(agent)
 
     step 'Create pxp-agent.conf with an alternate CA cert'
     pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
@@ -116,7 +116,7 @@ agents.each do |agent|
   step 'C97366 - Attempt to connect to pcp-broker without using its certified hostname' do
     step 'Stop pxp-agent and wipe its existing log file'
     on agent, puppet('resource service pxp-agent ensure=stopped')
-    retry_on(agent, "rm -rf #{logfile(agent)}")
+    reset_logfile(agent)
 
     step 'Create pxp-agent.conf that connects to pcp-broker using its IP address'
     pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
