@@ -259,7 +259,7 @@ end
 # @raise String indicating something went wrong, test case can use to fail
 def rpc_blocking_request(broker, targets,
                          pxp_module = 'pxp-module-puppet', action = 'run',
-                         params)
+                         params = {})
   rpc_request(broker, targets, pxp_module, action, params, true)
 end
 
@@ -277,13 +277,14 @@ end
 # @raise String indicating something went wrong, test case can use to fail
 def rpc_non_blocking_request(broker, targets,
                          pxp_module = 'pxp-module-puppet', action = 'run',
-                         params)
+                         params = {})
   rpc_request(broker, targets, pxp_module, action, params, false)
 end
 
 def rpc_request(broker, targets,
                 pxp_module = 'pxp-module-puppet', action = 'run',
-                params, blocking)
+                params = {} , blocking = false, transaction_id = nil)
+  transaction_id ||= SecureRandom.uuid
   mutex = Mutex.new
   have_response = ConditionVariable.new
   responses = Hash.new
@@ -308,7 +309,7 @@ def rpc_request(broker, targets,
   })
 
   message_data = {
-    :transaction_id => SecureRandom.uuid,
+    :transaction_id => transaction_id,
     :module         => pxp_module,
     :action         => action,
     :params         => params
@@ -428,14 +429,14 @@ def get_puppet_agent_pids(host)
   else
     command = "ps -ef | grep 'puppet agent' | grep -v 'grep' | grep -v 'true' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
   end
-    
+
   on(host, command, :accept_all_exit_codes => true) do |output|
     pids = output.stdout.chomp.split
   end
-    
+
   pids
 
-end  
+end
 
 def wait_for_sleep_process(target)
   begin
@@ -536,4 +537,6 @@ def check_puppet_non_blocking_response(identity, transaction_id, max_retries, qu
     assert_equal(expected_environment, puppet_run_environment, "Puppet run did not use the expected environment")
     assert_equal(expected_result, puppet_run_result, "Puppet run did not have expected result of '#{expected_result}'")
   end
+
+  puppet_run_result
 end

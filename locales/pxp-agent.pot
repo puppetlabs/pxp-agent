@@ -793,8 +793,14 @@ msgid ""
 "ID as identifier)"
 msgstr ""
 
+#. debug
 #: lib/src/request_processor.cc
 msgid "already exists an ongoing task with transaction id {1}"
+msgstr ""
+
+#. debug
+#: lib/src/request_processor.cc
+msgid "already exists a previous task with transaction id {1}"
 msgstr ""
 
 #: lib/src/request_processor.cc
