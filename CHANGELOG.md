@@ -1,3 +1,10 @@
+## 1.4.1
+
+This is a maintenance release.
+
+* [#546](https://github.com/puppetlabs/pxp-agent/pull/546) Allow use of beaker 3.x in acceptance tests
+* [PCP-704](https://tickets.puppetlabs.com/browse/PCP-704) Use fork() to prevent deadlocks
+
 ## 1.4.0
 
 This is a feature release.
