@@ -10,6 +10,7 @@
     'setup/common/005_SyncTime.rb',
     'setup/aio/pre-suite/010_Install.rb',
     'setup/aio/021_InstallAristaModule.rb',
+    'setup/common/022_Remove_LD_PRELOAD.rb',
     'setup/common/035_StartPuppetServer.rb',
     'setup/common/040_ValidateSignCert.rb',
     'setup/common/045_SetPuppetServerOnAgents.rb',

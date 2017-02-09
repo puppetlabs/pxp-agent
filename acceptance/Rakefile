@@ -88,10 +88,6 @@ EOS
 
   target = ENV['TEST_TARGET']
 
-  if target =~ /^ciscoxr/
-    abort "PCP-685: Skipping tests on Cisco XR"
-  end
-
   master_host = ENV['MASTER_TEST_TARGET'] || 'redhat7-64m'
   if target && !target.start_with?(master_host)
     target = "#{master_host}-#{target}"
