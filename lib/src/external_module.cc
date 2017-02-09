@@ -200,7 +200,8 @@ const lth_jc::JsonContainer ExternalModule::getModuleMetadata()
 #else
         lth_exec::execute(path_, { "metadata" },
 #endif
-            0, {lth_exec::execution_options::merge_environment,
+            0, {lth_exec::execution_options::thread_safe,
+                lth_exec::execution_options::merge_environment,
                 lth_exec::execution_options::inherit_locale});
 
     if (!exec.error.empty()) {
@@ -323,7 +324,8 @@ ActionResponse ExternalModule::callBlockingAction(const ActionRequest& request)
         action_args,                           // args
         std::map<std::string, std::string>(),  // environment
         0,                                     // timeout
-        { lth_exec::execution_options::merge_environment,
+        { lth_exec::execution_options::thread_safe,
+          lth_exec::execution_options::merge_environment,
           lth_exec::execution_options::inherit_locale });  // options
 
     response.output = ActionOutput { exec.exit_code, exec.output, exec.error };
@@ -361,7 +363,8 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
             lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file);
         },          // pid callback
         0,          // timeout
-        { lth_exec::execution_options::create_detached_process,
+        { lth_exec::execution_options::thread_safe,
+          lth_exec::execution_options::create_detached_process,
           lth_exec::execution_options::merge_environment,
           lth_exec::execution_options::inherit_locale });  // options
 
