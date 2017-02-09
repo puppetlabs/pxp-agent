@@ -194,15 +194,16 @@ const PCPClient::Validator ExternalModule::metadata_validator_ {
 // Retrieve and validate the module's metadata
 const lth_jc::JsonContainer ExternalModule::getModuleMetadata()
 {
-    auto exec =
+    auto exec = lth_exec::execute(
 #ifdef _WIN32
-        lth_exec::execute("cmd.exe", { "/c", path_, "metadata" },
+        "cmd.exe", { "/c", path_, "metadata" },
 #else
-        lth_exec::execute(path_, { "metadata" },
+        path_, { "metadata" },
 #endif
-            0, {lth_exec::execution_options::thread_safe,
-                lth_exec::execution_options::merge_environment,
-                lth_exec::execution_options::inherit_locale});
+        0,  // timeout
+        { lth_exec::execution_options::thread_safe,
+          lth_exec::execution_options::merge_environment,
+          lth_exec::execution_options::inherit_locale });  // options
 
     if (!exec.error.empty()) {
         LOG_ERROR("Failed to load the external module metadata from {1}: {2}",
