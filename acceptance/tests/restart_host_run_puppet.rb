@@ -9,9 +9,9 @@ test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
     skip_test('QENG-3629 - AIX hosts cannot be restarted')
   end
 
-  applicable_agents = applicable_agents.select { |agent| agent['platform'] !~ /cisco_nexus/}
+  applicable_agents = applicable_agents.select { |agent| agent['platform'] !~ /cisco_nexus|cisco_ios_xr/ }
   unless applicable_agents.length > 0 then
-    skip_test('PCP-508 - CiscoNX hosts cannot be restarted')
+    skip_test('PCP-508 - CiscoNX and Cisco IOS XR hosts cannot be restarted')
   end
 
   applicable_agents = applicable_agents.select { |agent| agent['platform'] != "eos-4-i386"}
