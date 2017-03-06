@@ -35,10 +35,9 @@ agents.each do |agent|
     on agent, puppet('resource service pxp-agent ensure=stopped')
     create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
     on agent, puppet('resource service pxp-agent ensure=running')
-    show_pcp_logs_on_failure do
-      assert(is_associated?(master, "pcp://#{agent}/agent"),
-             "Agent #{agent} with PCP identity pcp://#{agent}/agent should be associated with pcp-broker")
-    end
+
+    assert(is_associated?(master, "pcp://#{agent}/agent"),
+           "Agent #{agent} with PCP identity pcp://#{agent}/agent should be associated with pcp-broker")
   end
 
   step 'Setup - Stop pxp-agent service and wipe its log' do
@@ -105,11 +104,10 @@ agents.each do |agent|
 
     step 'Start pxp-agent and assert that it does not connect to pcp-broker'
     on agent, puppet('resource service pxp-agent ensure=running')
-    show_pcp_logs_on_failure do
-      assert(is_not_associated?(master, "pcp://#{agent}/agent"),
-             "Agent identity pcp://#{agent}/agent for agent host #{agent} should not appear in pcp-broker's inventory " \
-             "when pxp-agent is using the wrong CA cert")
-    end
+
+    assert(is_not_associated?(master, "pcp://#{agent}/agent"),
+           "Agent identity pcp://#{agent}/agent for agent host #{agent} should not appear in pcp-broker's inventory " \
+           "when pxp-agent is using the wrong CA cert")
     expect_file_on_host_to_contain(agent, logfile(agent), 'TLS handshake failed')
   end
 
@@ -126,11 +124,10 @@ agents.each do |agent|
 
     step 'Start pxp-agent and assert that it does not connect to broker'
     on agent, puppet('resource service pxp-agent ensure=running')
-    show_pcp_logs_on_failure do
-      assert(is_not_associated?(master, "pcp://#{agent}/agent"),
-             "Agent identity pcp://#{agent}/agent for agent host #{agent} should not appear in pcp-broker's inventory " \
-             "when pxp-agent attempts to connect by broker IP instead of broker certified hostname")
-    end
+
+    assert(is_not_associated?(master, "pcp://#{agent}/agent"),
+           "Agent identity pcp://#{agent}/agent for agent host #{agent} should not appear in pcp-broker's inventory " \
+           "when pxp-agent attempts to connect by broker IP instead of broker certified hostname")
     expect_file_on_host_to_contain(agent, logfile(agent), 'TLS handshake failed')
   end
 end

@@ -20,11 +20,10 @@ test_name 'C97964 - agent should use next broker if primary is timing out' do
       create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
       reset_logfile(agent)
       on agent, puppet('resource service pxp-agent ensure=running')
-      show_pcp_logs_on_failure do
-        assert_equal(master[:pcp_broker_instance], PRIMARY_BROKER_INSTANCE, "broker instance is not set correctly: #{master[:pcp_broker_instance]}")
-        assert(is_associated?(master, "pcp://#{agent}/agent"),
-               "Agent identity pcp://#{agent}/agent for agent host #{agent} does not appear in pcp-broker's (#{broker_ws_uri(master)}) client inventory after ~#{PCP_INVENTORY_RETRIES} seconds")
-      end
+
+      assert_equal(master[:pcp_broker_instance], PRIMARY_BROKER_INSTANCE, "broker instance is not set correctly: #{master[:pcp_broker_instance]}")
+      assert(is_associated?(master, "pcp://#{agent}/agent"),
+             "Agent identity pcp://#{agent}/agent for agent host #{agent} does not appear in pcp-broker's (#{broker_ws_uri(master)}) client inventory after ~#{PCP_INVENTORY_RETRIES} seconds")
     end
   end
 

@@ -55,31 +55,6 @@ def expect_file_on_host_to_contain(host, file, expected, seconds=30)
   end
 end
 
-# Show the logs of the broker and agents - useful to see why a test failed
-def show_pcp_logs
-  logger.notify "---- Broker log -----"
-  on(master, "cat /var/log/puppetlabs/pcp-broker.log") do |result|
-    logger.notify result.stdout
-  end
-
-  agents.each do |agent|
-    logger.notify "----- agent #{agent} log -----"
-    on(agent, "cat #{logfile(agent)}") do |result|
-      logger.notify result.stdout
-    end
-  end
-end
-
-# Evaluate the block, show logs if test assertions were triggered
-def show_pcp_logs_on_failure(&block)
-  yield
-rescue MiniTest::Assertion => exception
-  logger.notify "Assertion failed in test: #{exception}"
-  logger.notify "Fetching logs for inspection"
-  show_pcp_logs
-  raise exception
-end
-
 # Some helpers for working with a pcp-broker 'lein tk' instance
 def run_pcp_broker(host, instance=0)
   host[:pcp_broker_instance] = instance
