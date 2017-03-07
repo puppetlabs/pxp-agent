@@ -11,11 +11,9 @@ agents.each do |agent|
   end
 
   step 'Assert that the agent is not listed in pcp-broker inventory' do
-    show_pcp_logs_on_failure do
-      assert(is_not_associated?(master, "pcp://#{agent}/agent"),
-             "Agent identity pcp://#{agent}/agent for agent host #{agent} appears in pcp-broker's client inventory " \
-             "but pxp-agent service is supposed to be stopped")
-    end
+    assert(is_not_associated?(master, "pcp://#{agent}/agent"),
+           "Agent identity pcp://#{agent}/agent for agent host #{agent} appears in pcp-broker's client inventory " \
+           "but pxp-agent service is supposed to be stopped")
   end
 
   step 'Start pxp-agent service' do
@@ -23,9 +21,7 @@ agents.each do |agent|
   end
 
   step 'Assert that agent is listed in pcp-broker inventory' do
-    show_pcp_logs_on_failure do
-      assert(is_associated?(master, "pcp://#{agent}/agent"),
-             "Agent identity pcp://#{agent}/agent for agent host #{agent} does not appear in pcp-broker's client inventory")
-    end
+    assert(is_associated?(master, "pcp://#{agent}/agent"),
+           "Agent identity pcp://#{agent}/agent for agent host #{agent} does not appear in pcp-broker's client inventory")
   end
 end
