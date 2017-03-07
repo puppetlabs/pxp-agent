@@ -21,10 +21,8 @@ test_name 'pxp-module-puppet run with PCP v1' do
       pxp_config['broker-ws-uris'] = [broker_ws_uri(master, 1)]
       create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
       on agent, puppet('resource service pxp-agent ensure=running')
-      show_pcp_logs_on_failure do
-        assert(is_associated?(master, "pcp://#{agent}/agent"),
-               "Agent #{agent} with PCP identity pcp://#{agent}/agent should be associated with pcp-broker")
-      end
+      assert(is_associated?(master, "pcp://#{agent}/agent"),
+             "Agent #{agent} with PCP identity pcp://#{agent}/agent should be associated with pcp-broker")
     end
   end
 
