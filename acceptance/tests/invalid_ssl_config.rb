@@ -35,15 +35,14 @@ agents.each do |agent|
     on agent, puppet('resource service pxp-agent ensure=stopped')
     create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
     on agent, puppet('resource service pxp-agent ensure=running')
-    show_pcp_logs_on_failure do
-      assert(is_associated?(master, "pcp://#{agent}/agent"),
-             "Agent #{agent} with PCP identity pcp://#{agent}/agent should be associated with pcp-broker")
-    end
+
+    assert(is_associated?(master, "pcp://#{agent}/agent"),
+           "Agent #{agent} with PCP identity pcp://#{agent}/agent should be associated with pcp-broker")
   end
 
   step 'Setup - Stop pxp-agent service and wipe its log' do
     on agent, puppet('resource service pxp-agent ensure=stopped')
-    retry_on(agent, "rm -rf #{logfile(agent)}")
+    reset_logfile(agent)
   end
 
   step "Setup - Change pxp-agent config to use a cert that doesn't match private key" do
@@ -66,7 +65,7 @@ agents.each do |agent|
 
   step "Ensure pxp-agent service is stopped, and wipe log" do
     on agent, puppet('resource service pxp-agent ensure=stopped')
-    retry_on(agent, "rm -rf #{logfile(agent)}")
+    reset_logfile(agent)
   end
 
   step "Change pxp-agent config so the cert and key match but they are of a different ca than the broker" do
@@ -96,7 +95,7 @@ agents.each do |agent|
 
     step 'Stop pxp-agent and wipe its existing log file'
     on agent, puppet('resource service pxp-agent ensure=stopped')
-    retry_on(agent, "rm -rf #{logfile(agent)}")
+    reset_logfile(agent)
 
     step 'Create pxp-agent.conf with an alternate CA cert'
     pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
@@ -105,18 +104,17 @@ agents.each do |agent|
 
     step 'Start pxp-agent and assert that it does not connect to pcp-broker'
     on agent, puppet('resource service pxp-agent ensure=running')
-    show_pcp_logs_on_failure do
-      assert(is_not_associated?(master, "pcp://#{agent}/agent"),
-             "Agent identity pcp://#{agent}/agent for agent host #{agent} should not appear in pcp-broker's inventory " \
-             "when pxp-agent is using the wrong CA cert")
-    end
+
+    assert(is_not_associated?(master, "pcp://#{agent}/agent"),
+           "Agent identity pcp://#{agent}/agent for agent host #{agent} should not appear in pcp-broker's inventory " \
+           "when pxp-agent is using the wrong CA cert")
     expect_file_on_host_to_contain(agent, logfile(agent), 'TLS handshake failed')
   end
 
   step 'C97366 - Attempt to connect to pcp-broker without using its certified hostname' do
     step 'Stop pxp-agent and wipe its existing log file'
     on agent, puppet('resource service pxp-agent ensure=stopped')
-    retry_on(agent, "rm -rf #{logfile(agent)}")
+    reset_logfile(agent)
 
     step 'Create pxp-agent.conf that connects to pcp-broker using its IP address'
     pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
@@ -126,11 +124,10 @@ agents.each do |agent|
 
     step 'Start pxp-agent and assert that it does not connect to broker'
     on agent, puppet('resource service pxp-agent ensure=running')
-    show_pcp_logs_on_failure do
-      assert(is_not_associated?(master, "pcp://#{agent}/agent"),
-             "Agent identity pcp://#{agent}/agent for agent host #{agent} should not appear in pcp-broker's inventory " \
-             "when pxp-agent attempts to connect by broker IP instead of broker certified hostname")
-    end
+
+    assert(is_not_associated?(master, "pcp://#{agent}/agent"),
+           "Agent identity pcp://#{agent}/agent for agent host #{agent} should not appear in pcp-broker's inventory " \
+           "when pxp-agent attempts to connect by broker IP instead of broker certified hostname")
     expect_file_on_host_to_contain(agent, logfile(agent), 'TLS handshake failed')
   end
 end

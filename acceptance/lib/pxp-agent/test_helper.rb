@@ -5,6 +5,7 @@ require 'net/http'
 require 'openssl'
 require 'socket'
 require 'json'
+require 'securerandom'
 
 # This file contains general test helper methods for pxp-agent acceptance tests
 
@@ -12,15 +13,26 @@ require 'json'
 GIT_CLONE_FOLDER = '/opt/puppet-git-repos'
 
 # Some helpers for working with the log file
-PXP_LOG_FILE_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/var/log/pxp-agent.log'
-PXP_LOG_FILE_POSIX = '/var/log/puppetlabs/pxp-agent/pxp-agent.log'
+PXP_LOG_DIR_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/var/log'
+PXP_LOG_DIR_POSIX = '/var/log/puppetlabs/pxp-agent'
+
+def logdir(host)
+  windows?(host)?
+    PXP_LOG_DIR_CYGPATH :
+    PXP_LOG_DIR_POSIX
+end
 
 # @param host the beaker host you want the path to the log file on
 # @return The path to the log file on the host. For Windows, a cygpath is returned
 def logfile(host)
-  windows?(host)?
-    PXP_LOG_FILE_CYGPATH :
-    PXP_LOG_FILE_POSIX
+  logdir(host)+'/pxp-agent.log'
+end
+
+def reset_logfile(host)
+  old_logfile = logfile(host)
+  new_logfile = old_logfile+'.'+SecureRandom.uuid
+  logger.notify "---- Saving pxp-agent logfile to #{new_logfile}"
+  retry_on(host, "test ! -f #{old_logfile} || mv #{old_logfile} #{new_logfile}")
 end
 
 # A general helper for waiting for a file to contain some string, and failing the test if it doesn't appear
@@ -43,36 +55,11 @@ def expect_file_on_host_to_contain(host, file, expected, seconds=30)
   end
 end
 
-# Show the logs of the broker and agents - useful to see why a test failed
-def show_pcp_logs
-  logger.notify "---- Broker log -----"
-  on(master, "cat /var/log/pcp-broker.log") do |result|
-    logger.notify result.stdout
-  end
-
-  agents.each do |agent|
-    logger.notify "----- agent #{agent} log -----"
-    on(agent, "cat #{logfile(agent)}") do |result|
-      logger.notify result.stdout
-    end
-  end
-end
-
-# Evaluate the block, show logs if test assertions were triggered
-def show_pcp_logs_on_failure(&block)
-  yield
-rescue MiniTest::Assertion => exception
-  logger.notify "Assertion failed in test: #{exception}"
-  logger.notify "Fetching logs for inspection"
-  show_pcp_logs
-  raise exception
-end
-
 # Some helpers for working with a pcp-broker 'lein tk' instance
 def run_pcp_broker(host, instance=0)
   host[:pcp_broker_instance] = instance
   on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker#{instance}; export LEIN_ROOT=ok; \
-     lein with-profile internal-mirrors tk </dev/null >/var/log/pcp-broker.log 2>&1 &")
+     lein with-profile internal-mirrors tk </dev/null >/var/log/puppetlabs/pcp-broker.log 2>&1 &")
   assert(port_open_within?(host, PCP_BROKER_PORTS[instance], 60),
          "pcp-broker port #{PCP_BROKER_PORTS[instance].to_s} not open within 1 minutes of starting the broker")
   broker_state = nil

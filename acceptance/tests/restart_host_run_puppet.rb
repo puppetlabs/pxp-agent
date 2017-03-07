@@ -39,10 +39,9 @@ test_name 'C94777 - Ensure pxp-agent functions after agent host restart' do
       on agent, puppet('resource service pxp-agent ensure=stopped')
       create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
       on agent, puppet('resource service pxp-agent ensure=running enable=true')
-      show_pcp_logs_on_failure do
-        assert(is_associated?(master, "pcp://#{agent}/agent"),
-               "Agent #{agent} with PCP identity pcp://#{agent}/agent should be associated with pcp-broker")
-      end
+
+      assert(is_associated?(master, "pcp://#{agent}/agent"),
+             "Agent #{agent} with PCP identity pcp://#{agent}/agent should be associated with pcp-broker")
     end
   end
 
