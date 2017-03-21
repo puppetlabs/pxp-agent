@@ -411,7 +411,7 @@ void Configuration::defineDefaultValues()
                     Types::Int,
                     2) } });
 
-    // Hidden option: interval between pings, default 180 s
+    // Hidden option: interval between pings, default 15 s
     defaults_.insert(
         Option { "ping-interval",
                  Base_ptr { new Entry<int>(
@@ -419,7 +419,7 @@ void Configuration::defineDefaultValues()
                     "",
                     "<hidden>",
                     Types::Int,
-                    180) } });
+                    15) } });
 
     // Hidden option: PCP Association timeout, default: 15 s
     defaults_.insert(
