@@ -3,6 +3,13 @@ require 'puppet/acceptance/environment_utils'
 
 test_name 'C98107 - Run puppet with non-ASCII characters in Puppet code' do
 
+  applicable_agents = agents.reject do |agent|
+    agent['platform'] =~ /win/ && on(agent, 'powershell.exe wmic os get locale').stdout =~ /411/
+  end
+  unless applicable_agents.length > 0 then
+    skip_test('PCP-733 - UTF-8 characters in manifest on Japanese Windows cause errors in Puppet')
+  end
+
   extend Puppet::Acceptance::EnvironmentUtils
 
   env_name = test_file_name = File.basename(__FILE__, '.*')
@@ -19,7 +26,7 @@ SITEPP
   end
 
   step 'Ensure each agent host has pxp-agent running and associated' do
-    agents.each do |agent|
+    applicable_agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
       create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
       on agent, puppet('resource service pxp-agent ensure=running')
@@ -31,7 +38,7 @@ SITEPP
 
   step "Send an rpc_blocking_request to all agents" do
     target_identities = []
-    agents.each do |agent|
+    applicable_agents.each do |agent|
       target_identities << "pcp://#{agent}/agent"
     end
     responses = nil # Declare here so not local to begin/rescue below
@@ -42,7 +49,7 @@ SITEPP
     rescue => exception
       fail("Exception occurred when trying to run Puppet on all agents: #{exception.message}")
     end
-    agents.each_with_index do |agent|
+    applicable_agents.each_with_index do |agent|
       step "Check Run Puppet response for #{agent}" do
         identity = "pcp://#{agent}/agent"
         assert(responses[identity][:data].has_key?("results"),
