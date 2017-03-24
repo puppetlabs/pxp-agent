@@ -4,7 +4,7 @@ require 'puppet/acceptance/environment_utils'
 test_name 'C98107 - Run puppet with non-ASCII characters in Puppet code' do
 
   applicable_agents = agents.reject do |agent|
-    agent['platform'] =~ /win/ && on(agent, 'powershell.exe wmic os get locale').stdout =~ /411/
+    agent['platform'] =~ /win/ && on(agent, 'wmic os get locale').stdout =~ /411/
   end
   unless applicable_agents.length > 0 then
     skip_test('PCP-733 - UTF-8 characters in manifest on Japanese Windows cause errors in Puppet')
