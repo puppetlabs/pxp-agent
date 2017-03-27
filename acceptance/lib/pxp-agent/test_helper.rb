@@ -59,7 +59,7 @@ end
 def run_pcp_broker(host, instance=0)
   host[:pcp_broker_instance] = instance
   on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker#{instance}; export LEIN_ROOT=ok; \
-     lein with-profile internal-mirrors tk </dev/null >/var/log/puppetlabs/pcp-broker.log 2>&1 &")
+     lein with-profile internal-mirrors tk </dev/null >/var/log/puppetlabs/pcp-broker.log.#{SecureRandom.uuid} 2>&1 &")
   assert(port_open_within?(host, PCP_BROKER_PORTS[instance], 60),
          "pcp-broker port #{PCP_BROKER_PORTS[instance].to_s} not open within 1 minutes of starting the broker")
   broker_state = nil
