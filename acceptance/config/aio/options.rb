@@ -7,7 +7,6 @@
   :'puppetserver-confdir' => '/etc/puppetlabs/puppetserver/conf.d',
   :pre_suite => [
     'setup/common/000-delete-puppet-when-none.rb',
-    'setup/common/005_SyncTime.rb',
     'setup/aio/010_Install.rb',
     'setup/aio/021_InstallAristaModule.rb',
     'setup/common/022_Remove_LD_PRELOAD.rb',
