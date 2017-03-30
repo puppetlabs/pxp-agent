@@ -1,3 +1,12 @@
+## 1.5.0
+
+This is a feature release.
+
+* [PCP-627](https://tickets.puppetlabs.com/browse/PCP-627) Now sends a provisional response when sent
+a duplicate transaction id. Duplicates will also be detected across process sessions.
+* [PCP-729](https://tickets.puppetlabs.com/browse/PCP-729) The default ping-interval is now 2 minutes.
+This reduces the chance of disconnect/reconnect cycling when lots of agents connect to a broker at once.
+
 ## 1.4.1
 
 This is a maintenance release.
