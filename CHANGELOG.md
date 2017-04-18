@@ -1,3 +1,9 @@
+## 1.5.1
+
+This is a maintenance release.
+
+* [PCP-736](https://tickets.puppetlabs.com/browse/PCP-736) Run with inherited umask.
+
 ## 1.5.0
 
 This is a feature release.
