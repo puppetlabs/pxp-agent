@@ -8,7 +8,6 @@
 #include <stdlib.h>         // exit()
 #include <unistd.h>         // _exit(), getpid(), fork(), setsid(), chdir()
 #include <sys/wait.h>       // waitpid()
-#include <sys/stat.h>       // umask()
 #include <signal.h>
 #include <stdio.h>
 
@@ -18,7 +17,6 @@
 namespace PXPAgent {
 namespace Util {
 
-const mode_t UMASK_FLAGS { 002 };
 const std::string DEFAULT_DAEMON_WORKING_DIR = "/";
 
 static void sigHandler(int sig) {
@@ -41,9 +39,6 @@ std::unique_ptr<PIDFile> daemonize() {
         LOG_INFO("Already a daemon with PID={1}", std::to_string(getpid()));
         return nullptr;
     }
-
-    // Set umask; child processes will inherit
-    umask(UMASK_FLAGS);
 
     // Check PID file; get read lock; ensure we can obtain write lock
 

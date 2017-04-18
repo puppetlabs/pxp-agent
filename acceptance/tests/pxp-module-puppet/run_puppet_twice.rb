@@ -81,7 +81,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
       at_least_two_pids_observed = false
 
       while pid_counting_attempts < MAX_PID_COUNTING_ATTEMPTS do
-        puppet_agent_pids = get_puppet_agent_pids(agent)
+        puppet_agent_pids = get_process_pids(agent, 'puppet agent')
         if puppet_agent_pids.length == 1 then
           concurrent_samples_of_1_pid += 1
           if at_least_two_pids_observed then
