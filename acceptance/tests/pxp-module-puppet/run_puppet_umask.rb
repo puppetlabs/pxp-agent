@@ -18,7 +18,9 @@ test_name 'umask inherited by puppet' do
     site_manifest = "#{environmentpath}/#{environment_name}/manifests/site.pp"
     create_remote_file(master, site_manifest, <<-SITEPP)
 node default {
-  exec {'/bin/touch #{test_file}':}
+  exec {'touch #{test_file}':
+    path => ['/bin', '/usr/bin'],
+  }
 }
 SITEPP
     on(master, "chmod 644 #{site_manifest}")
