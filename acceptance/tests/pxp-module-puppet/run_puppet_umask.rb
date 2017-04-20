@@ -116,6 +116,10 @@ SITEPP
           when /solaris/
             # Solaris has no identifiable way to modify umask for smf services
             '644'
+          when /aix/
+            # TODO: set a umask for an AIX service
+            # Doing so appears non-trivial, so for now asserts default.
+            '644'
           else
             '444'
           end
