@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2.2)
-project(pxp-agent VERSION 1.5.2)
+project(pxp-agent VERSION 1.5.1)
 
 if (NOT CMAKE_BUILD_TYPE)
     message(STATUS "Defaulting to a release build.")
