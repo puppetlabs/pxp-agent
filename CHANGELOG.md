@@ -1,3 +1,9 @@
+## 1.5.2
+
+This is a maintenance release.
+
+* [PCP-740](https://tickets.puppetlabs.com/browse/PCP-740) Fix umask test on AIX.
+
 ## 1.5.1
 
 This is a maintenance release.
