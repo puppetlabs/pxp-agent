@@ -19,6 +19,14 @@ addons:
       - libboost-locale1.55-dev
       - libboost-chrono1.55-dev
       - libboost-random1.55-dev
+  coverity_scan:
+    project:
+      name: "puppetlabs/pxp-agent"
+      description: "Build submitted via Travis CI"
+    notification_email: michael.smith@puppetlabs.com
+    build_command_prepend: "cov-configure --comptype gcc --compiler gcc-4.8 --template && $USERDIR/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=$USERDIR -DLEATHERMAN_GETTEXT=OFF ."
+    build_command: "make"
+    branch_pattern: coverity_scan
 
 before_install:
   # Use a predefined install location; cppcheck requires the cfg location is defined at compile-time.
@@ -30,9 +38,10 @@ before_install:
   - wget https://github.com/puppetlabs/leatherman/releases/download/${LEATHERMAN_VERSION}/leatherman.tar.gz
   - tar xzvf leatherman.tar.gz -C $USERDIR
   - rvm install 2.1.9
+  - export CC=gcc-4.8 CXX=g++-4.8
 
 script:
-  - ./.travis_target.sh
+  - if [ ${COVERITY_SCAN_BRANCH} != 1 ]; then ./.travis_target.sh ; fi
 
 env:
   global:
@@ -42,12 +51,6 @@ env:
     - LD_LIBRARY_PATH=$USERDIR/lib:$LD_LIBRARY_PATH
     - LEATHERMAN_VERSION=0.11.0
     - CPP_PCP_CLIENT_VERSION=master
-  matrix:
-    - TRAVIS_TARGET=CPPLINT
-    - TRAVIS_TARGET=CPPCHECK
-    - TRAVIS_TARGET=RELEASE
-    - TRAVIS_TARGET=DEBUG
-    - TRAVIS_TARGET=MODULES
 
 notifications:
   email: false
