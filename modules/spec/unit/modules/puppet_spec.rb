@@ -21,6 +21,7 @@ describe "pxp-module-puppet" do
                                             "transaction_uuid" => "unknown",
                                             "environment"      => "unknown",
                                             "status"           => "unknown",
+                                            "metrics"          => {},
                                             "exitcode"         => 42,
                                             "version"          => 1}
     end
@@ -107,6 +108,7 @@ describe "pxp-module-puppet" do
            "transaction_uuid" => "unknown",
            "environment"      => "unknown",
            "status"           => "unknown",
+           "metrics"          => {},
            "error_type"       => "agent_failed_to_start",
            "error"            => "test error",
            "exitcode"         => 42,
@@ -127,6 +129,7 @@ describe "pxp-module-puppet" do
            "transaction_uuid" => "unknown",
            "environment"      => "unknown",
            "status"           => "unknown",
+           "metrics"          => {},
            "error_type"       => "no_last_run_report",
            "error"            => "#{last_run_report_path} doesn't exist",
            "exitcode"         => 0,
@@ -144,6 +147,7 @@ describe "pxp-module-puppet" do
            "transaction_uuid" => "unknown",
            "environment"      => "unknown",
            "status"           => "unknown",
+           "metrics"          => {},
            "error_type"       => "invalid_last_run_report",
            "error"            => "#{last_run_report_path} could not be loaded: error",
            "exitcode"         => 0,
@@ -171,6 +175,7 @@ describe "pxp-module-puppet" do
            "transaction_uuid" => "unknown",
            "environment"      => "unknown",
            "status"           => "unknown",
+           "metrics"          => {},
            "error_type"       => "no_last_run_report",
            "error"            => "#{last_run_report_path} was not written",
            "exitcode"         => -1,
@@ -187,6 +192,7 @@ describe "pxp-module-puppet" do
       allow(last_run_report).to receive(:[]).with('transaction_uuid').and_return("ac59acbe-6a0f-49c9-8ece-f781a689fda9")
       allow(last_run_report).to receive(:[]).with('environment').and_return("production")
       allow(last_run_report).to receive(:[]).with('status').and_return("changed")
+      allow(last_run_report).to receive(:[]).with('metrics').and_return({})
 
       allow(File).to receive(:mtime).and_return(start_time+1)
       allow(File).to receive(:exist?).and_return(true)
@@ -198,6 +204,7 @@ describe "pxp-module-puppet" do
            "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
            "environment"      => "production",
            "status"           => "changed",
+           "metrics"          => {},
            "error_type"       => "agent_exit_non_zero",
            "error"            => "Puppet agent exited with a non 0 exitcode",
            "exitcode"         => -1,
@@ -205,41 +212,33 @@ describe "pxp-module-puppet" do
     end
 
     it "correctly processes the last_run_report" do
-      start_time = Time.now
-      run_time = Time.now + 10
-      last_run_report = double(:last_run_report)
-
-      allow(last_run_report).to receive(:[]).with('kind').and_return("apply")
-      allow(last_run_report).to receive(:[]).with('time').and_return(run_time)
-      allow(last_run_report).to receive(:[]).with('transaction_uuid').and_return("ac59acbe-6a0f-49c9-8ece-f781a689fda9")
-      allow(last_run_report).to receive(:[]).with('environment').and_return("production")
-      allow(last_run_report).to receive(:[]).with('status').and_return("changed")
-
-      allow(File).to receive(:mtime).and_return(start_time+1)
-      allow(File).to receive(:exist?).and_return(true)
-      allow_any_instance_of(Object).to receive(:parse_report).with(last_run_report_path).and_return(last_run_report)
-
-      expect(get_result_from_report(last_run_report_path, 0, default_configuration, start_time)).to be ==
-          {"kind"             => "apply",
-           "time"             => run_time,
-           "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
-           "environment"      => "production",
-           "status"           => "changed",
-           "exitcode"         => 0,
-           "version"          => 1}
-    end
-
-    it 'processes a last_run_report containing unknown Ruby objects' do
       start_time = Time.parse('2016-01-01')
-      expect(get_result_from_report(last_run_report_path, 0, default_configuration, start_time)).to be ==
-          {'kind'             => 'apply',
-           'time'             => Time.parse('2016-02-24 23:07:21.694017000 +00:00'),
-           'transaction_uuid' => '691f00ee-86fa-4563-8b53-f60c1fdae601',
-           'environment'      => 'production',
-           'status'           => 'changed',
-           'exitcode'         => 0,
-           'version'          => 1}
+      result = get_result_from_report(last_run_report_path, 0, default_configuration, start_time)
+      result.delete('metrics')
+      expect(result).to be ==
+        {'kind'             => 'apply',
+         'time'             => Time.parse('2016-02-24 23:07:21.694017000 +00:00'),
+         'transaction_uuid' => '691f00ee-86fa-4563-8b53-f60c1fdae601',
+         'environment'      => 'production',
+         'status'           => 'changed',
+         'exitcode'         => 0,
+         'version'          => 1}
     end
+
+    it "includes metrics in the report" do
+      start_time = Time.parse('2016-01-01')
+      result = get_result_from_report(last_run_report_path, 0, default_configuration, start_time)
+      expect(result['metrics']).to be ==
+        {'total' => 183,
+         'skipped' => 0,
+         'failed' => 0,
+         'failed_to_restart' => 0,
+         'restarted' => 0,
+         'changed' => 1,
+         'out_of_sync' => 1,
+         'scheduled' => 0,}
+    end
+
   end
 
   describe "start_run" do
@@ -407,6 +406,9 @@ describe "pxp-module-puppet" do
                 },
                 :transaction_uuid => {
                   :type => "string"
+                },
+                :metrics => {
+                  :type => "object"
                 },
                 :environment => {
                   :type => "string"
