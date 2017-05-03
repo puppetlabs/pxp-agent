@@ -70,6 +70,7 @@ def last_run_result(exitcode)
           "transaction_uuid" => "unknown",
           "environment"      => "unknown",
           "status"           => "unknown",
+          "metrics"          => {},
           "exitcode"         => exitcode,
           "version"          => 1}
 end
@@ -133,6 +134,12 @@ def parse_report(filename)
   data.to_ruby
 end
 
+def nest_metrics(metrics)
+  metrics.fetch('resources', {}).fetch('values', {}).inject({}) do |result, (name,human_name,value)|
+    result.merge(name => value)
+  end
+end
+
 def get_result_from_report(last_run_report, exitcode, config, start_time)
   if !File.exist?(last_run_report)
     return make_error_result(exitcode, Errors::NoLastRunReport,
@@ -165,6 +172,7 @@ def get_result_from_report(last_run_report, exitcode, config, start_time)
   run_result["transaction_uuid"] = last_run_report_yaml['transaction_uuid']
   run_result["environment"] = last_run_report_yaml['environment']
   run_result["status"] = last_run_report_yaml['status']
+  run_result["metrics"] = nest_metrics(last_run_report_yaml['metrics'])
 
   return run_result
 end
@@ -262,6 +270,9 @@ def metadata()
             },
             :transaction_uuid => {
               :type => "string"
+            },
+            :metrics => {
+              :type => "object"
             },
             :environment => {
               :type => "string"
