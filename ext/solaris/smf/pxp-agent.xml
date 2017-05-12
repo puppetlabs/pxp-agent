@@ -30,7 +30,7 @@
         <loctext xml:lang="C">PCP Execution Protocol (PXP) Agent</loctext>
       </common_name>
       <documentation>
-        <manpage title="" section="1"/>
+        <manpage title="pxp-agent" section="1"/>
         <doc_link name="puppetlabs.com" uri="http://puppetlabs.com/puppet/introduction"/>
       </documentation>
     </template>
