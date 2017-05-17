@@ -49,7 +49,7 @@ SITEPP
     rescue => exception
       fail("Exception occurred when trying to run Puppet on all agents: #{exception.message}")
     end
-    applicable_agents.each_with_index do |agent|
+    applicable_agents.each do |agent|
       step "Check Run Puppet response for #{agent}" do
         identity = "pcp://#{agent}/agent"
         assert(responses[identity][:data].has_key?("results"),
