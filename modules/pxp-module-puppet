@@ -4,13 +4,11 @@
 require 'json'
 require 'yaml'
 require 'puppet'
+require 'puppet/agent'
+require 'puppet/configurer'
 
 module Errors
   InvalidJson = "invalid_json"
-  NoPuppetBin = "no_puppet_bin"
-  NoLastRunReport = "no_last_run_report"
-  InvalidLastRunReport = "invalid_last_run_report"
-  AlreadyRunning = "agent_already_running"
   Disabled = "agent_disabled"
   FailedToStart = "agent_failed_to_start"
   NonZeroExit = "agent_exit_non_zero"
@@ -27,43 +25,6 @@ end
 
 DEFAULT_EXITCODE = -1
 
-env_fix_up = nil
-
-# use this way of defining the `get_env_fix_up` method so that it can "see"
-# the `env_fix_up` variable
-self.class.send(:define_method, :get_env_fix_up) do
-  # If running in a C or POSIX locale, ask Puppet to use UTF-8
-  base_env = {}
-  if Encoding.default_external == Encoding::US_ASCII
-    base_env = {"RUBYOPT" => "#{ENV['RUBYOPT']} -EUTF-8"}
-  end
-
-  # Prepare an environment fix-up to make up for its cleansing performed
-  # by the Puppet::Util::Execution.execute function.
-  # This fix-up is meant for running puppet under a non-root user;
-  # puppet cannot find the user's HOME directory otherwise.
-  env_fix_up ||= if Puppet.features.microsoft_windows? || Process.euid == 0
-    # no environment fix-up is needed on windows or for root
-    base_env
-  else
-    begin
-      require 'etc'
-
-      pwentry = Etc.getpwuid(Process.euid)
-
-      {"USER"    => pwentry.name,
-       "LOGNAME" => pwentry.name,
-       "HOME"    => pwentry.dir}.merge base_env
-    rescue => e
-      # oh well ..., let's give it a try without the environment fix-up
-      myname = File.basename($0)
-      $stderr.puts "#{myname}: Could not fix environment for effective UID #{Process.euid}: #{e.message}"
-      $stderr.puts "#{myname}: Expect puppet run problems"
-      base_env
-    end
-  end
-end
-
 def last_run_result(exitcode)
   return {"kind"             => "unknown",
           "time"             => "unknown",
@@ -75,42 +36,12 @@ def last_run_result(exitcode)
           "version"          => 1}
 end
 
-def force_unicode(s)
-  begin
-    # Later comparisons assume UTF-8. Convert to that encoding now.
-    s.encode(Encoding::UTF_8)
-  rescue Encoding::InvalidByteSequenceError
-    # Found non-native characters, hope it's a UTF-8 string. Since this is Puppet, and
-    # incorrect characters probably means we're in a C or POSIX locale, this is usually safe.
-    s.force_encoding(Encoding::UTF_8)
-  end
+def running?(logs)
+  !!logs.find {|r| r.to_s =~ /Run of Puppet configuration client already in progress/}
 end
 
-def check_config_print(cli_arg, config)
-  command_array = [config["puppet_bin"], "agent", "--configprint", cli_arg]
-  process_output = Puppet::Util::Execution.execute(command_array,
-                                                   {:custom_environment => get_env_fix_up(),
-                                                    :override_locale => false})
-  return force_unicode(process_output.to_s).chomp
-end
-
-def running?(run_result)
-  !!(run_result =~ /Run of Puppet configuration client already in progress/)
-end
-
-def disabled?(run_result)
-  !!(run_result =~ /disabled(.*?)Use 'puppet agent --enable' to re-enable/m)
-end
-
-def make_environment_hash()
-  # NB: we're ignoring the `env` array for setting the environment
-  return get_env_fix_up()
-end
-
-def make_command_array(config, action_input)
-  cmd_array = [config["puppet_bin"], "agent"]
-  cmd_array +=  action_input["flags"]
-  return cmd_array
+def disabled?(logs)
+  !!logs.find {|r| r.to_s =~ /disabled(.*?)Use 'puppet agent --enable' to re-enable/m}
 end
 
 def make_error_result(exitcode, error_type, error_message)
@@ -120,46 +51,15 @@ def make_error_result(exitcode, error_type, error_message)
   return result
 end
 
-def parse_report(filename)
-  # Read the report and drop Ruby objects first. We can't parse the Ruby objects
-  # (because we don't have Puppet loaded) and don't need that data.
-  # Psych::Nodes::Node#each iterates over each node in the parsed document tree.
-  # YAML.parse_file returns a Psych::Nodes::Document, and #root returns the
-  # root-level Node.
-  data = YAML.parse_file(filename)
-  data.root.each do |o|
-    o.tag = nil if o.respond_to?(:tag=)
-  end
-
-  data.to_ruby
-end
-
 def nest_metrics(metrics)
-  metrics.fetch('resources', {}).fetch('values', {}).inject({}) do |result, (name,human_name,value)|
+  resources = metrics['resources']
+  return {} unless resources
+  resources.values.inject({}) do |result, (name,human_name,value)|
     result.merge(name => value)
   end
 end
 
-def get_result_from_report(last_run_report, exitcode, config, start_time)
-  if !File.exist?(last_run_report)
-    return make_error_result(exitcode, Errors::NoLastRunReport,
-                             "#{last_run_report} doesn't exist")
-  end
-
-  if start_time && File.mtime(last_run_report) == start_time
-    return make_error_result(exitcode, Errors::NoLastRunReport,
-                             "#{last_run_report} was not written")
-  end
-
-  last_run_report_yaml = {}
-
-  begin
-    last_run_report_yaml = parse_report(last_run_report)
-  rescue => e
-    return make_error_result(exitcode, Errors::InvalidLastRunReport,
-                             "#{last_run_report} could not be loaded: #{e}")
-  end
-
+def get_result_from_report(report, exitcode)
   if exitcode == 0
     run_result = last_run_result(exitcode)
   else
@@ -167,12 +67,12 @@ def get_result_from_report(last_run_report, exitcode, config, start_time)
                                    "Puppet agent exited with a non 0 exitcode")
   end
 
-  run_result["kind"] = last_run_report_yaml['kind']
-  run_result["time"] = last_run_report_yaml['time']
-  run_result["transaction_uuid"] = last_run_report_yaml['transaction_uuid']
-  run_result["environment"] = last_run_report_yaml['environment']
-  run_result["status"] = last_run_report_yaml['status']
-  run_result["metrics"] = nest_metrics(last_run_report_yaml['metrics'])
+  run_result["kind"] = report.kind
+  run_result["time"] = report.time
+  run_result["transaction_uuid"] = report.transaction_uuid
+  run_result["environment"] = report.environment
+  run_result["status"] = report.status
+  run_result["metrics"] = nest_metrics(report.metrics)
 
   return run_result
 end
@@ -187,16 +87,12 @@ def wait_for_lockfile(lockfile = '', check_interval = 0.1, give_up_after = 30)
   end
 end
 
-def start_run(config, action_input)
+def start_run(action_input)
   exitcode = DEFAULT_EXITCODE
-  cmd = make_command_array(config, action_input)
-  env = make_environment_hash()
-
-  last_run_report = check_config_print("lastrunreport", config)
-  if last_run_report.empty?
-    return make_error_result(exitcode, Errors::NoLastRunReport,
-                             "could not find the location of the last run report")
-  end
+  cmd = Puppet::Util::CommandLine.new('agent', action_input['flags'])
+  Puppet.initialize_settings(cmd.args)
+  agent = Puppet::Agent.new(Puppet::Configurer, false)
+  transaction_uuid = SecureRandom.uuid
 
   # Initially ignore the lockfile. It might be out-dated, so we give Puppet a chance
   # to clean it up and run.
@@ -204,36 +100,24 @@ def start_run(config, action_input)
   while true
     wait_for_lockfile(lockfile)
 
-    start_time = File.mtime(last_run_report) if File.exist?(last_run_report)
-
-    run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false,
-                                                       :custom_environment => env,
-                                                       :override_locale => false})
-
-    if !run_result
+    begin
+      report = Puppet::Transaction::Report.new("apply", nil, Puppet[:environment], transaction_uuid)
+      exitcode = agent.run(:report => report, :transaction_uuid => transaction_uuid)
+    rescue => e
       return make_error_result(exitcode, Errors::FailedToStart,
-                               "Failed to start Puppet agent")
+                               "Failed to start Puppet agent: #{e}")
     end
 
-    exitcode = run_result.exitstatus
-    puppet_output = force_unicode(run_result.to_s)
-
-    if disabled?(puppet_output)
+    if disabled?(report.logs)
       return make_error_result(exitcode, Errors::Disabled,
                                "Puppet agent is disabled")
-    elsif running?(puppet_output)
+    elsif running?(report.logs)
       # Puppet is already running, attempt to wait until it finishes and retry.
-      lockfile = check_config_print('agent_catalog_run_lockfile', config)
-      if lockfile.empty?
-        # Can't identify lockfile, just report an error.
-        return make_error_result(exitcode, Errors::AlreadyRunning,
-                                 "Puppet agent is already performing a run; it also appears to be" +
-                                 " misconfigured, agent_catalog_run_lockfile is an empty string")
-      end
+      lockfile = Puppet[:agent_catalog_run_lockfile]
       next
     end
 
-    return get_result_from_report(last_run_report, exitcode, config, start_time)
+    return get_result_from_report(report, exitcode)
   end
 end
 
@@ -309,31 +193,6 @@ def metadata()
   }
 end
 
-def run(config, action_input)
-  if !File.exist?(config["puppet_bin"])
-    return make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
-                             "Puppet executable '#{config["puppet_bin"]}' does not exist")
-  end
-
-  return start_run(config, action_input)
-end
-
-def get_configuration(args)
-  config = args["configuration"] || {}
-
-  if config["puppet_bin"].nil? || config["puppet_bin"].empty?
-    if !Puppet.features.microsoft_windows?
-      config["puppet_bin"] = "/opt/puppetlabs/bin/puppet"
-    else
-      module_path = File.expand_path(File.dirname(__FILE__))
-      puppet_bin = File.join(module_path, '..', '..', 'bin', 'puppet.bat')
-      config["puppet_bin"] = File.expand_path(puppet_bin)
-    end
-  end
-
-  config
-end
-
 DEFAULT_FLAGS = ["--onetime", "--no-daemonize", "--verbose"]
 
 DEFAULT_FLAGS_NAMES = ["onetime", "daemonize", "verbose"]
@@ -401,6 +260,8 @@ def get_action_input(args)
         end
       end
     end
+  else
+    action_input["flags"] = []
   end
 
   action_input["flags"] = action_input["flags"] | DEFAULT_FLAGS
@@ -458,13 +319,12 @@ def action_run(input)
   end
 
   begin
-    config = get_configuration(args)
     action_input = get_action_input(args)
   rescue ProcessingError => e
     return make_error_result(DEFAULT_EXITCODE, e.error_type, e.message)
   end
 
-  run(config, action_input)
+  start_run(action_input)
 end
 
 if __FILE__ == $0
