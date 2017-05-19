@@ -159,7 +159,7 @@ module Pxp
       end
     end
 
-    def get_result_from_report(last_run_report, exitcode, config, start_time)
+    def get_result_from_report(last_run_report, exitcode, start_time)
       if !File.exist?(last_run_report)
         return self.class.make_error_result(exitcode, Errors::NoLastRunReport,
                                  "#{last_run_report} doesn't exist")
@@ -251,7 +251,7 @@ module Pxp
           next
         end
 
-        return get_result_from_report(last_run_report, exitcode, config, start_time)
+        return get_result_from_report(last_run_report, exitcode, start_time)
       end
     end
 
@@ -336,7 +336,7 @@ module Pxp
                                  "Puppet executable '#{config["puppet_bin"]}' does not exist")
       end
 
-      return start_run(config)
+      start_run
     end
 
     def self.add_config_defaults(config)

@@ -125,7 +125,7 @@ describe Pxp::ModulePuppet do
 
     it "doesn't process the last_run_report if the file doesn't exist" do
       allow(File).to receive(:exist?).and_return(false)
-      expect(subject.get_result_from_report(last_run_report_path, 0, default_configuration, Time.now)).to be ==
+      expect(subject.get_result_from_report(last_run_report_path, 0, Time.now)).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
            "transaction_uuid" => "unknown",
@@ -143,7 +143,7 @@ describe Pxp::ModulePuppet do
       allow(File).to receive(:mtime).and_return(start_time+1)
       allow(File).to receive(:exist?).and_return(true)
       allow(subject).to receive(:parse_report).and_raise("error")
-      expect(subject.get_result_from_report(last_run_report_path, 0, default_configuration, start_time)).to be ==
+      expect(subject.get_result_from_report(last_run_report_path, 0, start_time)).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
            "transaction_uuid" => "unknown",
@@ -171,7 +171,7 @@ describe Pxp::ModulePuppet do
       allow(File).to receive(:exist?).and_return(true)
       allow(subject).to receive(:parse_report).with(last_run_report_path).and_return(last_run_report)
 
-      expect(subject.get_result_from_report(last_run_report_path, -1, default_configuration, start_time)).to be ==
+      expect(subject.get_result_from_report(last_run_report_path, -1, start_time)).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
            "transaction_uuid" => "unknown",
@@ -200,7 +200,7 @@ describe Pxp::ModulePuppet do
       allow(File).to receive(:exist?).and_return(true)
       allow(subject).to receive(:parse_report).with(last_run_report_path).and_return(last_run_report)
 
-      expect(subject.get_result_from_report(last_run_report_path, -1, default_configuration, start_time)).to be ==
+      expect(subject.get_result_from_report(last_run_report_path, -1, start_time)).to be ==
           {"kind"             => "apply",
            "time"             => run_time,
            "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
@@ -215,7 +215,7 @@ describe Pxp::ModulePuppet do
 
     it "correctly processes the last_run_report" do
       start_time = Time.parse('2016-01-01')
-      result = subject.get_result_from_report(last_run_report_path, 0, default_configuration, start_time)
+      result = subject.get_result_from_report(last_run_report_path, 0, start_time)
       result.delete('metrics')
       expect(result).to be ==
         {'kind'             => 'apply',
@@ -229,7 +229,7 @@ describe Pxp::ModulePuppet do
 
     it "includes metrics in the report" do
       start_time = Time.parse('2016-01-01')
-      result = subject.get_result_from_report(last_run_report_path, 0, default_configuration, start_time)
+      result = subject.get_result_from_report(last_run_report_path, 0, start_time)
       expect(result['metrics']).to be ==
         {'total' => 183,
          'skipped' => 0,
@@ -264,14 +264,14 @@ describe Pxp::ModulePuppet do
     it "populates output when it terminated normally" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(0)
-      expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
+      expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
       subject.start_run
     end
 
     it "populates output when it terminated with a non 0 code" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(1)
-      expect(subject).to receive(:get_result_from_report).with(last_run_report, 1, default_configuration, anything)
+      expect(subject).to receive(:get_result_from_report).with(last_run_report, 1, anything)
       subject.start_run
     end
 
@@ -299,7 +299,7 @@ describe Pxp::ModulePuppet do
       expect(File).to receive(:exist?).with('').and_return(false)
       expect(File).to receive(:exist?).with(lockfile).and_return(true, false)
 
-      expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
+      expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
       subject.start_run
     end
 
@@ -314,7 +314,7 @@ describe Pxp::ModulePuppet do
       expect(File).to receive(:exist?).with(lockfile).exactly(301).times.and_return(true)
       expect(subject).to receive(:sleep).with(0.1).exactly(300).times
 
-      expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
+      expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
       subject.start_run
     end
 
@@ -334,7 +334,7 @@ describe Pxp::ModulePuppet do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(output)
       allow(output).to receive(:exitstatus).and_return(0)
       allow(output).to receive(:to_s).and_return(output)
-      expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
+      expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
       subject.start_run
     end
 
@@ -343,7 +343,7 @@ describe Pxp::ModulePuppet do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(output)
       allow(output).to receive(:exitstatus).and_return(0)
       allow(output).to receive(:to_s).and_return(output)
-      expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
+      expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
       subject.start_run
     end
   end
