@@ -105,7 +105,7 @@ module Pxp
       end
     end
 
-    def check_config_print(cli_arg, config)
+    def config_print(cli_arg)
       command_array = [config["puppet_bin"], "agent", "--configprint", cli_arg]
       process_output = Puppet::Util::Execution.execute(command_array,
                                                        {:custom_environment => get_env_fix_up(),
@@ -210,7 +210,7 @@ module Pxp
       exitcode = DEFAULT_EXITCODE
       env = make_environment_hash()
 
-      last_run_report = check_config_print("lastrunreport", config)
+      last_run_report = config_print("lastrunreport")
       if last_run_report.empty?
         return self.class.make_error_result(exitcode, Errors::NoLastRunReport,
                                  "could not find the location of the last run report")
@@ -241,7 +241,7 @@ module Pxp
                                    "Puppet agent is disabled")
         elsif running?(puppet_output)
           # Puppet is already running, attempt to wait until it finishes and retry.
-          lockfile = check_config_print('agent_catalog_run_lockfile', config)
+          lockfile = config_print('agent_catalog_run_lockfile')
           if lockfile.empty?
             # Can't identify lockfile, just report an error.
             return self.class.make_error_result(exitcode, Errors::AlreadyRunning,

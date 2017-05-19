@@ -31,14 +31,14 @@ describe Pxp::ModulePuppet do
     end
   end
 
-  describe "check_config_print" do
+  describe "config_print" do
     it "returns the result of configprint" do
       cli_vec = ["puppet", "agent", "--configprint", "value"]
       expect(subject).to receive(:get_env_fix_up).and_return({"FIXVAR" => "fixvalue"})
       expect(Puppet::Util::Execution).to receive(:execute).with(cli_vec,
                                                                 {:custom_environment => {"FIXVAR" => "fixvalue"},
                                                                  :override_locale => false}).and_return("value\n")
-      expect(subject.check_config_print("value", default_configuration)).to be == "value"
+      expect(subject.config_print("value")).to be == "value"
     end
 
     it "returns the result of configprint with UTF-8 even though locale is POSIX" do
@@ -48,7 +48,7 @@ describe Pxp::ModulePuppet do
                                                                 {:custom_environment => {"FIXVAR" => "fixvalue"},
                                                                  :override_locale => false}).
                                                                  and_return("value☃".force_encoding(Encoding::US_ASCII))
-      expect(subject.check_config_print("value", default_configuration)).to be == "value☃"
+      expect(subject.config_print("value")).to be == "value☃"
     end
   end
 
@@ -257,8 +257,8 @@ describe Pxp::ModulePuppet do
     }
 
     before :each do
-      allow(subject).to receive(:check_config_print).with('lastrunreport', anything).and_return(last_run_report)
-      allow(subject).to receive(:check_config_print).with('agent_catalog_run_lockfile', anything).and_return(lockfile)
+      allow(subject).to receive(:config_print).with('lastrunreport').and_return(last_run_report)
+      allow(subject).to receive(:config_print).with('agent_catalog_run_lockfile').and_return(lockfile)
     end
 
     it "populates output when it terminated normally" do
@@ -324,7 +324,7 @@ describe Pxp::ModulePuppet do
       allow(subject).to receive(:disabled?).and_return(false)
       expect(subject).to receive(:running?).and_return(true)
 
-      allow(subject).to receive(:check_config_print).with('agent_catalog_run_lockfile', anything).and_return('')
+      allow(subject).to receive(:config_print).with('agent_catalog_run_lockfile').and_return('')
       expect(described_class).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::AlreadyRunning, anything)
       subject.start_run
     end
