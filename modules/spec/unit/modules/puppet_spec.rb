@@ -159,13 +159,13 @@ describe Pxp::ModulePuppet do
     it "doesn't process the last_run_report if it hasn't been updated after the run was kicked" do
       start_time = Time.now
       run_time = Time.now - 10
-      last_run_report = double(:last_run_report)
-
-      allow(last_run_report).to receive(:[]).with('kind').and_return("apply")
-      allow(last_run_report).to receive(:[]).with('time').and_return(run_time)
-      allow(last_run_report).to receive(:[]).with('transaction_uuid').and_return("ac59acbe-6a0f-49c9-8ece-f781a689fda9")
-      allow(last_run_report).to receive(:[]).with('environment').and_return("production")
-      allow(last_run_report).to receive(:[]).with('status').and_return("changed")
+      last_run_report = {
+        'kind' => "apply",
+        'time' => run_time,
+        'transaction_uuid' => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
+        'environment' => "production",
+        'status' => "changed"
+      }
 
       allow(File).to receive(:mtime).and_return(start_time)
       allow(File).to receive(:exist?).and_return(true)
@@ -187,14 +187,14 @@ describe Pxp::ModulePuppet do
     it "processes the last_run_report if it has been updated after the run was kicked" do
       start_time = Time.now
       run_time = Time.now + 10
-      last_run_report = double(:last_run_report)
-
-      allow(last_run_report).to receive(:[]).with('kind').and_return("apply")
-      allow(last_run_report).to receive(:[]).with('time').and_return(run_time)
-      allow(last_run_report).to receive(:[]).with('transaction_uuid').and_return("ac59acbe-6a0f-49c9-8ece-f781a689fda9")
-      allow(last_run_report).to receive(:[]).with('environment').and_return("production")
-      allow(last_run_report).to receive(:[]).with('status').and_return("changed")
-      allow(last_run_report).to receive(:[]).with('metrics').and_return({})
+      last_run_report = {
+        'kind' => "apply",
+        'time' => run_time,
+        'transaction_uuid' => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
+        'environment' => "production",
+        'status' => "changed",
+        'metrics' => {},
+      }
 
       allow(File).to receive(:mtime).and_return(start_time+1)
       allow(File).to receive(:exist?).and_return(true)
