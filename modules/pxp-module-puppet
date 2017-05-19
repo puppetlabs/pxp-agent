@@ -126,7 +126,7 @@ module Pxp
       return get_env_fix_up()
     end
 
-    def make_command_array(config, flags)
+    def puppet_agent_command
       cmd_array = [config["puppet_bin"], "agent"]
       cmd_array += flags
       return cmd_array
@@ -208,7 +208,6 @@ module Pxp
 
     def start_run
       exitcode = DEFAULT_EXITCODE
-      cmd = make_command_array(config, flags)
       env = make_environment_hash()
 
       last_run_report = check_config_print("lastrunreport", config)
@@ -225,9 +224,9 @@ module Pxp
 
         start_time = File.mtime(last_run_report) if File.exist?(last_run_report)
 
-        run_result = Puppet::Util::Execution.execute(cmd, {:failonfail => false,
-                                                           :custom_environment => env,
-                                                           :override_locale => false})
+        run_result = Puppet::Util::Execution.execute(puppet_agent_command, {:failonfail => false,
+                                                                            :custom_environment => env,
+                                                                            :override_locale => false})
 
         if !run_result
           return self.class.make_error_result(exitcode, Errors::FailedToStart,

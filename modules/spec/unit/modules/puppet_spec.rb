@@ -10,10 +10,8 @@ describe Pxp::ModulePuppet do
     {"flags" => []}
   }
 
-  let(:default_flags) { described_class.process_flags(default_input) }
-
   let(:subject) {
-    described_class.new(default_configuration, default_flags)
+    described_class.new(default_configuration, described_class.process_flags(default_input))
   }
 
   let(:default_configuration) {
@@ -91,18 +89,16 @@ describe Pxp::ModulePuppet do
     end
   end
 
-  describe "make_command_array" do
+  describe "puppet_agent_command" do
     it "should correctly append the executable and action" do
-      expect(subject.make_command_array(default_configuration, default_input['flags'])).to be ==
-        ["puppet", "agent"]
+      runner = described_class.new(default_configuration, [])
+      expect(runner.puppet_agent_command).to be == ["puppet", "agent"]
     end
 
     it "should correctly append any flags" do
-      input = default_input
-      input["flags"] = ["--noop", "--verbose"]
-      subject = described_class.new(default_configuration, input)
-      expect(subject.make_command_array(default_configuration, input['flags'])).to be ==
-        ["puppet", "agent", "--noop", "--verbose"]
+      default_input["flags"] = ["--noop", "--verbose"]
+      expect(subject.puppet_agent_command).to be ==
+        ["puppet", "agent", "--noop", "--verbose", "--onetime", "--no-daemonize"]
     end
   end
 
