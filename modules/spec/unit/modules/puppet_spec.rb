@@ -10,20 +10,24 @@ describe Pxp::ModulePuppet do
     {"flags" => []}
   }
 
+  let(:subject) {
+    described_class.new(default_configuration, default_input)
+  }
+
   let(:default_configuration) {
     {"puppet_bin" => "puppet"}
   }
 
   describe "last_run_result" do
     it "returns the basic structure with exitcode set" do
-      expect(subject.last_run_result(42)).to be == {"kind"             => "unknown",
-                                                    "time"             => "unknown",
-                                                    "transaction_uuid" => "unknown",
-                                                    "environment"      => "unknown",
-                                                    "status"           => "unknown",
-                                                    "metrics"          => {},
-                                                    "exitcode"         => 42,
-                                                    "version"          => 1}
+      expect(described_class.last_run_result(42)).to be == {"kind"             => "unknown",
+                                                            "time"             => "unknown",
+                                                            "transaction_uuid" => "unknown",
+                                                            "environment"      => "unknown",
+                                                            "status"           => "unknown",
+                                                            "metrics"          => {},
+                                                            "exitcode"         => 42,
+                                                            "version"          => 1}
     end
   end
 
@@ -102,7 +106,7 @@ describe Pxp::ModulePuppet do
 
   describe "make_error_result" do
     it "should set the exitcode, error_type and error_message" do
-      expect(subject.make_error_result(42, Pxp::ModulePuppet::Errors::FailedToStart, "test error")).to be ==
+      expect(described_class.make_error_result(42, Pxp::ModulePuppet::Errors::FailedToStart, "test error")).to be ==
           {"kind"             => "unknown",
            "time"             => "unknown",
            "transaction_uuid" => "unknown",
@@ -275,7 +279,7 @@ describe Pxp::ModulePuppet do
 
     it "populates output when it couldn't start" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(nil)
-      expect(subject).to receive(:make_error_result).with(-1, Pxp::ModulePuppet::Errors::FailedToStart, anything)
+      expect(described_class).to receive(:make_error_result).with(-1, Pxp::ModulePuppet::Errors::FailedToStart, anything)
       subject.start_run(default_configuration, default_input)
     end
 
@@ -283,7 +287,7 @@ describe Pxp::ModulePuppet do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(1)
       expect(subject).to receive(:disabled?).and_return(true)
-      expect(subject).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::Disabled, anything)
+      expect(described_class).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::Disabled, anything)
       subject.start_run(default_configuration, default_input)
     end
 
@@ -323,7 +327,7 @@ describe Pxp::ModulePuppet do
       expect(subject).to receive(:running?).and_return(true)
 
       allow(subject).to receive(:check_config_print).with('agent_catalog_run_lockfile', anything).and_return('')
-      expect(subject).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::AlreadyRunning, anything)
+      expect(described_class).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::AlreadyRunning, anything)
       subject.start_run(default_configuration, default_input)
     end
 
@@ -348,27 +352,27 @@ describe Pxp::ModulePuppet do
 
   describe "get_flag_name" do
     it "returns the flag name" do
-      expect(subject.get_flag_name("--spam")).to be == "spam"
+      expect(described_class.get_flag_name("--spam")).to be == "spam"
     end
 
     it "returns the flag name in case it's negative" do
-      expect(subject.get_flag_name("--no-spam")).to be == "spam"
+      expect(described_class.get_flag_name("--no-spam")).to be == "spam"
     end
 
     it "returns an empty string in case the flag has only a suffix" do
-      expect(subject.get_flag_name("--")).to be == ""
-      expect(subject.get_flag_name("--no-")).to be == ""
+      expect(described_class.get_flag_name("--")).to be == ""
+      expect(described_class.get_flag_name("--no-")).to be == ""
     end
 
     it "raises an error in case of invalid suffix" do
       expect do
-        subject.get_flag_name("-spam")
+        described_class.get_flag_name("-spam")
       end.to raise_error(RuntimeError, /Assertion error: we're here by mistake/)
     end
 
     it "raises an error in case the flag has no suffix" do
       expect do
-        subject.get_flag_name("eggs")
+        described_class.get_flag_name("eggs")
       end.to raise_error(RuntimeError, /Assertion error: we're here by mistake/)
     end
   end
@@ -449,77 +453,84 @@ describe Pxp::ModulePuppet do
     end
   end
 
-  describe "action_run" do
+  describe "create_runner" do
     it "fails when invalid json is passed" do
-      expect(subject.action_run("{")["error"]).to be ==
+      expect(described_class.create_runner("{")["error"]).to be ==
           "Invalid json received on STDIN: {"
     end
 
     it "fails when the passed json data isn't a hash" do
-      expect(subject.action_run("[]")["error"]).to be ==
+      expect(described_class.create_runner("[]")["error"]).to be ==
           "The json received on STDIN was not a hash: []"
     end
 
     it "fails when the passed json data doesn't contain the 'input' key" do
-      expect(subject.action_run("{\"input\": null}")["error"]).to be ==
+      expect(described_class.create_runner("{\"input\": null}")["error"]).to be ==
           "The json received on STDIN did not contain a valid 'input' key: {\"input\"=>nil}"
     end
 
     it "fails when the flags of the passed json data are not all whitelisted" do
       passed_args = {"configuration" => default_configuration,
                      "input" => {"flags" => ["--prerun_command", "echo safe"]}}
-      expect(subject.action_run(passed_args.to_json)["error"]).to be ==
+      expect(described_class.create_runner(passed_args.to_json)["error"]).to be ==
           "The json received on STDIN included a non-permitted flag: --prerun_command"
+    end
+
+    it "does not allow changing settings of default flags" do
+      passed_args = {"configuration" => default_configuration,
+                     "input" => {"flags" => ["--daemonize"]}}
+      expect(described_class.create_runner(passed_args.to_json)["error"]).to be ==
+          "The json received on STDIN overrides a default setting with: --daemonize"
     end
 
     it "fails when a non-whitelisted flag of the passed json data has whitespace padding" do
       passed_args = {"configuration" => default_configuration,
                      "input" => {"flags" => ["  --prerun_command", "echo safe"]}}
-      expect(subject.action_run(passed_args.to_json)["error"]).to be ==
+      expect(described_class.create_runner(passed_args.to_json)["error"]).to be ==
           "The json received on STDIN included a non-permitted flag: --prerun_command"
     end
 
     it "fails when a non-whitelisted flag of the passed json data has unicode padding" do
       passed_args = {"configuration" => default_configuration,
                      "input" => {"flags" => [" --prerun_command", "echo safe"]}}
-      expect(subject.action_run(passed_args.to_json)["error"]).to be ==
+      expect(described_class.create_runner(passed_args.to_json)["error"]).to be ==
           "The json received on STDIN contained characters not present in valid flags:  --prerun_command"
     end
 
     it "fails when a non-whitelisted flag of the passed json data has escaped padding" do
       passed_args = {"configuration" => default_configuration,
                      "input" => {"flags" => ["\\t--prerun_command", "echo safe"]}}
-      expect(subject.action_run(passed_args.to_json)["error"]).to be ==
+      expect(described_class.create_runner(passed_args.to_json)["error"]).to be ==
           "The json received on STDIN contained characters not present in valid flags: \\t--prerun_command"
     end
 
+  end
+
+  describe "run" do
     it "populates flags with the correct defaults" do
       expected_input = {"flags" => ["--onetime", "--no-daemonize", "--verbose"]}
+      subject = described_class.new(default_configuration, expected_input)
+
       allow(File).to receive(:exist?).and_return(true)
       allow(subject).to receive(:running?).and_return(false)
       allow(subject).to receive(:disabled?).and_return(false)
       expect(subject).to receive(:start_run).with(default_configuration,
                                                                  expected_input)
-      subject.action_run({"configuration" => default_configuration, "input" => default_input}.to_json)
+      subject.run
     end
 
     it "passes --job-id flag if a job id is set" do
       input = default_input.merge('job' => 'foobar')
       expected_input = {"flags" => ["--onetime", "--no-daemonize", "--verbose", "--job-id", "foobar"],
                         "job" => "foobar"}
+      subject = described_class.new(default_configuration, expected_input)
+
       allow(File).to receive(:exist?).and_return(true)
       allow(subject).to receive(:running?).and_return(false)
       allow(subject).to receive(:disabled?).and_return(false)
       expect(subject).to receive(:start_run).with(default_configuration,
                                                                  expected_input)
-      subject.action_run({"configuration" => default_configuration, "input" => input}.to_json)
-    end
-
-    it "does not allow changing settings of default flags" do
-      passed_args = {"configuration" => default_configuration,
-                     "input" => {"flags" => ["--daemonize"]}}
-      expect(subject.action_run(passed_args.to_json)["error"]).to be ==
-          "The json received on STDIN overrides a default setting with: --daemonize"
+      subject.run
     end
 
     it "does not add flag defaults if they have been passed" do
@@ -527,24 +538,30 @@ describe Pxp::ModulePuppet do
                         "flags" => ["--show_diff", "--onetime", "--no-daemonize", "--verbose"]}
       passed_input = {"env" => [],
                       "flags" => ["--show_diff", "--onetime", "--no-daemonize"]}
+
+      subject = described_class.create_runner({"configuration" => default_configuration, "input" => passed_input}.to_json)
+
       allow(File).to receive(:exist?).and_return(true)
       allow(subject).to receive(:running?).and_return(false)
       allow(subject).to receive(:disabled?).and_return(false)
       expect(subject).to receive(:start_run).with(default_configuration,
                                                                  expected_input)
-      subject.action_run({"configuration" => default_configuration, "input" => passed_input}.to_json)
+      subject.run
     end
 
     it "allows passing arguments of flags" do
       expected_input = {"flags" => ["--environment", "the_environment",
                                     "--onetime", "--no-daemonize", "--verbose"]}
       passed_input = {"flags" => ["--environment", "the_environment"]}
+
+      subject = described_class.create_runner({"configuration" => default_configuration, "input" => passed_input}.to_json)
+
       allow(File).to receive(:exist?).and_return(true)
       allow(subject).to receive(:running?).and_return(false)
       allow(subject).to receive(:disabled?).and_return(false)
       expect(subject).to receive(:start_run).with(default_configuration,
                                                                  expected_input)
-      subject.action_run({"configuration" => default_configuration, "input" => passed_input}.to_json)
+      subject.run
     end
 
     it "allows passing the obsolete `env` input array" do
@@ -553,17 +570,20 @@ describe Pxp::ModulePuppet do
                                     "--onetime", "--no-daemonize", "--verbose"]}
       passed_input = {"env" => ["MY_PATH", "/some/path"],
                       "flags" => ["--environment", "the_environment"]}
+
+      subject = described_class.create_runner({"configuration" => default_configuration, "input" => passed_input}.to_json)
+
       allow(File).to receive(:exist?).and_return(true)
       allow(subject).to receive(:running?).and_return(false)
       allow(subject).to receive(:disabled?).and_return(false)
       expect(subject).to receive(:start_run).with(default_configuration,
                                                                  expected_input)
-      subject.action_run({"configuration" => default_configuration, "input" => passed_input}.to_json)
+      subject.run
     end
 
     it "fails when puppet_bin doesn't exist" do
       allow(File).to receive(:exist?).and_return(false)
-      expect(subject.action_run({"configuration" => default_configuration, "input" => default_input}.to_json)["error"]).to be ==
+      expect(subject.run["error"]).to be ==
           "Puppet executable 'puppet' does not exist"
     end
 
@@ -572,7 +592,7 @@ describe Pxp::ModulePuppet do
       allow(subject).to receive(:running?).and_return(false)
       allow(subject).to receive(:disabled?).and_return(false)
       expect(subject).to receive(:start_run)
-      subject.action_run({"configuration" => default_configuration, "input" => default_input}.to_json)
+      subject.run
     end
   end
 end

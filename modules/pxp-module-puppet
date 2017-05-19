@@ -27,11 +27,19 @@ module Pxp
       end
     end
 
+    attr_reader :config, :action_input
+
     def self.handle_action(action)
       if action == 'metadata'
         puts metadata.to_json
       else
-        action_results = new().action_run($stdin.read.chomp)
+        result = create_runner($stdin.read.chomp)
+        if result.is_a?(self)
+          action_results = result.run(config, action_input)
+        else
+          action_results = result
+        end
+
         print action_results.to_json
 
         unless action_results["error"].nil?
@@ -75,7 +83,7 @@ module Pxp
       end
     end
 
-    def last_run_result(exitcode)
+    def self.last_run_result(exitcode)
       return {"kind"             => "unknown",
               "time"             => "unknown",
               "transaction_uuid" => "unknown",
@@ -124,7 +132,7 @@ module Pxp
       return cmd_array
     end
 
-    def make_error_result(exitcode, error_type, error_message)
+    def self.make_error_result(exitcode, error_type, error_message)
       result = last_run_result(exitcode)
       result["error_type"] = error_type
       result["error"] = error_message
@@ -153,12 +161,12 @@ module Pxp
 
     def get_result_from_report(last_run_report, exitcode, config, start_time)
       if !File.exist?(last_run_report)
-        return make_error_result(exitcode, Errors::NoLastRunReport,
+        return self.class.make_error_result(exitcode, Errors::NoLastRunReport,
                                  "#{last_run_report} doesn't exist")
       end
 
       if start_time && File.mtime(last_run_report) == start_time
-        return make_error_result(exitcode, Errors::NoLastRunReport,
+        return self.class.make_error_result(exitcode, Errors::NoLastRunReport,
                                  "#{last_run_report} was not written")
       end
 
@@ -167,14 +175,14 @@ module Pxp
       begin
         last_run_report_yaml = parse_report(last_run_report)
       rescue => e
-        return make_error_result(exitcode, Errors::InvalidLastRunReport,
+        return self.class.make_error_result(exitcode, Errors::InvalidLastRunReport,
                                  "#{last_run_report} could not be loaded: #{e}")
       end
 
       if exitcode == 0
-        run_result = last_run_result(exitcode)
+        run_result = self.class.last_run_result(exitcode)
       else
-        run_result = make_error_result(exitcode, Errors::NonZeroExit,
+        run_result = self.class.make_error_result(exitcode, Errors::NonZeroExit,
                                        "Puppet agent exited with a non 0 exitcode")
       end
 
@@ -205,7 +213,7 @@ module Pxp
 
       last_run_report = check_config_print("lastrunreport", config)
       if last_run_report.empty?
-        return make_error_result(exitcode, Errors::NoLastRunReport,
+        return self.class.make_error_result(exitcode, Errors::NoLastRunReport,
                                  "could not find the location of the last run report")
       end
 
@@ -222,7 +230,7 @@ module Pxp
                                                            :override_locale => false})
 
         if !run_result
-          return make_error_result(exitcode, Errors::FailedToStart,
+          return self.class.make_error_result(exitcode, Errors::FailedToStart,
                                    "Failed to start Puppet agent")
         end
 
@@ -230,14 +238,14 @@ module Pxp
         puppet_output = force_unicode(run_result.to_s)
 
         if disabled?(puppet_output)
-          return make_error_result(exitcode, Errors::Disabled,
+          return self.class.make_error_result(exitcode, Errors::Disabled,
                                    "Puppet agent is disabled")
         elsif running?(puppet_output)
           # Puppet is already running, attempt to wait until it finishes and retry.
           lockfile = check_config_print('agent_catalog_run_lockfile', config)
           if lockfile.empty?
             # Can't identify lockfile, just report an error.
-            return make_error_result(exitcode, Errors::AlreadyRunning,
+            return self.class.make_error_result(exitcode, Errors::AlreadyRunning,
                                      "Puppet agent is already performing a run; it also appears to be" +
                                      " misconfigured, agent_catalog_run_lockfile is an empty string")
           end
@@ -323,16 +331,16 @@ module Pxp
       }
     end
 
-    def run(config, action_input)
+    def run
       if !File.exist?(config["puppet_bin"])
-        return make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
+        return self.class.make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
                                  "Puppet executable '#{config["puppet_bin"]}' does not exist")
       end
 
       return start_run(config, action_input)
     end
 
-    def get_configuration(args)
+    def self.get_configuration(args)
       config = args["configuration"] || {}
 
       if config["puppet_bin"].nil? || config["puppet_bin"].empty?
@@ -377,7 +385,7 @@ module Pxp
     VALID_FLAG_REGEX = /\A[a-zA-Z0-9_:,\.\-]+\Z/
 
     # This asserts that the flag has a valid prefix
-    def get_flag_name(flag)
+    def self.get_flag_name(flag)
       if flag.start_with?("--no-")
         flag[5..-1]
       elsif flag.start_with?("--")
@@ -387,7 +395,7 @@ module Pxp
       end
     end
 
-    def get_action_input(args)
+    def self.get_action_input(args)
       action_input = args["input"]
       unless action_input.is_a?(Hash)
         raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN did not contain a valid 'input' key: #{args.to_s}")
@@ -426,7 +434,7 @@ module Pxp
       action_input
     end
 
-    def action_run(input)
+    def self.create_runner(input)
       begin
         args = JSON.parse(input)
       rescue
@@ -483,7 +491,12 @@ module Pxp
         return make_error_result(DEFAULT_EXITCODE, e.error_type, e.message)
       end
 
-      run(config, action_input)
+      new(config, action_input)
+    end
+
+    def initialize(config, action_input)
+      @config = config
+      @action_input = action_input
     end
 
   end
