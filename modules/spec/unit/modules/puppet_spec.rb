@@ -391,6 +391,9 @@ describe "pxp-module-puppet" do
                   :items => {
                     :type => "string"
                   }
+                },
+                :job => {
+                  :type => "string"
                 }
               },
               :required => [:flags]
@@ -498,6 +501,18 @@ describe "pxp-module-puppet" do
       expect_any_instance_of(Object).to receive(:start_run).with(default_configuration,
                                                                  expected_input)
       action_run({"configuration" => default_configuration, "input" => default_input}.to_json)
+    end
+
+    it "passes --job-id flag if a job id is set" do
+      input = default_input.merge('job' => 'foobar')
+      expected_input = {"flags" => ["--onetime", "--no-daemonize", "--verbose", "--job-id", "foobar"],
+                        "job" => "foobar"}
+      allow(File).to receive(:exist?).and_return(true)
+      allow_any_instance_of(Object).to receive(:running?).and_return(false)
+      allow_any_instance_of(Object).to receive(:disabled?).and_return(false)
+      expect_any_instance_of(Object).to receive(:start_run).with(default_configuration,
+                                                                 expected_input)
+      action_run({"configuration" => default_configuration, "input" => input}.to_json)
     end
 
     it "does not allow changing settings of default flags" do

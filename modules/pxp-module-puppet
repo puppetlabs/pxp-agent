@@ -255,6 +255,9 @@ def metadata()
               :items => {
                 :type => "string"
               }
+            },
+            :job => {
+              :type => "string"
             }
           },
           :required => [:flags]
@@ -404,6 +407,11 @@ def get_action_input(args)
   end
 
   action_input["flags"] = action_input["flags"] | DEFAULT_FLAGS
+
+  if action_input.has_key?("job")
+    action_input["flags"] += ["--job-id", action_input["job"]]
+  end
+
   action_input
 end
 
