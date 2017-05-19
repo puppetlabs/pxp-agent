@@ -206,7 +206,18 @@ module Pxp
       end
     end
 
-    def start_run
+    # Determine whether the configured puppet bin exists. This method mostly
+    # exists for testing.
+    def puppet_bin_present?
+      File.exist?(config["puppet_bin"])
+    end
+
+    def run
+      if !puppet_bin_present?
+        return self.class.make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
+                                 "Puppet executable '#{config["puppet_bin"]}' does not exist")
+      end
+
       exitcode = DEFAULT_EXITCODE
       env = make_environment_hash()
 
@@ -328,15 +339,6 @@ module Pxp
           }
         }
       }
-    end
-
-    def run
-      if !File.exist?(config["puppet_bin"])
-        return self.class.make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
-                                 "Puppet executable '#{config["puppet_bin"]}' does not exist")
-      end
-
-      start_run
     end
 
     def self.add_config_defaults(config)

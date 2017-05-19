@@ -243,7 +243,7 @@ describe Pxp::ModulePuppet do
 
   end
 
-  describe "start_run" do
+  describe "run" do
     let(:runoutcome) {
       double(:runoutcome)
     }
@@ -259,26 +259,34 @@ describe Pxp::ModulePuppet do
     before :each do
       allow(subject).to receive(:config_print).with('lastrunreport').and_return(last_run_report)
       allow(subject).to receive(:config_print).with('agent_catalog_run_lockfile').and_return(lockfile)
+      allow(subject).to receive(:puppet_bin_present?).and_return(true)
+      allow(Puppet::Util::Execution).to receive(:execute)
+    end
+
+    it "fails when puppet_bin doesn't exist" do
+      allow(subject).to receive(:puppet_bin_present?).and_return(false)
+      expect(subject.run["error"]).to be ==
+          "Puppet executable 'puppet' does not exist"
     end
 
     it "populates output when it terminated normally" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(0)
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
-      subject.start_run
+      subject.run
     end
 
     it "populates output when it terminated with a non 0 code" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(1)
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 1, anything)
-      subject.start_run
+      subject.run
     end
 
     it "populates output when it couldn't start" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(nil)
       expect(described_class).to receive(:make_error_result).with(-1, Pxp::ModulePuppet::Errors::FailedToStart, anything)
-      subject.start_run
+      subject.run
     end
 
     it "populates the output if puppet is disabled" do
@@ -286,7 +294,7 @@ describe Pxp::ModulePuppet do
       allow(runoutcome).to receive(:exitstatus).and_return(1)
       expect(subject).to receive(:disabled?).and_return(true)
       expect(described_class).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::Disabled, anything)
-      subject.start_run
+      subject.run
     end
 
     it "waits for puppet to finish if already running" do
@@ -300,7 +308,7 @@ describe Pxp::ModulePuppet do
       expect(File).to receive(:exist?).with(lockfile).and_return(true, false)
 
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
-      subject.start_run
+      subject.run
     end
 
     it "retries puppet after 30 seconds if lockfile still present" do
@@ -315,7 +323,7 @@ describe Pxp::ModulePuppet do
       expect(subject).to receive(:sleep).with(0.1).exactly(300).times
 
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
-      subject.start_run
+      subject.run
     end
 
     it "populates the output if the lockfile cannot be identified" do
@@ -326,7 +334,7 @@ describe Pxp::ModulePuppet do
 
       allow(subject).to receive(:config_print).with('agent_catalog_run_lockfile').and_return('')
       expect(described_class).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::AlreadyRunning, anything)
-      subject.start_run
+      subject.run
     end
 
     it "processes output when puppet's output is US_ASCII (POSIX or C locale) and contains non-ASCII" do
@@ -335,7 +343,7 @@ describe Pxp::ModulePuppet do
       allow(output).to receive(:exitstatus).and_return(0)
       allow(output).to receive(:to_s).and_return(output)
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
-      subject.start_run
+      subject.run
     end
 
     it "processes output when puppet's output contains potentially syntax-significant characters" do
@@ -344,7 +352,7 @@ describe Pxp::ModulePuppet do
       allow(output).to receive(:exitstatus).and_return(0)
       allow(output).to receive(:to_s).and_return(output)
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
-      subject.start_run
+      subject.run
     end
   end
 
@@ -538,22 +546,6 @@ describe Pxp::ModulePuppet do
                "flags" => []}
 
       expect(described_class.process_flags(input)).to be == expected_flags
-    end
-  end
-
-  describe "run" do
-    it "fails when puppet_bin doesn't exist" do
-      allow(File).to receive(:exist?).and_return(false)
-      expect(subject.run["error"]).to be ==
-          "Puppet executable 'puppet' does not exist"
-    end
-
-    it "starts the run" do
-      allow(File).to receive(:exist?).and_return(true)
-      allow(subject).to receive(:running?).and_return(false)
-      allow(subject).to receive(:disabled?).and_return(false)
-      expect(subject).to receive(:start_run)
-      subject.run
     end
   end
 end
