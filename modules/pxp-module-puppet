@@ -212,6 +212,10 @@ module Pxp
       File.exist?(config["puppet_bin"])
     end
 
+    def get_start_time(last_run_report)
+      File.mtime(last_run_report) if File.exist?(last_run_report)
+    end
+
     def run
       if !puppet_bin_present?
         return self.class.make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
@@ -233,7 +237,7 @@ module Pxp
       while true
         wait_for_lockfile(lockfile)
 
-        start_time = File.mtime(last_run_report) if File.exist?(last_run_report)
+        start_time = get_start_time(last_run_report)
 
         run_result = Puppet::Util::Execution.execute(puppet_agent_command, {:failonfail => false,
                                                                             :custom_environment => env,

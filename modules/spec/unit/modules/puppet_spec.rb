@@ -244,9 +244,10 @@ describe Pxp::ModulePuppet do
   end
 
   describe "run" do
-    let(:runoutcome) {
-      double(:runoutcome)
-    }
+    let(:success_outcome) { Puppet::Util::Execution::ProcessOutput.new('', 0) }
+    let(:failure_outcome) { Puppet::Util::Execution::ProcessOutput.new('', 1) }
+    let(:disabled_outcome) { Puppet::Util::Execution::ProcessOutput.new("administratively disabled (Reason: 'testing');\nUse 'puppet agent --enable' to re-enable", 1) }
+    let(:running_outcome) { Puppet::Util::Execution::ProcessOutput.new('Run of Puppet configuration client already in progress', 1) }
 
     let(:last_run_report) {
       "/opt/puppetlabs/puppet/cache/state/last_run_report.yaml"
@@ -260,7 +261,7 @@ describe Pxp::ModulePuppet do
       allow(subject).to receive(:config_print).with('lastrunreport').and_return(last_run_report)
       allow(subject).to receive(:config_print).with('agent_catalog_run_lockfile').and_return(lockfile)
       allow(subject).to receive(:puppet_bin_present?).and_return(true)
-      allow(Puppet::Util::Execution).to receive(:execute)
+      allow(subject).to receive(:get_start_time).and_return(nil)
     end
 
     it "fails when puppet_bin doesn't exist" do
@@ -270,15 +271,13 @@ describe Pxp::ModulePuppet do
     end
 
     it "populates output when it terminated normally" do
-      allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
-      allow(runoutcome).to receive(:exitstatus).and_return(0)
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(success_outcome)
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
       subject.run
     end
 
     it "populates output when it terminated with a non 0 code" do
-      allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
-      allow(runoutcome).to receive(:exitstatus).and_return(1)
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(failure_outcome)
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 1, anything)
       subject.run
     end
@@ -290,67 +289,57 @@ describe Pxp::ModulePuppet do
     end
 
     it "populates the output if puppet is disabled" do
-      allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
-      allow(runoutcome).to receive(:exitstatus).and_return(1)
-      expect(subject).to receive(:disabled?).and_return(true)
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(disabled_outcome)
+
       expect(described_class).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::Disabled, anything)
       subject.run
     end
 
     it "waits for puppet to finish if already running" do
-      allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
-      allow(runoutcome).to receive(:exitstatus).and_return(1, 0)
-      allow(subject).to receive(:disabled?).and_return(false)
-      expect(subject).to receive(:running?).and_return(true, false)
-
-      allow(File).to receive(:exist?).with(last_run_report).and_return(false)
-      expect(File).to receive(:exist?).with('').and_return(false)
-      expect(File).to receive(:exist?).with(lockfile).and_return(true, false)
+      expect(subject).to receive(:wait_for_lockfile).with('').ordered
+      expect(Puppet::Util::Execution).to receive(:execute).and_return(running_outcome).ordered
+      expect(subject).to receive(:wait_for_lockfile).with(lockfile).ordered
+      expect(Puppet::Util::Execution).to receive(:execute).and_return(success_outcome).ordered
 
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
       subject.run
     end
 
     it "retries puppet after 30 seconds if lockfile still present" do
-      allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
-      allow(runoutcome).to receive(:exitstatus).and_return(1, 0)
-      allow(subject).to receive(:disabled?).and_return(false)
-      expect(subject).to receive(:running?).and_return(true, false)
+      allow(File).to receive(:exist?).with('').and_return(false)
+      allow(File).to receive(:exist?).with(lockfile).and_return(true)
 
-      allow(File).to receive(:exist?).with(last_run_report).and_return(false)
-      expect(File).to receive(:exist?).with('').and_return(false)
-      expect(File).to receive(:exist?).with(lockfile).exactly(301).times.and_return(true)
-      expect(subject).to receive(:sleep).with(0.1).exactly(300).times
+      expect(Puppet::Util::Execution).to receive(:execute).and_return(running_outcome).ordered
+      expect(subject).to receive(:sleep).with(0.1).exactly(300).times.ordered
+      expect(Puppet::Util::Execution).to receive(:execute).and_return(running_outcome).ordered
+      expect(subject).to receive(:sleep).with(0.1).exactly(300).times.ordered
+      expect(Puppet::Util::Execution).to receive(:execute).and_return(success_outcome).ordered
 
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
       subject.run
     end
 
     it "populates the output if the lockfile cannot be identified" do
-      allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
-      allow(runoutcome).to receive(:exitstatus).and_return(1)
-      allow(subject).to receive(:disabled?).and_return(false)
-      expect(subject).to receive(:running?).and_return(true)
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(running_outcome)
 
       allow(subject).to receive(:config_print).with('agent_catalog_run_lockfile').and_return('')
-      expect(described_class).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::AlreadyRunning, anything)
-      subject.run
+
+      result = subject.run
+
+      expect(result['error_type']).to be == Pxp::ModulePuppet::Errors::AlreadyRunning
+      expect(result['error']).to match(/already performing a run/)
     end
 
     it "processes output when puppet's output is US_ASCII (POSIX or C locale) and contains non-ASCII" do
       output = "everything normal, we're all fine here ☃".force_encoding(Encoding::US_ASCII)
-      allow(Puppet::Util::Execution).to receive(:execute).and_return(output)
-      allow(output).to receive(:exitstatus).and_return(0)
-      allow(output).to receive(:to_s).and_return(output)
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(Puppet::Util::Execution::ProcessOutput.new(output, 0))
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
       subject.run
     end
 
     it "processes output when puppet's output contains potentially syntax-significant characters" do
       output = "Who knows what Puppet might do '\"&+/\\()?,.\#!@$_-~'"
-      allow(Puppet::Util::Execution).to receive(:execute).and_return(output)
-      allow(output).to receive(:exitstatus).and_return(0)
-      allow(output).to receive(:to_s).and_return(output)
+      allow(Puppet::Util::Execution).to receive(:execute).and_return(Puppet::Util::Execution::ProcessOutput.new(output, 0))
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
       subject.run
     end
