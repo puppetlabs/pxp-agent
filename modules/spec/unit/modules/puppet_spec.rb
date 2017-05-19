@@ -99,6 +99,7 @@ describe Pxp::ModulePuppet do
     it "should correctly append any flags" do
       input = default_input
       input["flags"] = ["--noop", "--verbose"]
+      subject = described_class.new(default_configuration, input)
       expect(subject.make_command_array(default_configuration, input)).to be ==
         ["puppet", "agent", "--noop", "--verbose"]
     end
@@ -352,27 +353,27 @@ describe Pxp::ModulePuppet do
 
   describe "get_flag_name" do
     it "returns the flag name" do
-      expect(described_class.get_flag_name("--spam")).to be == "spam"
+      expect(subject.get_flag_name("--spam")).to be == "spam"
     end
 
     it "returns the flag name in case it's negative" do
-      expect(described_class.get_flag_name("--no-spam")).to be == "spam"
+      expect(subject.get_flag_name("--no-spam")).to be == "spam"
     end
 
     it "returns an empty string in case the flag has only a suffix" do
-      expect(described_class.get_flag_name("--")).to be == ""
-      expect(described_class.get_flag_name("--no-")).to be == ""
+      expect(subject.get_flag_name("--")).to be == ""
+      expect(subject.get_flag_name("--no-")).to be == ""
     end
 
     it "raises an error in case of invalid suffix" do
       expect do
-        described_class.get_flag_name("-spam")
+        subject.get_flag_name("-spam")
       end.to raise_error(RuntimeError, /Assertion error: we're here by mistake/)
     end
 
     it "raises an error in case the flag has no suffix" do
       expect do
-        described_class.get_flag_name("eggs")
+        subject.get_flag_name("eggs")
       end.to raise_error(RuntimeError, /Assertion error: we're here by mistake/)
     end
   end
@@ -523,7 +524,7 @@ describe Pxp::ModulePuppet do
       input = default_input.merge('job' => 'foobar')
       expected_input = {"flags" => ["--onetime", "--no-daemonize", "--verbose", "--job-id", "foobar"],
                         "job" => "foobar"}
-      subject = described_class.new(default_configuration, expected_input)
+      subject = described_class.new(default_configuration, input)
 
       allow(File).to receive(:exist?).and_return(true)
       allow(subject).to receive(:running?).and_return(false)
