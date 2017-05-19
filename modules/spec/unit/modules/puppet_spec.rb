@@ -10,8 +10,10 @@ describe Pxp::ModulePuppet do
     {"flags" => []}
   }
 
+  let(:default_flags) { described_class.process_flags(default_input) }
+
   let(:subject) {
-    described_class.new(default_configuration, default_input)
+    described_class.new(default_configuration, default_flags)
   }
 
   let(:default_configuration) {
@@ -91,8 +93,7 @@ describe Pxp::ModulePuppet do
 
   describe "make_command_array" do
     it "should correctly append the executable and action" do
-      input = default_input
-      expect(subject.make_command_array(default_configuration, input)).to be ==
+      expect(subject.make_command_array(default_configuration, default_input['flags'])).to be ==
         ["puppet", "agent"]
     end
 
@@ -100,7 +101,7 @@ describe Pxp::ModulePuppet do
       input = default_input
       input["flags"] = ["--noop", "--verbose"]
       subject = described_class.new(default_configuration, input)
-      expect(subject.make_command_array(default_configuration, input)).to be ==
+      expect(subject.make_command_array(default_configuration, input['flags'])).to be ==
         ["puppet", "agent", "--noop", "--verbose"]
     end
   end
@@ -268,20 +269,20 @@ describe Pxp::ModulePuppet do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(0)
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
-      subject.start_run(default_configuration, default_input)
+      subject.start_run
     end
 
     it "populates output when it terminated with a non 0 code" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(runoutcome)
       allow(runoutcome).to receive(:exitstatus).and_return(1)
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 1, default_configuration, anything)
-      subject.start_run(default_configuration, default_input)
+      subject.start_run
     end
 
     it "populates output when it couldn't start" do
       allow(Puppet::Util::Execution).to receive(:execute).and_return(nil)
       expect(described_class).to receive(:make_error_result).with(-1, Pxp::ModulePuppet::Errors::FailedToStart, anything)
-      subject.start_run(default_configuration, default_input)
+      subject.start_run
     end
 
     it "populates the output if puppet is disabled" do
@@ -289,7 +290,7 @@ describe Pxp::ModulePuppet do
       allow(runoutcome).to receive(:exitstatus).and_return(1)
       expect(subject).to receive(:disabled?).and_return(true)
       expect(described_class).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::Disabled, anything)
-      subject.start_run(default_configuration, default_input)
+      subject.start_run
     end
 
     it "waits for puppet to finish if already running" do
@@ -303,7 +304,7 @@ describe Pxp::ModulePuppet do
       expect(File).to receive(:exist?).with(lockfile).and_return(true, false)
 
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
-      subject.start_run(default_configuration, default_input)
+      subject.start_run
     end
 
     it "retries puppet after 30 seconds if lockfile still present" do
@@ -318,7 +319,7 @@ describe Pxp::ModulePuppet do
       expect(subject).to receive(:sleep).with(0.1).exactly(300).times
 
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
-      subject.start_run(default_configuration, default_input)
+      subject.start_run
     end
 
     it "populates the output if the lockfile cannot be identified" do
@@ -329,7 +330,7 @@ describe Pxp::ModulePuppet do
 
       allow(subject).to receive(:check_config_print).with('agent_catalog_run_lockfile', anything).and_return('')
       expect(described_class).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::AlreadyRunning, anything)
-      subject.start_run(default_configuration, default_input)
+      subject.start_run
     end
 
     it "processes output when puppet's output is US_ASCII (POSIX or C locale) and contains non-ASCII" do
@@ -338,7 +339,7 @@ describe Pxp::ModulePuppet do
       allow(output).to receive(:exitstatus).and_return(0)
       allow(output).to receive(:to_s).and_return(output)
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
-      subject.start_run(default_configuration, default_input)
+      subject.start_run
     end
 
     it "processes output when puppet's output contains potentially syntax-significant characters" do
@@ -347,33 +348,33 @@ describe Pxp::ModulePuppet do
       allow(output).to receive(:exitstatus).and_return(0)
       allow(output).to receive(:to_s).and_return(output)
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, default_configuration, anything)
-      subject.start_run(default_configuration, default_input)
+      subject.start_run
     end
   end
 
   describe "get_flag_name" do
     it "returns the flag name" do
-      expect(subject.get_flag_name("--spam")).to be == "spam"
+      expect(described_class.get_flag_name("--spam")).to be == "spam"
     end
 
     it "returns the flag name in case it's negative" do
-      expect(subject.get_flag_name("--no-spam")).to be == "spam"
+      expect(described_class.get_flag_name("--no-spam")).to be == "spam"
     end
 
     it "returns an empty string in case the flag has only a suffix" do
-      expect(subject.get_flag_name("--")).to be == ""
-      expect(subject.get_flag_name("--no-")).to be == ""
+      expect(described_class.get_flag_name("--")).to be == ""
+      expect(described_class.get_flag_name("--no-")).to be == ""
     end
 
     it "raises an error in case of invalid suffix" do
       expect do
-        subject.get_flag_name("-spam")
+        described_class.get_flag_name("-spam")
       end.to raise_error(RuntimeError, /Assertion error: we're here by mistake/)
     end
 
     it "raises an error in case the flag has no suffix" do
       expect do
-        subject.get_flag_name("eggs")
+        described_class.get_flag_name("eggs")
       end.to raise_error(RuntimeError, /Assertion error: we're here by mistake/)
     end
   end
@@ -507,81 +508,44 @@ describe Pxp::ModulePuppet do
 
   end
 
-  describe "run" do
+  describe "process_flags" do
     it "populates flags with the correct defaults" do
-      expected_input = {"flags" => ["--onetime", "--no-daemonize", "--verbose"]}
-      subject = described_class.new(default_configuration, expected_input)
-
-      allow(File).to receive(:exist?).and_return(true)
-      allow(subject).to receive(:running?).and_return(false)
-      allow(subject).to receive(:disabled?).and_return(false)
-      expect(subject).to receive(:start_run).with(default_configuration,
-                                                                 expected_input)
-      subject.run
+      expected_flags = ["--onetime", "--no-daemonize", "--verbose"]
+      expect(described_class.process_flags(default_input)).to be == expected_flags
     end
 
     it "passes --job-id flag if a job id is set" do
       input = default_input.merge('job' => 'foobar')
-      expected_input = {"flags" => ["--onetime", "--no-daemonize", "--verbose", "--job-id", "foobar"],
-                        "job" => "foobar"}
-      subject = described_class.new(default_configuration, input)
+      expected_flags = ["--onetime", "--no-daemonize", "--verbose", "--job-id", "foobar"]
 
-      allow(File).to receive(:exist?).and_return(true)
-      allow(subject).to receive(:running?).and_return(false)
-      allow(subject).to receive(:disabled?).and_return(false)
-      expect(subject).to receive(:start_run).with(default_configuration,
-                                                                 expected_input)
-      subject.run
+      expect(described_class.process_flags(input)).to be == expected_flags
     end
 
     it "does not add flag defaults if they have been passed" do
-      expected_input = {"env" => [],
-                        "flags" => ["--show_diff", "--onetime", "--no-daemonize", "--verbose"]}
-      passed_input = {"env" => [],
-                      "flags" => ["--show_diff", "--onetime", "--no-daemonize"]}
+      expected_flags = ["--show_diff", "--onetime", "--no-daemonize", "--verbose"]
+      input = {"flags" => ["--show_diff", "--onetime", "--no-daemonize"]}
 
-      subject = described_class.create_runner({"configuration" => default_configuration, "input" => passed_input}.to_json)
-
-      allow(File).to receive(:exist?).and_return(true)
-      allow(subject).to receive(:running?).and_return(false)
-      allow(subject).to receive(:disabled?).and_return(false)
-      expect(subject).to receive(:start_run).with(default_configuration,
-                                                                 expected_input)
-      subject.run
+      expect(described_class.process_flags(input)).to be == expected_flags
     end
 
     it "allows passing arguments of flags" do
-      expected_input = {"flags" => ["--environment", "the_environment",
-                                    "--onetime", "--no-daemonize", "--verbose"]}
-      passed_input = {"flags" => ["--environment", "the_environment"]}
+      expected_flags = ["--environment", "the_environment",
+                        "--onetime", "--no-daemonize", "--verbose"]
+      input = {"flags" => ["--environment", "the_environment"]}
 
-      subject = described_class.create_runner({"configuration" => default_configuration, "input" => passed_input}.to_json)
-
-      allow(File).to receive(:exist?).and_return(true)
-      allow(subject).to receive(:running?).and_return(false)
-      allow(subject).to receive(:disabled?).and_return(false)
-      expect(subject).to receive(:start_run).with(default_configuration,
-                                                                 expected_input)
-      subject.run
+      expect(described_class.process_flags(input)).to be == expected_flags
     end
 
     it "allows passing the obsolete `env` input array" do
-      expected_input = {"env" => ["MY_PATH", "/some/path"],
-                         "flags" => ["--environment", "the_environment",
-                                    "--onetime", "--no-daemonize", "--verbose"]}
-      passed_input = {"env" => ["MY_PATH", "/some/path"],
-                      "flags" => ["--environment", "the_environment"]}
+      expected_flags = ["--onetime", "--no-daemonize", "--verbose"]
+      input = {"env" => ["MY_PATH", "/some/path"],
+               "flags" => []}
 
-      subject = described_class.create_runner({"configuration" => default_configuration, "input" => passed_input}.to_json)
-
-      allow(File).to receive(:exist?).and_return(true)
-      allow(subject).to receive(:running?).and_return(false)
-      allow(subject).to receive(:disabled?).and_return(false)
-      expect(subject).to receive(:start_run).with(default_configuration,
-                                                                 expected_input)
-      subject.run
+      expect(described_class.process_flags(input)).to be == expected_flags
     end
+  end
 
+  describe "run" do
     it "fails when puppet_bin doesn't exist" do
       allow(File).to receive(:exist?).and_return(false)
       expect(subject.run["error"]).to be ==

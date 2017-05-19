@@ -27,7 +27,7 @@ module Pxp
       end
     end
 
-    attr_reader :config, :action_input
+    attr_reader :config, :flags
 
     def self.handle_action(action)
       if action == 'metadata'
@@ -126,9 +126,9 @@ module Pxp
       return get_env_fix_up()
     end
 
-    def make_command_array(config, action_input)
+    def make_command_array(config, flags)
       cmd_array = [config["puppet_bin"], "agent"]
-      cmd_array +=  action_input["flags"]
+      cmd_array += flags
       return cmd_array
     end
 
@@ -206,9 +206,9 @@ module Pxp
       end
     end
 
-    def start_run(config, action_input)
+    def start_run
       exitcode = DEFAULT_EXITCODE
-      cmd = make_command_array(config, action_input)
+      cmd = make_command_array(config, flags)
       env = make_environment_hash()
 
       last_run_report = check_config_print("lastrunreport", config)
@@ -337,10 +337,11 @@ module Pxp
                                  "Puppet executable '#{config["puppet_bin"]}' does not exist")
       end
 
-      return start_run(config, action_input)
+      return start_run(config)
     end
 
-    def get_configuration(config)
+    def self.add_config_defaults(config)
+      config = config.dup
       if config["puppet_bin"].nil? || config["puppet_bin"].empty?
         if !Puppet.features.microsoft_windows?
           config["puppet_bin"] = "/opt/puppetlabs/bin/puppet"
@@ -383,7 +384,7 @@ module Pxp
     VALID_FLAG_REGEX = /\A[a-zA-Z0-9_:,\.\-]+\Z/
 
     # This asserts that the flag has a valid prefix
-    def get_flag_name(flag)
+    def self.get_flag_name(flag)
       if flag.start_with?("--no-")
         flag[5..-1]
       elsif flag.start_with?("--")
@@ -393,38 +394,38 @@ module Pxp
       end
     end
 
-    def get_action_input(action_input)
-      if action_input.has_key?("flags")
-        action_input["flags"].each do |flag|
-          flag = flag.strip
-          unless flag =~ VALID_FLAG_REGEX
-            raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN contained characters not present in valid flags: #{flag}")
+    def self.process_flags(action_input)
+      flags = action_input['flags'] || []
+
+      flags.each do |flag|
+        flag = flag.strip
+        unless flag =~ VALID_FLAG_REGEX
+          raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN contained characters not present in valid flags: #{flag}")
+        end
+
+        if flag.start_with?("--")
+          flag_name = get_flag_name(flag)
+
+          if DEFAULT_FLAGS_NAMES.include?(flag_name)
+            unless DEFAULT_FLAGS.include?(flag)
+              raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN overrides a default setting with: #{flag}")
+            end
+            next
           end
 
-          if flag.start_with?("--")
-            flag_name = get_flag_name(flag)
-
-            if DEFAULT_FLAGS_NAMES.include?(flag_name)
-              unless DEFAULT_FLAGS.include?(flag)
-                raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN overrides a default setting with: #{flag}")
-              end
-              next
-            end
-
-            unless WHITELISTED_FLAGS_NAMES.include?(flag_name)
-              raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN included a non-permitted flag: #{flag}")
-            end
+          unless WHITELISTED_FLAGS_NAMES.include?(flag_name)
+            raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN included a non-permitted flag: #{flag}")
           end
         end
       end
 
-      action_input["flags"] = action_input["flags"] | DEFAULT_FLAGS
+      flags |= DEFAULT_FLAGS
 
       if action_input.has_key?("job")
-        action_input["flags"] += ["--job-id", action_input["job"]]
+        flags += ["--job-id", action_input["job"]]
       end
 
-      action_input
+      flags
     end
 
     def self.create_runner(input)
@@ -478,12 +479,14 @@ module Pxp
       end
 
       begin
-        config = args["configuration"] || {}
+        config = add_config_defaults(args["configuration"] || {})
 
         action_input = args["input"]
         unless action_input.is_a?(Hash)
           raise ProcessingError.new(Errors::InvalidJson, "The json received on STDIN did not contain a valid 'input' key: #{args.to_s}")
         end
+
+        flags = process_flags(action_input)
 
         new(config, action_input)
       rescue ProcessingError => e
@@ -491,9 +494,9 @@ module Pxp
       end
     end
 
-    def initialize(config, action_input)
-      @config = get_configuration(config.dup)
-      @action_input = get_action_input(action_input.dup)
+    def initialize(config, flags)
+      @config = config
+      @flags = flags
     end
 
   end
