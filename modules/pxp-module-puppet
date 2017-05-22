@@ -493,7 +493,7 @@ module Pxp
 
         flags = process_flags(action_input)
 
-        new(config, action_input)
+        new(config, flags)
       rescue ProcessingError => e
         return make_error_result(DEFAULT_EXITCODE, e.error_type, e.message)
       end

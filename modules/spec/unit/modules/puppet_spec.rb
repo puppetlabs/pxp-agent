@@ -526,6 +526,12 @@ describe Pxp::ModulePuppet do
           "The json received on STDIN contained characters not present in valid flags: \\t--prerun_command"
     end
 
+    it "builds a runner with the provided config and flags" do
+      runner = described_class.create_runner({:configuration => default_configuration, :input => default_input}.to_json)
+
+      expect(runner.config).to be == {'puppet_bin' => 'puppet'}
+      expect(runner.flags).to be == ['--onetime', '--no-daemonize', '--verbose']
+    end
   end
 
   describe "process_flags" do
