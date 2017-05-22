@@ -31,6 +31,33 @@ describe Pxp::ModulePuppet do
     end
   end
 
+  describe "handle_action" do
+    describe "when the action is 'metadata'" do
+      it "prints the metadata" do
+        described_class.handle_action('metadata')
+      end
+    end
+
+    describe "for other actions" do
+      it "builds and runs the action" do
+        original_stdin = $stdin
+        original_stdout = $stdout
+        allow_any_instance_of(described_class).to receive(:run).and_return({})
+        begin
+          $stdin = StringIO.new({"config" => {}, "input" => {}}.to_json)
+          $stdout = StringIO.new
+          described_class.handle_action('run')
+          $stdout.rewind
+          result = JSON.parse($stdout.read)
+          expect(result).to be == {}
+        ensure
+          $stdin = original_stdin
+          $stdout = original_stdout
+        end
+      end
+    end
+  end
+
   describe "config_print" do
     it "returns the result of configprint" do
       cli_vec = ["puppet", "agent", "--configprint", "value"]

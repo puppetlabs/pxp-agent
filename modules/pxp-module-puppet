@@ -35,7 +35,7 @@ module Pxp
       else
         result = create_runner($stdin.read.chomp)
         if result.is_a?(self)
-          action_results = result.run(config, action_input)
+          action_results = result.run
         else
           action_results = result
         end
