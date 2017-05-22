@@ -35,7 +35,7 @@ module Pxp
       else
         result = create_runner($stdin.read.chomp)
         if result.is_a?(self)
-          action_results = result.run(config, action_input)
+          action_results = result.run
         else
           action_results = result
         end
@@ -493,7 +493,7 @@ module Pxp
 
         flags = process_flags(action_input)
 
-        new(config, action_input)
+        new(config, flags)
       rescue ProcessingError => e
         return make_error_result(DEFAULT_EXITCODE, e.error_type, e.message)
       end
