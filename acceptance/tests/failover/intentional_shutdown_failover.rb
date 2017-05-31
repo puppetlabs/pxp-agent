@@ -15,6 +15,7 @@ test_name 'C97934 - agent should use next broker if primary is intentionally shu
       on agent, puppet('resource service pxp-agent ensure=stopped')
       num_brokers = 2
       pxp_config = pxp_config_hash_using_puppet_certs(master, agent, num_brokers)
+      pxp_config['ping-interval'] = 10
       create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
       reset_logfile(agent)
       on agent, puppet('resource service pxp-agent ensure=running')
