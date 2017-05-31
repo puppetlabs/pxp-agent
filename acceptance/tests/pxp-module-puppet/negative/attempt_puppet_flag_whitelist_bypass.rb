@@ -5,7 +5,8 @@ test_name 'C100245 - attempt bypass of flag whitelist with tab character' do
   confine :except, :platform => ['windows']
 
   step 'pick test host' do
-    @test_host = agents.first
+    @test_host = agents.first 
+    skip_test 'No compatible agents available to run test' unless @test_host
     skip_test 'Test not windows compatible' if @test_host.platform =~ /windows/
   end
 
