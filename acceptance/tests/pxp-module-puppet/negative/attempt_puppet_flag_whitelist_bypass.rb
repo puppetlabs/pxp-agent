@@ -6,6 +6,7 @@ test_name 'C100245 - attempt bypass of flag whitelist with tab character' do
 
   step 'pick test host' do
     @test_host = agents.first
+    skip_test 'Test not windows compatible' if @test_host.platform =~ /windows/
   end
 
   step 'set up executable file' do
