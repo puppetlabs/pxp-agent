@@ -36,7 +36,8 @@ agents.each do |agent|
     create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
     on agent, puppet('resource service pxp-agent ensure=running')
 
-    assert(is_associated?(master, "pcp://#{agent}/agent"),
+    inventory_retries = 60
+    assert(is_associated?(master, "pcp://#{agent}/agent", inventory_retries),
            "Agent #{agent} with PCP identity pcp://#{agent}/agent should be associated with pcp-broker")
   end
 
