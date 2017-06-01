@@ -21,7 +21,8 @@ agents.each do |agent|
   end
 
   step 'Assert that agent is listed in pcp-broker inventory' do
-    assert(is_associated?(master, "pcp://#{agent}/agent"),
+    inventory_retries = 60
+    assert(is_associated?(master, "pcp://#{agent}/agent", inventory_retries),
            "Agent identity pcp://#{agent}/agent for agent host #{agent} does not appear in pcp-broker's client inventory")
   end
 end
