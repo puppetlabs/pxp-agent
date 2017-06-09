@@ -1,3 +1,9 @@
+## 1.5.3
+
+This is a maintenance release.
+
+* [PCP-745](https://tickets.puppetlabs.com/browse/PCP-745) Populate missing manpage field in the SMF manifest
+
 ## 1.5.2
 
 This is a maintenance release.
