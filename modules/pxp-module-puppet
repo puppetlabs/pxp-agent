@@ -84,8 +84,7 @@ module Pxp
     end
 
     def self.last_run_result(exitcode)
-      return {"kind"             => "unknown",
-              "time"             => "unknown",
+      return {"time"             => "unknown",
               "transaction_uuid" => "unknown",
               "environment"      => "unknown",
               "status"           => "unknown",
@@ -186,7 +185,6 @@ module Pxp
                                        "Puppet agent exited with a non 0 exitcode")
       end
 
-      run_result["kind"] = last_run_report_yaml['kind']
       run_result["time"] = last_run_report_yaml['time']
       run_result["transaction_uuid"] = last_run_report_yaml['transaction_uuid']
       run_result["environment"] = last_run_report_yaml['environment']
@@ -298,9 +296,6 @@ module Pxp
             :results => {
               :type => "object",
               :properties => {
-                :kind => {
-                  :type => "string"
-                },
                 :time => {
                   :type => "string"
                 },
@@ -329,7 +324,7 @@ module Pxp
                   :type => "number"
                 }
               },
-              :required => [:kind, :time, :transaction_uuid, :environment, :status,
+              :required => [:time, :transaction_uuid, :environment, :status,
                             :exitcode, :version]
             }
           }

@@ -20,8 +20,7 @@ describe Pxp::ModulePuppet do
 
   describe "last_run_result" do
     it "returns the basic structure with exitcode set" do
-      expect(described_class.last_run_result(42)).to be == {"kind"             => "unknown",
-                                                            "time"             => "unknown",
+      expect(described_class.last_run_result(42)).to be == {"time"             => "unknown",
                                                             "transaction_uuid" => "unknown",
                                                             "environment"      => "unknown",
                                                             "status"           => "unknown",
@@ -132,8 +131,7 @@ describe Pxp::ModulePuppet do
   describe "make_error_result" do
     it "should set the exitcode, error_type and error_message" do
       expect(described_class.make_error_result(42, Pxp::ModulePuppet::Errors::FailedToStart, "test error")).to be ==
-          {"kind"             => "unknown",
-           "time"             => "unknown",
+          {"time"             => "unknown",
            "transaction_uuid" => "unknown",
            "environment"      => "unknown",
            "status"           => "unknown",
@@ -153,8 +151,7 @@ describe Pxp::ModulePuppet do
     it "doesn't process the last_run_report if the file doesn't exist" do
       allow(File).to receive(:exist?).and_return(false)
       expect(subject.get_result_from_report(last_run_report_path, 0, Time.now)).to be ==
-          {"kind"             => "unknown",
-           "time"             => "unknown",
+          {"time"             => "unknown",
            "transaction_uuid" => "unknown",
            "environment"      => "unknown",
            "status"           => "unknown",
@@ -171,8 +168,7 @@ describe Pxp::ModulePuppet do
       allow(File).to receive(:exist?).and_return(true)
       allow(subject).to receive(:parse_report).and_raise("error")
       expect(subject.get_result_from_report(last_run_report_path, 0, start_time)).to be ==
-          {"kind"             => "unknown",
-           "time"             => "unknown",
+          {"time"             => "unknown",
            "transaction_uuid" => "unknown",
            "environment"      => "unknown",
            "status"           => "unknown",
@@ -187,7 +183,6 @@ describe Pxp::ModulePuppet do
       start_time = Time.now
       run_time = Time.now - 10
       last_run_report = {
-        'kind' => "apply",
         'time' => run_time,
         'transaction_uuid' => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
         'environment' => "production",
@@ -199,8 +194,7 @@ describe Pxp::ModulePuppet do
       allow(subject).to receive(:parse_report).with(last_run_report_path).and_return(last_run_report)
 
       expect(subject.get_result_from_report(last_run_report_path, -1, start_time)).to be ==
-          {"kind"             => "unknown",
-           "time"             => "unknown",
+          {"time"             => "unknown",
            "transaction_uuid" => "unknown",
            "environment"      => "unknown",
            "status"           => "unknown",
@@ -215,7 +209,6 @@ describe Pxp::ModulePuppet do
       start_time = Time.now
       run_time = Time.now + 10
       last_run_report = {
-        'kind' => "apply",
         'time' => run_time,
         'transaction_uuid' => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
         'environment' => "production",
@@ -228,8 +221,7 @@ describe Pxp::ModulePuppet do
       allow(subject).to receive(:parse_report).with(last_run_report_path).and_return(last_run_report)
 
       expect(subject.get_result_from_report(last_run_report_path, -1, start_time)).to be ==
-          {"kind"             => "apply",
-           "time"             => run_time,
+          {"time"             => run_time,
            "transaction_uuid" => "ac59acbe-6a0f-49c9-8ece-f781a689fda9",
            "environment"      => "production",
            "status"           => "changed",
@@ -245,8 +237,7 @@ describe Pxp::ModulePuppet do
       result = subject.get_result_from_report(last_run_report_path, 0, start_time)
       result.delete('metrics')
       expect(result).to be ==
-        {'kind'             => 'apply',
-         'time'             => Time.parse('2016-02-24 23:07:21.694017000 +00:00'),
+        {'time'             => Time.parse('2016-02-24 23:07:21.694017000 +00:00'),
          'transaction_uuid' => '691f00ee-86fa-4563-8b53-f60c1fdae601',
          'environment'      => 'production',
          'status'           => 'changed',
@@ -427,9 +418,6 @@ describe Pxp::ModulePuppet do
             :results => {
               :type => "object",
               :properties => {
-                :kind => {
-                  :type => "string"
-                },
                 :time => {
                   :type => "string"
                 },
@@ -458,7 +446,7 @@ describe Pxp::ModulePuppet do
                   :type => "number"
                 }
               },
-              :required => [:kind, :time, :transaction_uuid, :environment, :status,
+              :required => [:time, :transaction_uuid, :environment, :status,
                             :exitcode, :version]
             }
           }
