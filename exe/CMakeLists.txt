@@ -12,7 +12,6 @@ include_directories(
 )
 
 add_executable(pxp-agent ${PXP-AGENT_SOURCES})
-set_target_properties(pxp-agent PROPERTIES VERSION ${PROJECT_VERSION})
 target_link_libraries(pxp-agent ${CPP_PCP_CLIENT_LIB} libpxp-agent)
 
 install(TARGETS pxp-agent DESTINATION bin)
