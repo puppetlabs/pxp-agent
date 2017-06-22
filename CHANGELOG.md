@@ -1,3 +1,13 @@
+## 1.6.0
+
+This is a feature release
+
+* [PCP-603](https://tickets.puppetlabs.com/browse/PCP-603) Additional acceptance tests for pxp-module-puppet whitelist
+* [PCP-699](https://tickets.puppetlabs.com/browse/PCP-699) pxp-module-puppet now accepts job-id as an argument and passes it to Puppet.
+* [PCP-742](https://tickets.puppetlabs.com/browse/PCP-742) pxp-module-puppet will now return metrics about resource events when a run finishes.
+* [PCP-748](https://tickets.puppetlabs.com/browse/PCP-748) Update pxp-agent component tests to allow SERVER_VERSION=latest
+* [PCP-751](https://tickets.puppetlabs.com/browse/PCP-751) Remove kind from pxp-module-puppet
+
 ## 1.5.3
 
 This is a maintenance release.
