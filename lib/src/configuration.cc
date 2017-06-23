@@ -189,7 +189,7 @@ static void validateLogDirPath(const std::string& logfile)
     }
 }
 
-void Configuration::setupLogging()
+std::string Configuration::setupLogging()
 {
     logfile_ = HW::GetFlag<std::string>("logfile");
     pcp_access_logfile_ = HW::GetFlag<std::string>("pcp-access-logfile");
@@ -268,14 +268,14 @@ void Configuration::setupLogging()
                                   loglevel,
                                   pcp_access_fstream_ptr_);
 
-    LOG_DEBUG("Logging configured");
-
     if (!log_on_stdout) {
         // Configure platform-specific things for file logging
         // NB: we do that after setting up lth_log in order to log in
         //     case of failure
         configure_platform_file_logging();
     }
+
+    return loglevel;
 }
 
 void Configuration::validate()

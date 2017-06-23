@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: pxp-agent 1.5.3\n"
+"Project-Id-Version: pxp-agent 1.6.0\n"
 "Report-Msgid-Bugs-To: docs@puppet.com\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -69,9 +69,9 @@ msgid ""
 "Cannot start pxp-agent"
 msgstr ""
 
-#. debug
+#. info
 #: exe/main.cc
-msgid "pxp-agent logging has been initialized"
+msgid "pxp-agent {1} started at {2} level"
 msgstr ""
 
 #: exe/main.cc
@@ -170,11 +170,6 @@ msgstr ""
 
 #: lib/src/configuration.cc
 msgid "invalid log level: '{1}'"
-msgstr ""
-
-#. debug
-#: lib/src/configuration.cc
-msgid "Logging configured"
 msgstr ""
 
 #. info

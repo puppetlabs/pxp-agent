@@ -3,6 +3,8 @@
 
 #include <pxp-agent/util/daemonize.hpp>
 
+#include "version-inl.hpp"
+
 #include <cpp-pcp-client/util/thread.hpp>
 #include <cpp-pcp-client/util/chrono.hpp>
 
@@ -182,8 +184,8 @@ int main(int argc, char *argv[]) {
     // Set up logging
 
     try {
-        Configuration::Instance().setupLogging();
-        LOG_DEBUG("pxp-agent logging has been initialized");
+        auto loglevel = Configuration::Instance().setupLogging();
+        LOG_INFO("pxp-agent {1} started at {2} level", PXP_AGENT_VERSION, loglevel);
     } catch (const Configuration::Error& e) {
         boost::nowide::cout << lth_loc::format("Failed to configure logging: {1}\n"
                                                "Cannot start pxp-agent", e.what());
