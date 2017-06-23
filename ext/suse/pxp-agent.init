@@ -85,8 +85,24 @@ case "$1" in
         ## Stop daemon with killproc(8) and if this fails
         ## set echo the echo return value.
 
-        killproc -QUIT -p "${pidfile}" "${exec}" && rm -f "${lockfile}" "${pidfile}"
+        ## This accounts for the behavior of killproc on sles 11:
+        ## if the binary we're attempting to halt is a symlink to
+        ## a versioned binary, then it won't be halted if that
+        ## symlink is changed to point to a different file name.
+        ## Check to see if a running process matches the contents
+        ## of the pidfile, and if so kill it. This could fail if
+        ## multiple pxp-agent processes are running, in which case
+        ## killproc may succeed or manual intervention is required.
+        if [ -f "${pidfile}" ]; then
+            PID=$(cat "$pidfile")
+            if [ "$PID" -eq $(pgrep -f "$exec") ] ; then
+                kill -QUIT "${PID}" && rm -f "${lockfile}" "${pidfile}"
+                rc_status -v
+                rc_exit
+            fi
+        fi
 
+        killproc -QUIT -p "${pidfile}" "${exec}" && rm -f "${lockfile}" "${pidfile}"
         # Remember status and be verbose
         rc_status -v
         ;;
@@ -138,6 +154,24 @@ case "$1" in
         # 3 - service not running
 
         # NOTE: checkproc returns LSB compliant status values.
+
+        ## This accounts for the behavior of checkproc on sles 11:
+        ## if the binary we're attempting to check is a symlink to
+        ## a versioned binary, then it won't be halted if that
+        ## symlink is changed to point to a different file name.
+        ## Check to see if a running process matches the contents
+        ## of the pidfile, and if so return running. This could fail
+        ## if multiple pxp-agent processes are running, in which case
+        ## checkproc may succeed or manual intervention is required.
+        if [ -f "${pidfile}" ]; then
+            PID=$(cat "$pidfile")
+            if [ "$PID" -eq $(pgrep -f "$exec") ] ; then
+                rc_reset
+                rc_status -v
+                rc_exit
+            fi
+        fi
+
         if [ -f "${pidfile}" ]; then
             checkproc -p "${pidfile}" "${exec}"
             rc_status -v
