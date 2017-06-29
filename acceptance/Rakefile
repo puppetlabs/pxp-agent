@@ -86,7 +86,7 @@ EOS
   tests = ENV['TESTS'] || ENV['TEST']
   tests_opt = "--tests=#{tests}" if tests
 
-  target = ENV['TEST_TARGET']
+  target = ENV['TEST_TARGET'] || 'redhat7-64a'
 
   master_host = ENV['MASTER_TEST_TARGET'] || 'redhat7-64m'
   if target && !target.start_with?(master_host)
