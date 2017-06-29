@@ -291,11 +291,6 @@ def rpc_request(broker, targets,
     end
   end
 
-  message = PCP::Message.new({
-    :message_type => blocking ? 'http://puppetlabs.com/rpc_blocking_request' : 'http://puppetlabs.com/rpc_non_blocking_request',
-    :targets => targets
-  })
-
   message_data = {
     :transaction_id => transaction_id,
     :module         => pxp_module,
@@ -305,13 +300,22 @@ def rpc_request(broker, targets,
   if !blocking then
     message_data[:notify_outcome] = false
   end
-  message.data = message_data.to_json
 
-  message_expiry = 10 # Seconds for the PCP message to be considered failed
+  targets.each do |target|
+    message = PCP::Message.new({
+      :message_type => blocking ? 'http://puppetlabs.com/rpc_blocking_request' : 'http://puppetlabs.com/rpc_non_blocking_request',
+      :targets => [target]
+    })
+
+    message.data = message_data.to_json
+
+    message_expiry = 10 # Seconds for the PCP message to be considered failed
+    message.expires(message_expiry)
+
+    client.send(message)
+  end
+
   rpc_action_expiry = 60 # Seconds for the entire RPC action to be considered failed
-  message.expires(message_expiry)
-
-  client.send(message)
 
   begin
     Timeout::timeout(rpc_action_expiry) do
