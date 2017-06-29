@@ -16,7 +16,7 @@ NUM_BROKERS = 2
 have_broker_replica = NUM_BROKERS > 1
 
 PCP_BROKER_FORK = ENV['PCP_BROKER_FORK'] || nil
-PCP_BROKER_REF  = ENV['PCP_BROKER_REF'] || 'refs/tags/1.2.1'
+PCP_BROKER_REF  = ENV['PCP_BROKER_REF'] || 'refs/tags/1.4.0'
 
 step 'Clone pcp-broker to broker_hosts' do
   pcp_broker_url = build_git_url('pcp-broker', PCP_BROKER_FORK, nil, 'https')
