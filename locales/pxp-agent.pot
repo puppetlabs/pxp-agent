@@ -90,6 +90,27 @@ msgstr ""
 msgid "Fatal configuration error: {1}; cannot start pxp-agent"
 msgstr ""
 
+#: exe/task.cc
+#: lib/src/configuration.cc
+msgid "failure getting Windows AppData directory: {1}"
+msgstr ""
+
+#: exe/task.cc
+msgid "Invalid task name '{1}'"
+msgstr ""
+
+#: exe/task.cc
+msgid "Task file '{1}' is not present or not executable"
+msgstr ""
+
+#: exe/task.cc
+msgid "Output cannot be represented as a JSON string"
+msgstr ""
+
+#: exe/task.cc
+msgid "Task '{1}' failed to run: {2}"
+msgstr ""
+
 #: lib/src/action_request.cc
 #: lib/src/action_response.cc
 msgid "{1} '{2} {3}' request (transaction {4})"
@@ -138,10 +159,6 @@ msgstr ""
 #. debug
 #: lib/src/agent.cc
 msgid "PCP connection established; about to start monitoring it"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "failure getting Windows AppData directory: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
