@@ -74,6 +74,20 @@ struct temp_task {
 #endif
     }
 
+    void make_printer(vector<string> keys, string task = "init") {
+        ofstream foo(module_path+"/"+task);
+#ifndef _WIN32
+        foo << "#!/bin/sh\n";
+#endif
+        for (auto& k : keys) {
+#ifdef _WIN32
+            foo << "echo %PT_" << k << "%\n";
+#else
+            foo << "echo $PT_" << k << "\n";
+#endif
+        }
+    }
+
     void make_unparseable(string task = "init") {
         ofstream foo(module_path+"/"+task, ios_base::binary);
 #ifndef _WIN32

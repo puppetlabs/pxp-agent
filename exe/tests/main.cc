@@ -93,6 +93,30 @@ TEST_CASE("runs a simple task") {
     }
 }
 
+TEST_CASE("sets input as environment variables in task") {
+    temp_directory tmpdir;
+    auto dir = tmpdir.name();
+    auto args = array<char*, 1>{{const_cast<char*>("test_task")}};
+    temp_task foo("foo");
+
+    stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": \"1\", \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
+
+    foo.make_printer({"a", "b", "c"});
+    foo.make_executable();
+    MAIN_IMPL(args.size(), args.data());
+
+    auto output = read(dir+"/out");
+    REQUIRE(output.size() == 1);
+    boost::replace_all(output[0], "\r", "");
+    REQUIRE(output == lines{"{\"output\":\"1\\n[2,3]\\n{\\\"hello\\\":\\\"goodbye foo\\\"}\\n\"}"});
+
+    output = read(dir+"/err");
+    REQUIRE(output.empty());
+
+    output = read(dir+"/exit");
+    REQUIRE(output == lines{"0"});
+}
+
 TEST_CASE("returns an error if the task name is invalid") {
     temp_directory tmpdir;
     auto dir = tmpdir.name();

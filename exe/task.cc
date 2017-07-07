@@ -75,6 +75,16 @@ static bool isValidUTF8(std::string &s)
     return true;
 }
 
+static map<string, string> generate_environment_from(lth_jc::JsonContainer &input)
+{
+    map<string, string> env_vars;
+    for (auto& k : input.keys()) {
+        auto val = input.type(k) == lth_jc::String ? input.get<string>(k) : input.toString(k);
+        env_vars.emplace("PT_"+k, move(val));
+    }
+    return env_vars;
+}
+
 int MAIN_IMPL(int argc, char** argv)
 {
     boost::nowide::args arg_utf8(argc, argv);
@@ -142,10 +152,12 @@ int MAIN_IMPL(int argc, char** argv)
             if (lth_exec::which(filename).empty()) {
                 set_error(stdout_result, "not-found", _("Task file '{1}' is not present or not executable", filename));
             } else {
+                auto environment = generate_environment_from(input);
                 auto exec = lth_exec::execute(
                     filename,
                     {},  // arguments
                     input.toString(),
+                    environment,
                     0,  // timeout
                     { lth_exec::execution_options::thread_safe,
                       lth_exec::execution_options::merge_environment,
