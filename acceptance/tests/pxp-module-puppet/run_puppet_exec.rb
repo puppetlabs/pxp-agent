@@ -13,7 +13,7 @@ test_name 'C98107 - Run puppet with an exec' do
     create_remote_file(master, site_manifest, <<-SITEPP)
 node default {
   exec { "hostname":
-    path => ["/bin", "/usr/bin", "C:/cygwin32/bin", "C:/cygwin64/bin"],
+    path => ["/bin", "/usr/bin", "C:/cygwin32/bin", "C:/cygwin64/bin", "C:/cygwin/bin"],
     logoutput => true,
   }
 }
