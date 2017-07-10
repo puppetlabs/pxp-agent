@@ -1,7 +1,6 @@
 require 'pxp-agent/config_helper.rb'
 require 'puppet/acceptance/common_utils'
 require 'pcp/client'
-require 'pcp/simple_logger'
 require 'net/http'
 require 'openssl'
 require 'socket'
@@ -366,7 +365,6 @@ def connect_pcp_client(broker)
       :ssl_ca_cert => "tmp/ssl/certs/ca.pem",
       :ssl_cert => "tmp/ssl/certs/#{hostname.downcase}.pem",
       :ssl_key => "tmp/ssl/private_keys/#{hostname.downcase}.pem",
-      :logger => PCP::SimpleLogger.new,
       :loglevel => logger.is_debug? ? Logger::DEBUG : Logger::WARN,
       :type => client_type
     })
