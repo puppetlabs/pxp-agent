@@ -18,26 +18,30 @@ step "Install puppet-agent..." do
   end
 end
 
-MASTER_PACKAGES = {
-  :redhat => [
-    'puppetserver',
-  ],
-  :debian => [
-    'puppetserver',
-  ],
-}
-
 step "Install puppetserver..." do
-  if ENV['SERVER_VERSION'].nil? || ENV['SERVER_VERSION'] == 'latest'
-    server_version = 'latest'
-    server_download_url = "http://nightlies.puppet.com"
+  if master[:hypervisor] == 'ec2' && master[:platform].match(/(?:el|centos|oracle|redhat|scientific)/)
+    variant, version = master['platform'].to_array
+    server_num = ENV['SERVER_VERSION'].to_i
+    # nil or 'latest' will convert to 0
+    if server_num > 0 && server_num < 5
+      logger.info "EC2 master found: Installing public PC1 repo to satisfy puppetserver dependency."
+      on(master, "rpm -Uvh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-#{version}.noarch.rpm")
+    else
+      logger.info "EC2 master found: Installing public puppet5 repo to satisfy puppetserver dependency."
+      on(master, "rpm -Uvh https://yum.puppetlabs.com/puppet5-release-el-#{version}.noarch.rpm")
+    end
   else
-    server_version = ENV['SERVER_VERSION']
-    server_download_url = "http://builds.delivery.puppetlabs.net"
-  end
+    if ENV['SERVER_VERSION'].nil? || ENV['SERVER_VERSION'] == 'latest'
+      server_version = 'latest'
+      server_download_url = "http://nightlies.puppet.com"
+    else
+      server_version = ENV['SERVER_VERSION']
+      server_download_url = "http://builds.delivery.puppetlabs.net"
+    end
     install_puppetlabs_dev_repo(master, 'puppetserver', server_version, nil, :dev_builds_url => server_download_url)
     install_puppetlabs_dev_repo(master, 'puppet-agent', ENV['SHA'])
-    master.install_package('puppetserver')
+  end
+  master.install_package('puppetserver')
 end
 
 step 'Make sure install is sane' do

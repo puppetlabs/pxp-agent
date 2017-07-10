@@ -17,6 +17,9 @@ GIT_CLONE_FOLDER = '/opt/puppet-git-repos'
 PXP_LOG_DIR_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/var/log'
 PXP_LOG_DIR_POSIX = '/var/log/puppetlabs/pxp-agent'
 
+# Set lein profile based on configuration to access puppet.net internal network or not.
+LEIN_PROFILE = (ENV['GEM_SOURCE'] =~ /puppetlabs.net/) ? 'internal-mirrors' : 'integration'
+
 def logdir(host)
   windows?(host)?
     PXP_LOG_DIR_CYGPATH :
@@ -58,11 +61,12 @@ end
 
 # Some helpers for working with a pcp-broker 'lein tk' instance
 def run_pcp_broker(host, instance=0)
+  timeout = 120
   host[:pcp_broker_instance] = instance
   on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker#{instance}; export LEIN_ROOT=ok; \
-     lein with-profile internal-mirrors tk </dev/null >/var/log/puppetlabs/pcp-broker.log.#{SecureRandom.uuid} 2>&1 &")
-  assert(port_open_within?(host, PCP_BROKER_PORTS[instance], 60),
-         "pcp-broker port #{PCP_BROKER_PORTS[instance].to_s} not open within 1 minutes of starting the broker")
+     lein with-profile #{LEIN_PROFILE} tk </dev/null >/var/log/puppetlabs/pcp-broker.log.#{SecureRandom.uuid} 2>&1 &")
+  assert(port_open_within?(host, PCP_BROKER_PORTS[instance], timeout),
+         "pcp-broker port #{PCP_BROKER_PORTS[instance].to_s} not open within #{(timeout/60).to_s} minutes of starting the broker")
   broker_state = nil
   attempts = 0
   until broker_state == "running" or attempts == 100 do
