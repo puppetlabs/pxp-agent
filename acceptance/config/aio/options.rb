@@ -1,6 +1,6 @@
 {
   :type => 'aio',
-  :log_level => 'verbose',
+  :log_level => 'debug',
   :helper => 'lib/helper.rb',
   :is_puppetserver => true,
   :puppetservice => 'puppetserver',
