@@ -370,9 +370,12 @@ def connect_pcp_client(broker)
     })
     connected = client.connect(5)
     retries += 1
+
+    # If the connection was not established, close it. Otherwise we can end up with 2 successful connections
+    # and get an earlier attempt superseding later connections.
+    client.close if !connected
   end
   if !connected
-    client.close
     raise "Controller PCP client failed to connect with pcp-broker on #{broker} after #{max_retries} attempts: #{client.inspect}"
   end
   if !client.associated?
