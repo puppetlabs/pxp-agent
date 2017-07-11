@@ -7,7 +7,6 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.task"
 #include <leatherman/logging/logging.hpp>
 
-#include <boost/nowide/args.hpp>
 #include <boost/nowide/iostream.hpp>
 #include <boost/filesystem.hpp>
 
@@ -87,7 +86,9 @@ static map<string, string> generate_environment_from(lth_jc::JsonContainer &inpu
 
 int MAIN_IMPL(int argc, char** argv)
 {
-    boost::nowide::args arg_utf8(argc, argv);
+    // Fix args on Windows to be UTF-8. Disabled because it prevents testing
+    // and we expect "metadata" as the only argument.
+    // boost::nowide::args arg_utf8(argc, argv);
 
     if (argc > 1 && argv[1] == string("metadata")) {
         boost::nowide::cout << R"(

@@ -1,4 +1,6 @@
 #include <boost/filesystem.hpp>
+#include <boost/nowide/iostream.hpp>
+#include <boost/algorithm/string/replace.hpp>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -13,13 +15,13 @@ string test_prefix();
 struct stream_fixture {
     stream_fixture(string input) {
         in.str(input);
-        cinbuf = cin.rdbuf(in.rdbuf());
-        coutbuf = cout.rdbuf(out.rdbuf());
+        cinbuf = boost::nowide::cin.rdbuf(in.rdbuf());
+        coutbuf = boost::nowide::cout.rdbuf(out.rdbuf());
     }
 
     ~stream_fixture() {
-        cin.rdbuf(cinbuf);
-        cout.rdbuf(coutbuf);
+        boost::nowide::cin.rdbuf(cinbuf);
+        boost::nowide::cout.rdbuf(coutbuf);
     }
 
     string output() {
@@ -43,7 +45,9 @@ struct temp_directory {
     }
 
     string name() const {
-        return dir.string();
+        auto s = dir.string();
+        boost::replace_all(s, "\\", "/");
+        return s;
     }
 
 private:
@@ -68,42 +72,49 @@ struct temp_task {
     void make_echo(string task = "init") {
         ofstream foo(module_path+"/"+task);
 #ifdef _WIN32
-        foo << "type -";
+        foo << "@echo off" << endl;
+        // More only prints a page, so this may fail with larger input.
+        foo << "more" << endl;
 #else
-        foo << "#!/bin/sh\ncat -";
+        foo << "#!/bin/sh" << endl;
+        foo << "cat -" << endl;
 #endif
     }
 
     void make_printer(vector<string> keys, string task = "init") {
         ofstream foo(module_path+"/"+task);
 #ifndef _WIN32
-        foo << "#!/bin/sh\n";
+        foo << "#!/bin/sh" << endl;
 #endif
         for (auto& k : keys) {
 #ifdef _WIN32
-            foo << "echo %PT_" << k << "%\n";
+            foo << "@echo %PT_" << k << "%" << endl;
 #else
-            foo << "echo $PT_" << k << "\n";
+            foo << "echo $PT_" << k << endl;
 #endif
         }
     }
 
     void make_unparseable(string task = "init") {
         ofstream foo(module_path+"/"+task, ios_base::binary);
-#ifndef _WIN32
-        foo << "#!/bin/sh\n";
+#ifdef _WIN32
+        foo << "@echo off" << endl;
+#else
+        foo << "#!/bin/sh" << endl;
 #endif
-        foo << "echo " << invalid_string() << "\n";
+        foo << "echo " << invalid_string() << endl;
     }
 
     void make_error(string task = "init") {
         ofstream foo(module_path+"/"+task, ios_base::binary);
-#ifndef _WIN32
-        foo << "#!/bin/sh\n";
+#ifdef _WIN32
+        foo << "@echo off" << endl;
+#else
+        foo << "#!/bin/sh" << endl;
 #endif
-        foo << "echo hello\n";
-        foo << "echo goodbye 1>&2\n";
-        foo << "exit 1\n";
+        foo << "echo hello" << endl;
+        foo << "echo goodbye 1>&2" << endl;
+        foo << "exit 1" << endl;
     }
 
     void make_executable(string task = "init") {

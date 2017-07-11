@@ -13,10 +13,10 @@ add_executable(task task.cc)
 target_link_libraries(task ${Boost_LIBRARIES} ${LEATHERMAN_LIBRARIES})
 install(TARGETS task DESTINATION ${MODULES_INSTALL_PATH})
 
-add_executable(test_task task.cc tests/main.cc)
-target_compile_definitions(test_task PRIVATE MAIN_IMPL=test_main)
-target_link_libraries(test_task ${Boost_LIBRARIES} ${LEATHERMAN_LIBRARIES})
+add_executable(task-tests task.cc tests/main.cc)
+target_compile_definitions(task-tests PRIVATE MAIN_IMPL=test_main)
+target_link_libraries(task-tests ${Boost_LIBRARIES} ${LEATHERMAN_LIBRARIES})
 add_test(
-    NAME "task tests"
-    COMMAND "${EXECUTABLE_OUTPUT_PATH}/test_task"
+    NAME "task\\ tests"
+    COMMAND "${EXECUTABLE_OUTPUT_PATH}/task-tests"
 )
