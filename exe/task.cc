@@ -118,7 +118,7 @@ int MAIN_IMPL(int argc, char** argv)
     ],
     "description": "Task runner module"
 }
-)";
+)" << std::flush;
         return 0;
     }
 
@@ -147,10 +147,11 @@ int MAIN_IMPL(int argc, char** argv)
         set_error(stdout_result, "invalid-task", _("Invalid task name '{1}'", taskname));
     } else {
         try {
-            auto filename = SYSTEM_PREFIX()+"/pxp-agent/tasks/"+module+"/tasks/"+task;
+            auto filepath = SYSTEM_PREFIX()+"/pxp-agent/tasks/"+module+"/tasks";
 
-            if (lth_exec::which(filename).empty()) {
-                set_error(stdout_result, "not-found", _("Task file '{1}' is not present or not executable", filename));
+            auto filename = lth_exec::which(task, vector<string>{filepath});
+            if (filename.empty()) {
+                set_error(stdout_result, "not-found", _("Task file '{1}' is not present or not executable", filepath+"/"+task));
             } else {
                 auto environment = generate_environment_from(input);
                 auto exec = lth_exec::execute(
