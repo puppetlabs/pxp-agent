@@ -99,6 +99,27 @@ TEST_CASE("runs a simple task") {
         output = read(dir+"/exit");
         REQUIRE(output == lines{"0"});
     }
+
+    SECTION("task with extension") {
+        stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": 1, \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
+
+        foo.make_echo();
+        foo.make_exec_extension();
+        MAIN_IMPL(args.size(), args.data());
+
+        auto output = read(dir+"/out");
+        REQUIRE(output.size() == 1);
+        // Strip newlines on Windows
+        boost::erase_all(output[0], "\\r");
+        boost::erase_all(output[0], "\\n");
+        REQUIRE(output[0] == "{\"output\":\"{\\\"a\\\":1,\\\"b\\\":[2,3],\\\"c\\\":{\\\"hello\\\":\\\"goodbye foo\\\"}}\"}");
+
+        output = read(dir+"/err");
+        REQUIRE(output.empty());
+
+        output = read(dir+"/exit");
+        REQUIRE(output == lines{"0"});
+    }
 }
 
 TEST_CASE("sets input as environment variables in task") {
@@ -160,8 +181,8 @@ TEST_CASE("returns an error if the task can't be run") {
             MAIN_IMPL(args.size(), args.data());
 
             auto output = read(dir+"/out");
-            REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/not-found","msg":"Task file ')"+test_prefix()+
-                R"(/pxp-agent/tasks/foo/tasks/init' is not present or not executable"}})"});
+            REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/not-found","msg":"Could not find task 'foo' at )"
+                +test_prefix()+R"(/pxp-agent/tasks/foo/tasks"}})"});
             REQUIRE(validate_failure(dir));
         }
 
@@ -170,8 +191,8 @@ TEST_CASE("returns an error if the task can't be run") {
             MAIN_IMPL(args.size(), args.data());
 
             auto output = read(dir+"/out");
-            REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/not-found","msg":"Task file ')"+test_prefix()+
-                R"(/pxp-agent/tasks/foo/tasks/bar' is not present or not executable"}})"});
+            REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/not-found","msg":"Could not find task 'foo::bar' at )"
+                +test_prefix()+R"(/pxp-agent/tasks/foo/tasks"}})"});
             REQUIRE(validate_failure(dir));
         }
     }
@@ -185,8 +206,11 @@ TEST_CASE("returns an error if the task can't be run") {
             MAIN_IMPL(args.size(), args.data());
 
             auto output = read(dir+"/out");
-            REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/not-found","msg":"Task file ')"+test_prefix()+
-                R"(/pxp-agent/tasks/foo/tasks/init' is not present or not executable"}})"});
+            REQUIRE(output.size() == 1);
+            // Make pathing consistent.
+            boost::replace_all(output[0], "\\\\", "/");
+            REQUIRE(output[0] == R"({"_error":{"kind":"puppetlabs.tasks/not-executable","msg":"Task file ')"+test_prefix()+
+                R"(/pxp-agent/tasks/foo/tasks/init' is not executable"}})");
             REQUIRE(validate_failure(dir));
         }
 
@@ -196,8 +220,11 @@ TEST_CASE("returns an error if the task can't be run") {
             MAIN_IMPL(args.size(), args.data());
 
             auto output = read(dir+"/out");
-            REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/not-found","msg":"Task file ')"+test_prefix()+
-                R"(/pxp-agent/tasks/foo/tasks/bar' is not present or not executable"}})"});
+            REQUIRE(output.size() == 1);
+            // Make pathing consistent.
+            boost::replace_all(output[0], "\\\\", "/");
+            REQUIRE(output[0] == R"({"_error":{"kind":"puppetlabs.tasks/not-executable","msg":"Task file ')"+test_prefix()+
+                R"(/pxp-agent/tasks/foo/tasks/bar' is not executable"}})");
             REQUIRE(validate_failure(dir));
         }
     }
@@ -215,7 +242,7 @@ TEST_CASE("errors when given an invalid json string") {
     MAIN_IMPL(args.size(), args.data());
 
     auto output = read(dir+"/out");
-    REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/output-encoding-error","msg":"Output cannot be represented as a JSON string"}})"});
+    REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/output-encoding-error","msg":"Output is not valid UTF-8"}})"});
 
     output = read(dir+"/err");
     REQUIRE(output.empty());

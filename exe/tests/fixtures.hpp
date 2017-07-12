@@ -125,6 +125,13 @@ struct temp_task {
 #endif
     }
 
+    void make_exec_extension(string task = "init") {
+#ifndef _WIN32
+        fs::permissions(module_path+"/"+task, fs::owner_read|fs::owner_write|fs::owner_exe);
+#endif
+        fs::rename(module_path+"/"+task, module_path+"/"+task+".bat");
+    }
+
 private:
     string module_path;
 };
