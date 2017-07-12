@@ -38,6 +38,7 @@ desc="PXP agent"
 lockfile=/var/lock/subsys/pxp-agent
 piddir=/var/run/puppetlabs
 pidfile="${piddir}/${prog}.pid"
+logdir=/var/run/puppetlabs
 
 [ -x $exec ] || exit 5
 
@@ -75,7 +76,7 @@ case "$1" in
                 rc_exit
             fi
         fi
-        mkdir -p $piddir
+        mkdir -p $piddir $logdir
         startproc -f -w -p "${pidfile}" "${exec}" ${PXP_AGENT_OPTIONS} && touch "${lockfile}"
         # Remember status and be verbose
         rc_status -v

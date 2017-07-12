@@ -20,6 +20,7 @@ desc="PXP agent"
 lockfile=/var/lock/subsys/$prog
 piddir=/var/run/puppetlabs
 pidfile="${piddir}/${prog}.pid"
+logdir=/var/log/puppetlabs
 pid=$(cat $pidfile 2> /dev/null)
 RETVAL=0
 
@@ -35,7 +36,7 @@ fi
 
 start() {
     echo -n $"Starting PXP agent: "
-    mkdir -p $piddir
+    mkdir -p $piddir $logdir
     daemon $daemonopts $exec ${PXP_AGENT_OPTIONS}
     RETVAL=$?
     echo
