@@ -106,7 +106,7 @@ struct temp_task {
     }
 
     void make_error(string task = "init") {
-        ofstream foo(module_path+"/"+task, ios_base::binary);
+        ofstream foo(module_path+"/"+task);
 #ifdef _WIN32
         foo << "@echo off" << endl;
 #else
@@ -117,19 +117,39 @@ struct temp_task {
         foo << "exit 1" << endl;
     }
 
-    void make_executable(string task = "init") {
+    void make_powershell(vector<string> keys, string task = "init") {
+        ofstream foo(module_path+"/"+task);
+#ifndef _WIN32
+        foo << "#!/usr/bin/env powershell" << endl;
+#endif
+        foo << "foreach ($i in $input) { Write-Output $i }" << endl;
+        for (auto& k : keys) {
+            foo << "Write-Output $env:PT_" << k << endl;
+        }
+    }
+
+    void make_ruby(vector<string> keys, string task = "init") {
+        ofstream foo(module_path+"/"+task);
+#ifndef _WIN32
+        foo << "#!/usr/bin/env ruby" << endl;
+#endif
+        foo << "puts STDIN.gets" << endl;
+        for (auto& k : keys) {
+            foo << "puts ENV['PT_" << k << "']" << endl;
+        }
+    }
+
+    void make_executable(string task = "init", string ext = "") {
 #ifdef _WIN32
-        fs::rename(module_path+"/"+task, module_path+"/"+task+".bat");
+        if (ext.empty()) {
+            ext = ".bat";
+        }
 #else
         fs::permissions(module_path+"/"+task, fs::owner_read|fs::owner_write|fs::owner_exe);
 #endif
-    }
-
-    void make_exec_extension(string task = "init") {
-#ifndef _WIN32
-        fs::permissions(module_path+"/"+task, fs::owner_read|fs::owner_write|fs::owner_exe);
-#endif
-        fs::rename(module_path+"/"+task, module_path+"/"+task+".bat");
+        if (!ext.empty()) {
+            fs::rename(module_path+"/"+task, module_path+"/"+task+ext);
+        }
     }
 
 private:

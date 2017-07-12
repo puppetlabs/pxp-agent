@@ -10,6 +10,7 @@
 #include <boost/nowide/iostream.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <rapidjson/rapidjson.h>
 
@@ -100,6 +101,15 @@ static string find_task(string taskname)
     }
 
     auto filename = filenames.front();
+
+#ifdef _WIN32
+    // Hard-code .ps1 and .rb as executable on Windows. On non-Windows, we still rely on permissions.
+    auto extension = fs::path(filename).extension();
+    if (extension == ".ps1" || extension == ".rb") {
+        return filename;
+    }
+#endif
+
     if (lth_exec::which(filename).empty()) {
         throw task_error("not-executable", _("Task file '{1}' is not executable", filename));
     }
@@ -198,11 +208,30 @@ int MAIN_IMPL(int argc, char** argv)
 
     try {
         auto filename = find_task(taskname);
+        auto arguments = vector<string>{};
         auto environment = generate_environment_from(input);
+
+#ifdef _WIN32
+        if (boost::algorithm::ends_with(filename, ".ps1")) {
+            arguments = vector<string>{
+                "-NoProfile",
+                "-NonInteractive",
+                "-NoLogo",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                filename
+            };
+            filename = "powershell";
+        } else if (boost::algorithm::ends_with(filename, ".rb")) {
+            arguments = vector<string>{filename};
+            filename = "ruby";
+        }
+#endif
 
         auto exec = lth_exec::execute(
             filename,
-            {},  // arguments
+            arguments,
             input.toString(),
             environment,
             0,  // timeout

@@ -104,7 +104,7 @@ TEST_CASE("runs a simple task") {
         stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": 1, \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
 
         foo.make_echo();
-        foo.make_exec_extension();
+        foo.make_executable("init", ".bat");
         MAIN_IMPL(args.size(), args.data());
 
         auto output = read(dir+"/out");
@@ -120,30 +120,67 @@ TEST_CASE("runs a simple task") {
         output = read(dir+"/exit");
         REQUIRE(output == lines{"0"});
     }
-}
 
-TEST_CASE("sets input as environment variables in task") {
-    temp_directory tmpdir;
-    auto dir = tmpdir.name();
-    auto args = array<char*, 1>{{const_cast<char*>("test_task")}};
-    temp_task foo("foo");
+#ifdef _WIN32
+    SECTION("powershell task") {
+        stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": 1, \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
 
-    stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": \"1\", \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
+        foo.make_powershell({"a", "b", "c"});
+        foo.make_executable("init", ".ps1");
+        MAIN_IMPL(args.size(), args.data());
 
-    foo.make_printer({"a", "b", "c"});
-    foo.make_executable();
-    MAIN_IMPL(args.size(), args.data());
+        auto output = read(dir+"/out");
+        REQUIRE(output.size() == 1);
+        // Strip newlines on Windows
+        boost::erase_all(output[0], "\\r");
+        REQUIRE(output[0] == "{\"output\":\"{\\\"a\\\":1,\\\"b\\\":[2,3],\\\"c\\\":{\\\"hello\\\":\\\"goodbye foo\\\"}}\\n1\\n[2,3]\\n{\\\"hello\\\":\\\"goodbye foo\\\"}\\n\"}");
 
-    auto output = read(dir+"/out");
-    REQUIRE(output.size() == 1);
-    boost::erase_all(output[0], "\\r");
-    REQUIRE(output[0] == "{\"output\":\"1\\n[2,3]\\n{\\\"hello\\\":\\\"goodbye foo\\\"}\\n\"}");
+        output = read(dir+"/err");
+        REQUIRE(output.empty());
 
-    output = read(dir+"/err");
-    REQUIRE(output.empty());
+        output = read(dir+"/exit");
+        REQUIRE(output == lines{"0"});
+    }
+#endif
 
-    output = read(dir+"/exit");
-    REQUIRE(output == lines{"0"});
+    SECTION("ruby task") {
+        stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": 1, \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
+
+        foo.make_ruby({"a", "b", "c"});
+        foo.make_executable("init", ".rb");
+        MAIN_IMPL(args.size(), args.data());
+
+        auto output = read(dir+"/out");
+        REQUIRE(output.size() == 1);
+        // Strip newlines on Windows
+        boost::erase_all(output[0], "\\r");
+        REQUIRE(output[0] == "{\"output\":\"{\\\"a\\\":1,\\\"b\\\":[2,3],\\\"c\\\":{\\\"hello\\\":\\\"goodbye foo\\\"}}\\n1\\n[2,3]\\n{\\\"hello\\\":\\\"goodbye foo\\\"}\\n\"}");
+
+        output = read(dir+"/err");
+        REQUIRE(output.empty());
+
+        output = read(dir+"/exit");
+        REQUIRE(output == lines{"0"});
+    }
+
+    SECTION("sets input as environment variables in task") {
+        stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": \"1\", \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
+
+        foo.make_printer({"a", "b", "c"});
+        foo.make_executable();
+        MAIN_IMPL(args.size(), args.data());
+
+        auto output = read(dir+"/out");
+        REQUIRE(output.size() == 1);
+        boost::erase_all(output[0], "\\r");
+        REQUIRE(output[0] == "{\"output\":\"1\\n[2,3]\\n{\\\"hello\\\":\\\"goodbye foo\\\"}\\n\"}");
+
+        output = read(dir+"/err");
+        REQUIRE(output.empty());
+
+        output = read(dir+"/exit");
+        REQUIRE(output == lines{"0"});
+    }
 }
 
 TEST_CASE("returns an error if the task name is invalid") {
