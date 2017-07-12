@@ -83,6 +83,9 @@ gettext_templates(${CMAKE_CURRENT_SOURCE_DIR}/locales ${PXP_AGENT_SOURCES})
 include(FeatureSummary)
 feature_summary(WHAT ALL)
 
+# Add the test suite
+enable_testing()
+
 # Add the main binary
 add_subdirectory(lib)
 add_subdirectory(exe)
@@ -98,9 +101,6 @@ install(FILES modules/pxp-module-puppet.bat
         DESTINATION ${MODULES_INSTALL_PATH}
         PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 endif()
-
-# Add the test suite
-enable_testing()
 
 add_test(
     NAME "pxp-agent\\ library\\ tests"

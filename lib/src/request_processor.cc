@@ -828,7 +828,7 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
 #ifndef _WIN32
             if (extension == "") {
 #else
-            if (extension == ".bat") {
+            if (extension == ".bat" || extension == ".exe") {
 #endif
                 try {
                     ExternalModule* e_m;

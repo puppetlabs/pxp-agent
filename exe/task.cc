@@ -7,7 +7,6 @@
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.task"
 #include <leatherman/logging/logging.hpp>
 
-#include <boost/nowide/args.hpp>
 #include <boost/nowide/iostream.hpp>
 #include <boost/filesystem.hpp>
 
@@ -87,7 +86,9 @@ static map<string, string> generate_environment_from(lth_jc::JsonContainer &inpu
 
 int MAIN_IMPL(int argc, char** argv)
 {
-    boost::nowide::args arg_utf8(argc, argv);
+    // Fix args on Windows to be UTF-8. Disabled because it prevents testing
+    // and we expect "metadata" as the only argument.
+    // boost::nowide::args arg_utf8(argc, argv);
 
     if (argc > 1 && argv[1] == string("metadata")) {
         boost::nowide::cout << R"(
@@ -118,7 +119,7 @@ int MAIN_IMPL(int argc, char** argv)
     ],
     "description": "Task runner module"
 }
-)";
+)" << std::flush;
         return 0;
     }
 
@@ -147,10 +148,11 @@ int MAIN_IMPL(int argc, char** argv)
         set_error(stdout_result, "invalid-task", _("Invalid task name '{1}'", taskname));
     } else {
         try {
-            auto filename = SYSTEM_PREFIX()+"/pxp-agent/tasks/"+module+"/tasks/"+task;
+            auto filepath = SYSTEM_PREFIX()+"/pxp-agent/tasks/"+module+"/tasks";
 
-            if (lth_exec::which(filename).empty()) {
-                set_error(stdout_result, "not-found", _("Task file '{1}' is not present or not executable", filename));
+            auto filename = lth_exec::which(task, vector<string>{filepath});
+            if (filename.empty()) {
+                set_error(stdout_result, "not-found", _("Task file '{1}' is not present or not executable", filepath+"/"+task));
             } else {
                 auto environment = generate_environment_from(input);
                 auto exec = lth_exec::execute(

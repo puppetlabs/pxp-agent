@@ -3,8 +3,8 @@
 #define CATCH_CONFIG_MAIN
 #include <catch.hpp>
 
-#include <boost/algorithm/string/replace.hpp>
 #include <array>
+#include <boost/algorithm/string/erase.hpp>
 
 #include "./fixtures.hpp"
 
@@ -66,7 +66,11 @@ TEST_CASE("runs a simple task") {
         MAIN_IMPL(args.size(), args.data());
 
         auto output = read(dir+"/out");
-        REQUIRE(output == lines{"{\"output\":\"{\\\"a\\\":1,\\\"b\\\":[2,3],\\\"c\\\":{\\\"hello\\\":\\\"goodbye foo\\\"}}\"}"});
+        REQUIRE(output.size() == 1);
+        // Strip newlines on Windows
+        boost::erase_all(output[0], "\\r");
+        boost::erase_all(output[0], "\\n");
+        REQUIRE(output[0] == "{\"output\":\"{\\\"a\\\":1,\\\"b\\\":[2,3],\\\"c\\\":{\\\"hello\\\":\\\"goodbye foo\\\"}}\"}");
 
         output = read(dir+"/err");
         REQUIRE(output.empty());
@@ -83,7 +87,11 @@ TEST_CASE("runs a simple task") {
         MAIN_IMPL(args.size(), args.data());
 
         auto output = read(dir+"/out");
-        REQUIRE(output == lines{"{\"output\":\"{\\\"a\\\":1,\\\"b\\\":[2,3],\\\"c\\\":{\\\"hello\\\":\\\"goodbye foo\\\"}}\"}"});
+        REQUIRE(output.size() == 1);
+        // Strip newlines on Windows
+        boost::erase_all(output[0], "\\r");
+        boost::erase_all(output[0], "\\n");
+        REQUIRE(output[0] == "{\"output\":\"{\\\"a\\\":1,\\\"b\\\":[2,3],\\\"c\\\":{\\\"hello\\\":\\\"goodbye foo\\\"}}\"}");
 
         output = read(dir+"/err");
         REQUIRE(output.empty());
@@ -107,8 +115,8 @@ TEST_CASE("sets input as environment variables in task") {
 
     auto output = read(dir+"/out");
     REQUIRE(output.size() == 1);
-    boost::replace_all(output[0], "\r", "");
-    REQUIRE(output == lines{"{\"output\":\"1\\n[2,3]\\n{\\\"hello\\\":\\\"goodbye foo\\\"}\\n\"}"});
+    boost::erase_all(output[0], "\\r");
+    REQUIRE(output[0] == "{\"output\":\"1\\n[2,3]\\n{\\\"hello\\\":\\\"goodbye foo\\\"}\\n\"}");
 
     output = read(dir+"/err");
     REQUIRE(output.empty());
