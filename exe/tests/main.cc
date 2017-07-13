@@ -232,6 +232,19 @@ TEST_CASE("returns an error if the task can't be run") {
                 +test_prefix()+R"(/pxp-agent/tasks/foo/tasks"}})"});
             REQUIRE(validate_failure(dir));
         }
+
+        SECTION("other task exists") {
+            temp_task bar("foo");
+            bar.make_echo("bar");
+
+            stream_fixture fix(basic_task("foo", dir));
+            MAIN_IMPL(args.size(), args.data());
+
+            auto output = read(dir+"/out");
+            REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/not-found","msg":"Could not find task 'foo' at )"
+                +test_prefix()+R"(/pxp-agent/tasks/foo/tasks"}})"});
+            REQUIRE(validate_failure(dir));
+        }
     }
 
     SECTION("task not executable") {

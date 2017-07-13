@@ -1,3 +1,5 @@
+#include "task.hpp"
+
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/execution/execution.hpp>
 #include <leatherman/file_util/file.hpp>
@@ -10,13 +12,8 @@
 #include <boost/nowide/iostream.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/join.hpp>
-#include <boost/algorithm/string/predicate.hpp>
 
 #include <rapidjson/rapidjson.h>
-
-#include <vector>
-#include <set>
-#include <string>
 
 using namespace std;
 namespace lth_jc = leatherman::json_container;
@@ -26,6 +23,7 @@ namespace lth_log  = leatherman::logging;
 namespace lth_util = leatherman::util;
 namespace fs = boost::filesystem;
 
+// Defines to allow testing the main function with an arbitrary task location.
 #ifndef MAIN_IMPL
 #define MAIN_IMPL main
 #define SYSTEM_PREFIX system_prefix
@@ -56,14 +54,7 @@ static string system_prefix()
 string test_prefix();
 #endif
 
-struct task_error : runtime_error
-{
-    task_error(string t, string msg) : runtime_error(move(msg)), type(move(t)) {}
-    string type;
-};
-
-static string find_task(string taskname)
-{
+task task_runner::find_task(string taskname) {
     string module, task = "init";
     if (!lth_util::re_search(taskname, boost::regex("\\A(\\w+)\\z"), &module) &&
         !lth_util::re_search(taskname, boost::regex("\\A(\\w+)::(\\w+)\\z"), &module, &task)) {
@@ -73,18 +64,20 @@ static string find_task(string taskname)
     auto filepath = SYSTEM_PREFIX()+"/pxp-agent/tasks/"+module+"/tasks";
 
     // Search for any executable file starting with the task name and not matching a set of reserved extensions
-    auto reserved_extensions = set<string>{".json", ".md"};
     vector<string> filenames;
+    string extension;
 
     try {
         fs::directory_iterator end;
         for (auto f = fs::directory_iterator(filepath); f != end; ++f) {
-            if (!fs::is_directory(f->status())) {
-                auto extension = f->path().extension();
-                if (reserved_extensions.find(extension.string()) != reserved_extensions.end()) {
+            if (!fs::is_directory(f->status()) && f->path().stem() == task) {
+                auto ext = f->path().extension().string();
+                if (reserved_extensions_.find(ext) != reserved_extensions_.end()) {
                     continue;
                 }
 
+                // Save for later. The last one is fine, since we will error if there's not exactly one file.
+                extension = move(ext);
                 filenames.emplace_back(f->path().string());
             }
         }
@@ -102,19 +95,15 @@ static string find_task(string taskname)
 
     auto filename = filenames.front();
 
-#ifdef _WIN32
-    // Hard-code .ps1 and .rb as executable on Windows. On non-Windows, we still rely on permissions.
-    auto extension = fs::path(filename).extension();
-    if (extension == ".ps1" || extension == ".rb") {
-        return filename;
+    auto builtin = builtin_task_wrappers_.find(extension);
+    if (builtin != builtin_task_wrappers_.end()) {
+        return builtin->second(filename);
     }
-#endif
 
     if (lth_exec::which(filename).empty()) {
         throw task_error("not-executable", _("Task file '{1}' is not executable", filename));
     }
-
-    return filename;
+    return {filename, vector<string>{}};
 }
 
 static void set_error(lth_jc::JsonContainer &result, string kind, string msg)
@@ -207,31 +196,13 @@ int MAIN_IMPL(int argc, char** argv)
     string stderr_str;
 
     try {
-        auto filename = find_task(taskname);
-        auto arguments = vector<string>{};
+        task_runner runner;
+        auto task = runner.find_task(taskname);
         auto environment = generate_environment_from(input);
 
-#ifdef _WIN32
-        if (boost::algorithm::ends_with(filename, ".ps1")) {
-            arguments = vector<string>{
-                "-NoProfile",
-                "-NonInteractive",
-                "-NoLogo",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                filename
-            };
-            filename = "powershell";
-        } else if (boost::algorithm::ends_with(filename, ".rb")) {
-            arguments = vector<string>{filename};
-            filename = "ruby";
-        }
-#endif
-
         auto exec = lth_exec::execute(
-            filename,
-            arguments,
+            task.name,
+            task.args,
             input.toString(),
             environment,
             0,  // timeout
