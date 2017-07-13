@@ -1,3 +1,15 @@
+## 1.6.1
+
+This is a maintenance and bug fix release.
+
+* [PCP-755](https://tickets.puppetlabs.com/browse/PCP-755) Stop using versioned executables. Support
+restarting the pxp-agent service when the binary path changes.
+* [PCP-697](https://tickets.puppetlabs.com/browse/PCP-697) Ensure default log location exists on
+service startup.
+* [PCP-759](https://tickets.puppetlabs.com/browse/PCP-759) Enable testing against an EC2 master
+* [PCP-750](https://tickets.puppetlabs.com/browse/PCP-750) Ensure failed connection attempts from test
+code are closed before retrying.
+
 ## 1.6.0
 
 This is a feature release
