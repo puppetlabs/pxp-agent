@@ -7,6 +7,7 @@
 #include <boost/algorithm/string/erase.hpp>
 
 #include "./fixtures.hpp"
+#include "../task.hpp"
 
 string test_prefix()
 {
@@ -58,40 +59,17 @@ TEST_CASE("runs a simple task") {
     auto args = array<char*, 1>{{const_cast<char*>("test_task")}};
     temp_task foo("foo");
 
-    SECTION("simple task name") {
-        stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": 1, \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
+    SECTION("sets input as environment variables in task") {
+        stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": \"1\", \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
 
-        foo.make_echo();
+        foo.make_printer({"a", "b", "c"});
         foo.make_executable();
         MAIN_IMPL(args.size(), args.data());
 
         auto output = read(dir+"/out");
         REQUIRE(output.size() == 1);
-        // Strip newlines on Windows
         boost::erase_all(output[0], "\\r");
-        boost::erase_all(output[0], "\\n");
-        REQUIRE(output[0] == "{\"output\":\"{\\\"a\\\":1,\\\"b\\\":[2,3],\\\"c\\\":{\\\"hello\\\":\\\"goodbye foo\\\"}}\"}");
-
-        output = read(dir+"/err");
-        REQUIRE(output.empty());
-
-        output = read(dir+"/exit");
-        REQUIRE(output == lines{"0"});
-    }
-
-    SECTION("compound task name") {
-        stream_fixture fix("{\"input\": {\"task\": \"foo::bar\", \"input\": {\"a\": 1, \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
-
-        foo.make_echo("bar");
-        foo.make_executable("bar");
-        MAIN_IMPL(args.size(), args.data());
-
-        auto output = read(dir+"/out");
-        REQUIRE(output.size() == 1);
-        // Strip newlines on Windows
-        boost::erase_all(output[0], "\\r");
-        boost::erase_all(output[0], "\\n");
-        REQUIRE(output[0] == "{\"output\":\"{\\\"a\\\":1,\\\"b\\\":[2,3],\\\"c\\\":{\\\"hello\\\":\\\"goodbye foo\\\"}}\"}");
+        REQUIRE(output[0] == "{\"output\":\"1\\n[2,3]\\n{\\\"hello\\\":\\\"goodbye foo\\\"}\\n\"}");
 
         output = read(dir+"/err");
         REQUIRE(output.empty());
@@ -162,120 +140,210 @@ TEST_CASE("runs a simple task") {
         output = read(dir+"/exit");
         REQUIRE(output == lines{"0"});
     }
-
-    SECTION("sets input as environment variables in task") {
-        stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": \"1\", \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
-
-        foo.make_printer({"a", "b", "c"});
-        foo.make_executable();
-        MAIN_IMPL(args.size(), args.data());
-
-        auto output = read(dir+"/out");
-        REQUIRE(output.size() == 1);
-        boost::erase_all(output[0], "\\r");
-        REQUIRE(output[0] == "{\"output\":\"1\\n[2,3]\\n{\\\"hello\\\":\\\"goodbye foo\\\"}\\n\"}");
-
-        output = read(dir+"/err");
-        REQUIRE(output.empty());
-
-        output = read(dir+"/exit");
-        REQUIRE(output == lines{"0"});
-    }
 }
 
-TEST_CASE("returns an error if the task name is invalid") {
+TEST_CASE("finds tasks") {
+    task_runner runner;
     temp_directory tmpdir;
     auto dir = tmpdir.name();
-    auto args = array<char*, 1>{{const_cast<char*>("test_task")}};
+    temp_task foo("foo");
 
-    SECTION("simple task name") {
-        stream_fixture fix(basic_task("foo!", dir));
-        MAIN_IMPL(args.size(), args.data());
+    SECTION("simple name") {
+        foo.make_echo();
+        foo.make_executable("init", ".bat");
 
-        auto output = read(dir+"/out");
-        REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/invalid-task","msg":"Invalid task name 'foo!'"}})"});
-        REQUIRE(validate_failure(dir));
+        auto t = runner.find_task("foo");
+        boost::replace_all(t.name, "\\", "/");
+        REQUIRE(t.name == foo.module_path+"/init.bat");
+        REQUIRE(t.args == vector<string>{});
     }
 
     SECTION("compound task name") {
-        stream_fixture fix(basic_task("fee:::fie", dir));
-        MAIN_IMPL(args.size(), args.data());
+        foo.make_echo("bar");
+        foo.make_executable("bar", ".bat");
 
-        auto output = read(dir+"/out");
-        REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/invalid-task","msg":"Invalid task name 'fee:::fie'"}})"});
-        REQUIRE(validate_failure(dir));
+        auto t = runner.find_task("foo::bar");
+        boost::replace_all(t.name, "\\", "/");
+        REQUIRE(t.name == foo.module_path+"/bar.bat");
+        REQUIRE(t.args == vector<string>{});
     }
-}
 
-TEST_CASE("returns an error if the task can't be run") {
-    temp_directory tmpdir;
-    auto dir = tmpdir.name();
-    auto args = array<char*, 1>{{const_cast<char*>("test_task")}};
+    SECTION("powershell task name") {
+        foo.make_powershell({"a", "b", "c"});
+        foo.make_executable("init", ".ps1");
 
-    SECTION("task not found") {
+        auto t = runner.find_task("foo");
+#ifdef _WIN32
+        REQUIRE(t.name == "powershell");
+        auto args = vector<string>{"-NoProfile", "-NonInteractive", "-NoLogo", "-ExecutionPolicy", "Bypass", "-File", foo.module_path+"\\init.ps1"};
+        REQUIRE(t.args == args);
+#else
+        REQUIRE(t.name == foo.module_path+"/init.ps1");
+        REQUIRE(t.args == vector<string>{});
+#endif
+    }
+
+    SECTION("ruby task name") {
+        foo.make_ruby({"a", "b", "c"});
+        foo.make_executable("init", ".rb");
+
+        auto t = runner.find_task("foo");
+#ifdef _WIN32
+        REQUIRE(t.name == "ruby");
+        auto args = vector<string>{foo.module_path+"\\init.rb"};
+        REQUIRE(t.args == args);
+#else
+        REQUIRE(t.name == foo.module_path+"/init.rb");
+        REQUIRE(t.args == vector<string>{});
+#endif
+    }
+
+    SECTION("puppet task name") {
+        foo.make_echo("bar");
+        foo.make_executable("bar", ".pp");
+
+        auto t = runner.find_task("foo::bar");
+#ifdef _WIN32
+        REQUIRE(t.name == "puppet");
+        auto args = vector<string>{"apply", foo.module_path+"\\bar.pp"};
+        REQUIRE(t.args == args);
+#else
+        REQUIRE(t.name == foo.module_path+"/bar.pp");
+        REQUIRE(t.args == vector<string>{});
+#endif
+    }
+
+    SECTION("ignores reserved files: json, markdown") {
+        foo.make_echo();
+        foo.make_executable("init", ".bat");
+        foo.make_echo();
+        foo.make_executable("init", ".json");
+        foo.make_echo();
+        foo.make_executable("init", ".md");
+
+        auto t = runner.find_task("foo");
+        boost::replace_all(t.name, "\\", "/");
+        REQUIRE(t.name == foo.module_path+"/init.bat");
+        REQUIRE(t.args == vector<string>{});
+    }
+
+    SECTION("from multiple tasks") {
+        foo.make_echo("bar");
+        foo.make_executable("bar", ".bat");
+
+        foo.make_ruby({"a", "b", "c"});
+        foo.make_executable("init", ".rb");
+
+        auto t = runner.find_task("foo::bar");
+        boost::replace_all(t.name, "\\", "/");
+        REQUIRE(t.name == foo.module_path+"/bar.bat");
+        REQUIRE(t.args == vector<string>{});
+    }
+
+    SECTION("errors when same task has multiple options") {
+        foo.make_echo();
+        foo.make_executable("init", ".bat");
+
+        foo.make_ruby({"a", "b", "c"});
+        foo.make_executable("init", ".rb");
+
+        try {
+            runner.find_task("foo");
+            REQUIRE(false);
+        } catch (task_error &e) {
+            REQUIRE(e.type == "multiple-files");
+            string msg = e.what();
+            boost::replace_all(msg, "\\", "/");
+            REQUIRE(msg == "Found multiple matching files for task 'foo': "
+                    +foo.module_path+"/init.bat, "+foo.module_path+"/init.rb");
+        }
+    }
+
+    SECTION("errors if task name is invalid") {
         SECTION("simple task name") {
-            stream_fixture fix(basic_task("foo", dir));
-            MAIN_IMPL(args.size(), args.data());
-
-            auto output = read(dir+"/out");
-            REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/not-found","msg":"Could not find task 'foo' at )"
-                +test_prefix()+R"(/pxp-agent/tasks/foo/tasks"}})"});
-            REQUIRE(validate_failure(dir));
+            try {
+                runner.find_task("foo!");
+                REQUIRE(false);
+            } catch (task_error &e) {
+                REQUIRE(e.type == "invalid-task");
+                REQUIRE(e.what() == string("Invalid task name 'foo!'"));
+            }
         }
 
         SECTION("compound task name") {
-            stream_fixture fix(basic_task("foo::bar", dir));
-            MAIN_IMPL(args.size(), args.data());
+            try {
+                runner.find_task("fee:::fie");
+                REQUIRE(false);
+            } catch (task_error &e) {
+                REQUIRE(e.type == "invalid-task");
+                REQUIRE(e.what() == string("Invalid task name 'fee:::fie'"));
+            }
+        }
+    }
 
-            auto output = read(dir+"/out");
-            REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/not-found","msg":"Could not find task 'foo::bar' at )"
-                +test_prefix()+R"(/pxp-agent/tasks/foo/tasks"}})"});
-            REQUIRE(validate_failure(dir));
+    SECTION("errors if task not found") {
+        SECTION("simple task name") {
+            try {
+                runner.find_task("foo");
+                REQUIRE(false);
+            } catch (task_error &e) {
+                REQUIRE(e.type == "not-found");
+                REQUIRE(e.what() == "Could not find task 'foo' at "+foo.module_path);
+            }
+        }
+
+        SECTION("compound task name") {
+            foo.make_echo();
+
+            try {
+                runner.find_task("foo::bar");
+                REQUIRE(false);
+            } catch (task_error &e) {
+                REQUIRE(e.type == "not-found");
+                REQUIRE(e.what() == "Could not find task 'foo::bar' at "+foo.module_path);
+            }
         }
 
         SECTION("other task exists") {
-            temp_task bar("foo");
-            bar.make_echo("bar");
+            foo.make_echo("bar");
 
-            stream_fixture fix(basic_task("foo", dir));
-            MAIN_IMPL(args.size(), args.data());
-
-            auto output = read(dir+"/out");
-            REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/not-found","msg":"Could not find task 'foo' at )"
-                +test_prefix()+R"(/pxp-agent/tasks/foo/tasks"}})"});
-            REQUIRE(validate_failure(dir));
+            try {
+                runner.find_task("foo");
+                REQUIRE(false);
+            } catch (task_error &e) {
+                REQUIRE(e.type == "not-found");
+                REQUIRE(e.what() == "Could not find task 'foo' at "+foo.module_path);
+            }
         }
     }
 
     SECTION("task not executable") {
-        temp_task foo("foo");
-
         SECTION("simple task name") {
             foo.make_echo();
-            stream_fixture fix(basic_task("foo", dir));
-            MAIN_IMPL(args.size(), args.data());
 
-            auto output = read(dir+"/out");
-            REQUIRE(output.size() == 1);
-            // Make pathing consistent.
-            boost::replace_all(output[0], "\\\\", "/");
-            REQUIRE(output[0] == R"({"_error":{"kind":"puppetlabs.tasks/not-executable","msg":"Task file ')"+test_prefix()+
-                R"(/pxp-agent/tasks/foo/tasks/init' is not executable"}})");
-            REQUIRE(validate_failure(dir));
+            try {
+                runner.find_task("foo");
+                REQUIRE(false);
+            } catch (task_error &e) {
+                REQUIRE(e.type == "not-executable");
+                string msg = e.what();
+                boost::replace_all(msg, "\\", "/");
+                REQUIRE(msg == "Task file '"+foo.module_path+"/init' is not executable");
+            }
         }
 
         SECTION("compound task name") {
             foo.make_echo("bar");
-            stream_fixture fix(basic_task("foo::bar", dir));
-            MAIN_IMPL(args.size(), args.data());
 
-            auto output = read(dir+"/out");
-            REQUIRE(output.size() == 1);
-            // Make pathing consistent.
-            boost::replace_all(output[0], "\\\\", "/");
-            REQUIRE(output[0] == R"({"_error":{"kind":"puppetlabs.tasks/not-executable","msg":"Task file ')"+test_prefix()+
-                R"(/pxp-agent/tasks/foo/tasks/bar' is not executable"}})");
-            REQUIRE(validate_failure(dir));
+            try {
+                runner.find_task("foo::bar");
+                REQUIRE(false);
+            } catch (task_error &e) {
+                REQUIRE(e.type == "not-executable");
+                string msg = e.what();
+                boost::replace_all(msg, "\\", "/");
+                REQUIRE(msg == "Task file '"+foo.module_path+"/bar' is not executable");
+            }
         }
     }
 }

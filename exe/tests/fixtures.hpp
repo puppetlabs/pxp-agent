@@ -148,7 +148,6 @@ struct temp_task {
         }
     }
 
-private:
     string module_path;
 };
 
@@ -173,11 +172,4 @@ static string output_files(string const& dir)
 static string basic_task(string task, string const& dir)
 {
     return "{\"input\": {\"task\": \""+task+"\", \"input\": {}}, "+output_files(dir)+"}";
-}
-
-static bool validate_failure(string const& dir)
-{
-    auto err = read(dir+"/err");
-    auto exi = read(dir+"/exit");
-    return err.empty() && exi == lines{"255"};
 }
