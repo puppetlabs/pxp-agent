@@ -14,6 +14,7 @@ desc="PXP agent"
 
 piddir=/var/run/puppetlabs
 pidfile="${piddir}/${prog}.pid"
+logdir=/var/log/puppetlabs
 
 [ -x $exec ] || exit 5
 
@@ -26,7 +27,7 @@ reload_pxp_agent() {
 }
 
 start_pxp_agent() {
-    mkdir -p $piddir
+    mkdir -p $piddir $logdir
     start-stop-daemon --start --quiet --pidfile $pidfile --startas $exec -- $PXP_AGENT_OPTIONS
 }
 
