@@ -119,9 +119,7 @@ struct temp_task {
 
     void make_powershell(vector<string> keys, string task = "init") {
         ofstream foo(module_path+"/"+task);
-#ifndef _WIN32
         foo << "#!/usr/bin/env powershell" << endl;
-#endif
         foo << "foreach ($i in $input) { Write-Output $i }" << endl;
         for (auto& k : keys) {
             foo << "Write-Output $env:PT_" << k << endl;
@@ -130,9 +128,7 @@ struct temp_task {
 
     void make_ruby(vector<string> keys, string task = "init") {
         ofstream foo(module_path+"/"+task);
-#ifndef _WIN32
         foo << "#!/usr/bin/env ruby" << endl;
-#endif
         foo << "puts STDIN.gets" << endl;
         for (auto& k : keys) {
             foo << "puts ENV['PT_" << k << "']" << endl;
