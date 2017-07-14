@@ -177,7 +177,11 @@ int MAIN_IMPL(int argc, char** argv)
     }
 
     lth_log::setup_logging(boost::nowide::cerr);
-    lth_log::set_level(lth_log::log_level::error);
+    if (argc > 1 && argv[1] == string("trace")) {
+        lth_log::set_level(lth_log::log_level::trace);
+    } else {
+        lth_log::set_level(lth_log::log_level::error);
+    }
 
     boost::nowide::cin >> std::noskipws;
     istream_iterator<char> it(boost::nowide::cin), end;
