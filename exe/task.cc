@@ -1,3 +1,5 @@
+#include "task.hpp"
+
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/execution/execution.hpp>
 #include <leatherman/file_util/file.hpp>
@@ -9,11 +11,9 @@
 
 #include <boost/nowide/iostream.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string/join.hpp>
 
 #include <rapidjson/rapidjson.h>
-
-#include <vector>
-#include <string>
 
 using namespace std;
 namespace lth_jc = leatherman::json_container;
@@ -23,6 +23,7 @@ namespace lth_log  = leatherman::logging;
 namespace lth_util = leatherman::util;
 namespace fs = boost::filesystem;
 
+// Defines to allow testing the main function with an arbitrary task location.
 #ifndef MAIN_IMPL
 #define MAIN_IMPL main
 #define SYSTEM_PREFIX system_prefix
@@ -52,6 +53,58 @@ static string system_prefix()
 #define SYSTEM_PREFIX test_prefix
 string test_prefix();
 #endif
+
+task task_runner::find_task(string taskname) {
+    string module, task = "init";
+    if (!lth_util::re_search(taskname, boost::regex("\\A(\\w+)\\z"), &module) &&
+        !lth_util::re_search(taskname, boost::regex("\\A(\\w+)::(\\w+)\\z"), &module, &task)) {
+        throw task_error("invalid-task", _("Invalid task name '{1}'", taskname));
+    }
+
+    auto filepath = SYSTEM_PREFIX()+"/pxp-agent/tasks/"+module+"/tasks";
+
+    // Search for any executable file starting with the task name and not matching a set of reserved extensions
+    vector<string> filenames;
+    string extension;
+
+    try {
+        fs::directory_iterator end;
+        for (auto f = fs::directory_iterator(filepath); f != end; ++f) {
+            if (!fs::is_directory(f->status()) && f->path().stem() == task) {
+                auto ext = f->path().extension().string();
+                if (reserved_extensions_.find(ext) != reserved_extensions_.end()) {
+                    continue;
+                }
+
+                // Save for later. The last one is fine, since we will error if there's not exactly one file.
+                extension = move(ext);
+                filenames.emplace_back(f->path().string());
+            }
+        }
+    } catch (fs::filesystem_error &e) {
+        // Fall through to filenames.empty
+    }
+
+    if (filenames.empty()) {
+        throw task_error("not-found", _("Could not find task '{1}' at {2}", taskname, filepath));
+    }
+    if (filenames.size() > 1) {
+        throw task_error("multiple-files", _("Found multiple matching files for task '{1}': {2}", taskname,
+                                             boost::algorithm::join(filenames, ", ")));
+    }
+
+    auto filename = filenames.front();
+
+    auto builtin = builtin_task_wrappers_.find(extension);
+    if (builtin != builtin_task_wrappers_.end()) {
+        return builtin->second(filename);
+    }
+
+    if (lth_exec::which(filename).empty()) {
+        throw task_error("not-executable", _("Task file '{1}' is not executable", filename));
+    }
+    return {filename, vector<string>{}};
+}
 
 static void set_error(lth_jc::JsonContainer &result, string kind, string msg)
 {
@@ -142,41 +195,33 @@ int MAIN_IMPL(int argc, char** argv)
     lth_jc::JsonContainer stdout_result;
     string stderr_str;
 
-    string module, task = "init";
-    if (!lth_util::re_search(taskname, boost::regex("\\A(\\w+)\\z"), &module) &&
-        !lth_util::re_search(taskname, boost::regex("\\A(\\w+)::(\\w+)\\z"), &module, &task)) {
-        set_error(stdout_result, "invalid-task", _("Invalid task name '{1}'", taskname));
-    } else {
-        try {
-            auto filepath = SYSTEM_PREFIX()+"/pxp-agent/tasks/"+module+"/tasks";
+    try {
+        task_runner runner;
+        auto task = runner.find_task(taskname);
+        auto environment = generate_environment_from(input);
 
-            auto filename = lth_exec::which(task, vector<string>{filepath});
-            if (filename.empty()) {
-                set_error(stdout_result, "not-found", _("Task file '{1}' is not present or not executable", filepath+"/"+task));
-            } else {
-                auto environment = generate_environment_from(input);
-                auto exec = lth_exec::execute(
-                    filename,
-                    {},  // arguments
-                    input.toString(),
-                    environment,
-                    0,  // timeout
-                    { lth_exec::execution_options::thread_safe,
-                      lth_exec::execution_options::merge_environment,
-                      lth_exec::execution_options::inherit_locale });
+        auto exec = lth_exec::execute(
+            task.name,
+            task.args,
+            input.toString(),
+            environment,
+            0,  // timeout
+            { lth_exec::execution_options::thread_safe,
+              lth_exec::execution_options::merge_environment,
+              lth_exec::execution_options::inherit_locale });
 
-                if (!isValidUTF8(exec.output)) {
-                    set_error(stdout_result, "output-encoding-error", _("Output cannot be represented as a JSON string"));
-                } else {
-                    stdout_result.set("output", exec.output);
-                }
-
-                stderr_str = exec.error;
-                exitcode = exec.exit_code;
-            }
-        } catch (runtime_error &e) {
-            set_error(stdout_result, "exec-failed", _("Task '{1}' failed to run: {2}", taskname, e.what()));
+        if (!isValidUTF8(exec.output)) {
+            set_error(stdout_result, "output-encoding-error", _("Output is not valid UTF-8"));
+        } else {
+            stdout_result.set("output", exec.output);
         }
+
+        stderr_str = exec.error;
+        exitcode = exec.exit_code;
+    } catch (task_error &e) {
+        set_error(stdout_result, e.type, e.what());
+    } catch (runtime_error &e) {
+        set_error(stdout_result, "exec-failed", _("Task '{1}' failed to run: {2}", taskname, e.what()));
     }
 
     lth_file::atomic_write_to_file(stdout_result.toString(), stdout_file);
