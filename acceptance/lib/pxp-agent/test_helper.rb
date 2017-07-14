@@ -503,15 +503,14 @@ def start_puppet_non_blocking_request(broker, targets, environment = 'production
   transaction_ids
 end
 
-def check_puppet_non_blocking_response(identity, transaction_id, max_retries, query_interval,
-                                       expected_result, expected_environment = 'production')
-  puppet_run_result = nil
+def check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval, &block)
+  run_result = nil
   query_attempts = 0
   unknown_count = 0
-  until (query_attempts == max_retries || puppet_run_result) do
-    query_responses = rpc_blocking_request(master, [identity],
+  until (query_attempts == max_retries || run_result) do
+    query_responses = rpc_blocking_request(broker, [identity],
                                            'status', 'query', {:transaction_id => transaction_id})
-    action_result = query_responses[identity][:data]["results"]
+    action_result = query_responses[identity][:data]['results']
     assert(action_result, "Response to status query was an error: #{query_responses[identity][:data]}")
     if (action_result.has_key?('stdout') && (action_result['stdout'] != ""))
       rpc_action_status = action_result['status']
@@ -520,25 +519,34 @@ def check_puppet_non_blocking_response(identity, transaction_id, max_retries, qu
         # allow a few unknowns before giving up
         unknown_count += 1
       else
-        puppet_run_result = JSON.parse(action_result['stdout'])['status']
-        puppet_run_environment = JSON.parse(action_result['stdout'])['environment']
+        run_result = JSON.parse(action_result['stdout'])
       end
     end
     query_attempts += 1
-    if (!puppet_run_result)
+    if (!run_result)
       sleep query_interval
     end
   end
-  if (!puppet_run_result)
-    fail("Run puppet non-blocking transaction did not contain stdout of puppet run after #{query_attempts} attempts " \
-         "and #{query_attempts * query_interval} seconds")
-  else
-    assert_equal("success", rpc_action_status, "PXP run puppet action did not have expected 'success' result")
-    assert_equal(expected_environment, puppet_run_environment, "Puppet run did not use the expected environment")
-    assert_equal(expected_result, puppet_run_result, "Puppet run did not have expected result of '#{expected_result}'")
+
+  fail("Run puppet non-blocking transaction did not contain stdout of puppet run after #{query_attempts} attempts " \
+       "and #{query_attempts * query_interval} seconds") unless run_result
+
+  assert_equal("success", rpc_action_status, "PXP run puppet action did not have expected 'success' result")
+  block.call run_result
+
+  run_result
+end
+
+def check_puppet_non_blocking_response(identity, transaction_id, max_retries, query_interval,
+                                       expected_result, expected_environment = 'production')
+  run_result = check_non_blocking_response(master, identity, transaction_id, max_retries, query_interval) do |stdout|
+    puppet_run_result = stdout['status']
+    puppet_run_environment = stdout['environment']
+    assert_equal(expected_environment, stdout['environment'], "Puppet run did not use the expected environment")
+    assert_equal(expected_result, stdout['status'], "Puppet run did not have expected result of '#{expected_result}'")
   end
 
-  puppet_run_result
+  run_result['status']
 end
 
 def get_mode(host, path)
