@@ -16,7 +16,7 @@ test_name 'run ruby task' do
   step 'Create ruby task on agent hosts' do
     agents.each do |agent|
       create_task_on(agent, 'echo', 'init.rb', <<-EOF)
-#!/usr/bin/env ruby
+#!/opt/puppetlabs/puppet/bin/ruby
 puts STDIN.gets
 puts ENV['PT_data']
 EOF
