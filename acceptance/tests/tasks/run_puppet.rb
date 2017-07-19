@@ -15,8 +15,25 @@ test_name 'run puppet task' do
 
   step 'Create puppet task on agent hosts' do
     agents.each do |agent|
+      # Note: shebang is hard
+      # https://stackoverflow.com/questions/9988125/shebang-pointing-to-script-also-having-shebang-is-effectively-ignored
+      # https://unix.stackexchange.com/questions/63979/shebang-line-with-usr-bin-env-command-argument-fails-on-linux
+      if agent['platform'] =~ /osx/
+        shebang = '#!/opt/puppetlabs/puppet/bin/ruby /opt/puppetlabs/puppet/bin/puppet apply'
+      elsif agent['platform'] =~ /el-5|solaris-10/
+        shebang = '#!/usr/bin/env puppet-apply'
+        create_remote_file(agent, '/usr/bin/puppet-apply', <<-EOF)
+#!/bin/sh
+exec /opt/puppetlabs/puppet/bin/puppet apply "$@"
+EOF
+        on agent, 'chmod +x /usr/bin/puppet-apply'
+        teardown { on agent, 'rm -f /usr/bin/puppet-apply' }
+      else
+        shebang = '#!/opt/puppetlabs/bin/puppet apply'
+      end
+
       create_task_on(agent, 'hello', 'init.pp', <<-EOF)
-#!/opt/puppetlabs/bin/puppet apply
+#{shebang}
 notify { 'hello': }
 EOF
     end
