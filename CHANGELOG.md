@@ -1,3 +1,12 @@
+## 1.5.4
+
+This is a maintenance release.
+
+* [PCP-759](https://tickets.puppetlabs.com/browse/PCP-759) Enable acceptance pre-suite to install puppetserver on EC2
+* [PCP-755](https://tickets.puppetlabs.com/browse/PCP-755) pxp-agent service now cleanly restarts after upgrade on SLES 11
+* [PCP-750](https://tickets.puppetlabs.com/browse/PCP-750) Fix intermittent test failures due to inventory request timeouts
+* [PCP-697](https://tickets.puppetlabs.com/browse/PCP-697) Ensure logdir exists before starting service
+
 ## 1.5.3
 
 This is a maintenance release.
