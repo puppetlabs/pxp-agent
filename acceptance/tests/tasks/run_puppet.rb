@@ -20,7 +20,7 @@ test_name 'run puppet task' do
       # https://unix.stackexchange.com/questions/63979/shebang-line-with-usr-bin-env-command-argument-fails-on-linux
       if agent['platform'] =~ /osx/
         shebang = '#!/opt/puppetlabs/puppet/bin/ruby /opt/puppetlabs/puppet/bin/puppet apply'
-      elsif agent['platform'] =~ /el-5|solaris-10/
+      elsif agent['platform'] =~ /el-5|solaris-|aix-/
         shebang = '#!/usr/bin/env puppet-apply'
         create_remote_file(agent, '/usr/bin/puppet-apply', <<-EOF)
 #!/bin/sh
