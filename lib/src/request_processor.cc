@@ -9,6 +9,7 @@
 #include <pxp-agent/time.hpp>
 #include <pxp-agent/modules/echo.hpp>
 #include <pxp-agent/modules/ping.hpp>
+#include <pxp-agent/modules/task.hpp>
 #include <pxp-agent/util/process.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
@@ -184,6 +185,8 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
     loadInternalModules();
 
     if (!agent_configuration.modules_dir.empty()) {
+        // Tasks currently uses the modules_dir to avoid having to know pxp-agent's install location.
+        modules_["task"] = std::make_shared<Modules::Task>(agent_configuration.modules_dir, spool_dir_path_);
         loadExternalModulesFrom(agent_configuration.modules_dir);
     } else {
         LOG_WARNING("The modules directory was not provided; no external "
@@ -803,8 +806,8 @@ void RequestProcessor::loadModulesConfiguration()
 void RequestProcessor::loadInternalModules()
 {
     // HERE(ale): no external configuration for internal modules
-    modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
-    modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
+    modules_["echo"] = std::make_shared<Modules::Echo>();
+    modules_["ping"] = std::make_shared<Modules::Ping>();
 }
 
 void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)

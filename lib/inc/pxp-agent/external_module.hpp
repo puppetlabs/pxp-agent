@@ -38,7 +38,7 @@ class ExternalModule : public Module {
         const std::string& spool_dir);
 
     /// The type of the module.
-    ModuleType type() { return ModuleType::External; }
+    ModuleType type() override { return ModuleType::External; }
 
     /// If a configuration schema has been registered for this module,
     /// validate configuration data. In that case, throw a
@@ -56,10 +56,23 @@ class ExternalModule : public Module {
     /// in the response object's metadata.
     static void processOutputAndUpdateMetadata(ActionResponse& response);
 
-  private:
+  protected:
+    struct execArgs {
+        std::string path;
+        std::vector<std::string> params;
+    };
+
+    /// Returns the path and command-line parameters used to invoke an action.
+    virtual execArgs getExecArgs(std::string action);
+
+    /// A no-op that can be overridden by a subclass to prepare the action
+    /// to run before it's invoked externally.
+    virtual void prepareAction(const ActionRequest& request);
+
     /// The path of the module file
     const std::string path_;
 
+  private:
     /// Module configuration data
     leatherman::json_container::JsonContainer config_;
 
@@ -96,7 +109,7 @@ class ExternalModule : public Module {
     /// the action output to file.
     ActionResponse callNonBlockingAction(const ActionRequest& request);
 
-    ActionResponse callAction(const ActionRequest& request);
+    ActionResponse callAction(const ActionRequest& request) override;
 };
 
 }  // namespace PXPAgent

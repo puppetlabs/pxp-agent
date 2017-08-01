@@ -18,7 +18,7 @@ class Ping : public PXPAgent::Module {
     leatherman::json_container::JsonContainer ping(const ActionRequest& request);
 
   private:
-    ActionResponse callAction(const ActionRequest& request);
+    ActionResponse callAction(const ActionRequest& request) override;
 };
 
 }  // namespace Modules

@@ -188,9 +188,12 @@ int MAIN_IMPL(int argc, char** argv)
     string STDIN(it, end);
     auto args = lth_jc::JsonContainer(STDIN);
 
+    // TODO: expect this to be a file name and args when find_task is moved to the internal module.
     auto taskname = args.get<string>({"input", "task"});
     auto input = args.get<lth_jc::JsonContainer>({"input", "input"});
 
+    // TODO: if these aren't set, write to stdout/stderr and return exitcode instead.
+    //       For use with blocking request.
     auto stdout_file = args.get<string>({"output_files", "stdout"});
     auto stderr_file = args.get<string>({"output_files", "stderr"});
     auto exitcode_file = args.get<string>({"output_files", "exitcode"});
