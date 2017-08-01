@@ -28,6 +28,7 @@ set(LIBRARY_COMMON_SOURCES
     src/time.cc
     src/modules/echo.cc
     src/modules/ping.cc
+    src/modules/task.cc
 )
 
 if (UNIX)

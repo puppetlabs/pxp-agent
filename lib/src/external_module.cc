@@ -184,6 +184,25 @@ void ExternalModule::processOutputAndUpdateMetadata(ActionResponse& response)
 }
 
 //
+// Protected interface
+//
+
+ExternalModule::execArgs ExternalModule::getExecArgs(std::string action)
+{
+    return {
+#ifdef _WIN32
+        "cmd.exe", { "/c", path_, action }
+#else
+        path_, { action }
+#endif
+    };
+}
+
+void ExternalModule::prepareAction(const ActionRequest& request)
+{
+}
+
+//
 // Private interface
 //
 
@@ -194,12 +213,9 @@ const PCPClient::Validator ExternalModule::metadata_validator_ {
 // Retrieve and validate the module's metadata
 const lth_jc::JsonContainer ExternalModule::getModuleMetadata()
 {
+    auto args = getExecArgs("metadata");
     auto exec = lth_exec::execute(
-#ifdef _WIN32
-        "cmd.exe", { "/c", path_, "metadata" },
-#else
-        path_, { "metadata" },
-#endif
+        args.path, args.params,
         0,  // timeout
         { lth_exec::execution_options::thread_safe,
           lth_exec::execution_options::merge_environment,
@@ -313,15 +329,14 @@ ActionResponse ExternalModule::callBlockingAction(const ActionRequest& request)
     auto action_name = request.action();
     auto action_args = getActionArguments(request);
 
+    prepareAction(request);
+
     LOG_INFO("Executing the {1}", request.prettyLabel());
     LOG_TRACE("Input for the {1}: {2}", request.prettyLabel(), action_args);
 
+    auto args = getExecArgs(action_name);
     auto exec = lth_exec::execute(
-#ifdef _WIN32
-        "cmd.exe", { "/c", path_, action_name },
-#else
-        path_, { action_name },
-#endif
+        args.path, args.params,
         action_args,                           // args
         std::map<std::string, std::string>(),  // environment
         0,                                     // timeout
@@ -341,6 +356,8 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
     auto input_txt = getActionArguments(request);
     fs::path results_dir_path { request.resultsDir() };
 
+    prepareAction(request);
+
     LOG_INFO("Starting a task for the {1}; stdout and stderr will be stored in {2}",
              request.prettyLabel(), request.resultsDir());
     LOG_TRACE("Input for the {1}: {2}", request.prettyLabel(), input_txt);
@@ -351,12 +368,9 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
     // the child process is executed in a new process contract
     // on Solaris and a new process group on Windows
 
+    auto args = getExecArgs(action_name);
     auto exec = lth_exec::execute(
-#ifdef _WIN32
-        "cmd.exe", { "/c", path_, action_name },
-#else
-        path_, { action_name },
-#endif
+        args.path, args.params,
         input_txt,  // input arguments, passed via stdin
         std::map<std::string, std::string>(),  // environment
         [results_dir_path](size_t pid) {

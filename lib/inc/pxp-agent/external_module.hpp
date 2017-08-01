@@ -56,10 +56,23 @@ class ExternalModule : public Module {
     /// in the response object's metadata.
     static void processOutputAndUpdateMetadata(ActionResponse& response);
 
-  private:
+  protected:
+    struct execArgs {
+        std::string path;
+        std::vector<std::string> params;
+    };
+
+    /// Returns the path and command-line parameters used to invoke an action.
+    virtual execArgs getExecArgs(std::string action);
+
+    /// A no-op that can be overridden by a subclass to prepare the action
+    /// to run before it's invoked externally.
+    virtual void prepareAction(const ActionRequest& request);
+
     /// The path of the module file
     const std::string path_;
 
+  private:
     /// Module configuration data
     leatherman::json_container::JsonContainer config_;
 
