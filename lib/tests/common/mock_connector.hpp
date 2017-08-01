@@ -32,6 +32,7 @@ static const std::string SPOOL { PXP_AGENT_ROOT_PATH
 
 static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   TEST_BROKER_WS_URIS,
+                                                  std::vector<std::string> {},  // master uris
                                                   PCP_VERSION,
                                                   CA,
                                                   CERT,
