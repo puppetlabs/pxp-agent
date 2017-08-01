@@ -12,7 +12,7 @@ class Echo : public PXPAgent::Module {
     Echo();
 
   private:
-    ActionResponse callAction(const ActionRequest& request);
+    ActionResponse callAction(const ActionRequest& request) override;
 };
 
 }  // namespace Modules

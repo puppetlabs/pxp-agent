@@ -38,7 +38,7 @@ class ExternalModule : public Module {
         const std::string& spool_dir);
 
     /// The type of the module.
-    ModuleType type() { return ModuleType::External; }
+    ModuleType type() override { return ModuleType::External; }
 
     /// If a configuration schema has been registered for this module,
     /// validate configuration data. In that case, throw a
@@ -96,7 +96,7 @@ class ExternalModule : public Module {
     /// the action output to file.
     ActionResponse callNonBlockingAction(const ActionRequest& request);
 
-    ActionResponse callAction(const ActionRequest& request);
+    ActionResponse callAction(const ActionRequest& request) override;
 };
 
 }  // namespace PXPAgent
