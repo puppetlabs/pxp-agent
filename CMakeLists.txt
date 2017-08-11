@@ -71,6 +71,10 @@ leatherman_logging_line_numbers()
 set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS}")
 add_definitions(${LEATHERMAN_DEFINITIONS})
 
+if (WIN32)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--nxcompat -Wl,--dynamicbase")
+endif()
+
 # TODO(ale): enable i18n with add_definitions(-DLEATHERMAN_I18N) - PCP-257
 # TODO(ale): enable translation with set(LEATHERMAN_LOCALES "...;...") and
 # gettext_compile(${CMAKE_CURRENT_SOURCE_DIR}/locales share/locale)
