@@ -92,6 +92,7 @@ msgstr ""
 
 #: exe/task.cc
 #: lib/src/configuration.cc
+#: lib/src/request_processor.cc
 msgid "failure getting Windows AppData directory: {1}"
 msgstr ""
 
@@ -500,6 +501,7 @@ msgid ""
 msgstr ""
 
 #: lib/src/external_module.cc
+#: lib/src/modules/task.cc
 msgid " (empty)"
 msgstr ""
 
@@ -589,6 +591,7 @@ msgstr ""
 
 #: lib/src/external_module.cc
 #: lib/src/module.cc
+#: lib/src/modules/task.cc
 msgid "(empty)"
 msgstr ""
 
@@ -600,7 +603,13 @@ msgid ""
 msgstr ""
 
 #: lib/src/external_module.cc
+#: lib/src/modules/task.cc
 msgid "failed to write output on file"
+msgstr ""
+
+#. fatal
+#: lib/src/module.cc
+msgid "Module does not support output processing: {1}"
 msgstr ""
 
 #: lib/src/module.cc
@@ -648,6 +657,38 @@ msgstr ""
 
 #: lib/src/modules/ping.cc
 msgid "debug entry is not valid JSON"
+msgstr ""
+
+#: lib/src/modules/task.cc
+msgid "at least one file must be specified for a task"
+msgstr ""
+
+#. debug
+#: lib/src/modules/task.cc
+msgid "Verifying task file based on {1}"
+msgstr ""
+
+#. warning
+#: lib/src/modules/task.cc
+msgid ""
+"The task wrapper process failed to write output on file for the {1}; stdout: "
+"{2}; stderr: {3}"
+msgstr ""
+
+#: lib/src/modules/task.cc
+msgid "unsupported task input format: {1}"
+msgstr ""
+
+#. debug
+#: lib/src/modules/task.cc
+msgid ""
+"Obtained invalid UTF-8 on stdout for the {1}; stdout:\n"
+"{3}"
+msgstr ""
+
+#: lib/src/modules/task.cc
+msgid ""
+"The task executed for the {1} returned invalid UTF-8 on stdout - stderr:{2}"
 msgstr ""
 
 #. warning
@@ -977,6 +1018,11 @@ msgstr ""
 msgid ""
 "Directory '{1}' specified by modules-config-dir doesn't exist; no module "
 "configuration file will be loaded"
+msgstr ""
+
+#. warning
+#: lib/src/request_processor.cc
+msgid "Ignoring attempt to re-register module: {1}"
 msgstr ""
 
 #. warning

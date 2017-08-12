@@ -40,6 +40,9 @@ class ExternalModule : public Module {
     /// The type of the module.
     ModuleType type() { return ModuleType::External; }
 
+    /// Whether or not the module supports non-blocking / asynchronous requests.
+    bool supportsAsync() { return true; }
+
     /// If a configuration schema has been registered for this module,
     /// validate configuration data. In that case, throw a
     /// PCPClient::validation_error for invalid configuration data.
@@ -54,7 +57,7 @@ class ExternalModule : public Module {
     /// This function does not throw a ProcessingError in case of
     /// invalid output on stdout; such failure is instead reported
     /// in the response object's metadata.
-    static void processOutputAndUpdateMetadata(ActionResponse& response);
+    void processOutputAndUpdateMetadata(ActionResponse& response);
 
   private:
     /// The path of the module file

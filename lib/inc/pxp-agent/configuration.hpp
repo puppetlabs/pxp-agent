@@ -3,6 +3,8 @@
 
 #include <horsewhisperer/horsewhisperer.h>
 
+#include <boost/filesystem/path.hpp>
+
 #include <boost/nowide/fstream.hpp>
 
 #include <boost/multi_index_container.hpp>
@@ -134,6 +136,7 @@ class Configuration
         std::string spool_dir;
         std::string spool_dir_purge_ttl;
         std::string modules_config_dir;
+        std::string task_cache_dir;
         std::string client_type;
         long ws_connection_timeout_ms;
         uint32_t association_timeout_s;
@@ -233,6 +236,13 @@ class Configuration
     /// Return an object containing all agent configuration options
     const Agent& getAgentConfiguration() const;
 
+    // Get the path used to start this pxp-agent process, its intended use
+    // is to start executables which are installed alongside the pxp-agent
+    // executable
+    boost::filesystem::path& getExecPrefix() {
+        return exec_prefix_;
+    }
+
     /// Try to close the log file streams,  then try to open the log
     /// files (pxp-agent app log and PCP access log) in append mode
     /// and  associate them to the relative log file streams.
@@ -273,6 +283,10 @@ class Configuration
 
     // Stream abstraction object for the PCP Access logfile
     mutable std::shared_ptr<boost::nowide::ofstream> pcp_access_fstream_ptr_;
+
+    // The path used to start this pxp-agent process, it is used to start
+    // executables which are installed alongside the pxp-agent executable
+    boost::filesystem::path exec_prefix_;
 
     // Defines the default values
     Configuration();

@@ -42,6 +42,22 @@ class Module {
     /// The type of the module.
     virtual ModuleType type() { return ModuleType::Internal; }
 
+    /// Whether or not the module supports non-blocking / asynchronous requests.
+    /// If any subclass overrides this method to return true, it must override
+    /// the `processOutputAndUpdateMetadata()` method too.
+    virtual bool supportsAsync() { return false; }
+
+    /// Log information about the output of the performed action
+    /// while validating the output.
+    /// Update the metadata of the ActionResponse instance (the
+    /// 'results_are_valid', 'status', and 'execution_error' entries
+    /// will be set appropriately; 'end' will be set to the current
+    /// time).
+    /// This function does not throw a ProcessingError in case of
+    /// invalid output on stdout; such failure is instead reported
+    /// in the response object's metadata.
+    virtual void processOutputAndUpdateMetadata(ActionResponse& response);
+
     /// Validate the output contained in the ActionResponse instance,
     /// by using the module's 'output' JSON schema. In case of errors,
     /// the response's metadata will be updated ('results_are_valid'
