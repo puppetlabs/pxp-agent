@@ -117,6 +117,7 @@ msgid "Output is not valid UTF-8"
 msgstr ""
 
 #: exe/task.cc
+#: exe/task_wrapper.cc
 msgid "Task '{1}' failed to run: {2}"
 msgstr ""
 
