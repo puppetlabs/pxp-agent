@@ -20,7 +20,7 @@ class Task : public PXPAgent::Module {
          const std::string& spool_dir);
 
     /// Whether or not the module supports non-blocking / asynchronous requests.
-    bool supportsAsync() { return true; }
+    bool supportsAsync() override { return true; }
 
     /// Log information about the output of the performed action
     /// while validating the output is valid UTF-8.
@@ -31,7 +31,7 @@ class Task : public PXPAgent::Module {
     /// This function does not throw a ProcessingError in case of
     /// invalid output on stdout; such failure is instead reported
     /// in the response object's metadata.
-    void processOutputAndUpdateMetadata(ActionResponse& response);
+    void processOutputAndUpdateMetadata(ActionResponse& response) override;
 
   private:
     ResultsStorage storage_;
@@ -52,7 +52,7 @@ class Task : public PXPAgent::Module {
         const std::string &input,
         ActionResponse &response);
 
-    ActionResponse callAction(const ActionRequest& request);
+    ActionResponse callAction(const ActionRequest& request) override;
 };
 
 }  // namespace Modules
