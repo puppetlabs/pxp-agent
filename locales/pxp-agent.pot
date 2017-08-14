@@ -90,33 +90,6 @@ msgstr ""
 msgid "Fatal configuration error: {1}; cannot start pxp-agent"
 msgstr ""
 
-#: exe/task.cc
-#: lib/src/configuration.cc
-#: lib/src/request_processor.cc
-msgid "failure getting Windows AppData directory: {1}"
-msgstr ""
-
-#: exe/task.cc
-msgid "Invalid task name '{1}'"
-msgstr ""
-
-#: exe/task.cc
-msgid "Could not find task '{1}' at {2}"
-msgstr ""
-
-#: exe/task.cc
-msgid "Found multiple matching files for task '{1}': {2}"
-msgstr ""
-
-#: exe/task.cc
-msgid "Task file '{1}' is not executable"
-msgstr ""
-
-#: exe/task.cc
-msgid "Output is not valid UTF-8"
-msgstr ""
-
-#: exe/task.cc
 #: exe/task_wrapper.cc
 msgid "Task '{1}' failed to run: {2}"
 msgstr ""
@@ -169,6 +142,11 @@ msgstr ""
 #. debug
 #: lib/src/agent.cc
 msgid "PCP connection established; about to start monitoring it"
+msgstr ""
+
+#: lib/src/configuration.cc
+#: lib/src/request_processor.cc
+msgid "failure getting Windows AppData directory: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc

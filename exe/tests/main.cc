@@ -1,371 +1,139 @@
 // Refer to https://github.com/philsquared/Catch/blob/master/docs/own-main.md
 // for providing our own main function to Catch
-#define CATCH_CONFIG_MAIN
+#define CATCH_CONFIG_RUNNER
 #include <catch.hpp>
 
-#include <array>
-#include <boost/algorithm/string/erase.hpp>
+#include <leatherman/execution/execution.hpp>
 
-#include "./fixtures.hpp"
-#include "../task.hpp"
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <vector>
+#include <fstream>
 
-string test_prefix()
+using namespace std;
+namespace fs = boost::filesystem;
+namespace lth_exec = leatherman::execution;
+namespace lth_util = leatherman::util;
+
+// Creates a unique temporary directory.
+struct temp_directory {
+    temp_directory() {
+        dir = fs::absolute(fs::unique_path("task_fixture_%%%%-%%%%-%%%%-%%%%"));
+        fs::create_directory(dir);
+    }
+
+    ~temp_directory() {
+        fs::remove_all(dir);
+    }
+
+    string name() const {
+        auto s = dir.string();
+        boost::replace_all(s, "\\", "/");
+        return s;
+    }
+
+private:
+    fs::path dir;
+};
+
+static string read(string filename)
 {
-    static temp_directory temp_dir;
-    return temp_dir.name();
+    ifstream file(filename);
+    return string(istreambuf_iterator<char>(file), istreambuf_iterator<char>());
 }
 
-int MAIN_IMPL(int argc, char** argv);
+static fs::path exec_prefix;
 
-TEST_CASE("prints metadata") {
-    stream_fixture fix("");
-    auto args = array<char*, 2>{{const_cast<char*>("test_task"), const_cast<char*>("metadata")}};
-    MAIN_IMPL(args.size(), args.data());
-    auto metadata = R"(
+static lth_exec::result execute(string const& input)
 {
-    "actions": [
-        {
-            "description": "Run a task",
-            "input": {
-                "properties": {
-                    "task": {
-                        "type": "string"
-                    },
-                    "input": {
-                        "type": "object"
-                    }
-                },
-                "required": [
-                    "task", "input"
-                ],
-                "type": "object",
-                "additionalProperties": true
-            },
-            "name": "run",
-            "results": {
-                "type": "object"
-            }
-        }
-    ],
-    "description": "Task runner module"
-}
-)";
-    REQUIRE(fix.output() == metadata);
+    return lth_exec::execute(
+#ifdef _WIN32
+        "cmd.exe",
+        { "/c", (exec_prefix/"task_wrapper").string() },
+#else
+        (exec_prefix/"task_wrapper").string(),
+        {},  // args
+#endif
+        input,
+        0,   // timeout
+        lth_util::option_set<lth_exec::execution_options> {
+            lth_exec::execution_options::thread_safe,
+            lth_exec::execution_options::merge_environment,
+            lth_exec::execution_options::inherit_locale });
 }
 
-TEST_CASE("runs a simple task") {
+TEST_CASE("runs an executable") {
     temp_directory tmpdir;
     auto dir = tmpdir.name();
-    auto args = array<char*, 1>{{const_cast<char*>("test_task")}};
-    temp_task foo("foo");
+    auto executable = dir+"/init.bat";
+    auto input = "{\"executable\": \""+executable+"\", \"arguments\": [], "
+        "\"input\": \"{\\\"a\\\": 1, \\\"b\\\": [2, 3], \\\"c\\\": {\\\"hello\\\": \\\"goodbye foo\\\"}}\", "
+        "\"stdout\": \""+dir+"/out\", \"stderr\": \""+dir+"/err\", \"exitcode\": \""+dir+"/exit\"}";
 
-    SECTION("sets input as environment variables in task") {
-        stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": \"1\", \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
-
-        foo.make_printer({"a", "b", "c"});
-        foo.make_executable();
-        MAIN_IMPL(args.size(), args.data());
-
-        auto output = read(dir+"/out");
-        REQUIRE(output.size() == 1);
-        boost::erase_all(output[0], "\\r");
-        REQUIRE(output[0] == "{\"output\":\"1\\n[2,3]\\n{\\\"hello\\\":\\\"goodbye foo\\\"}\\n\"}");
-
-        output = read(dir+"/err");
-        REQUIRE(output.empty());
-
-        output = read(dir+"/exit");
-        REQUIRE(output == lines{"0"});
-    }
-
-    SECTION("task with extension") {
-        stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": 1, \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
-
-        foo.make_echo();
-        foo.make_executable("init", ".bat");
-        MAIN_IMPL(args.size(), args.data());
-
-        auto output = read(dir+"/out");
-        REQUIRE(output.size() == 1);
-        // Strip newlines on Windows
-        boost::erase_all(output[0], "\\r");
-        boost::erase_all(output[0], "\\n");
-        REQUIRE(output[0] == "{\"output\":\"{\\\"a\\\":1,\\\"b\\\":[2,3],\\\"c\\\":{\\\"hello\\\":\\\"goodbye foo\\\"}}\"}");
-
-        output = read(dir+"/err");
-        REQUIRE(output.empty());
-
-        output = read(dir+"/exit");
-        REQUIRE(output == lines{"0"});
-    }
-
+    SECTION("passes input") {
+        ofstream foo(executable);
 #ifdef _WIN32
-    SECTION("powershell task") {
-        stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": 1, \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
-
-        foo.make_powershell({"a", "b", "c"});
-        foo.make_executable("init", ".ps1");
-        MAIN_IMPL(args.size(), args.data());
-
-        auto output = read(dir+"/out");
-        REQUIRE(output.size() == 1);
-        // Strip newlines on Windows
-        boost::erase_all(output[0], "\\r");
-        REQUIRE(output[0] == "{\"output\":\"{\\\"a\\\":1,\\\"b\\\":[2,3],\\\"c\\\":{\\\"hello\\\":\\\"goodbye foo\\\"}}\\n1\\n[2,3]\\n{\\\"hello\\\":\\\"goodbye foo\\\"}\\n\"}");
-
-        output = read(dir+"/err");
-        REQUIRE(output.empty());
-
-        output = read(dir+"/exit");
-        REQUIRE(output == lines{"0"});
-    }
-#endif
-
-    SECTION("ruby task") {
-        stream_fixture fix("{\"input\": {\"task\": \"foo\", \"input\": {\"a\": 1, \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}}," + output_files(dir) + "}");
-
-        foo.make_ruby({"a", "b", "c"});
-        foo.make_executable("init", ".rb");
-        MAIN_IMPL(args.size(), args.data());
-
-        auto output = read(dir+"/out");
-        REQUIRE(output.size() == 1);
-        // Strip newlines on Windows
-        boost::erase_all(output[0], "\\r");
-        REQUIRE(output[0] == "{\"output\":\"{\\\"a\\\":1,\\\"b\\\":[2,3],\\\"c\\\":{\\\"hello\\\":\\\"goodbye foo\\\"}}\\n1\\n[2,3]\\n{\\\"hello\\\":\\\"goodbye foo\\\"}\\n\"}");
-
-        output = read(dir+"/err");
-        REQUIRE(output.empty());
-
-        output = read(dir+"/exit");
-        REQUIRE(output == lines{"0"});
-    }
-}
-
-TEST_CASE("finds tasks") {
-    task_runner runner;
-    temp_directory tmpdir;
-    auto dir = tmpdir.name();
-    temp_task foo("foo");
-
-    SECTION("simple name") {
-        foo.make_echo();
-        foo.make_executable("init", ".bat");
-
-        auto t = runner.find_task("foo");
-        boost::replace_all(t.name, "\\", "/");
-        REQUIRE(t.name == foo.module_path+"/init.bat");
-        REQUIRE(t.args == vector<string>{});
-    }
-
-    SECTION("compound task name") {
-        foo.make_echo("bar");
-        foo.make_executable("bar", ".bat");
-
-        auto t = runner.find_task("foo::bar");
-        boost::replace_all(t.name, "\\", "/");
-        REQUIRE(t.name == foo.module_path+"/bar.bat");
-        REQUIRE(t.args == vector<string>{});
-    }
-
-    SECTION("powershell task name") {
-        foo.make_powershell({"a", "b", "c"});
-        foo.make_executable("init", ".ps1");
-
-        auto t = runner.find_task("foo");
-#ifdef _WIN32
-        REQUIRE(t.name == "powershell");
-        auto args = vector<string>{"-NoProfile", "-NonInteractive", "-NoLogo", "-ExecutionPolicy", "Bypass", "-File", foo.module_path+"\\init.ps1"};
-        REQUIRE(t.args == args);
+        foo << "@echo off" << endl;
+        foo << "more" << endl;
 #else
-        REQUIRE(t.name == foo.module_path+"/init.ps1");
-        REQUIRE(t.args == vector<string>{});
+        foo << "#!/bin/sh" << endl;
+        foo << "cat -" << endl;
 #endif
-    }
+        foo.close();
 
-    SECTION("ruby task name") {
-        foo.make_ruby({"a", "b", "c"});
-        foo.make_executable("init", ".rb");
-
-        auto t = runner.find_task("foo");
-#ifdef _WIN32
-        REQUIRE(t.name == "ruby");
-        auto args = vector<string>{foo.module_path+"\\init.rb"};
-        REQUIRE(t.args == args);
-#else
-        REQUIRE(t.name == foo.module_path+"/init.rb");
-        REQUIRE(t.args == vector<string>{});
+#ifndef _WIN32
+        fs::permissions(executable, fs::owner_read|fs::owner_write|fs::owner_exe);
 #endif
-    }
 
-    SECTION("puppet task name") {
-        foo.make_echo("bar");
-        foo.make_executable("bar", ".pp");
+        auto exec = execute(input);
+        REQUIRE(exec.output == "");
+        REQUIRE(exec.error == "");
+        REQUIRE(exec.exit_code == 0);
 
-        auto t = runner.find_task("foo::bar");
-#ifdef _WIN32
-        REQUIRE(t.name == "puppet");
-        auto args = vector<string>{"apply", foo.module_path+"\\bar.pp"};
-        REQUIRE(t.args == args);
-#else
-        REQUIRE(t.name == foo.module_path+"/bar.pp");
-        REQUIRE(t.args == vector<string>{});
-#endif
-    }
+        auto output = read(dir+"/out");
+        boost::trim(output);
+        REQUIRE(output == "{\"a\": 1, \"b\": [2, 3], \"c\": {\"hello\": \"goodbye foo\"}}");
 
-    SECTION("ignores reserved files: json, markdown") {
-        foo.make_echo();
-        foo.make_executable("init", ".bat");
-        foo.make_echo();
-        foo.make_executable("init", ".json");
-        foo.make_echo();
-        foo.make_executable("init", ".md");
-
-        auto t = runner.find_task("foo");
-        boost::replace_all(t.name, "\\", "/");
-        REQUIRE(t.name == foo.module_path+"/init.bat");
-        REQUIRE(t.args == vector<string>{});
-    }
-
-    SECTION("from multiple tasks") {
-        foo.make_echo("bar");
-        foo.make_executable("bar", ".bat");
-
-        foo.make_ruby({"a", "b", "c"});
-        foo.make_executable("init", ".rb");
-
-        auto t = runner.find_task("foo::bar");
-        boost::replace_all(t.name, "\\", "/");
-        REQUIRE(t.name == foo.module_path+"/bar.bat");
-        REQUIRE(t.args == vector<string>{});
-    }
-
-    SECTION("errors when same task has multiple options") {
-        foo.make_echo();
-        foo.make_executable("init", ".bat");
-
-        foo.make_ruby({"a", "b", "c"});
-        foo.make_executable("init", ".rb");
-
-        try {
-            runner.find_task("foo");
-            REQUIRE(false);
-        } catch (task_error &e) {
-            REQUIRE(e.type == "multiple-files");
-            string msg = e.what();
-            boost::replace_all(msg, "\\", "/");
-            REQUIRE(msg == "Found multiple matching files for task 'foo': "
-                    +foo.module_path+"/init.bat, "+foo.module_path+"/init.rb");
-        }
-    }
-
-    SECTION("errors if task name is invalid") {
-        SECTION("simple task name") {
-            try {
-                runner.find_task("foo!");
-                REQUIRE(false);
-            } catch (task_error &e) {
-                REQUIRE(e.type == "invalid-task");
-                REQUIRE(e.what() == string("Invalid task name 'foo!'"));
-            }
-        }
-
-        SECTION("compound task name") {
-            try {
-                runner.find_task("fee:::fie");
-                REQUIRE(false);
-            } catch (task_error &e) {
-                REQUIRE(e.type == "invalid-task");
-                REQUIRE(e.what() == string("Invalid task name 'fee:::fie'"));
-            }
-        }
+        REQUIRE(read(dir+"/err") == "");
+        REQUIRE(read(dir+"/exit") == "0");
     }
 
     SECTION("errors if task not found") {
-        SECTION("simple task name") {
-            try {
-                runner.find_task("foo");
-                REQUIRE(false);
-            } catch (task_error &e) {
-                REQUIRE(e.type == "not-found");
-                REQUIRE(e.what() == "Could not find task 'foo' at "+foo.module_path);
-            }
-        }
+        auto exec = execute(input);
+        REQUIRE(exec.output == "");
+        REQUIRE(exec.error == "");
+        REQUIRE(exec.exit_code == 127);
 
-        SECTION("compound task name") {
-            foo.make_echo();
-
-            try {
-                runner.find_task("foo::bar");
-                REQUIRE(false);
-            } catch (task_error &e) {
-                REQUIRE(e.type == "not-found");
-                REQUIRE(e.what() == "Could not find task 'foo::bar' at "+foo.module_path);
-            }
-        }
-
-        SECTION("other task exists") {
-            foo.make_echo("bar");
-
-            try {
-                runner.find_task("foo");
-                REQUIRE(false);
-            } catch (task_error &e) {
-                REQUIRE(e.type == "not-found");
-                REQUIRE(e.what() == "Could not find task 'foo' at "+foo.module_path);
-            }
-        }
+        REQUIRE(read(dir+"/out") == "");
+        REQUIRE(read(dir+"/err") == "");
+        REQUIRE(read(dir+"/exit") == "127");
     }
 
     SECTION("task not executable") {
-        SECTION("simple task name") {
-            foo.make_echo();
+        auto executable = dir+"/init";
+        auto input = "{\"executable\": \""+executable+"\", \"arguments\": [], \"input\": \"\", "
+            "\"stdout\": \""+dir+"/out\", \"stderr\": \""+dir+"/err\", \"exitcode\": \""+dir+"/exit\"}";
+        ofstream foo(executable);
+        foo << "";
+        foo.close();
 
-            try {
-                runner.find_task("foo");
-                REQUIRE(false);
-            } catch (task_error &e) {
-                REQUIRE(e.type == "not-executable");
-                string msg = e.what();
-                boost::replace_all(msg, "\\", "/");
-                REQUIRE(msg == "Task file '"+foo.module_path+"/init' is not executable");
-            }
-        }
+        auto exec = execute(input);
+        REQUIRE(exec.output == "");
+        REQUIRE(exec.error == "");
+        REQUIRE(exec.exit_code == 127);
 
-        SECTION("compound task name") {
-            foo.make_echo("bar");
-
-            try {
-                runner.find_task("foo::bar");
-                REQUIRE(false);
-            } catch (task_error &e) {
-                REQUIRE(e.type == "not-executable");
-                string msg = e.what();
-                boost::replace_all(msg, "\\", "/");
-                REQUIRE(msg == "Task file '"+foo.module_path+"/bar' is not executable");
-            }
-        }
+        REQUIRE(read(dir+"/out") == "");
+        REQUIRE(read(dir+"/err") == "");
+        REQUIRE(read(dir+"/exit") == "127");
     }
 }
 
-TEST_CASE("errors when given an invalid json string") {
-    temp_directory tmpdir;
-    auto dir = tmpdir.name();
-    auto args = array<char*, 1>{{const_cast<char*>("test_task")}};
-    temp_task foo("foo");
-    stream_fixture fix(basic_task("foo", dir));
+int main(int argc, char** argv) {
+    exec_prefix = fs::absolute(fs::path(argv[0]).parent_path());
 
-    foo.make_unparseable();
-    foo.make_executable();
-    MAIN_IMPL(args.size(), args.data());
-
-    auto output = read(dir+"/out");
-    REQUIRE(output == lines{R"({"_error":{"kind":"puppetlabs.tasks/output-encoding-error","msg":"Output is not valid UTF-8"}})"});
-
-    output = read(dir+"/err");
-    REQUIRE(output.empty());
-
-    output = read(dir+"/exit");
-    REQUIRE(output == lines{"0"});
+    // Create the Catch session, pass CL args, and start it
+    Catch::Session test_session {};
+    return test_session.run(argc, argv);
 }
 
