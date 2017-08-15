@@ -519,7 +519,7 @@ def check_non_blocking_response(broker, identity, transaction_id, max_retries, q
         # allow a few unknowns before giving up
         unknown_count += 1
       else
-        run_result = JSON.parse(action_result['stdout'])
+        run_result = action_result['stdout']
       end
     end
     query_attempts += 1
@@ -532,6 +532,8 @@ def check_non_blocking_response(broker, identity, transaction_id, max_retries, q
        "and #{query_attempts * query_interval} seconds") unless run_result
 
   assert_equal("success", rpc_action_status, "PXP run puppet action did not have expected 'success' result")
+  # Tasks may not return a JSON object on stdout.
+  run_result = begin JSON.parse(run_result) rescue run_result end
   block.call run_result
 
   run_result
