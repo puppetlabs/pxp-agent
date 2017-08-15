@@ -246,6 +246,10 @@ msgid "WebSocket URI of the PCP broker"
 msgstr ""
 
 #: lib/src/configuration.cc
+msgid "URI of the Puppet Master"
+msgstr ""
+
+#: lib/src/configuration.cc
 msgid "PCP version to use for communication"
 msgstr ""
 
@@ -338,6 +342,10 @@ msgstr ""
 
 #: lib/src/configuration.cc
 msgid "{1} value \"{2}\" must start with wss://"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "{1} value \"{2}\" must start with https://"
 msgstr ""
 
 #: lib/src/configuration.cc

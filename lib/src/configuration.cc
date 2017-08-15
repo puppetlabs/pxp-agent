@@ -152,6 +152,10 @@ HW::ParseResult parseArguments(const int argc, char* const argv[])
 
 HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
 {
+    // If parsing options, clear the previous value for master_uris.
+    // This is primarily for testing.
+    master_uris_.clear();
+
     auto parse_result = parseArguments(argc, argv);
 
     if (parse_result == HW::ParseResult::FAILURE
@@ -291,6 +295,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
     agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
         broker_ws_uris_,
+        master_uris_,
         HW::GetFlag<std::string>("pcp-version"),
         HW::GetFlag<std::string>("ssl-ca-cert"),
         HW::GetFlag<std::string>("ssl-cert"),
@@ -378,6 +383,15 @@ void Configuration::defineDefaultValues()
                     "broker-ws-uri",
                     "",
                     lth_loc::translate("WebSocket URI of the PCP broker"),
+                    Types::String,
+                    "") } });
+
+    defaults_.insert(
+        Option { "master-uri",
+                 Base_ptr { new Entry<std::string>(
+                    "master-uri",
+                    "",
+                    lth_loc::translate("URI of the Puppet Master"),
                     Types::String,
                     "") } });
 
@@ -698,6 +712,10 @@ void Configuration::parseConfigFile()
                 check_key_type(key, "Array", lth_jc::DataType::Array);
                 broker_ws_uris_ = config_json.get<std::vector<std::string>>(key);
                 continue;
+            } else if (key == "master-uris") {
+                check_key_type(key, "Array", lth_jc::DataType::Array);
+                master_uris_ = config_json.get<std::vector<std::string>>(key);
+                continue;
             } else {
                 throw Configuration::Error {
                     lth_loc::format("field '{1}' is not a valid configuration variable",
@@ -769,6 +787,13 @@ static void validate_wss(std::string const& uri, std::string const& name)
             lth_loc::format("{1} value \"{2}\" must start with wss://", name, uri) };
 }
 
+static void validate_https(std::string const& uri, std::string const& name)
+{
+    if (uri.find("https://") != 0)
+        throw Configuration::Error {
+            lth_loc::format("{1} value \"{2}\" must start with https://", name, uri) };
+}
+
 void Configuration::validateAndNormalizeWebsocketSettings()
 {
     // Check the broker's WebSocket URI
@@ -784,6 +809,10 @@ void Configuration::validateAndNormalizeWebsocketSettings()
         for (auto const& uri : broker_ws_uris_) {
             validate_wss(uri, "broker-ws-uris");
         }
+    }
+
+    for (auto const& uri : master_uris_) {
+        validate_https(uri, "master-uris");
     }
 
     if (broker_ws_uris_.empty())

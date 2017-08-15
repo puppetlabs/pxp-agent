@@ -31,8 +31,10 @@ static const std::string MULTI_BROKER_CONFIG { std::string { PXP_AGENT_ROOT_PATH
                                                + "/lib/tests/resources/config/multi-broker.cfg" };
 static const std::string DUPLICATE_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
                                             + "/lib/tests/resources/config/duplicate.cfg" };
-static const std::string BAD_URI_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
-                                          + "/lib/tests/resources/config/bad-uri.cfg" };
+static const std::string BAD_BROKER_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
+                                          + "/lib/tests/resources/config/bad-broker.cfg" };
+static const std::string BAD_MASTER_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
+                                          + "/lib/tests/resources/config/bad-master.cfg" };
 static const std::string TEST_BROKER_WS_URI { "wss:///test_c_t_h_u_n_broker" };
 static const std::string CA { getCaPath() };
 static const std::string CERT { getCertPath() };
@@ -332,7 +334,7 @@ TEST_CASE("Configuration::validate", "[configuration]") {
     }
 }
 
-TEST_CASE("Configuration::validate broker-ws-uris", "[configuration]") {
+TEST_CASE("Configuration::validate multiple brokers", "[configuration]") {
     const char* altArgv[] = {
     "test-command",
     "--config-file", MULTI_BROKER_CONFIG.data(),
@@ -362,6 +364,12 @@ TEST_CASE("Configuration::validate broker-ws-uris", "[configuration]") {
         auto uris = Configuration::Instance().get_broker_ws_uris();
         REQUIRE(uris == std::vector<std::string>({"wss://test_pcp_broker", "wss://alt_pcp_broker"}));
     }
+
+    SECTION("it parses multiple arguments to master-uris") {
+        REQUIRE_NOTHROW(Configuration::Instance().validate());
+        auto uris = Configuration::Instance().get_master_uris();
+        REQUIRE(uris == std::vector<std::string>({"https://test_master:8140", "https://alt_master:8140"}));
+    }
 }
 
 TEST_CASE("Configuration::parseOptions duplicate broker-ws-uris", "[configuration]") {
@@ -390,7 +398,7 @@ TEST_CASE("Configuration::parseOptions duplicate broker-ws-uris", "[configuratio
 TEST_CASE("Configuration::validate bad broker-ws-uris", "[configuration]") {
     const char* altArgv[] = {
     "test-command",
-    "--config-file", BAD_URI_CONFIG.data(),
+    "--config-file", BAD_BROKER_CONFIG.data(),
     "--ssl-ca-cert", CA.data(),
     "--ssl-cert", CERT.data(),
     "--ssl-key", KEY.data(),
@@ -406,6 +414,30 @@ TEST_CASE("Configuration::validate bad broker-ws-uris", "[configuration]") {
     Configuration::Instance().parseOptions(altArgc, const_cast<char**>(altArgv));
 
     SECTION("it throws an Error when broker-ws-uris is invalid") {
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::Error);
+    }
+}
+
+TEST_CASE("Configuration::validate bad master-uris", "[configuration]") {
+    const char* altArgv[] = {
+    "test-command",
+    "--config-file", BAD_MASTER_CONFIG.data(),
+    "--ssl-ca-cert", CA.data(),
+    "--ssl-cert", CERT.data(),
+    "--ssl-key", KEY.data(),
+    "--modules-dir", MODULES_DIR.data(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.data(),
+    "--spool-dir", SPOOL_DIR.data(),
+    "--foreground=true",
+    nullptr };
+    const int altArgc = 16;
+
+    lth_util::scope_exit config_cleaner { resetTest };
+    configureTest();
+    Configuration::Instance().parseOptions(altArgc, const_cast<char**>(altArgv));
+
+    SECTION("it throws an Error when master-uris is invalid") {
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
                           Configuration::Error);
     }
