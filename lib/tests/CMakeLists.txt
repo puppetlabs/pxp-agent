@@ -26,6 +26,7 @@ set(COMMON_TEST_SOURCES
     unit/thread_container_test.cc
     unit/time_test.cc
     unit/modules/ping_test.cc
+    unit/modules/task_test.cc
     unit/util/process_test.cc
 )
 
