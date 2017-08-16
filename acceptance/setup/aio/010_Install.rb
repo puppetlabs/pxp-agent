@@ -6,15 +6,35 @@ extend Beaker::DSL::InstallUtils
 
 test_name "Install Packages"
 
+def install_from_local(hosts, package)
+  hosts.each do |agent|
+    tmpdir = agent.tmpdir('puppet_agent')
+
+    step "Copy package to #{agent}" do
+      scp_to(agent, package, tmpdir)
+    end
+
+    step "Install package on #{agent}" do
+      agent.install_package("#{tmpdir}/#{File.basename(package)}")
+    end
+  end
+end
+
 step "Install puppet-agent..." do
-  opts = {
-    :puppet_collection    => 'PC1',
-    :puppet_agent_sha     => ENV['SHA'],
-    :puppet_agent_version => ENV['SUITE_VERSION'] || ENV['SHA']
-  }
-  agents.each do |agent|
-    next if agent == master # Avoid SERVER-528
-    install_puppet_agent_dev_repo_on(agent, opts)
+  if ENV['PACKAGE']
+    step "from local package #{ENV['PACKAGE']}" do
+      install_from_local(agents, ENV['PACKAGE'])
+    end
+  else
+    opts = {
+      :puppet_collection    => 'PC1',
+      :puppet_agent_sha     => ENV['SHA'],
+      :puppet_agent_version => ENV['SUITE_VERSION'] || ENV['SHA']
+    }
+    agents.each do |agent|
+      next if agent == master # Avoid SERVER-528
+      install_puppet_agent_dev_repo_on(agent, opts)
+    end
   end
 end
 
