@@ -40,13 +40,14 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   SPOOL,
                                                   "0d",  // don't purge!
                                                   "",    // modules config dir
+                                                  "",    // task cache dir
                                                   "test_agent",
                                                   5000,  // connection timeout
                                                   10,    // association timeout
                                                   5,     // association ttl
                                                   5,     // general PCP ttl
                                                   2,
-                                                  15 };   // keepalive timeouts
+                                                  15 };  // keepalive timeouts
 
 static const std::string VALID_ENVELOPE_TXT {
     " { \"id\" : \"123456\","

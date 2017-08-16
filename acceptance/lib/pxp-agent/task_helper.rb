@@ -3,14 +3,18 @@ require 'json'
 
 # Runs a task on targets, and passes the output to the block for validation
 # Block should expect a map parsed from the JSON output
-def run_task(broker, targets, task, input = {}, max_retries = 30, query_interval = 1, &block)
+def run_task(broker, targets, task, filename, input = {}, max_retries = 30, query_interval = 1, &block)
   target_identities = targets.map {|agent| "pcp://#{agent}/agent"}
 
   provisional_responses =
     begin
       rpc_non_blocking_request(broker, target_identities,
                                'task', 'run',
-                               {:task => task, :input => input})
+                               {:task => task,
+                                :input => input,
+                                :files => [{:uri => {:path => "/#{task}/tasks/#{filename}", :params => {}},
+                                            :filename => filename,
+                                            :sha256 => 'tbd'}]})
     rescue => exception
       fail("Exception occurred when trying to run task '#{task}' on all agents: #{exception.message}")
     end

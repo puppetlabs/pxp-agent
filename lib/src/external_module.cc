@@ -330,7 +330,7 @@ ActionResponse ExternalModule::callBlockingAction(const ActionRequest& request)
           lth_exec::execution_options::inherit_locale });  // options
 
     response.output = ActionOutput { exec.exit_code, exec.output, exec.error };
-    ExternalModule::processOutputAndUpdateMetadata(response);
+    processOutputAndUpdateMetadata(response);
     return response;
 }
 
@@ -394,7 +394,7 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
 
     // Stdout / stderr output should be on file; read it
     response.output = storage_.getOutput(request.transactionId(), exec.exit_code);
-    ExternalModule::processOutputAndUpdateMetadata(response);
+    processOutputAndUpdateMetadata(response);
     return response;
 }
 

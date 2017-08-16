@@ -83,6 +83,9 @@ namespace lth_util = leatherman::util;
                                 e.what()) };
         }
     }();
+
+    // TODO(task) switch back to tasks-cache when downloading is implemented.
+    static const std::string DEFAULT_TASK_CACHE_DIR { (DATA_DIR / "tasks").string() };
 #else
     static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
     const std::string DEFAULT_SPOOL_DIR { "/opt/puppetlabs/pxp-agent/spool" };
@@ -90,6 +93,8 @@ namespace lth_util = leatherman::util;
     static const std::string DEFAULT_LOG_FILE { "/var/log/puppetlabs/pxp-agent/pxp-agent.log" };
     static const std::string DEFAULT_PCP_ACCESS_FILE { "/var/log/puppetlabs/pxp-agent/pcp-access.log" };
     static const std::string DEFAULT_MODULES_DIR { "/opt/puppetlabs/pxp-agent/modules" };
+    // TODO(task) switch back to tasks-cache when downloading is implemented.
+    static const std::string DEFAULT_TASK_CACHE_DIR { "/opt/puppetlabs/pxp-agent/tasks" };
 #endif
 
 static const std::string DEFAULT_MODULES_CONF_DIR {
@@ -155,6 +160,11 @@ HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
     // If parsing options, clear the previous value for master_uris.
     // This is primarily for testing.
     master_uris_.clear();
+
+    // remember the path to the pxp-agent executable used to start
+    // this process, it is supposed to be used to start executables
+    // which are installed alongside the pxp-agent executable
+    exec_prefix_ = fs::absolute(fs::path(argv[0]).parent_path());
 
     auto parse_result = parseArguments(argc, argv);
 
@@ -303,6 +313,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         HW::GetFlag<std::string>("spool-dir"),
         HW::GetFlag<std::string>("spool-dir-purge-ttl"),
         HW::GetFlag<std::string>("modules-config-dir"),
+        DEFAULT_TASK_CACHE_DIR,
         AGENT_CLIENT_TYPE,
         HW::GetFlag<int>("connection-timeout") * 1000,
         static_cast<uint32_t >(HW::GetFlag<int>("association-timeout")),

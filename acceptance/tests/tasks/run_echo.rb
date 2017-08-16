@@ -16,20 +16,18 @@ test_name 'run echo task' do
   step 'Create echo task on agent hosts' do
     agents.each do |agent|
       if agent['platform'] =~ /win/
-        task_name = 'init.bat'
         task_body = '@echo %PT_message%'
       else
-        task_name = 'init'
         task_body = "#!/bin/sh\necho $PT_message"
       end
 
-      create_task_on(agent, 'echo', task_name, task_body)
+      create_task_on(agent, 'echo', 'init.bat', task_body)
     end
   end
 
   step 'Run echo task on agent hosts' do
-    run_task(master, agents, 'echo', {:message => 'hello'}) do |stdout|
-      assert_equal('hello', stdout['output'].chomp, "Output did not contain 'hello'")
+    run_task(master, agents, 'echo', 'init.bat', {:message => 'hello'}) do |stdout|
+      assert_equal('hello', stdout.strip, "Output did not contain 'hello'")
     end
   end # test step
 end # test

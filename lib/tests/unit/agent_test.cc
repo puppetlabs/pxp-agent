@@ -22,13 +22,14 @@ TEST_CASE("Agent::Agent", "[agent]") {
     Configuration::Agent agent_configuration { MODULES,
                                                TEST_BROKER_WS_URIS,
                                                std::vector<std::string> {},  // master uris
-                                               "1",  // PCPv1
+                                               "1",   // PCPv1
                                                getCaPath(),
                                                getCertPath(),
                                                getKeyPath(),
                                                SPOOL,
                                                "0d",  // don't purge!
-                                               "",  // modules config dir
+                                               "",    // modules config dir
+                                               "",    // task cache dir
                                                "test_agent",
                                                5000, 10, 5, 5, 2, 15 };
 
