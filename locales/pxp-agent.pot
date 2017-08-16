@@ -145,7 +145,6 @@ msgid "PCP connection established; about to start monitoring it"
 msgstr ""
 
 #: lib/src/configuration.cc
-#: lib/src/request_processor.cc
 msgid "failure getting Windows AppData directory: {1}"
 msgstr ""
 

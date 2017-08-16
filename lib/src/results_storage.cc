@@ -1,5 +1,6 @@
 #include <pxp-agent/results_storage.hpp>
 #include <pxp-agent/action_response.hpp>
+#include <pxp-agent/configuration.hpp>
 #include <pxp-agent/time.hpp>
 
 #include <leatherman/file_util/file.hpp>
@@ -41,7 +42,11 @@ bool ResultsStorage::find(const std::string& transaction_id)
 
 static void writeMetadata(const std::string& txt, const std::string& file_path) {
     try {
-        lth_file::atomic_write_to_file(txt, file_path);
+        lth_file::atomic_write_to_file(txt, file_path
+#ifndef _WIN32
+                                       , NIX_FILE_PERMS, std::ios::binary
+#endif
+                                      );
     } catch (const std::exception& e) {
         throw ResultsStorage::Error {
             lth_loc::format("failed to write metadata: {1}", e.what()) };
@@ -58,6 +63,9 @@ void ResultsStorage::initializeMetadataFile(const std::string& transaction_id,
                   transaction_id, results_path.string());
         try {
             fs::create_directories(results_path);
+#ifndef _WIN32
+            fs::permissions(results_path, NIX_DIR_PERMS);
+#endif
         } catch (const fs::filesystem_error& e) {
             throw ResultsStorage::Error {
                 lth_loc::format("failed to create results directory '{1}'",

@@ -1,6 +1,7 @@
 #include <pxp-agent/external_module.hpp>
 #include <pxp-agent/module_type.hpp>
 #include <pxp-agent/action_output.hpp>
+#include <pxp-agent/configuration.hpp>
 
 #include <leatherman/execution/execution.hpp>
 
@@ -361,7 +362,11 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
         std::map<std::string, std::string>(),  // environment
         [results_dir_path](size_t pid) {
             auto pid_file = (results_dir_path / "pid").string();
-            lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file);
+            lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file
+#ifndef _WIN32
+                                           , NIX_FILE_PERMS, std::ios::binary
+#endif
+                                           );
         },          // pid callback
         0,          // timeout
         { lth_exec::execution_options::thread_safe,
