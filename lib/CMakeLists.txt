@@ -9,6 +9,7 @@ include_directories(
     ${HORSEWHISPERER_INCLUDE_DIRS}
     ${INIH_INCLUDE_DIRS}
     ${cpp-pcp-client_INCLUDE_DIR}
+    ${OPENSSL_INCLUDE_DIR}
 )
 
 set(LIBRARY_COMMON_SOURCES

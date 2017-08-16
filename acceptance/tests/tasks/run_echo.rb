@@ -21,12 +21,12 @@ test_name 'run echo task' do
         task_body = "#!/bin/sh\necho $PT_message"
       end
 
-      create_task_on(agent, 'echo', 'init.bat', task_body)
+      @sha256 = create_task_on(agent, 'echo', 'init.bat', task_body)
     end
   end
 
   step 'Run echo task on agent hosts' do
-    run_task(master, agents, 'echo', 'init.bat', {:message => 'hello'}) do |stdout|
+    run_task(master, agents, 'echo', 'init.bat', @sha256, {:message => 'hello'}) do |stdout|
       assert_equal('hello', stdout.strip, "Output did not contain 'hello'")
     end
   end # test step
