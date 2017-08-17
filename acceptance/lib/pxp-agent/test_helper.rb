@@ -506,7 +506,6 @@ end
 def check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval, &block)
   run_result = nil
   query_attempts = 0
-  unknown_count = 0
   until (query_attempts == max_retries || run_result) do
     query_responses = rpc_blocking_request(broker, [identity],
                                            'status', 'query', {:transaction_id => transaction_id})
@@ -514,13 +513,7 @@ def check_non_blocking_response(broker, identity, transaction_id, max_retries, q
     assert(action_result, "Response to status query was an error: #{query_responses[identity][:data]}")
     if (action_result.has_key?('stdout') && (action_result['stdout'] != ""))
       rpc_action_status = action_result['status']
-      if rpc_action_status == 'unknown' && unknown_count < 3
-        # pxp-agent will sometimes respond unknown if the puppet process has not yet started
-        # allow a few unknowns before giving up
-        unknown_count += 1
-      else
-        run_result = action_result['stdout']
-      end
+      run_result = action_result['stdout']
     end
     query_attempts += 1
     if (!run_result)

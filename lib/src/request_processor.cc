@@ -423,32 +423,32 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
 
 //                       TRANSACTION STATUS RESPONSE TABLE
 //
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// |         |          |         |          |           |                     |
-// |metadata |completed |exitcode | PID file |PID process|      response:      |
-// | exists? |    by    |  file   |  exists? |  exists?  |       status        |
-// |  valid  |metadata? | exists? |          |           |          &          |
-// |metadata?|(status   |(got     |          |           |   included files    |
-// |         |!=RUNNING)| output?)|          |           |                     |
-// |         |          |         |          |           |                     |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// | ~exists |     -    |    -    |     -    |     -     |       UNKNOWN       |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// | ~valid  |     -    |    -    |     -    |     -     |       UNKNOWN       |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// |   yes   |    no    |   no    |    no    |     -     |       UNKNOWN       |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// |   yes   |    no    |   no    |    yes   |    yes    |       RUNNING       |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// |   yes   |    no    |   no    |    yes   |    no     |       UNKNOWN       |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// |   yes   |    no    |   yes   |     -    |     -     |  SUCCESS / FAILURE  |
-// |         |          |         |          |           | + stdout & stderr   |
-// |         |          |         |          |           | + metadata update   |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// |   yes   |    yes   |         |     -    |     -     |  SUCCESS / FAILURE  |
-// |         |          |         |          |           | + stdout & stderr   |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |         |          |         |          |           |         |                     |
+// |metadata |completed |exitcode | PID file |PID process| action  |      response:      |
+// | exists? |    by    |  file   |  exists? |  exists?  | thread  |       status        |
+// |  valid  |metadata? | exists? |          |           | exists? |          &          |
+// |metadata?|(status   |(got     |          |           |         |   included files    |
+// |         |!=RUNNING)| output?)|          |           |         |                     |
+// |         |          |         |          |           |         |                     |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// | ~exists |     -    |    -    |     -    |     -     |    -    |       UNKNOWN       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// | ~valid  |     -    |    -    |     -    |     -     |    -    |       UNKNOWN       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    no    |   no    |    no    |     -     |   yes   |       RUNNING       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    no    |   no    |    yes   |    yes    |    -    |       RUNNING       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    no    |   no    |    yes   |    no     |    -    |       UNKNOWN       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    no    |   yes   |     -    |     -     |    -    |  SUCCESS / FAILURE  |
+// |         |          |         |          |           |         | + stdout & stderr   |
+// |         |          |         |          |           |         | + metadata update   |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    yes   |    -    |     -    |     -     |    -    |  SUCCESS / FAILURE  |
+// |         |          |         |          |           |         | + stdout & stderr   |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
 //
 
 void RequestProcessor::processStatusRequest(const ActionRequest& request)
@@ -648,6 +648,12 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
                           "transaction {1}: {2}",
                           t_id, err.what());
             }
+        } else if (thread_container_.find(t_id)) {
+            // Leave checking the thread container until now, as the thread may still
+            // be running if we never restarted. It runs until the external action ends
+            // to send a non-blocking response (if notify_outcome is true).
+            LOG_TRACE("The action thread of the transaction {1} is running", t_id);
+            status_results.set<std::string>("status", AS.at(ActionStatus::Running));
         } else {
             // We failed to get any indication from the PID file;
             // leave the status as UNKNOWN as the process may finish
