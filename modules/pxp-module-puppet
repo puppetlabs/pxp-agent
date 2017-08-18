@@ -97,7 +97,7 @@ module Pxp
       begin
         # Later comparisons assume UTF-8. Convert to that encoding now.
         s.encode(Encoding::UTF_8)
-      rescue Encoding::InvalidByteSequenceError
+      rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
         # Found non-native characters, hope it's a UTF-8 string. Since this is Puppet, and
         # incorrect characters probably means we're in a C or POSIX locale, this is usually safe.
         s.force_encoding(Encoding::UTF_8)
