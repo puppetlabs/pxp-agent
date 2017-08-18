@@ -138,6 +138,10 @@ module Pxp
       return result
     end
 
+    def make_error_result(exitcode, error_type, error_message)
+      self.class.make_error_result(exitcode, error_type, error_message)
+    end
+
     def parse_report(filename)
       # Read the report and drop Ruby objects first. We can't parse the Ruby objects
       # (because we don't have Puppet loaded) and don't need that data.
@@ -160,12 +164,12 @@ module Pxp
 
     def get_result_from_report(last_run_report, exitcode, start_time)
       if !File.exist?(last_run_report)
-        return self.class.make_error_result(exitcode, Errors::NoLastRunReport,
+        return make_error_result(exitcode, Errors::NoLastRunReport,
                                  "#{last_run_report} doesn't exist")
       end
 
       if start_time && File.mtime(last_run_report) == start_time
-        return self.class.make_error_result(exitcode, Errors::NoLastRunReport,
+        return make_error_result(exitcode, Errors::NoLastRunReport,
                                  "#{last_run_report} was not written")
       end
 
@@ -174,14 +178,14 @@ module Pxp
       begin
         last_run_report_yaml = parse_report(last_run_report)
       rescue => e
-        return self.class.make_error_result(exitcode, Errors::InvalidLastRunReport,
+        return make_error_result(exitcode, Errors::InvalidLastRunReport,
                                  "#{last_run_report} could not be loaded: #{e}")
       end
 
       if exitcode == 0
         run_result = self.class.last_run_result(exitcode)
       else
-        run_result = self.class.make_error_result(exitcode, Errors::NonZeroExit,
+        run_result = make_error_result(exitcode, Errors::NonZeroExit,
                                        "Puppet agent exited with a non 0 exitcode")
       end
 
@@ -216,7 +220,7 @@ module Pxp
 
     def run
       if !puppet_bin_present?
-        return self.class.make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
+        return make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
                                  "Puppet executable '#{config["puppet_bin"]}' does not exist")
       end
 
@@ -225,7 +229,7 @@ module Pxp
 
       last_run_report = config_print("lastrunreport")
       if last_run_report.empty?
-        return self.class.make_error_result(exitcode, Errors::NoLastRunReport,
+        return make_error_result(exitcode, Errors::NoLastRunReport,
                                  "could not find the location of the last run report")
       end
 
@@ -242,7 +246,7 @@ module Pxp
                                                                             :override_locale => false})
 
         if !run_result
-          return self.class.make_error_result(exitcode, Errors::FailedToStart,
+          return make_error_result(exitcode, Errors::FailedToStart,
                                    "Failed to start Puppet agent")
         end
 
@@ -250,14 +254,14 @@ module Pxp
         puppet_output = force_unicode(run_result.to_s)
 
         if disabled?(puppet_output)
-          return self.class.make_error_result(exitcode, Errors::Disabled,
+          return make_error_result(exitcode, Errors::Disabled,
                                    "Puppet agent is disabled")
         elsif running?(puppet_output)
           # Puppet is already running, attempt to wait until it finishes and retry.
           lockfile = config_print('agent_catalog_run_lockfile')
           if lockfile.empty?
             # Can't identify lockfile, just report an error.
-            return self.class.make_error_result(exitcode, Errors::AlreadyRunning,
+            return make_error_result(exitcode, Errors::AlreadyRunning,
                                      "Puppet agent is already performing a run; it also appears to be" +
                                      " misconfigured, agent_catalog_run_lockfile is an empty string")
           end
