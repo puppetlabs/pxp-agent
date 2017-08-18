@@ -12,7 +12,6 @@ module Pxp
       NoPuppetBin = "no_puppet_bin"
       NoLastRunReport = "no_last_run_report"
       InvalidLastRunReport = "invalid_last_run_report"
-      AlreadyRunning = "agent_already_running"
       Disabled = "agent_disabled"
       FailedToStart = "agent_failed_to_start"
       NonZeroExit = "agent_exit_non_zero"
@@ -104,20 +103,32 @@ module Pxp
       end
     end
 
-    def config_print(cli_arg)
-      command_array = [config["puppet_bin"], "agent", "--configprint", cli_arg]
+    def config_print(*keys)
+      command_array = [config["puppet_bin"], "agent", "--configprint", keys.join(',')]
       process_output = Puppet::Util::Execution.execute(command_array,
                                                        {:custom_environment => get_env_fix_up(),
                                                         :override_locale => false})
-      return force_unicode(process_output.to_s).chomp
+
+      result = force_unicode(process_output.to_s)
+      if keys.count == 1
+        result.chomp
+      else
+        result.lines.inject({}) do |conf, line|
+          key, value = line.chomp.split(' = ', 2)
+          if key && value
+            conf[key] = value
+          end
+          conf
+        end
+      end
     end
 
-    def running?(run_result)
-      !!(run_result =~ /Run of Puppet configuration client already in progress/)
+    def running?(lockfile)
+      return File.exist?(lockfile)
     end
 
-    def disabled?(run_result)
-      !!(run_result =~ /disabled(.*?)Use 'puppet agent --enable' to re-enable/m)
+    def disabled?(lockfile)
+      return File.exist?(lockfile)
     end
 
     def make_environment_hash()
@@ -198,8 +209,8 @@ module Pxp
       return run_result
     end
 
-    # Wait for the lockfile to be removed. If it hasn't after 30 seconds, give up.
-    def wait_for_lockfile(lockfile = '', check_interval = 0.1, give_up_after = 30)
+    # Wait for the lockfile to be removed. If it hasn't after 10 minutes, give up.
+    def wait_for_lockfile(lockfile, check_interval = 0.1, give_up_after = 10*60)
       number_of_tries = give_up_after / check_interval
       count = 0
       while File.exist?(lockfile) && count < number_of_tries
@@ -218,58 +229,63 @@ module Pxp
       File.mtime(last_run_report) if File.exist?(last_run_report)
     end
 
+    def try_run(last_run_report)
+      start_time = get_start_time(last_run_report)
+      run_result = Puppet::Util::Execution.execute(puppet_agent_command, {:failonfail => false,
+                                                                          :custom_environment => make_environment_hash(),
+                                                                          :override_locale => false})
+      return start_time, (run_result ? run_result.exitstatus : nil)
+    end
+
     def run
       if !puppet_bin_present?
         return make_error_result(DEFAULT_EXITCODE, Errors::NoPuppetBin,
                                  "Puppet executable '#{config["puppet_bin"]}' does not exist")
       end
 
-      exitcode = DEFAULT_EXITCODE
-      env = make_environment_hash()
+      puppet_config = config_print('lastrunreport', 'agent_disabled_lockfile', 'agent_catalog_run_lockfile')
+      last_run_report = puppet_config['lastrunreport']
 
-      last_run_report = config_print("lastrunreport")
-      if last_run_report.empty?
-        return make_error_result(exitcode, Errors::NoLastRunReport,
+      if last_run_report.nil? || last_run_report.empty?
+        return make_error_result(DEFAULT_EXITCODE, Errors::NoLastRunReport,
                                  "could not find the location of the last run report")
       end
 
       # Initially ignore the lockfile. It might be out-dated, so we give Puppet a chance
       # to clean it up and run.
-      lockfile = ''
-      while true
-        wait_for_lockfile(lockfile)
+      start_time, exitcode = try_run(last_run_report)
+      if exitcode.nil?
+        return make_error_result(DEFAULT_EXITCODE, Errors::FailedToStart,
+                                 "Failed to start Puppet agent")
+      end
 
-        start_time = get_start_time(last_run_report)
-
-        run_result = Puppet::Util::Execution.execute(puppet_agent_command, {:failonfail => false,
-                                                                            :custom_environment => env,
-                                                                            :override_locale => false})
-
-        if !run_result
-          return make_error_result(exitcode, Errors::FailedToStart,
-                                   "Failed to start Puppet agent")
-        end
-
-        exitcode = run_result.exitstatus
-        puppet_output = force_unicode(run_result.to_s)
-
-        if disabled?(puppet_output)
+      # If the run was successful, don't check for failure modes.
+      if exitcode != 0
+        if disabled?(puppet_config['agent_disabled_lockfile'] || '')
           return make_error_result(exitcode, Errors::Disabled,
                                    "Puppet agent is disabled")
-        elsif running?(puppet_output)
-          # Puppet is already running, attempt to wait until it finishes and retry.
-          lockfile = config_print('agent_catalog_run_lockfile')
-          if lockfile.empty?
-            # Can't identify lockfile, just report an error.
-            return make_error_result(exitcode, Errors::AlreadyRunning,
-                                     "Puppet agent is already performing a run; it also appears to be" +
-                                     " misconfigured, agent_catalog_run_lockfile is an empty string")
-          end
-          next
         end
 
-        return get_result_from_report(last_run_report, exitcode, start_time)
+        # Check for a lockfile. If present, wait until it's removed and try running again.
+        # There's a chance that our run finished with a real error rather than because Puppet was
+        # already running, but another run started immediately after. Since we have no
+        # language-agnostic way to tell, we accept that we might run twice in that case.
+        # The run could also finish immediately after we tried, and the lockfile be absent.
+        # In that case we'll fail with poor error reporting.
+        lockfile = puppet_config['agent_catalog_run_lockfile'] || ''
+        if running?(lockfile)
+          wait_for_lockfile(lockfile)
+
+          start_time, exitcode = try_run(last_run_report)
+
+          if exitcode.nil?
+            return make_error_result(DEFAULT_EXITCODE, Errors::FailedToStart,
+                                     "Failed to start Puppet agent")
+          end
+        end
       end
+
+      return get_result_from_report(last_run_report, exitcode, start_time)
     end
 
     # TODO(ale): remove `env` from input before bumping to the next version
