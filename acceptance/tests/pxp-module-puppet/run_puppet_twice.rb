@@ -7,18 +7,13 @@ STATUS_QUERY_INTERVAL_SECONDS = 1
 
 test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completion' do
 
-  applicable_agents = agents.select { |agent| agent['locale'] != 'ja' }
-  if applicable_agents.empty? then
-    skip_test 'Testing for running agent is broken with translated Puppet (PCP-776)'
-  end
-
   extend Puppet::Acceptance::EnvironmentUtils
 
   env_name = test_file_name = File.basename(__FILE__, '.*')
   environment_name = mk_tmp_environment(env_name)
 
   teardown do
-    stop_sleep_process(applicable_agents, true)
+    stop_sleep_process(agents, true)
   end
 
   step 'On master, create a new environment that will result in a slow run' do
@@ -27,7 +22,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
   end
 
   step 'Ensure each agent host has pxp-agent running and associated' do
-    applicable_agents.each do |agent|
+    agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
       create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
       on agent, puppet('resource service pxp-agent ensure=running')
@@ -37,11 +32,11 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
   end
 
   step 'Ensure puppet is not currently running as a service (PCP-632)' do
-    on(applicable_agents, puppet('resource service puppet ensure=stopped enable=false'))
+    on(agents, puppet('resource service puppet ensure=stopped enable=false'))
   end
 
   target_identities = []
-  applicable_agents.each do |agent|
+  agents.each do |agent|
     target_identities << "pcp://#{agent}/agent"
   end
 
@@ -51,7 +46,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
   end
 
   step 'Wait until Puppet starts executing' do
-    applicable_agents.each do |agent|
+    agents.each do |agent|
       wait_for_sleep_process(agent)
     end
   end
@@ -76,7 +71,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
   #   b. It observes 1 PID for at least 10 concurrent samples
   #
   step 'Wait for only one puppet agent PID to exist' do
-    applicable_agents.each do |agent|
+    agents.each do |agent|
 
       satisfied = false
       pid_counting_attempts = 0
@@ -118,7 +113,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
   end
 
   step 'Signal sleep process to end so 1st Puppet run will complete' do
-    stop_sleep_process(applicable_agents)
+    stop_sleep_process(agents)
   end
 
   target_identities.zip(transaction_ids).each do |identity, transaction_id|

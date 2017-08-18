@@ -2,17 +2,12 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'C93065 - Run puppet and expect puppet agent disabled' do
 
-  applicable_agents = agents.select { |agent| agent['locale'] != 'ja' }
-  if applicable_agents.empty? then
-    skip_test 'Testing for disabled agent is broken with translated Puppet (PCP-776)'
-  end
-
   teardown do
-    on applicable_agents, puppet('agent --enable')
+    on agents, puppet('agent --enable')
   end
 
   step 'Ensure each agent host has pxp-agent running and associated' do
-    applicable_agents.each do |agent|
+    agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
       create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
       on agent, puppet('resource service pxp-agent ensure=running')
@@ -23,12 +18,12 @@ test_name 'C93065 - Run puppet and expect puppet agent disabled' do
   end
 
   step 'Set puppet agent on agent hosts to disabled' do
-    on applicable_agents, puppet('agent --disable')
+    on agents, puppet('agent --disable')
   end
 
   step "Send an rpc_blocking_request to all agents" do
     target_identities = []
-    applicable_agents.each do |agent|
+    agents.each do |agent|
       target_identities << "pcp://#{agent}/agent"
     end
     responses = nil # Declare here so not local to begin/rescue below
@@ -40,7 +35,7 @@ test_name 'C93065 - Run puppet and expect puppet agent disabled' do
     rescue => exception
       fail("Exception occurred when trying to run Puppet on all agents: #{exception.message}")
     end
-    applicable_agents.each_with_index do |agent|
+    agents.each_with_index do |agent|
       step "Check Run Puppet response for #{agent}" do
         identity = "pcp://#{agent}/agent"
         action_result = responses[identity][:data]["results"]
