@@ -43,12 +43,13 @@ int main(int argc, char *argv[])
                 lth_exec::execution_options::inherit_locale });
         exitcode = exec.exit_code;
     } catch (lth_exec::execution_exception &e) {
-        lth_file::atomic_write_to_file(lth_loc::format("Task '{1}' failed to run: {2}", task_executable, e.what()),
-                                       params.get<std::string>("stderr")
+        // Avoid atomic update to allow testing against /dev/stderr. There should never be
+        // multiple processes trying to write this output.
+        boost::nowide::ofstream ofs { params.get<std::string>("stderr"), std::ios::binary };
 #ifndef _WIN32
-                                       , FILE_PERMS, std::ios::binary
+        fs::permissions(params.get<std::string>("stderr"), FILE_PERMS);
 #endif
-                                       );
+        ofs << lth_loc::format("Task '{1}' failed to run: {2}", task_executable, e.what());
         exitcode = 127;
     }
 
