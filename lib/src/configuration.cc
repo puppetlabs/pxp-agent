@@ -223,9 +223,7 @@ std::string Configuration::setupLogging()
         // up logging before calling validateAndNormalizeConfiguration
         validateLogDirPath(logfile_);
         logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
-#ifndef _WIN32
         fs::permissions(logfile_, NIX_FILE_PERMS);
-#endif
 
         log_stream = &logfile_fstream_;
     } else {
@@ -238,9 +236,7 @@ std::string Configuration::setupLogging()
         pcp_access_fstream_ptr_.reset(
             new boost::nowide::ofstream(pcp_access_logfile_.c_str(),
                                         std::ios_base::app));
-#ifndef _WIN32
         fs::permissions(logfile_, NIX_FILE_PERMS);
-#endif
     }
 
 #ifndef _WIN32
