@@ -241,7 +241,7 @@ std::string Configuration::setupLogging()
         pcp_access_fstream_ptr_.reset(
             new boost::nowide::ofstream(pcp_access_logfile_.c_str(),
                                         std::ios_base::app));
-        fs::permissions(logfile_, NIX_FILE_PERMS);
+        fs::permissions(pcp_access_logfile_, NIX_FILE_PERMS);
     }
 
 #ifndef _WIN32
