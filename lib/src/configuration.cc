@@ -164,10 +164,15 @@ HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
     // This is primarily for testing.
     master_uris_.clear();
 
-    // remember the path to the pxp-agent executable used to start
+    // Remember the path to the pxp-agent executable used to start
     // this process, it is supposed to be used to start executables
-    // which are installed alongside the pxp-agent executable
-    exec_prefix_ = fs::absolute(fs::path(argv[0]).parent_path());
+    // which are installed alongside the pxp-agent executable.
+    exec_prefix_ = fs::path(argv[0]).parent_path();
+    // If a relative or absolute path was specified, convert to absolute.
+    // Otherwise, we'll depend on using PATH to find the task_wrapper.
+    if (!exec_prefix_.empty()) {
+        exec_prefix_ = fs::absolute(exec_prefix_);
+    }
 
     auto parse_result = parseArguments(argc, argv);
 
