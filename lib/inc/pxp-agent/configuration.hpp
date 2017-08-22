@@ -3,7 +3,7 @@
 
 #include <horsewhisperer/horsewhisperer.h>
 
-#include <boost/filesystem/path.hpp>
+#include <boost/filesystem.hpp>
 
 #include <boost/nowide/fstream.hpp>
 
@@ -23,6 +23,10 @@ namespace PXPAgent {
 //
 
 extern const std::string DEFAULT_SPOOL_DIR;     // used by unit tests
+
+// Only set on non-Windows. On Windows we inherit directory ACLs.
+extern const boost::filesystem::perms NIX_FILE_PERMS;
+extern const boost::filesystem::perms NIX_DIR_PERMS;
 
 //
 // Types
