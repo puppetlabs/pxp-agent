@@ -114,6 +114,11 @@ Build
       cmake -DCMAKE_BUILD_TYPE=Debug -DDEV_LOG_COLOR=ON ..
       make
 
+  NOTE: If the versions of OpenSSL and libcurl conflict with each other, curl may fail
+  to load SSL files. On macOS this is common when using Homebrew. Invoke cmake with the
+  following commands to use the Homebrew versions of OpenSSL and libcurl:
+    cmake -DCMAKE_PREFIX_PATH="/usr/local/opt/openssl;/usr/local/opt/curl" ..
+
 Usage
 -----
 
