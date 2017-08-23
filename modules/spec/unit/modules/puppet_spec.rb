@@ -59,12 +59,21 @@ describe Pxp::ModulePuppet do
 
   describe "config_print" do
     it "returns the result of configprint" do
-      cli_vec = ["puppet", "agent", "--configprint", "value"]
+      cli_vec = ["puppet", "agent", "--configprint", "key"]
       expect(subject).to receive(:get_env_fix_up).and_return({"FIXVAR" => "fixvalue"})
       expect(Puppet::Util::Execution).to receive(:execute).with(cli_vec,
                                                                 {:custom_environment => {"FIXVAR" => "fixvalue"},
                                                                  :override_locale => false}).and_return("value\n")
-      expect(subject.config_print("value")).to be == "value"
+      expect(subject.config_print("key")).to be == "value"
+    end
+
+    it "returns the result of configprint with multiple values" do
+      cli_vec = ["puppet", "agent", "--configprint", "key1,key2"]
+      expect(subject).to receive(:get_env_fix_up).and_return({"FIXVAR" => "fixvalue"})
+      expect(Puppet::Util::Execution).to receive(:execute).with(cli_vec,
+                                                                {:custom_environment => {"FIXVAR" => "fixvalue"},
+                                                                 :override_locale => false}).and_return("key1 = value1\nkey2 = value2\n")
+      expect(subject.config_print("key1", "key2")).to be == {"key1" => "value1", "key2" => "value2"}
     end
 
     it "returns the result of configprint with UTF-8 even though locale is POSIX" do
@@ -75,36 +84,6 @@ describe Pxp::ModulePuppet do
                                                                  :override_locale => false}).
                                                                  and_return("value☃".force_encoding(Encoding::US_ASCII))
       expect(subject.config_print("value")).to be == "value☃"
-    end
-  end
-
-  describe "running?" do
-    it "returns true if the output from a run states that a run is in progress" do
-      run_output = "Notice: Run of Puppet configuration client already in progress;" +
-                   "skipping  (/opt/puppetlabs/puppet/cache/state/agent_catalog_run.lock exists)"
-      expect(subject.running?(run_output)).to be == true
-    end
-
-    it "returns false if the ouput from a run doesn't state that a run is in progress" do
-      run_output = "Notice: Skipping run of Puppet configuration client;" +
-                   "administratively disabled (Reason: 'reason not specified');\n" +
-                   "Use 'puppet agent --enable' to re-enable."
-      expect(subject.running?(run_output)).to be == false
-    end
-  end
-
-  describe "disabled?" do
-    it "returns true if the output from a run states that puppet agent is disabled" do
-      run_output = "Notice: Skipping run of Puppet configuration client;" +
-                   "administratively disabled (Reason: 'reason not specified');\n" +
-                   "Use 'puppet agent --enable' to re-enable."
-      expect(subject.disabled?(run_output)).to be == true
-    end
-
-    it "returns false if the output from a run doesn't state that puppet is disabled" do
-      run_output = "Notice: Run of Puppet configuration client already in progress;" +
-                   "skipping  (/opt/puppetlabs/puppet/cache/state/agent_catalog_run.lock exists)"
-      expect(subject.disabled?(run_output)).to be == false
     end
   end
 
@@ -275,9 +254,13 @@ describe Pxp::ModulePuppet do
       "/opt/puppetlabs/puppet/cache/state/agent_catalog_run.lock"
     }
 
+    let(:disfile) {
+      "/opt/puppetlabs/puppet/cache/state/agent_disabled.lock"
+    }
+
     before :each do
-      allow(subject).to receive(:config_print).with('lastrunreport').and_return(last_run_report)
-      allow(subject).to receive(:config_print).with('agent_catalog_run_lockfile').and_return(lockfile)
+      allow(subject).to receive(:config_print).with('lastrunreport', 'agent_disabled_lockfile', 'agent_catalog_run_lockfile')
+        .and_return({'lastrunreport' => last_run_report, 'agent_disabled_lockfile' => disfile, 'agent_catalog_run_lockfile' => lockfile})
       allow(subject).to receive(:puppet_bin_present?).and_return(true)
       allow(subject).to receive(:get_start_time).and_return(nil)
     end
@@ -307,15 +290,16 @@ describe Pxp::ModulePuppet do
     end
 
     it "populates the output if puppet is disabled" do
+      expect(subject).to receive(:disabled?).and_return(true)
       allow(Puppet::Util::Execution).to receive(:execute).and_return(disabled_outcome)
-
       expect(described_class).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::Disabled, anything)
       subject.run
     end
 
     it "waits for puppet to finish if already running" do
-      expect(subject).to receive(:wait_for_lockfile).with('').ordered
+      allow(subject).to receive(:disabled?).and_return(false)
       expect(Puppet::Util::Execution).to receive(:execute).and_return(running_outcome).ordered
+      expect(subject).to receive(:running?).and_return(true).ordered
       expect(subject).to receive(:wait_for_lockfile).with(lockfile).ordered
       expect(Puppet::Util::Execution).to receive(:execute).and_return(success_outcome).ordered
 
@@ -323,29 +307,17 @@ describe Pxp::ModulePuppet do
       subject.run
     end
 
-    it "retries puppet after 30 seconds if lockfile still present" do
-      allow(File).to receive(:exist?).with('').and_return(false)
+    it "retries puppet after 10 minutes if lockfile still present" do
       allow(File).to receive(:exist?).with(lockfile).and_return(true)
+      allow(File).to receive(:exist?).with(disfile).and_return(false)
 
       expect(Puppet::Util::Execution).to receive(:execute).and_return(running_outcome).ordered
-      expect(subject).to receive(:sleep).with(0.1).exactly(300).times.ordered
-      expect(Puppet::Util::Execution).to receive(:execute).and_return(running_outcome).ordered
-      expect(subject).to receive(:sleep).with(0.1).exactly(300).times.ordered
+      expect(subject).to receive(:running?).and_return(true).ordered
+      expect(subject).to receive(:sleep).with(0.1).exactly(6000).times.ordered
       expect(Puppet::Util::Execution).to receive(:execute).and_return(success_outcome).ordered
 
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
       subject.run
-    end
-
-    it "populates the output if the lockfile cannot be identified" do
-      allow(Puppet::Util::Execution).to receive(:execute).and_return(running_outcome)
-
-      allow(subject).to receive(:config_print).with('agent_catalog_run_lockfile').and_return('')
-
-      result = subject.run
-
-      expect(result['error_type']).to be == Pxp::ModulePuppet::Errors::AlreadyRunning
-      expect(result['error']).to match(/already performing a run/)
     end
 
     it "processes output when puppet's output is US_ASCII (POSIX or C locale) and contains non-ASCII" do
