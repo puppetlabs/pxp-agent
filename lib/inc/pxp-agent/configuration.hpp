@@ -24,9 +24,11 @@ namespace PXPAgent {
 
 extern const std::string DEFAULT_SPOOL_DIR;     // used by unit tests
 
-// Has no effect on Windows. We instead rely on inherited directory ACLs.
+#ifndef _WIN32
+// Not used on Windows. We instead rely on inherited directory ACLs.
 extern const boost::filesystem::perms NIX_FILE_PERMS;
 extern const boost::filesystem::perms NIX_DIR_PERMS;
+#endif
 
 //
 // Types

@@ -13,7 +13,9 @@ namespace lth_file = leatherman::file_util;
 namespace lth_util = leatherman::util;
 namespace fs = boost::filesystem;
 
+#ifndef _WIN32
 static const fs::perms FILE_PERMS { fs::owner_read | fs::owner_write | fs::group_read };
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -33,8 +35,10 @@ int main(int argc, char *argv[])
             {},       // environment
             nullptr,  // PID callback
             0,        // timeout
-            // Has no effect on Windows. We instead rely on inherited directory ACLs.
+#ifndef _WIN32
+            // Not used on Windows. We instead rely on inherited directory ACLs.
             FILE_PERMS,
+#endif
             lth_util::option_set<lth_exec::execution_options> {
                 lth_exec::execution_options::thread_safe,
                 lth_exec::execution_options::merge_environment,
@@ -44,13 +48,19 @@ int main(int argc, char *argv[])
         // Avoid atomic update to allow testing against /dev/stderr. There should never be
         // multiple processes trying to write this output.
         boost::nowide::ofstream ofs { params.get<std::string>("stderr"), std::ios::binary };
+#ifndef _WIN32
         fs::permissions(params.get<std::string>("stderr"), FILE_PERMS);
+#endif
         ofs << lth_loc::format("Task '{1}' failed to run: {2}", task_executable, e.what());
         exitcode = 127;
     }
 
+#ifdef _WIN32
+    lth_file::atomic_write_to_file(std::to_string(exitcode), params.get<std::string>("exitcode"));
+#else
     lth_file::atomic_write_to_file(std::to_string(exitcode), params.get<std::string>("exitcode"),
                                    FILE_PERMS, std::ios::binary);
+#endif
 
     return exitcode;
 }
