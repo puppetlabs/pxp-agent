@@ -366,8 +366,12 @@ void Task::callNonBlockingAction(
         environment,
         [results_dir](size_t pid) {
             auto pid_file = (results_dir / "pid").string();
+#ifdef _WIN32
+            lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file);
+#else
             lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file,
                                            NIX_FILE_PERMS, std::ios::binary);
+#endif
         },  // pid callback
         0,  // timeout
         leatherman::util::option_set<lth_exec::execution_options> {
