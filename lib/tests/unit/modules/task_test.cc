@@ -14,6 +14,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/erase.hpp>
 
 #include <catch.hpp>
 
@@ -42,7 +43,7 @@ static const std::string TASK_CACHE_DIR { std::string { PXP_AGENT_ROOT_PATH }
 
 static const std::string TEMP_TASK_CACHE_DIR { TASK_CACHE_DIR + "/temp" };
 
-static const std::vector<std::string> MASTER_URIS { { "https://_mock_master_" } };
+static const std::vector<std::string> MASTER_URIS { { "https://_master1", "https://_master2", "https://_master3" } };
 
 static const std::string CA { "mock_ca" };
 
@@ -305,7 +306,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         REQUIRE(boost::contains(response.action_metadata.get<std::string>("execution_error"), "Cannot download task. No master-uris were provided"));
     }
 
-    SECTION("errors when a download error occurs and removes the temporary file") {
+    SECTION("if a master-uri has a server-side error, then it proceeds to try the next master-uri. if they all fail, it errors on download and removes all temporary files") {
         Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
         auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_sha";
         std::string bad_path = "bad_path";
@@ -325,8 +326,9 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         REQUIRE_FALSE(response.action_metadata.includes("results"));
         REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
         REQUIRE(response.action_metadata.includes("execution_error"));
-        REQUIRE_THAT(response.action_metadata.get<std::string>("execution_error"), Catch::Contains("Downloading the task file some_file failed"));
-
+        std::string expected_master_uri = MASTER_URIS.back();
+        boost::erase_head(expected_master_uri, std::string("https://").length());
+        REQUIRE_THAT(response.action_metadata.get<std::string>("execution_error"), Catch::Contains(expected_master_uri));
         // Make sure temp file is removed.
         REQUIRE(fs::is_empty(cache));
     }
