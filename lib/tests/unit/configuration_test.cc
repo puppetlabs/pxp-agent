@@ -45,9 +45,6 @@ static const std::string MODULES_CONFIG_DIR { std::string { PXP_AGENT_ROOT_PATH 
                                        + "/lib/tests/resources/modules_config" };
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
-static const std::string TASK_CACHE_DIR { std::string { PXP_AGENT_ROOT_PATH }
-                                     + "/lib/tests/resources/test_task_cache" };
-
 
 static const char* ARGV[] = {
     "test-command",
@@ -60,17 +57,13 @@ static const char* ARGV[] = {
     "--modules-dir", MODULES_DIR.data(),
     "--modules-config-dir", MODULES_CONFIG_DIR.data(),
     "--spool-dir", SPOOL_DIR.data(),
-    "--task-cache-dir", TASK_CACHE_DIR.data(),
     "--foreground=true",
     nullptr };
-static const int ARGC = 21;
+static const int ARGC = 19;
 
 static void configureTest() {
     if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR)) {
         FAIL("Failed to create the results directory");
-    }
-    if (!fs::exists(TASK_CACHE_DIR) && !fs::create_directories(TASK_CACHE_DIR)) {
-        FAIL("Failed to create the task cache directory");
     }
     if (!fs::exists(MODULES_CONFIG_DIR) && !fs::create_directories(MODULES_CONFIG_DIR)) {
         FAIL("Failed to create the modules configuration directory");
@@ -84,9 +77,6 @@ static void configureTest() {
 static void resetTest() {
     if (fs::exists(SPOOL_DIR)) {
         fs::remove_all(SPOOL_DIR);
-    }
-    if (fs::exists(TASK_CACHE_DIR)) {
-        fs::remove_all(TASK_CACHE_DIR);
     }
     if (fs::exists(MODULES_CONFIG_DIR)) {
         fs::remove_all(MODULES_CONFIG_DIR);
@@ -200,7 +190,7 @@ TEST_CASE("Configuration::get", "[configuration]") {
 
         SECTION("return the default value if the flag was not set") {
             // NB: ignoring --foreground in ARGV since argc is set to 19
-            Configuration::Instance().parseOptions(ARGC - 1, const_cast<char**>(ARGV));
+            Configuration::Instance().parseOptions(18, const_cast<char**>(ARGV));
 #ifndef _WIN32
             HW::SetFlag<std::string>("pidfile", SPOOL_DIR + "/test.pid");
 #endif
@@ -320,32 +310,6 @@ TEST_CASE("Configuration::validate", "[configuration]") {
                           Configuration::Error);
     }
 
-    SECTION("it fails when --task-cache-dir is empty") {
-        HW::SetFlag<std::string>("task-cache-dir", "");
-        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::Error);
-    }
-
-    SECTION("it fails when --task-cache-dir exists but is not a directory") {
-        HW::SetFlag<std::string>("task-cache-dir", CONFIG);
-        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
-                          Configuration::Error);
-    }
-
-    SECTION("it creates --task-cache-dir when needed and with the right permissions") {
-        auto test_task_cache_dir = TASK_CACHE_DIR + "/testing_creation";
-        HW::SetFlag<std::string>("task-cache-dir", test_task_cache_dir);
-
-        REQUIRE_FALSE(fs::exists(test_task_cache_dir));
-        REQUIRE_NOTHROW(Configuration::Instance().validate());
-        REQUIRE(fs::exists(test_task_cache_dir));
-#ifndef _WIN32
-        REQUIRE(fs::status(test_task_cache_dir).permissions() == 0750);
-#endif
-
-        fs::remove_all(test_task_cache_dir);
-    }
-
     SECTION("it fails when --spool-dir is empty") {
         HW::SetFlag<std::string>("spool-dir", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
@@ -380,10 +344,9 @@ TEST_CASE("Configuration::validate multiple brokers", "[configuration]") {
     "--modules-dir", MODULES_DIR.data(),
     "--modules-config-dir", MODULES_CONFIG_DIR.data(),
     "--spool-dir", SPOOL_DIR.data(),
-    "--task-cache-dir", TASK_CACHE_DIR.data(),
     "--foreground=true",
     nullptr };
-    const int altArgc = 18;
+    const int altArgc = 16;
 
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
@@ -419,10 +382,9 @@ TEST_CASE("Configuration::parseOptions duplicate broker-ws-uris", "[configuratio
     "--modules-dir", MODULES_DIR.data(),
     "--modules-config-dir", MODULES_CONFIG_DIR.data(),
     "--spool-dir", SPOOL_DIR.data(),
-    "--task-cache-dir", TASK_CACHE_DIR.data(),
     "--foreground=true",
     nullptr };
-    const int altArgc = 18;
+    const int altArgc = 16;
 
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
@@ -443,10 +405,9 @@ TEST_CASE("Configuration::validate bad broker-ws-uris", "[configuration]") {
     "--modules-dir", MODULES_DIR.data(),
     "--modules-config-dir", MODULES_CONFIG_DIR.data(),
     "--spool-dir", SPOOL_DIR.data(),
-    "--task-cache-dir", TASK_CACHE_DIR.data(),
     "--foreground=true",
     nullptr };
-    const int altArgc = 18;
+    const int altArgc = 16;
 
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
@@ -468,10 +429,9 @@ TEST_CASE("Configuration::validate bad master-uris", "[configuration]") {
     "--modules-dir", MODULES_DIR.data(),
     "--modules-config-dir", MODULES_CONFIG_DIR.data(),
     "--spool-dir", SPOOL_DIR.data(),
-    "--task-cache-dir", TASK_CACHE_DIR.data(),
     "--foreground=true",
     nullptr };
-    const int altArgc = 18;
+    const int altArgc = 16;
 
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();

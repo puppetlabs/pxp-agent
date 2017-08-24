@@ -5,8 +5,6 @@
 #include <pxp-agent/action_response.hpp>
 #include <pxp-agent/results_storage.hpp>
 
-#include <leatherman/curl/client.hpp>
-
 namespace PXPAgent {
 namespace Modules {
 
@@ -19,10 +17,6 @@ class Task : public PXPAgent::Module {
   public:
     Task(const boost::filesystem::path& exec_prefix,
          const std::string& task_cache_dir,
-         const std::vector<std::string>& master_uris,
-         const std::string& ca,
-         const std::string& crt,
-         const std::string& key,
          const std::string& spool_dir);
 
     /// Whether or not the module supports non-blocking / asynchronous requests.
@@ -43,10 +37,6 @@ class Task : public PXPAgent::Module {
     ResultsStorage storage_;
 
     std::string task_cache_dir_, wrapper_executable_;
-
-    std::vector<std::string> master_uris_;
-
-    leatherman::curl::client client_;
 
     void callBlockingAction(
         const ActionRequest& request,

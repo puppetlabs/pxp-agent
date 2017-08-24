@@ -32,14 +32,15 @@ EOF
         shebang = '#!/opt/puppetlabs/bin/puppet apply'
       end
 
-      task_body = "#{shebang}\nnotify { 'hello': }"
-
-      @sha256 = create_task_on(agent, 'hello', 'init.pp', task_body)
+      create_task_on(agent, 'hello', 'init.pp', <<-EOF)
+#{shebang}
+notify { 'hello': }
+EOF
     end
   end
 
   step 'Run puppet task on agent hosts' do
-    run_task(master, agents, 'hello', 'init.pp', @sha256, {:data => [1, 2, 3]}) do |stdout|
+    run_task(master, agents, 'hello', 'init.pp', {:data => [1, 2, 3]}) do |stdout|
       assert_match(/Notify\[hello\]\/message: defined 'message' as 'hello'/, stdout, "Output did not contain 'hello'")
     end
   end # test step

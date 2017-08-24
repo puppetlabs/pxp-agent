@@ -84,7 +84,8 @@ namespace lth_util = leatherman::util;
         }
     }();
 
-    static const std::string DEFAULT_TASK_CACHE_DIR { (DATA_DIR / "tasks-cache").string() };
+    // TODO(task) switch back to tasks-cache when downloading is implemented.
+    static const std::string DEFAULT_TASK_CACHE_DIR { (DATA_DIR / "tasks").string() };
 #else
     static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
     const std::string DEFAULT_SPOOL_DIR { "/opt/puppetlabs/pxp-agent/spool" };
@@ -92,7 +93,8 @@ namespace lth_util = leatherman::util;
     static const std::string DEFAULT_LOG_FILE { "/var/log/puppetlabs/pxp-agent/pxp-agent.log" };
     static const std::string DEFAULT_PCP_ACCESS_FILE { "/var/log/puppetlabs/pxp-agent/pcp-access.log" };
     static const std::string DEFAULT_MODULES_DIR { "/opt/puppetlabs/pxp-agent/modules" };
-    static const std::string DEFAULT_TASK_CACHE_DIR { "/opt/puppetlabs/pxp-agent/tasks-cache" };
+    // TODO(task) switch back to tasks-cache when downloading is implemented.
+    static const std::string DEFAULT_TASK_CACHE_DIR { "/opt/puppetlabs/pxp-agent/tasks" };
 #endif
 
 static const std::string DEFAULT_MODULES_CONF_DIR {
@@ -328,7 +330,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         HW::GetFlag<std::string>("spool-dir"),
         HW::GetFlag<std::string>("spool-dir-purge-ttl"),
         HW::GetFlag<std::string>("modules-config-dir"),
-        HW::GetFlag<std::string>("task-cache-dir"),
+        DEFAULT_TASK_CACHE_DIR,
         AGENT_CLIENT_TYPE,
         HW::GetFlag<int>("connection-timeout") * 1000,
         static_cast<uint32_t >(HW::GetFlag<int>("association-timeout")),
@@ -579,16 +581,6 @@ void Configuration::defineDefaultValues()
                                     DEFAULT_MODULES_CONF_DIR),
                     Types::String,
                     DEFAULT_MODULES_CONF_DIR) } });
-
-    defaults_.insert(
-        Option { "task-cache-dir",
-                 Base_ptr { new Entry<std::string>(
-                    "task-cache-dir",
-                    "",
-                    lth_loc::format("Tasks cache directory, default: {1}",
-                                    DEFAULT_TASK_CACHE_DIR),
-                    Types::String,
-                    DEFAULT_TASK_CACHE_DIR) } });
 
     defaults_.insert(
         Option { "spool-dir",
@@ -924,29 +916,6 @@ void Configuration::validateAndNormalizeOtherSettings()
         check_and_create_dir(val_path, val, false);
         HW::SetFlag<std::string>(option, val_path.string());
     }
-
-    // Create the task-cache-dir if needed and ensure that we
-    // have the required user rwx, and group rx permissions.
-    const auto task_cache_dir = HW::GetFlag<std::string>("task-cache-dir");
-
-    if (task_cache_dir.empty()) {
-        throw Configuration::Error {
-            lth_loc::translate("task-cache-dir must be defined") };
-    }
-
-    fs::path task_cache_dir_path { lth_file::tilde_expand(task_cache_dir) };
-    check_and_create_dir(task_cache_dir_path, "task-cache-dir", true);
-#ifndef _WIN32
-    try {
-        fs::permissions(task_cache_dir_path, NIX_DIR_PERMS);
-    } catch (const fs::filesystem_error& e) {
-            throw Configuration::Error {
-                lth_loc::format("Failed to make the task-cache-dir '{1}' user/group readable and executable, and user writable during configuration validation: {2}",
-                            task_cache_dir_path.string(), e.what()) };
-    }
-#endif
-
-    HW::SetFlag<std::string>("task-cache-dir", task_cache_dir_path.string());
 
     // Create the spool-dir if needed and ensure we can write in it
     const auto spool_dir = HW::GetFlag<std::string>("spool-dir");
