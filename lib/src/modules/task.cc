@@ -33,7 +33,7 @@ namespace lth_curl = leatherman::curl;
 
 static const std::string TASK_RUN_ACTION { "run" };
 
-static const lth_jc::JsonContainer TASK_RUN_ACTION_INPUT_SCHEMA { R"(
+static const std::string TASK_RUN_ACTION_INPUT_SCHEMA { R"(
 {
   "type": "object",
   "properties": {
@@ -117,7 +117,7 @@ Task::Task(const fs::path& exec_prefix,
     module_name = "task";
     actions.push_back(TASK_RUN_ACTION);
 
-    PCPClient::Schema input_schema { TASK_RUN_ACTION, TASK_RUN_ACTION_INPUT_SCHEMA };
+    PCPClient::Schema input_schema { TASK_RUN_ACTION, lth_jc::JsonContainer { TASK_RUN_ACTION_INPUT_SCHEMA } };
     PCPClient::Schema output_schema { TASK_RUN_ACTION };
 
     input_validator_.registerSchema(input_schema);
