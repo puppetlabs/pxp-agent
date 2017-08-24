@@ -1,10 +1,9 @@
 require 'pxp-agent/test_helper.rb'
 require 'json'
-require 'Digest'
 
 # Runs a task on targets, and passes the output to the block for validation
 # Block should expect a map parsed from the JSON output
-def run_task(broker, targets, task, filename, sha256, input = {}, max_retries = 30, query_interval = 1, &block)
+def run_task(broker, targets, task, filename, input = {}, max_retries = 30, query_interval = 1, &block)
   target_identities = targets.map {|agent| "pcp://#{agent}/agent"}
 
   provisional_responses =
@@ -15,7 +14,7 @@ def run_task(broker, targets, task, filename, sha256, input = {}, max_retries = 
                                 :input => input,
                                 :files => [{:uri => {:path => "/#{task}/tasks/#{filename}", :params => {}},
                                             :filename => filename,
-                                            :sha256 => sha256}]})
+                                            :sha256 => 'tbd'}]})
     rescue => exception
       fail("Exception occurred when trying to run task '#{task}' on all agents: #{exception.message}")
     end
@@ -34,13 +33,12 @@ end
 
 def create_task_on(agent, mod, task, body)
   if agent['platform'] =~ /win/
-    tasks_path = 'C:/ProgramData/PuppetLabs/pxp-agent/tasks-cache'
+    tasks_path = 'C:/ProgramData/PuppetLabs/pxp-agent/tasks'
   else
-    tasks_path = '/opt/puppetlabs/pxp-agent/tasks-cache'
+    tasks_path = '/opt/puppetlabs/pxp-agent/tasks'
   end
 
-  sha256 = Digest::SHA256.hexdigest(body+"\n")
-  task_path = "#{tasks_path}/#{sha256}"
+  task_path = "#{tasks_path}/#{mod}/tasks"
   on agent, "mkdir -p #{task_path}"
 
   create_remote_file(agent, "#{task_path}/#{task}", body)
@@ -49,6 +47,4 @@ def create_task_on(agent, mod, task, body)
   teardown do
     on agent, "rm -rf #{task_path}"
   end
-
-  sha256
 end

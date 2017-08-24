@@ -275,10 +275,6 @@ msgid "Module config files directory, default: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
-msgid "Tasks cache directory, default: {1}"
-msgstr ""
-
-#: lib/src/configuration.cc
 msgid "Spool action results directory, default: {1}"
 msgstr ""
 
@@ -359,16 +355,6 @@ msgstr ""
 
 #: lib/src/configuration.cc
 msgid "the {1} '{2}' is not a directory"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "task-cache-dir must be defined"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid ""
-"Failed to make the task-cache-dir '{1}' user/group readable and executable, "
-"and user writable during configuration validation: {2}"
 msgstr ""
 
 #: lib/src/configuration.cc
@@ -652,36 +638,12 @@ msgid "debug entry is not valid JSON"
 msgstr ""
 
 #: lib/src/modules/task.cc
-msgid "No such file or directory: {1}"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid "A file matching the name of the provided sha already exists"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid "Error while reading {1}"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid "Cannot download task. No master-uris were provided"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid "The downloaded {1}'s sha differs from the provided sha"
-msgstr ""
-
-#: lib/src/modules/task.cc
 msgid "at least one file must be specified for a task"
 msgstr ""
 
 #. debug
 #: lib/src/modules/task.cc
 msgid "Verifying task file based on {1}"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid "Downloading the task file {1} failed. Reason: {2}"
 msgstr ""
 
 #. warning

@@ -44,7 +44,7 @@ if ("${INSTALL_IS_SYSTEM_DIR}" STREQUAL "-1")
 endif()
 
 # Find libraries
-set(LEATHERMAN_COMPONENTS locale nowide catch logging rapidjson json_container util file_util execution curl)
+set(LEATHERMAN_COMPONENTS locale nowide catch logging rapidjson json_container util file_util execution)
 
 if (WIN32)
     list(APPEND LEATHERMAN_COMPONENTS windows)

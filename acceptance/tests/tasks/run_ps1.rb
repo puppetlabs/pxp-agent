@@ -20,13 +20,15 @@ test_name 'run powershell task' do
 
   step 'Create powershell task on agent hosts' do
     windows_hosts.each do |agent|
-      task_body = "foreach ($i in $input) { Write-Output $i }\nWrite-Output $env:PT_data";
-      @sha256 = create_task_on(agent, 'echo', 'init.ps1', task_body)
+      create_task_on(agent, 'echo', 'init.ps1', <<-EOF)
+foreach ($i in $input) { Write-Output $i }
+Write-Output $env:PT_data
+EOF
     end
   end
 
   step 'Run powershell task on Windows agent hosts' do
-    run_task(master, windows_hosts, 'echo', 'init.ps1', @sha256, {:data => [1, 2, 3]}) do |stdout|
+    run_task(master, windows_hosts, 'echo', 'init.ps1', {:data => [1, 2, 3]}) do |stdout|
       json, data = stdout.delete("\r").split("\n")
       assert_equal('{"data":[1,2,3]}', json, "Output did not contain 'data'")
       assert_equal('[1,2,3]', data, "Output did not contain 'data'")

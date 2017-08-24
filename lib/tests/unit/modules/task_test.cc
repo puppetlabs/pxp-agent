@@ -13,7 +13,6 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/algorithm/string/trim.hpp>
-#include <boost/algorithm/string/predicate.hpp>
 
 #include <catch.hpp>
 
@@ -38,17 +37,7 @@ static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
 
 static const std::string TASK_CACHE_DIR { std::string { PXP_AGENT_ROOT_PATH }
-                                          + "/lib/tests/resources/tasks-cache" };
-
-static const std::string TEMP_TASK_CACHE_DIR { TASK_CACHE_DIR + "/temp" };
-
-static const std::vector<std::string> MASTER_URIS { { "https://_mock_master_" } };
-
-static const std::string CA { "mock_ca" };
-
-static const std::string CRT { "mock_crt" };
-
-static const std::string KEY { "mock_key" };
+                                          + "/lib/tests/resources/tasks" };
 
 static const std::string NON_BLOCKING_ECHO_TXT {
     (NON_BLOCKING_DATA_FORMAT % "\"1988\""
@@ -57,7 +46,7 @@ static const std::string NON_BLOCKING_ECHO_TXT {
                               % "{\"task\":\"foo\",\"input\":{\"message\":\"hello\"},"
                                  "\"files\":[{\"uri\":{\"path\":\"/init" EXTENSION "\","
                                                       "\"params\":{\"environment\":\"production\"}},"
-                                                      "\"sha256\":\"15f26bdeea9186293d256db95fed616a7b823de947f4e9bd0d8d23c5ac786d13\","
+                                                      "\"sha256\":\"d5296d3bd81d1245646f3467531349120519eb771b8e7a919b5fe3d3036537cb\","
                                                       "\"filename\":\"init\","
                                                       "\"size_bytes\":131}]}"
                               % "false").str() };
@@ -70,12 +59,12 @@ static const PCPClient::ParsedChunks NON_BLOCKING_CONTENT {
 
 TEST_CASE("Modules::Task", "[modules]") {
     SECTION("can successfully instantiate") {
-        REQUIRE_NOTHROW(Modules::Task(PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR));
+        REQUIRE_NOTHROW(Modules::Task(PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, SPOOL_DIR));
     }
 }
 
 TEST_CASE("Modules::Task::hasAction", "[modules]") {
-    Modules::Task mod { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+    Modules::Task mod { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, SPOOL_DIR };
 
     SECTION("correctly reports false") {
         REQUIRE(!mod.hasAction("foo"));
@@ -90,9 +79,6 @@ static void configureTest() {
     if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR)) {
         FAIL("Failed to create the results directory");
     }
-    if (!fs::exists(TEMP_TASK_CACHE_DIR) && !fs::create_directories(TEMP_TASK_CACHE_DIR)) {
-        FAIL("Failed to create the temporary tasks cache directory");
-    }
     Configuration::Instance().initialize(
         [](std::vector<std::string>) {
             return EXIT_SUCCESS;
@@ -103,36 +89,6 @@ static void resetTest() {
     if (fs::exists(SPOOL_DIR)) {
         fs::remove_all(SPOOL_DIR);
     }
-    if (fs::exists(TEMP_TASK_CACHE_DIR)) {
-        fs::remove_all(TEMP_TASK_CACHE_DIR);
-    }
-}
-
-TEST_CASE("Modules::Task::callAction", "[modules]") {
-  configureTest();
-  lth_util::scope_exit config_cleaner { resetTest };
-
-  SECTION("throws module processing error when a file system error is thrown") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
-        auto existent_sha = "existent";
-        boost::nowide::ofstream(TEMP_TASK_CACHE_DIR + "/" + existent_sha);
-        auto task_txt = (DATA_FORMAT % "\"0632\""
-                                     % "\"task\""
-                                     % "\"run\""
-                                     % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"existent\"}]}").str();
-        PCPClient::ParsedChunks task_content {
-            lth_jc::JsonContainer(ENVELOPE_TXT),
-            lth_jc::JsonContainer(task_txt),
-            {},
-            0 };
-        ActionRequest request { RequestType::Blocking, task_content };
-
-        auto response = e_m.executeAction(request);
-        REQUIRE_FALSE(response.action_metadata.includes("results"));
-        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
-        REQUIRE(response.action_metadata.includes("execution_error"));
-        REQUIRE_THAT(response.action_metadata.get<std::string>("execution_error"), Catch::EndsWith("A file matching the name of the provided sha already exists"));
-  }
 }
 
 TEST_CASE("Modules::Task::callAction - non blocking", "[modules]") {
@@ -140,7 +96,7 @@ TEST_CASE("Modules::Task::callAction - non blocking", "[modules]") {
     lth_util::scope_exit config_cleaner { resetTest };
 
     SECTION("the pid is written to file") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, SPOOL_DIR };
         ActionRequest request { RequestType::NonBlocking, NON_BLOCKING_CONTENT };
         fs::path spool_path { SPOOL_DIR };
         auto results_dir = (spool_path / request.transactionId()).string();
@@ -165,19 +121,11 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     lth_util::scope_exit config_cleaner { resetTest };
 
     SECTION("passes input as json") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
-        auto echo_txt =
-#ifndef _WIN32
-            (DATA_FORMAT % "\"0632\""
-                         % "\"task\""
-                         % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"15f26bdeea9186293d256db95fed616a7b823de947f4e9bd0d8d23c5ac786d13\", \"filename\": \"init\"}]}").str();
-#else
-            (DATA_FORMAT % "\"0632\""
-                         % "\"task\""
-                         % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"e1c10f8c709f06f4327ac6a07a918e297a039a24a788fabf4e2ebc31d16e8dc3\", \"filename\": \"init.bat\"}]}").str();
-#endif
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, SPOOL_DIR };
+        auto echo_txt = (DATA_FORMAT % "\"0632\""
+                                     % "\"task\""
+                                     % "\"run\""
+                                     % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"uri\": {\"path\": \"/init" EXTENSION "\"}}]}").str();
         PCPClient::ParsedChunks echo_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
             lth_jc::JsonContainer(echo_txt),
@@ -191,19 +139,11 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("passes input as env variables") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
-        auto echo_txt =
-#ifndef _WIN32
-            (DATA_FORMAT % "\"0632\""
-                         % "\"task\""
-                         % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"936e85a9b7f1e7b4b593c9f051a36105ed36f7fb8dcff67ff23a3a9af2abe962\", \"filename\": \"printer\"}]}").str();
-#else
-            (DATA_FORMAT % "\"0632\""
-                         % "\"task\""
-                         % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"1c616ed98f54880444d0c49036cdf930120457c20e7a9a204db750f2d6162999\", \"filename\": \"printer.bat\"}]}").str();
-#endif
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, SPOOL_DIR };
+        auto echo_txt = (DATA_FORMAT % "\"0632\""
+                                     % "\"task\""
+                                     % "\"run\""
+                                     % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"uri\": {\"path\": \"/printer" EXTENSION "\"}}]}").str();
         PCPClient::ParsedChunks echo_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
             lth_jc::JsonContainer(echo_txt),
@@ -217,19 +157,11 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("succeeds on non-zero exit") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
-        auto echo_txt =
-#ifndef _WIN32
-            (DATA_FORMAT % "\"0632\""
-                         % "\"task\""
-                         % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\" : \"d5b8819b51ecd53b32de74c09def0e71f617076bc8e4f75e1eac99b8f77a6c70\", \"filename\": \"error\"}]}").str();
-#else
-            (DATA_FORMAT % "\"0632\""
-                         % "\"task\""
-                         % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\" : \"554f86a33add88c371c2bbb79839c9adfd3d420dc5f405a07e97fab54efbe1ba\", \"filename\": \"error.bat\"}]}").str();
-#endif
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, SPOOL_DIR };
+        auto echo_txt = (DATA_FORMAT % "\"0632\""
+                                     % "\"task\""
+                                     % "\"run\""
+                                     % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"uri\": {\"path\": \"/error" EXTENSION "\"}}]}").str();
         PCPClient::ParsedChunks echo_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
             lth_jc::JsonContainer(echo_txt),
@@ -250,21 +182,12 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("errors on unparseable output") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
-        auto echo_txt =
-#ifndef _WIN32
-            (DATA_FORMAT % "\"0632\""
-                         % "\"task\""
-                         % "\"run\""
-                         % "{\"task\": \"unparseable\", \"input\":{\"message\":\"hello\"}, "
-                           "\"files\" : [{\"sha256\": \"d2795e0a1b66ca75be9e2be25c2a61fdbab9efc641f8e480f5ab1b348112701d\", \"filename\": \"unparseable\"}]}").str();
-#else
-            (DATA_FORMAT % "\"0632\""
-                         % "\"task\""
-                         % "\"run\""
-                         % "{\"task\": \"unparseable\", \"input\":{\"message\":\"hello\"}, "
-                           "\"files\" : [{\"sha256\": \"0d75633b5dd4b153496b4593e9d94e69265d2a812579f724ba0b4422b0bfb836\", \"filename\": \"unparseable.bat\"}]}").str();
-#endif
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, SPOOL_DIR };
+        auto echo_txt = (DATA_FORMAT % "\"0632\""
+                                     % "\"task\""
+                                     % "\"run\""
+                                     % "{\"task\": \"unparseable\", \"input\":{\"message\":\"hello\"}, "
+                                       "\"files\" : [{\"uri\": {\"path\": \"/unparseable" EXTENSION "\"}}]}").str();
         PCPClient::ParsedChunks echo_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
             lth_jc::JsonContainer(echo_txt),
@@ -283,75 +206,6 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         REQUIRE(response.output.std_err == "");
         REQUIRE(response.output.exitcode == 0);
     }
-
-    SECTION("errors on download when no master-uri is provided") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, {}, CA, CRT, KEY, SPOOL_DIR };
-        auto task_txt = (DATA_FORMAT % "\"0632\""
-                                     % "\"task\""
-                                     % "\"run\""
-                                     % "{\"task\": \"unparseable\", \"input\":{\"message\":\"hello\"}, "
-                                       "\"files\" : [{\"sha256\": \"some_sha\", \"filename\": \"some_file\"}]}").str();
-        PCPClient::ParsedChunks task_content {
-            lth_jc::JsonContainer(ENVELOPE_TXT),
-            lth_jc::JsonContainer(task_txt),
-            {},
-            0 };
-        ActionRequest request { RequestType::Blocking, task_content };
-        auto response = e_m.executeAction(request);
-
-        REQUIRE_FALSE(response.action_metadata.includes("results"));
-        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
-        REQUIRE(response.action_metadata.includes("execution_error"));
-        REQUIRE(boost::contains(response.action_metadata.get<std::string>("execution_error"), "Cannot download task. No master-uris were provided"));
-    }
-
-    SECTION("errors when a download error occurs and removes the temporary file") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
-        auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_sha";
-        std::string bad_path = "bad_path";
-        auto task_txt = (DATA_FORMAT % "\"0632\""
-                                     % "\"task\""
-                                     % "\"run\""
-                                     % "{\"task\": \"unparseable\", \"input\":{\"message\":\"hello\"}, "
-                                       "\"files\" : [{\"uri\": { \"path\": \"bad_path\", \"params\": { \"environment\": \"production\", \"code-id\": \"1234\" }}, \"sha256\": \"some_sha\", \"filename\": \"some_file\"}]}").str();
-        PCPClient::ParsedChunks task_content {
-            lth_jc::JsonContainer(ENVELOPE_TXT),
-            lth_jc::JsonContainer(task_txt),
-            {},
-            0 };
-        ActionRequest request { RequestType::Blocking, task_content };
-        auto response = e_m.executeAction(request);
-
-        REQUIRE_FALSE(response.action_metadata.includes("results"));
-        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
-        REQUIRE(response.action_metadata.includes("execution_error"));
-        REQUIRE_THAT(response.action_metadata.get<std::string>("execution_error"), Catch::Contains("Downloading the task file some_file failed"));
-
-        // Make sure temp file is removed.
-        REQUIRE(fs::is_empty(cache));
-    }
-
-    SECTION("creates the tasks-cache/<sha> directory with ower/group read and write permissions") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
-        auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_other_sha";
-        auto task_txt = (DATA_FORMAT % "\"0632\""
-                                     % "\"task\""
-                                     % "\"run\""
-                                     % "{\"task\": \"unparseable\", \"input\":{\"message\":\"hello\"}, "
-                                       "\"files\" : [{\"sha256\": \"some_other_sha\"}]}").str();
-        PCPClient::ParsedChunks task_content {
-            lth_jc::JsonContainer(ENVELOPE_TXT),
-            lth_jc::JsonContainer(task_txt),
-            {},
-            0 };
-        ActionRequest request { RequestType::Blocking, task_content };
-        e_m.executeAction(request);
-
-        REQUIRE(fs::exists(cache));
-        REQUIRE(fs::is_directory(cache));
-#ifndef _WIN32
-        REQUIRE(fs::status(cache).permissions() == 0750);
-#endif
-    }
 }
+
 }  // namespace PXPAgent
