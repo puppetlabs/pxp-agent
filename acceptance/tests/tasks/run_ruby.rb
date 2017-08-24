@@ -15,16 +15,13 @@ test_name 'run ruby task' do
 
   step 'Create ruby task on agent hosts' do
     agents.each do |agent|
-      create_task_on(agent, 'echo', 'init.rb', <<-EOF)
-#!/opt/puppetlabs/puppet/bin/ruby
-puts STDIN.gets
-puts ENV['PT_data']
-EOF
+      task_body = "#!/opt/puppetlabs/puppet/bin/ruby\nputs STDIN.gets\nputs ENV['PT_data']"
+      @sha256 = create_task_on(agent, 'echo', 'init.rb', task_body)
     end
   end
 
   step 'Run ruby task on agent hosts' do
-    run_task(master, agents, 'echo', 'init.rb', {:data => [1, 2, 3]}) do |stdout|
+    run_task(master, agents, 'echo', 'init.rb', @sha256, {:data => [1, 2, 3]}) do |stdout|
       json, data = stdout.delete("\r").split("\n")
       assert_equal('{"data":[1,2,3]}', json, "Output did not contain 'data'")
       assert_equal('[1,2,3]', data, "Output did not contain 'data'")
