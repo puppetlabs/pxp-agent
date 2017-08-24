@@ -154,7 +154,7 @@ TEST_CASE("Modules::Task::callAction - non blocking", "[modules]") {
         try {
             auto pid_txt = lth_file::read(pid_path.string());
             auto pid = std::stoi(pid_txt);
-        } catch (std::exception) {
+        } catch (std::exception&) {
             FAIL("fail to get pid");
         }
     }

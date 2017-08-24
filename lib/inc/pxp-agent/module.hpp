@@ -36,6 +36,8 @@ class Module {
 
     Module();
 
+    virtual ~Module() = default;
+
     /// Whether or not the module has the specified action.
     bool hasAction(const std::string& action_name);
 

@@ -131,7 +131,7 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
             const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
             REQUIRE_THROWS_AS(r_p.processRequest(RequestType::Blocking, p_c),
-                              MockConnector::pxpError_msg);
+                              MockConnector::pxpError_msg&);
         }
     }
 

@@ -232,9 +232,9 @@ class Configuration
 
         try {
             HorseWhisperer::SetFlag<T>(flagname, std::move(value));
-        } catch (HorseWhisperer::flag_validation_error) {
+        } catch (HorseWhisperer::flag_validation_error&) {
             throw Configuration::Error { getInvalidFlagError(flagname) };
-        } catch (HorseWhisperer::undefined_flag_error) {
+        } catch (HorseWhisperer::undefined_flag_error&) {
             throw Configuration::Error { getUnknownFlagError(flagname) };
         }
     }

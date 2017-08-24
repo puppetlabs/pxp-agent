@@ -42,7 +42,7 @@ TEST_CASE("Agent::Agent", "[agent]") {
     SECTION("should throw an Agent::Error if client cert path is invalid") {
         agent_configuration.crt = "spam";
 
-        REQUIRE_THROWS_AS(Agent { agent_configuration }, Agent::Error);
+        REQUIRE_THROWS_AS(Agent { agent_configuration }, Agent::Error&);
     }
 
     SECTION("successfully instantiates with valid arguments") {
