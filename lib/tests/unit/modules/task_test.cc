@@ -190,6 +190,36 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         REQUIRE(output == "{\"message\":\"hello\"}");
     }
 
+    SECTION("passes input only on stdin when input_method is stdin") {
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        auto echo_txt =
+#ifndef _WIN32
+            (DATA_FORMAT % "\"0632\""
+                         % "\"task\""
+                         % "\"run\""
+                         % "{\"input\":{\"message\":\"hello\"}, \"input_method\": \"stdin\", \"files\" : [{\"sha256\": \"823c013467ce03b12dbe005757a6c842894373e8bcfb0cf879329afb5abcd543\", \"filename\": \"multi\"}]}").str();
+#else
+            (DATA_FORMAT % "\"0632\""
+                         % "\"task\""
+                         % "\"run\""
+                         % "{\"input\":{\"message\":\"hello\"}, \"input_method\": \"stdin\", \"files\" : [{\"sha256\": \"88a07e5b672aa44a91aa7d63e22c91510af5d4707e12f75e0d5de2dfdbde1dec\", \"filename\": \"multi.bat\"}]}").str();
+#endif
+        PCPClient::ParsedChunks echo_content {
+            lth_jc::JsonContainer(ENVELOPE_TXT),
+            lth_jc::JsonContainer(echo_txt),
+            {},
+            0 };
+        ActionRequest request { RequestType::Blocking, echo_content };
+
+        auto output = e_m.executeAction(request).action_metadata.get<std::string>({ "results", "output" });
+        boost::trim(output);
+#ifdef _WIN32
+        REQUIRE(output == "ECHO is on.\r\n{\"message\":\"hello\"}");
+#else
+        REQUIRE(output == "{\"message\":\"hello\"}");
+#endif
+    }
+
     SECTION("passes input as env variables") {
         Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
         auto echo_txt =
@@ -203,6 +233,32 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
                          % "\"task\""
                          % "\"run\""
                          % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"1c616ed98f54880444d0c49036cdf930120457c20e7a9a204db750f2d6162999\", \"filename\": \"printer.bat\"}]}").str();
+#endif
+        PCPClient::ParsedChunks echo_content {
+            lth_jc::JsonContainer(ENVELOPE_TXT),
+            lth_jc::JsonContainer(echo_txt),
+            {},
+            0 };
+        ActionRequest request { RequestType::Blocking, echo_content };
+
+        auto output = e_m.executeAction(request).action_metadata.get<std::string>({ "results", "output" });
+        boost::trim(output);
+        REQUIRE(output == "hello");
+    }
+
+    SECTION("passes input only as env variables when input_method is environment") {
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        auto echo_txt =
+#ifndef _WIN32
+            (DATA_FORMAT % "\"0632\""
+                         % "\"task\""
+                         % "\"run\""
+                         % "{\"input\":{\"message\":\"hello\"}, \"input_method\": \"environment\", \"files\" : [{\"sha256\": \"823c013467ce03b12dbe005757a6c842894373e8bcfb0cf879329afb5abcd543\", \"filename\": \"multi\"}]}").str();
+#else
+            (DATA_FORMAT % "\"0632\""
+                         % "\"task\""
+                         % "\"run\""
+                         % "{\"input\":{\"message\":\"hello\"}, \"input_method\": \"environment\", \"files\" : [{\"sha256\": \"88a07e5b672aa44a91aa7d63e22c91510af5d4707e12f75e0d5de2dfdbde1dec\", \"filename\": \"multi.bat\"}]}").str();
 #endif
         PCPClient::ParsedChunks echo_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
