@@ -1,3 +1,9 @@
+## 1.5.5
+
+This is a maintenance release.
+
+* [PCP-775](https://tickets.puppetlabs.com/browse/PCP-775) Enable DEP support via nxcompat and dynamicbase on Windows.
+
 ## 1.5.4
 
 This is a maintenance release.
