@@ -10,6 +10,8 @@ service startup.
 * [PCP-750](https://tickets.puppetlabs.com/browse/PCP-750) Ensure failed connection attempts from test
 code are closed before retrying.
 
+Does not include fixes from 1.5.5.
+
 ## 1.6.0
 
 This is a feature release
@@ -19,6 +21,14 @@ This is a feature release
 * [PCP-742](https://tickets.puppetlabs.com/browse/PCP-742) pxp-module-puppet will now return metrics about resource events when a run finishes.
 * [PCP-748](https://tickets.puppetlabs.com/browse/PCP-748) Update pxp-agent component tests to allow SERVER_VERSION=latest
 * [PCP-751](https://tickets.puppetlabs.com/browse/PCP-751) Remove kind from pxp-module-puppet
+
+Does not include fixes from 1.5.5.
+
+## 1.5.5
+
+This is a maintenance release.
+
+* [PCP-775](https://tickets.puppetlabs.com/browse/PCP-775) Enable DEP support via nxcompat and dynamicbase on Windows.
 
 ## 1.5.4
 
