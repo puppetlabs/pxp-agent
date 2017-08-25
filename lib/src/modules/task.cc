@@ -18,6 +18,8 @@
 #include <openssl/evp.h>
 #include <curl/curl.h>
 
+#include <tuple>
+
 namespace PXPAgent {
 namespace Modules {
 
@@ -226,8 +228,7 @@ static std::string createUrlEndpoint(const lth_jc::JsonContainer& uri) {
     return url;
 }
 
-// Downloads the file at the specified url into the provided path. If something goes
-// wrong during the download, a PXP-error should be returned. Note that the provided
+// Downloads the file at the specified url into the provided path. Note that the provided
 // "file_path" argument is a temporary file, call it "tempA". Leatherman.curl during
 // the download method will create another temporary file, call it "tempB", to save
 // the downloaded task file's contents in chunks before renaming it to "tempA." The
@@ -240,30 +241,54 @@ static std::string createUrlEndpoint(const lth_jc::JsonContainer& uri) {
 //    the same task file.
 // The downloaded task file's permissions will be set to rwx for user and rx for
 // group for non-Windows OSes.
-static void downloadTaskFile(const std::vector<std::string>& master_uris,
-                             lth_curl::client& client,
-                             const fs::path& file_path,
-                             const lth_jc::JsonContainer& uri) {
-    auto url = master_uris[0] + createUrlEndpoint(uri);
-    lth_curl::request req(url);
-    // timeout from connection after one minute, can configure
-    req.connection_timeout(60000);
+//
+// The method returns a tuple (success, err_msg). success is true if the file was downloaded;
+// false otherwise. err_msg contains the most recent http_file_download_exception's error
+// message; it is initially empty.
+static std::tuple<bool, std::string> downloadTaskFile(const std::vector<std::string>& master_uris,
+                                                      lth_curl::client& client,
+                                                      const fs::path& file_path,
+                                                      const lth_jc::JsonContainer& uri) {
+    auto endpoint = createUrlEndpoint(uri);
+    std::tuple<bool, std::string> result = std::make_tuple(false, "");
+    for (auto& master_uri : master_uris) {
+        auto url = master_uri + endpoint;
+        lth_curl::request req(url);
+        // timeout from connection after one minute, can configure
+        req.connection_timeout(60000);
+        try {
 #ifndef _WIN32
-    client.download_file(req, file_path.string(), NIX_TASK_FILE_PERMS);
+            client.download_file(req, file_path.string(), NIX_TASK_FILE_PERMS);
 #else
-    client.download_file(req, file_path.string());
+            client.download_file(req, file_path.string());
 #endif
+        } catch (lth_curl::http_file_download_exception& e) {
+            // Server-side error, do nothing here -- we want to try the next master-uri.
+            LOG_WARNING("Downloading the task file from the master-uri '{1}' failed. Reason: {2}", master_uri, e.what());
+            std::get<1>(result) = e.what();
+        } catch (lth_curl::http_request_exception& e) {
+            // For http_curl_setup and http_file_operation exceptions
+            throw Module::ProcessingError(lth_loc::format("Downloading the task file failed. Reason: {1}", e.what()));
+        }
+
+        if (fs::exists(file_path)) {
+            std::get<0>(result) = true;
+            return result;
+        }
+    }
+
+    return result;
 }
 
 // This method does the following. If the file matching the "filename" field of the
 // file_obj JSON does not exist OR if its hash does not match the sha value in the
 // "sha256" field of file_obj, then:
-//    (1) The file is downloaded using Leatherman.curl from the first entry in
-//    master-uris to a temporary directory. If this download fails, a PXP error
-//    is thrown.
+//    (1) The file is downloaded using Leatherman.curl by trying each of the master_uris
+//    until one of them succeeds. If this download fails, a PXP error is thrown.
 //
 //    (2) If the downloaded file's sha does not match the provided sha, then a PXP
-//        error is returned.
+//        error is returned. TODO: Now that we are trying all the master_uris for
+//        download, should we try another master_uri if the shas do not match?
 //
 //    (3) If (1) and (2) both succeed, then the downloaded file is atomically
 //        renamed to cache_dir/<filename>
@@ -285,8 +310,16 @@ static fs::path updateTaskFile(const std::vector<std::string>& master_uris,
     if (master_uris.empty()) {
         throw Module::ProcessingError(lth_loc::format("Cannot download task. No master-uris were provided"));
     }
+
     auto tempname = cache_dir / fs::unique_path("temp_task_%%%%-%%%%-%%%%-%%%%");
-    downloadTaskFile(master_uris, client, tempname, file.get<lth_jc::JsonContainer>("uri"));
+    auto download_result = downloadTaskFile(master_uris, client, tempname, file.get<lth_jc::JsonContainer>("uri"));
+    if (!std::get<0>(download_result)) {
+        throw Module::ProcessingError(lth_loc::format(
+              "Downloading the task file {1} failed after trying all the available master-uris. Most recent error message: {2}",
+              file.get<std::string>("filename"),
+              std::get<1>(download_result)));
+    }
+
     if (sha256 != calculateSha256(tempname.string())) {
       fs::remove(tempname);
       throw Module::ProcessingError(lth_loc::format("The downloaded {1}'s sha differs from the provided sha", filename));
@@ -313,8 +346,6 @@ static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
     try {
         auto cache_dir = createCacheDir(task_cache_dir, file.get<std::string>("sha256"));
         return updateTaskFile(master_uris, client, cache_dir, file);
-    } catch (lth_curl::http_file_download_exception& e) {
-        throw Module::ProcessingError(lth_loc::format("Downloading the task file {1} failed. Reason: {2}", file.get<std::string>("filename"), e.what()));
     } catch (fs::filesystem_error& e) {
         throw toModuleProcessingError(e);
     }

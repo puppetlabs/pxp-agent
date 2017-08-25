@@ -663,8 +663,23 @@ msgstr ""
 msgid "Error while reading {1}"
 msgstr ""
 
+#. warning
+#: lib/src/modules/task.cc
+msgid "Downloading the task file from the master-uri '{1}' failed. Reason: {2}"
+msgstr ""
+
+#: lib/src/modules/task.cc
+msgid "Downloading the task file failed. Reason: {1}"
+msgstr ""
+
 #: lib/src/modules/task.cc
 msgid "Cannot download task. No master-uris were provided"
+msgstr ""
+
+#: lib/src/modules/task.cc
+msgid ""
+"Downloading the task file {1} failed after trying all the available master-"
+"uris. Most recent error message: {2}"
 msgstr ""
 
 #: lib/src/modules/task.cc
@@ -678,10 +693,6 @@ msgstr ""
 #. debug
 #: lib/src/modules/task.cc
 msgid "Verifying task file based on {1}"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid "Downloading the task file {1} failed. Reason: {2}"
 msgstr ""
 
 #. warning
