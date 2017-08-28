@@ -120,7 +120,7 @@ Task::Task(const fs::path& exec_prefix,
     actions.push_back(TASK_RUN_ACTION);
 
     PCPClient::Schema input_schema { TASK_RUN_ACTION, lth_jc::JsonContainer { TASK_RUN_ACTION_INPUT_SCHEMA } };
-    PCPClient::Schema output_schema { TASK_RUN_ACTION };
+    PCPClient::Schema output_schema { TASK_RUN_ACTION, PCPClient::TypeConstraint::String };
 
     input_validator_.registerSchema(input_schema);
     results_validator_.registerSchema(output_schema);
@@ -510,12 +510,14 @@ void Task::processOutputAndUpdateMetadata(ActionResponse& response)
     std::string &output = response.output.std_out;
 
     if (isValidUTF8(output)) {
+        // Use a temporary object to create a JSON string. The JsonContainer API doesn't
+        // provide a way to set the root to a string unless that string is already quoted.
         lth_jc::JsonContainer stdout_result;
-        stdout_result.set("output", output);
+        stdout_result.set("_output", output);
 
-        response.setValidResultsAndEnd(std::move(stdout_result));
+        response.setValidResultsAndEnd(stdout_result.get<lth_jc::JsonContainer>("_output"));
     } else {
-        LOG_DEBUG("Obtained invalid UTF-8 on stdout for the {1}; stdout:\n{3}",
+        LOG_DEBUG("Obtained invalid UTF-8 on stdout for the {1}; stdout:\n{2}",
                   response.prettyRequestLabel(), output);
         std::string execution_error {
             lth_loc::format("The task executed for the {1} returned invalid "
