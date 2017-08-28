@@ -186,7 +186,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
             0 };
         ActionRequest request { RequestType::Blocking, echo_content };
 
-        auto output = e_m.executeAction(request).action_metadata.get<std::string>("results");
+        auto output = e_m.executeAction(request).action_metadata.get<std::string>({"results", "stdout"});
         boost::trim(output);
         REQUIRE(output == "{\"message\":\"hello\"}");
     }
@@ -212,7 +212,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
             0 };
         ActionRequest request { RequestType::Blocking, echo_content };
 
-        auto output = e_m.executeAction(request).action_metadata.get<std::string>("results");
+        auto output = e_m.executeAction(request).action_metadata.get<std::string>({"results", "stdout"});
         boost::trim(output);
         REQUIRE(output == "hello");
     }
@@ -239,7 +239,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         ActionRequest request { RequestType::Blocking, echo_content };
         auto response = e_m.executeAction(request);
 
-        auto output = response.action_metadata.get<std::string>("results");
+        auto output = response.action_metadata.get<std::string>({"results", "stdout"});
         boost::trim(output);
         REQUIRE(output == "hello");
         REQUIRE(response.action_metadata.get<bool>("results_are_valid"));

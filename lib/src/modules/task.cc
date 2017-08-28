@@ -120,7 +120,7 @@ Task::Task(const fs::path& exec_prefix,
     actions.push_back(TASK_RUN_ACTION);
 
     PCPClient::Schema input_schema { TASK_RUN_ACTION, lth_jc::JsonContainer { TASK_RUN_ACTION_INPUT_SCHEMA } };
-    PCPClient::Schema output_schema { TASK_RUN_ACTION, PCPClient::TypeConstraint::String };
+    PCPClient::Schema output_schema { TASK_RUN_ACTION };
 
     input_validator_.registerSchema(input_schema);
     results_validator_.registerSchema(output_schema);
@@ -512,10 +512,16 @@ void Task::processOutputAndUpdateMetadata(ActionResponse& response)
     if (isValidUTF8(output)) {
         // Use a temporary object to create a JSON string. The JsonContainer API doesn't
         // provide a way to set the root to a string unless that string is already quoted.
-        lth_jc::JsonContainer stdout_result;
-        stdout_result.set("_output", output);
+        lth_jc::JsonContainer result;
+        result.set("exitcode", response.output.exitcode);
+        if (!output.empty()) {
+            result.set("stdout", output);
+        }
+        if (!response.output.std_err.empty()) {
+            result.set("stderr", response.output.std_err);
+        }
 
-        response.setValidResultsAndEnd(stdout_result.get<lth_jc::JsonContainer>("_output"));
+        response.setValidResultsAndEnd(std::move(result));
     } else {
         LOG_DEBUG("Obtained invalid UTF-8 on stdout for the {1}; stdout:\n{2}",
                   response.prettyRequestLabel(), output);
