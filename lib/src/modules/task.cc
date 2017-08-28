@@ -510,12 +510,19 @@ void Task::processOutputAndUpdateMetadata(ActionResponse& response)
     std::string &output = response.output.std_out;
 
     if (isValidUTF8(output)) {
-        lth_jc::JsonContainer stdout_result;
-        stdout_result.set("output", output);
+        // Return all relevant results: exitcode, stdout, stderr.
+        lth_jc::JsonContainer result;
+        result.set("exitcode", response.output.exitcode);
+        if (!output.empty()) {
+            result.set("stdout", output);
+        }
+        if (!response.output.std_err.empty()) {
+            result.set("stderr", response.output.std_err);
+        }
 
-        response.setValidResultsAndEnd(std::move(stdout_result));
+        response.setValidResultsAndEnd(std::move(result));
     } else {
-        LOG_DEBUG("Obtained invalid UTF-8 on stdout for the {1}; stdout:\n{3}",
+        LOG_DEBUG("Obtained invalid UTF-8 on stdout for the {1}; stdout:\n{2}",
                   response.prettyRequestLabel(), output);
         std::string execution_error {
             lth_loc::format("The task executed for the {1} returned invalid "
