@@ -73,7 +73,7 @@ static const std::string TASK_RUN_ACTION_INPUT_SCHEMA { R"(
     "input": {
       "type": "object"
     },
-    "inputFormat": {
+    "input_method": {
       "type": "string"
     }
   },
@@ -433,25 +433,25 @@ void Task::callNonBlockingAction(
 ActionResponse Task::callAction(const ActionRequest& request)
 {
     auto task_execution_params = request.params();
-    auto task_input_format = task_execution_params.includes("inputFormat") ?
-        task_execution_params.get<std::string>("inputFormat") : std::string{""};
+    auto task_input_method = task_execution_params.includes("input_method") ?
+        task_execution_params.get<std::string>("input_method") : std::string{""};
     std::map<std::string, std::string> task_environment;
     std::string task_input;
 
     bool has_input = false;
-    if (task_input_format.empty() || task_input_format == "stdin:json") {
+    if (task_input_method.empty() || task_input_method == "stdin") {
         task_input = task_execution_params.get<lth_jc::JsonContainer>("input").toString();
         has_input = true;
     }
 
-    if (task_input_format.empty() || task_input_format == "environment") {
+    if (task_input_method.empty() || task_input_method == "environment") {
         addParametersToEnvironment(task_execution_params.get<lth_jc::JsonContainer>("input"), task_environment);
         has_input = true;
     }
 
     if (!has_input) {
         throw Module::ProcessingError {
-            lth_loc::format("unsupported task input format: {1}", task_input_format) };
+            lth_loc::format("unsupported task input method: {1}", task_input_method) };
     }
 
     auto task_command = getTaskCommand(

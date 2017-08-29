@@ -703,7 +703,7 @@ msgid ""
 msgstr ""
 
 #: lib/src/modules/task.cc
-msgid "unsupported task input format: {1}"
+msgid "unsupported task input method: {1}"
 msgstr ""
 
 #. debug
