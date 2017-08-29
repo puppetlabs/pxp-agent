@@ -341,6 +341,8 @@ TEST_CASE("Configuration::validate", "[configuration]") {
         REQUIRE(fs::exists(test_task_cache_dir));
 #ifndef _WIN32
         REQUIRE(fs::status(test_task_cache_dir).permissions() == 0750);
+#else
+        REQUIRE(fs::status(test_task_cache_dir).permissions() == 0666);
 #endif
 
         fs::remove_all(test_task_cache_dir);

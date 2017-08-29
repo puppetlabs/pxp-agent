@@ -104,10 +104,8 @@ static const std::string DEFAULT_SPOOL_DIR_PURGE_TTL { "14d" };
 
 static const std::string AGENT_CLIENT_TYPE { "agent" };
 
-#ifndef _WIN32
 const fs::perms NIX_FILE_PERMS { fs::owner_read | fs::owner_write | fs::group_read };
 const fs::perms NIX_DIR_PERMS  { NIX_FILE_PERMS | fs::owner_exe | fs::group_exe };
-#endif
 
 //
 // Public interface
@@ -228,9 +226,7 @@ std::string Configuration::setupLogging()
         // up logging before calling validateAndNormalizeConfiguration
         validateLogDirPath(logfile_);
         logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
-#ifndef _WIN32
         fs::permissions(logfile_, NIX_FILE_PERMS);
-#endif
 
         log_stream = &logfile_fstream_;
     } else {
@@ -243,9 +239,7 @@ std::string Configuration::setupLogging()
         pcp_access_fstream_ptr_.reset(
             new boost::nowide::ofstream(pcp_access_logfile_.c_str(),
                                         std::ios_base::app));
-#ifndef _WIN32
         fs::permissions(pcp_access_logfile_, NIX_FILE_PERMS);
-#endif
     }
 
 #ifndef _WIN32
@@ -936,7 +930,6 @@ void Configuration::validateAndNormalizeOtherSettings()
 
     fs::path task_cache_dir_path { lth_file::tilde_expand(task_cache_dir) };
     check_and_create_dir(task_cache_dir_path, "task-cache-dir", true);
-#ifndef _WIN32
     try {
         fs::permissions(task_cache_dir_path, NIX_DIR_PERMS);
     } catch (const fs::filesystem_error& e) {
@@ -944,7 +937,6 @@ void Configuration::validateAndNormalizeOtherSettings()
                 lth_loc::format("Failed to make the task-cache-dir '{1}' user/group readable and executable, and user writable during configuration validation: {2}",
                             task_cache_dir_path.string(), e.what()) };
     }
-#endif
 
     HW::SetFlag<std::string>("task-cache-dir", task_cache_dir_path.string());
 

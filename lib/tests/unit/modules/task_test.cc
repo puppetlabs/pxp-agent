@@ -409,6 +409,8 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         REQUIRE(fs::is_directory(cache));
 #ifndef _WIN32
         REQUIRE(fs::status(cache).permissions() == 0750);
+#else
+        REQUIRE(fs::status(cache).permissions() == 0666);
 #endif
     }
 }
