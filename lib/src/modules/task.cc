@@ -20,6 +20,10 @@
 
 #include <tuple>
 
+#ifdef __sun
+#include <sys/stat.h>
+#endif
+
 namespace PXPAgent {
 namespace Modules {
 
@@ -257,7 +261,15 @@ static std::tuple<bool, std::string> downloadTaskFile(const std::vector<std::str
         // timeout from connection after one minute, can configure
         req.connection_timeout(60000);
         try {
-#ifndef _WIN32
+#ifdef __sun
+            client.download_file(req, file_path.string(), NIX_TASK_FILE_PERMS);
+            // fs::permissions removes all permissions on Solaris. Use chmod directly to fix them as a workaround.
+            auto err = chmod(file_path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP);
+            if (err) {
+                throw fs::filesystem_error("Failed to update mode of + " + file_path.string(),
+                    boost::system::error_code(errno, boost::system::system_category()));
+            }
+#elif !defined(_WIN32)
             client.download_file(req, file_path.string(), NIX_TASK_FILE_PERMS);
 #else
             client.download_file(req, file_path.string());
@@ -301,7 +313,14 @@ static fs::path updateTaskFile(const std::vector<std::string>& master_uris,
     auto filepath = cache_dir / filename;
 
     if (fs::exists(filepath) && sha256 == calculateSha256(filepath.string())) {
-#ifndef _WIN32
+#ifdef __sun
+        // fs::permissions removes all permissions on Solaris. Use chmod directly as a workaround.
+        auto err = chmod(filepath.c_str(), S_IRWXU | S_IRGRP | S_IXGRP);
+        if (err) {
+            throw fs::filesystem_error("Failed to update mode of + " + filepath.string(),
+                boost::system::error_code(errno, boost::system::system_category()));
+        }
+#elif !defined(_WIN32)
         fs::permissions(filepath, NIX_TASK_FILE_PERMS);
 #endif
         return filepath;
