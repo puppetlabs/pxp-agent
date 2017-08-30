@@ -38,7 +38,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for it to be
 
   step 'Wait until Puppet starts executing' do
     agents.each do |agent|
-      wait_for_sleep_process(agent)
+      wait_for_sleep_process(agent, SECONDS_TO_SLEEP)
     end
   end
 
@@ -73,7 +73,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for it to be
 
       # Also halt the sleep process here, as on Windows the parent process won't exit while the child process
       # has an open handle shared with it (the stdout pipe).
-      stop_sleep_process(agent)
+      stop_sleep_process(agent, SECONDS_TO_SLEEP)
     end
   end
 

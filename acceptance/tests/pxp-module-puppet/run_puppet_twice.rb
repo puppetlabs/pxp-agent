@@ -13,7 +13,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
   environment_name = mk_tmp_environment(env_name)
 
   teardown do
-    stop_sleep_process(agents, true)
+    stop_sleep_process(agents, SECONDS_TO_SLEEP, true)
   end
 
   step 'On master, create a new environment that will result in a slow run' do
@@ -47,7 +47,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
 
   step 'Wait until Puppet starts executing' do
     agents.each do |agent|
-      wait_for_sleep_process(agent)
+      wait_for_sleep_process(agent, SECONDS_TO_SLEEP)
     end
   end
 
@@ -113,7 +113,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
   end
 
   step 'Signal sleep process to end so 1st Puppet run will complete' do
-    stop_sleep_process(agents)
+    stop_sleep_process(agents, SECONDS_TO_SLEEP)
   end
 
   target_identities.zip(transaction_ids).each do |identity, transaction_id|
