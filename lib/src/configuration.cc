@@ -12,6 +12,7 @@
 #include <leatherman/file_util/file.hpp>
 
 #include <leatherman/util/strings.hpp>
+#include <leatherman/util/uri.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
 
@@ -817,13 +818,6 @@ static void validate_wss(std::string const& uri, std::string const& name)
             lth_loc::format("{1} value \"{2}\" must start with wss://", name, uri) };
 }
 
-static void validate_https(std::string const& uri, std::string const& name)
-{
-    if (uri.find("https://") != 0)
-        throw Configuration::Error {
-            lth_loc::format("{1} value \"{2}\" must start with https://", name, uri) };
-}
-
 void Configuration::validateAndNormalizeWebsocketSettings()
 {
     // Check the broker's WebSocket URI
@@ -841,8 +835,19 @@ void Configuration::validateAndNormalizeWebsocketSettings()
         }
     }
 
-    for (auto const& uri : master_uris_) {
-        validate_https(uri, "master-uris");
+    for (auto &uri : master_uris_) {
+        auto parsed = lth_util::uri(uri);
+        if (parsed.protocol.empty()) {
+            parsed.protocol = "https";
+        } else if (parsed.protocol != "https") {
+            throw Configuration::Error {
+                lth_loc::format("master-uris value \"{1}\" must start with https://", uri) };
+        }
+
+        if (parsed.port.empty()) {
+            parsed.port = "8140";
+        }
+        uri = parsed.str();
     }
 
     if (broker_ws_uris_.empty())
