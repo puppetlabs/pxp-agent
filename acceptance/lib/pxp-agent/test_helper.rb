@@ -438,17 +438,17 @@ def get_process_pids(host, process)
   pids
 end
 
-def wait_for_sleep_process(target)
+def wait_for_sleep_process(target, seconds_to_sleep)
   begin
     ps_cmd = target['platform'] =~ /win/ ? 'ps -efW' : 'ps -ef'
-    sleep_process = target['platform'] =~ /win/ ? 'PING' : '/bin/sleep'
+    sleep_process = target['platform'] =~ /win/ ? 'PING' : " /bin/sleep #{seconds_to_sleep}"
     retry_on(target, "#{ps_cmd} | grep '#{sleep_process}' | grep -v 'grep'", {:max_retries => 120, :retry_interval => 1})
   rescue
     raise("After triggering a puppet run on #{target} the expected sleep process did not appear in process list")
   end
 end
 
-def stop_sleep_process(targets, accept_no_pid_found = false)
+def stop_sleep_process(targets, seconds_to_sleep, accept_no_pid_found = false)
   targets = [targets].flatten
 
   targets.each do |target|
@@ -458,7 +458,7 @@ def stop_sleep_process(targets, accept_no_pid_found = false)
     when /win/
       command = "ps -efW | grep PING | sed 's/^[^0-9]*[0-9]*[^0-9]*//g' | cut -d ' ' -f1"
     else
-      command = "ps -ef | grep 'bin/sleep ' | grep -v 'grep' | grep -v 'true' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
+      command = "ps -ef | grep ' /bin/sleep #{seconds_to_sleep}' | grep -v 'grep' | grep -v 'true' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
     end
 
     # A failed test may leave an orphaned sleep process, handle multiple matches.

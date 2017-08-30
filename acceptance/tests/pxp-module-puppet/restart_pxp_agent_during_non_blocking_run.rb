@@ -14,7 +14,7 @@ test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent serv
 
   teardown do
     unless applicable_agents.empty? then
-      stop_sleep_process(applicable_agents, true)
+      stop_sleep_process(applicable_agents, SECONDS_TO_SLEEP, true)
     end
   end
 
@@ -64,7 +64,7 @@ test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent serv
     end
 
     step 'Wait to ensure that Puppet has time to execute manifest' do
-      wait_for_sleep_process(agent)
+      wait_for_sleep_process(agent, SECONDS_TO_SLEEP)
     end
 
     step "Restart pxp-agent service on #{agent}" do
@@ -77,7 +77,7 @@ test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent serv
     end
 
     step 'Signal sleep process to end so Puppet run will complete' do
-      stop_sleep_process(agent)
+      stop_sleep_process(agent, SECONDS_TO_SLEEP)
     end
 
     step 'Check response of puppet run' do
