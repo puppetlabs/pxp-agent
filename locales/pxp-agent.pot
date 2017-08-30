@@ -710,7 +710,7 @@ msgstr ""
 #: lib/src/modules/task.cc
 msgid ""
 "Obtained invalid UTF-8 on stdout for the {1}; stdout:\n"
-"{3}"
+"{2}"
 msgstr ""
 
 #: lib/src/modules/task.cc
