@@ -463,8 +463,8 @@ module Pxp
       output_files = args["output_files"]
       if output_files
         begin
-          $stdout.reopen(File.open(output_files["stdout"], 'w'))
-          $stderr.reopen(File.open(output_files["stderr"], 'w'))
+          $stdout.reopen(File.open(output_files["stdout"], 'w', 0640))
+          $stderr.reopen(File.open(output_files["stderr"], 'w', 0640))
         rescue => e
           print make_error_result(DEFAULT_EXITCODE, Errors::InvalidJson,
                                   "Could not open output files: #{e.message}").to_json
@@ -486,7 +486,7 @@ module Pxp
           $stdout.fsync
           $stderr.fsync
           begin
-            File.open(output_files["exitcode"], 'w') do |f|
+            File.open(output_files["exitcode"], 'w', 0640) do |f|
               f.puts(status)
             end
           rescue => e
