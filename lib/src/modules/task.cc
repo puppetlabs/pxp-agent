@@ -6,7 +6,7 @@
 #include <leatherman/file_util/file.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/hex.hpp>
 #include <boost/nowide/cstdio.hpp>
 #include <boost/system/error_code.hpp>
 
@@ -180,31 +180,38 @@ static fs::path createCacheDir(const fs::path& task_cache_dir, const std::string
 // Computes the sha256 of the file denoted by path. Assumes that
 // the file designated by "path" exists.
 static std::string calculateSha256(const std::string& path) {
-    const std::streamsize CHUNK_SIZE = 2 << 14;
-    char buffer[CHUNK_SIZE];
+    auto mdctx = EVP_MD_CTX_create();
+
+    EVP_DigestInit_ex(mdctx, EVP_sha256(), nullptr);
+    {
+        constexpr std::streamsize CHUNK_SIZE = 0x8000;  // 32 kB
+        char buffer[CHUNK_SIZE];
+        boost::nowide::ifstream ifs(path);
+
+        while (ifs.read(buffer, CHUNK_SIZE)) {
+            EVP_DigestUpdate(mdctx, buffer, CHUNK_SIZE);
+        }
+        if (!ifs.eof()) {
+            EVP_MD_CTX_destroy(mdctx);
+            throw Module::ProcessingError(lth_loc::format("Error while reading {1}", path));
+        }
+        EVP_DigestUpdate(mdctx, buffer, ifs.gcount());
+    }
+
     unsigned char md_value[EVP_MAX_MD_SIZE];
     unsigned int md_len;
 
-    auto md = EVP_sha256();
-    auto mdctx = EVP_MD_CTX_create();
-    EVP_DigestInit_ex(mdctx, md, nullptr);
-    boost::nowide::ifstream ifs(path);
-    while (ifs.read(buffer, CHUNK_SIZE)) {
-      EVP_DigestUpdate(mdctx, buffer, CHUNK_SIZE);
-    }
-    if (!ifs.eof()) {
-      throw Module::ProcessingError(lth_loc::format("Error while reading {1}", path));
-    }
-    EVP_DigestUpdate(mdctx, buffer, ifs.gcount());
     EVP_DigestFinal_ex(mdctx, md_value, &md_len);
     EVP_MD_CTX_destroy(mdctx);
 
-    char md_value_ascii[2*EVP_MAX_MD_SIZE+1] = {'\0'};
-    constexpr size_t hexlen = 3;
-    for (unsigned int i = 0; i < md_len; ++i) {
-      snprintf(md_value_ascii+2*i, hexlen, "%02x", md_value[i]);
-    }
-    return std::string(md_value_ascii);
+    std::string md_value_hex;
+
+    md_value_hex.reserve(2*md_len);
+    // TODO use boost::algorithm::hex_lower and drop the std::transform below when we upgrade to boost 1.62.0 or newer
+    alg::hex(md_value, md_value+md_len, std::back_inserter(md_value_hex));
+    std::transform(md_value_hex.begin(), md_value_hex.end(), md_value_hex.begin(), ::tolower);
+
+    return md_value_hex;
 }
 
 static std::string createUrlEndpoint(const lth_jc::JsonContainer& uri) {
