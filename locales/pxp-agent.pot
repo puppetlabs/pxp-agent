@@ -583,7 +583,6 @@ msgstr ""
 
 #: lib/src/external_module.cc
 #: lib/src/module.cc
-#: lib/src/modules/task.cc
 msgid "(empty)"
 msgstr ""
 
@@ -595,7 +594,6 @@ msgid ""
 msgstr ""
 
 #: lib/src/external_module.cc
-#: lib/src/modules/task.cc
 msgid "failed to write output on file"
 msgstr ""
 
@@ -693,13 +691,6 @@ msgstr ""
 #. debug
 #: lib/src/modules/task.cc
 msgid "Verifying task file based on {1}"
-msgstr ""
-
-#. warning
-#: lib/src/modules/task.cc
-msgid ""
-"The task wrapper process failed to write output on file for the {1}; stdout: "
-"{2}; stderr: {3}"
 msgstr ""
 
 #: lib/src/modules/task.cc
