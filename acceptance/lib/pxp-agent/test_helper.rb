@@ -504,21 +504,21 @@ def start_puppet_non_blocking_request(broker, targets, environment = 'production
 end
 
 def check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval, &block)
-  run_result = nil
+  run_result = rpc_action_status = nil
   query_attempts = 0
-  until (query_attempts == max_retries || run_result) do
+  loop do
     query_responses = rpc_blocking_request(broker, [identity],
                                            'status', 'query', {:transaction_id => transaction_id})
     action_result = query_responses[identity][:data]['results']
     assert(action_result, "Response to status query was an error: #{query_responses[identity][:data]}")
-    if (action_result.has_key?('stdout') && (action_result['stdout'] != ""))
+    if action_result.has_key?('exitcode')
       rpc_action_status = action_result['status']
       run_result = action_result['stdout']
+      break
     end
     query_attempts += 1
-    if (!run_result)
-      sleep query_interval
-    end
+    break if query_attempts >= max_retries
+    sleep query_interval
   end
 
   fail("Run puppet non-blocking transaction did not contain stdout of puppet run after #{query_attempts} attempts " \

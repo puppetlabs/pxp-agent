@@ -46,6 +46,7 @@ def pxp_config_json(broker, agent, ssl_config = {})
   end
   { "broker-ws-uri" => ssl_config[:broker_ws_uri],
     "pcp-version" => PCP_VERSION,
+    "loglevel" => logger.is_debug? ? "debug" : "info",
     "ssl-key" => ssl_config[:ssl_key],
     "ssl-ca-cert" => ssl_config[:ssl_ca_cert],
     "ssl-cert" => ssl_config[:ssl_cert]
@@ -67,6 +68,7 @@ def pxp_config_hash_using_puppet_certs(broker, agent, num_brokers=1)
     return {
       "broker-ws-uris" => broker_uris,
       "pcp-version" => PCP_VERSION,
+      "loglevel" => logger.is_debug? ? "debug" : "info",
       "ssl-key" => "#{puppet_ssldir}/private_keys/#{agent}.pem",
       "ssl-ca-cert" => "#{puppet_ssldir}/certs/ca.pem",
       "ssl-cert" => "#{puppet_ssldir}/certs/#{agent}.pem"
