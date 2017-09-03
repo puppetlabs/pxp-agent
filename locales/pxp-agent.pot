@@ -661,6 +661,10 @@ msgstr ""
 msgid "Error while reading {1}"
 msgstr ""
 
+#: lib/src/modules/task.cc
+msgid "{1} returned a response with HTTP status {2}. Response body: {3}"
+msgstr ""
+
 #. warning
 #: lib/src/modules/task.cc
 msgid "Downloading the task file from the master-uri '{1}' failed. Reason: {2}"

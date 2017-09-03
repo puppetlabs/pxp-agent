@@ -260,7 +260,14 @@ static std::tuple<bool, std::string> downloadTaskFile(const std::vector<std::str
         // timeout from connection after one minute, can configure
         req.connection_timeout(60000);
         try {
-            client.download_file(req, file_path.string(), NIX_TASK_FILE_PERMS);
+            lth_curl::response resp;
+            client.download_file(req, file_path.string(), resp, NIX_TASK_FILE_PERMS);
+            if (resp.status_code() >= 400) {
+                throw lth_curl::http_file_download_exception(
+                    req,
+                    file_path.string(),
+                    lth_loc::format("{1} returned a response with HTTP status {2}. Response body: {3}", url, resp.status_code(), resp.body()));
+            }
         } catch (lth_curl::http_file_download_exception& e) {
             // Server-side error, do nothing here -- we want to try the next master-uri.
             LOG_WARNING("Downloading the task file from the master-uri '{1}' failed. Reason: {2}", master_uri, e.what());
