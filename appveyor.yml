@@ -1,5 +1,5 @@
 environment:
-  LEATHERMAN_VERSION: 1.2.0
+  LEATHERMAN_VERSION: 1.2.1
   CPP_PCP_CLIENT_VERSION: 1.5.4
 
 install:
