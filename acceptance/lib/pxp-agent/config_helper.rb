@@ -69,7 +69,8 @@ def pxp_config_hash_using_puppet_certs(broker, agent, num_brokers=1)
       "pcp-version" => PCP_VERSION,
       "ssl-key" => "#{puppet_ssldir}/private_keys/#{agent}.pem",
       "ssl-ca-cert" => "#{puppet_ssldir}/certs/ca.pem",
-      "ssl-cert" => "#{puppet_ssldir}/certs/#{agent}.pem"
+      "ssl-cert" => "#{puppet_ssldir}/certs/#{agent}.pem",
+      "master-uris" => ["#{master}"]
     }
   end
 end

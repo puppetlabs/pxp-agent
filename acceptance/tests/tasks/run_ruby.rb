@@ -21,7 +21,7 @@ test_name 'run ruby task' do
   end
 
   step 'Run ruby task on agent hosts' do
-    run_task(master, agents, 'echo', 'init.rb', @sha256, {:data => [1, 2, 3]}) do |stdout|
+    run_successful_task(master, agents, 'echo', 'init.rb', @sha256, {:data => [1, 2, 3]}) do |stdout|
       json, data = stdout.delete("\r").split("\n")
       assert_equal('{"data":[1,2,3]}', json, "Output did not contain 'data'")
       assert_equal('[1,2,3]', data, "Output did not contain 'data'")
