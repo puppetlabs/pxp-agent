@@ -87,7 +87,6 @@ static const std::string TASK_WRAPPER_EXECUTABLE { "task_wrapper.exe" };
 #else
 static const std::string TASK_WRAPPER_EXECUTABLE { "task_wrapper" };
 #endif
-static const int TASK_WRAPPER_FILE_ERROR_EC { 5 };
 
 // Hard-code interpreters on Windows. On non-Windows, we still rely on permissions and #!
 static const std::map<std::string, std::function<TaskCommand(std::string)>> BUILTIN_TASK_INTERPRETERS {
@@ -261,7 +260,14 @@ static std::tuple<bool, std::string> downloadTaskFile(const std::vector<std::str
         // timeout from connection after one minute, can configure
         req.connection_timeout(60000);
         try {
-            client.download_file(req, file_path.string(), NIX_TASK_FILE_PERMS);
+            lth_curl::response resp;
+            client.download_file(req, file_path.string(), resp, NIX_TASK_FILE_PERMS);
+            if (resp.status_code() >= 400) {
+                throw lth_curl::http_file_download_exception(
+                    req,
+                    file_path.string(),
+                    lth_loc::format("{1} returned a response with HTTP status {2}. Response body: {3}", url, resp.status_code(), resp.body()));
+            }
         } catch (lth_curl::http_file_download_exception& e) {
             // Server-side error, do nothing here -- we want to try the next master-uri.
             LOG_WARNING("Downloading the task file from the master-uri '{1}' failed. Reason: {2}", master_uri, e.what());
@@ -404,20 +410,6 @@ void Task::callNonBlockingAction(
             lth_exec::execution_options::create_detached_process,
             lth_exec::execution_options::merge_environment,
             lth_exec::execution_options::inherit_locale });  // options
-
-    if (exec.exit_code == TASK_WRAPPER_FILE_ERROR_EC) {
-        // This is unexpected. The output of the task will not be
-        // available for future transaction status requests; we cannot
-        // provide a reliable ActionResponse.
-        std::string empty_label { lth_loc::translate("(empty)") };
-        LOG_WARNING("The task wrapper process failed to write output on file for the {1}; "
-                    "stdout: {2}; stderr: {3}",
-                    request.prettyLabel(),
-                    (exec.output.empty() ? empty_label : exec.output),
-                    (exec.error.empty() ? empty_label : exec.error));
-        throw Module::ProcessingError {
-            lth_loc::translate("failed to write output on file") };
-    }
 
     // Stdout / stderr output should be on file; read it
     response.output = storage_.getOutput(request.transactionId(), exec.exit_code);
