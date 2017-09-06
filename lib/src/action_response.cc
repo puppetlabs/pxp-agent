@@ -97,7 +97,7 @@ ActionResponse::ActionResponse(ModuleType module_type_,
           request_type { request.type() },
           output {},
           action_metadata { getMetadataFromRequest(request) },
-          status_query_transaction { status_query_transaction_ }
+          status_query_transaction { std::move(status_query_transaction_) }
 {
 }
 
@@ -252,10 +252,25 @@ lth_jc::JsonContainer ActionResponse::toJSON(R_T response_type) const
                     ACTION_STATUS_NAMES.at(ActionStatus::Unknown));
             }
 
-            if (!output.std_out.empty())
+            // If an execution error exists, report that instead of any results.
+            if (action_metadata.includes(EXECUTION_ERROR)) {
+                auto exec_err = action_metadata.get<std::string>(EXECUTION_ERROR);
+                if (!exec_err.empty()) {
+                    lth_jc::JsonContainer err_obj;
+                    err_obj.set("kind", "puppetlabs.pxp-agent/execution-error");
+                    err_obj.set("details", lth_jc::JsonContainer{});
+                    err_obj.set("msg", exec_err);
+                    lth_jc::JsonContainer result_obj;
+                    result_obj.set("_error", err_obj);
+                    action_results.set("stdout", result_obj.toString());
+                }
+            }
+
+            if (!action_results.includes("stdout") && !output.std_out.empty())
                 action_results.set<std::string>("stdout", output.std_out);
             if (!output.std_err.empty())
                 action_results.set<std::string>("stderr", output.std_err);
+
             r.set<lth_jc::JsonContainer>(RESULTS, action_results);
 
             break;
