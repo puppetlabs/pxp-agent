@@ -1,3 +1,33 @@
+## 1.7.0
+
+This is a feature release.
+
+* [PCP-786](https://tickets.puppetlabs.com/browse/PCP-786) Send error response to status if found
+* [PCP-771](https://tickets.puppetlabs.com/browse/PCP-771) Add acceptance tests for task download
+* [PCP-785](https://tickets.puppetlabs.com/browse/PCP-785) Report task download failure for 400+ HTTP statuses
+* [#645](https://github.com/puppetlabs/pxp-agent/pull/645) Restrict permissions on spool files created by pxp-module-puppet
+* [#644](https://github.com/puppetlabs/pxp-agent/pull/644) Prevent possible leak of `env_md_ctx_st` struct
+* [PCP-782](https://tickets.puppetlabs.com/browse/PCP-782) Add port 8140 to `master-uris` if absent
+* [#639](https://github.com/puppetlabs/pxp-agent/pull/639) Update task blocking response to return all results
+* [PCP-783](https://tickets.puppetlabs.com/browse/PCP-783) Specify required sleep process more thoroughly
+* [#641](https://github.com/puppetlabs/pxp-agent/pull/641) Fix permissions hacks
+* [#635](https://github.com/puppetlabs/pxp-agent/pull/635) Support `input_method` on tasks
+* [PCP-773](https://tickets.puppetlabs.com/browse/PCP-773) Implement client-side failover for task downloads
+* [PCP-769](https://tickets.puppetlabs.com/browse/PCP-769) Download tasks from `master-uris`
+* [#629](https://github.com/puppetlabs/pxp-agent/pull/629) Update appveyor config to use maintained packages
+* [PCP-776](https://tickets.puppetlabs.com/browse/PCP-776) Detect disabled/running Puppet via lock files
+* [PCP-766](https://tickets.puppetlabs.com/browse/PCP-766) Restrict permissions on spool files, logfile
+* [#625](https://github.com/puppetlabs/pxp-agent/pull/625) Unblock acceptance tests on Japanese locale instance
+* [PCP-633](https://tickets.puppetlabs.com/browse/PCP-633) Report running if action thread is still active
+* [PCP-767](https://tickets.puppetlabs.com/browse/PCP-767) Introduce internal task module
+* [#622](https://github.com/puppetlabs/pxp-agent/pull/622) Enable running acceptance from local package
+* [PCP-768](https://tickets.puppetlabs.com/browse/PCP-768) Add `master-uris` config variable
+* [PCP-775](https://tickets.puppetlabs.com/browse/PCP-775) Enable DEP support in Windows version of PCP/PXP binaries
+* [PCP-758](https://tickets.puppetlabs.com/browse/PCP-758) Introduce puppet task support
+* [#605](https://github.com/puppetlabs/pxp-agent/pull/605) Fix the test on win-10-ent-i386
+* [#599](https://github.com/puppetlabs/pxp-agent/pull/599) Log program version and debug level at startup
+* [#583](https://github.com/puppetlabs/pxp-agent/pull/583) Add testing around exec via Puppet
+
 ## 1.6.1
 
 This is a maintenance and bug fix release.
@@ -14,7 +44,7 @@ Does not include fixes from 1.5.5.
 
 ## 1.6.0
 
-This is a feature release
+This is a feature release.
 
 * [PCP-603](https://tickets.puppetlabs.com/browse/PCP-603) Additional acceptance tests for pxp-module-puppet whitelist
 * [PCP-699](https://tickets.puppetlabs.com/browse/PCP-699) pxp-module-puppet now accepts job-id as an argument and passes it to Puppet.
