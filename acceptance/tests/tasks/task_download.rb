@@ -1,4 +1,3 @@
-require 'pxp-agent/task_helper.rb'
 require 'pxp-agent/config_helper.rb'
 require 'puppet/acceptance/environment_utils.rb'
 
@@ -69,7 +68,7 @@ test_name 'task download' do
   end
 
   step 'Ensure that the correct permissions were used when creating the tasks-cache/<sha> and tasks-cache/<sha>/<filename> directories' do
-    test_cases = { win_agents => ["init.bat", @win_sha256, '755'], nix_agents => ["init", @nix_sha256, '750'] }
+    test_cases = { win_agents => ["init.bat", @win_sha256, '666'], nix_agents => ["init", @nix_sha256, '750'] }
 
     test_cases.each do |agents, (filename, sha256, expected_mode)|
       agents.each do |agent|
