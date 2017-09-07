@@ -2,16 +2,16 @@ require 'pxp-agent/test_helper.rb'
 require 'json'
 require 'digest'
 
-def run_task(broker, target_identities, task, filename, sha256, input, input_method, path, rpc_request, expected_response_type, &check_datas)
+def run_task(broker, target_identities, task, filename, sha256, input, path, rpc_request, expected_response_type, &check_datas)
   responses =
     begin
-      data = {:task => task,
-              :input => input,
-              :files => [{:uri => {:path => path, :params => {}},
-                          :filename => filename,
-                          :sha256 => sha256}]}
-      data[:input_method] = input_method if input_method
-      rpc_request.call(broker, target_identities, 'task', 'run', data)
+      rpc_request.call(broker, target_identities,
+                               'task', 'run',
+                               {:task => task,
+                                :input => input,
+                                :files => [{:uri => {:path => path, :params => {}},
+                                            :filename => filename,
+                                            :sha256 => sha256}]})
     rescue => exception
       fail("Exception occurred when trying to run task '#{task}' on all agents: #{exception.message}")
     end
@@ -29,10 +29,10 @@ end
 
 # Runs a task on targets, and passes the output to the block for validation
 # Block should expect a map parsed from the JSON output
-def run_successful_task(broker, targets, task, filename, sha256, input = {}, input_method = nil, path = "foo", max_retries = 30, query_interval = 1, &block)
+def run_successful_task(broker, targets, task, filename, sha256, input = {}, path = "foo", max_retries = 30, query_interval = 1, &block)
   target_identities = targets.map {|agent| "pcp://#{agent}/agent"}
 
-  run_task(broker, target_identities, task, filename, sha256, input, input_method, path, method(:rpc_non_blocking_request), "http://puppetlabs.com/rpc_provisional_response") do |datas|
+  run_task(broker, target_identities, task, filename, sha256, input, path, method(:rpc_non_blocking_request), "http://puppetlabs.com/rpc_provisional_response") do |datas|
     transaction_ids = datas.map { |data| data["transaction_id"] }
     target_identities.zip(transaction_ids).map do |identity, transaction_id|
       check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval) do |stdout|
@@ -44,10 +44,10 @@ end
 
 # Runs a task that's expected to result in a PXP error. Block should
 # expect the description of the PXP error to verify.
-def run_pxp_errored_task(broker, targets, task, filename, sha256, input = {}, input_method = nil, path = "foo", &block)
+def run_pxp_errored_task(broker, targets, task, filename, sha256, input = {}, path = "foo", &block)
   target_identities = targets.map {|agent| "pcp://#{agent}/agent"}
 
-  run_task(broker, target_identities, task, filename, sha256, input, input_method, path, method(:rpc_blocking_request), "http://puppetlabs.com/rpc_error_message") do |datas|
+  run_task(broker, target_identities, task, filename, sha256, input, path, method(:rpc_blocking_request), "http://puppetlabs.com/rpc_error_message") do |datas|
     descriptions = datas.map { |data| data["description"] }
     descriptions.each { |description| block.call(description) }
   end
