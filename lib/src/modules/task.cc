@@ -137,15 +137,6 @@ static void addParametersToEnvironment(const lth_jc::JsonContainer &input, std::
     }
 }
 
-static void writeParametersToFile(lth_jc::JsonContainer const& input, std::string const& file)
-{
-    try {
-        lth_file::atomic_write_to_file(input.toString() + "\n", file, NIX_FILE_PERMS, std::ios::binary);
-    } catch (fs::filesystem_error& e) {
-        throw Module::ProcessingError(lth_loc::format("Failed to write input to file {1}: {2}", file, e.what()));
-    }
-}
-
 static TaskCommand getTaskCommand(const fs::path &task_executable)
 {
     auto builtin = BUILTIN_TASK_INTERPRETERS.find(task_executable.extension().string());
@@ -393,7 +384,7 @@ void Task::callNonBlockingAction(
     const std::string &input,
     ActionResponse &response
 ) {
-    const fs::path results_dir = request.resultsDir();
+    const fs::path &results_dir = request.resultsDir();
     lth_jc::JsonContainer wrapper_input;
 
     wrapper_input.set<std::string>("executable", command.executable);
@@ -431,7 +422,7 @@ ActionResponse Task::callAction(const ActionRequest& request)
     auto task_input_method = task_execution_params.includes("input_method") ?
         task_execution_params.get<std::string>("input_method") : std::string{""};
     std::map<std::string, std::string> task_environment;
-    std::string task_input, input_file;
+    std::string task_input;
 
     bool has_input = false;
     if (task_input_method.empty() || task_input_method == "stdin") {
@@ -441,12 +432,6 @@ ActionResponse Task::callAction(const ActionRequest& request)
 
     if (task_input_method.empty() || task_input_method == "environment") {
         addParametersToEnvironment(task_execution_params.get<lth_jc::JsonContainer>("input"), task_environment);
-        has_input = true;
-    }
-
-    if (task_input_method == "file") {
-        input_file = (fs::path(request.resultsDir()) / "input").string();
-        writeParametersToFile(task_execution_params.get<lth_jc::JsonContainer>("input"), input_file);
         has_input = true;
     }
 
@@ -460,10 +445,6 @@ ActionResponse Task::callAction(const ActionRequest& request)
                           master_uris_,
                           client_,
                           task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files")));
-    if (!input_file.empty()) {
-        task_command.arguments.push_back(input_file);
-    }
-
     ActionResponse response { ModuleType::Internal, request };
 
     if (request.type() == RequestType::Blocking) {
