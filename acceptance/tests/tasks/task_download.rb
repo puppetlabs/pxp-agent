@@ -62,7 +62,7 @@ test_name 'task download' do
         assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{sha256}")).stdout)
       end
 
-      run_successful_task(master, agents, 'echo', filename, sha256, {:message => 'hello'}, "/task-files/#{filename}") do |stdout|
+      run_successful_task(master, agents, 'echo', filename, sha256, {:message => 'hello'}, nil, "/task-files/#{filename}") do |stdout|
         assert_equal('hello', stdout.strip, "Output did not contain 'hello'")
       end
     end
@@ -86,7 +86,7 @@ test_name 'task download' do
     test_cases = { win_agents => ["init", @win_sha256, "init.bat"], nix_agents => ["init.bat", @nix_sha256, "init"] }
 
     test_cases.each do |agents, (filename, sha256, expected_file)|
-      run_pxp_errored_task(master, agents, 'echo', filename, sha256, {:message => 'hello'}, "/task-files/#{filename}") do |description|
+      run_pxp_errored_task(master, agents, 'echo', filename, sha256, {:message => 'hello'}, nil, "/task-files/#{filename}") do |description|
         assert_match(/The downloaded #{filename}'s sha differs from the provided sha/, description, 'Expected SHA version conflict was not detected')
       end
 
@@ -106,7 +106,7 @@ test_name 'task download' do
     # the corresponding test.
     assert_match(/Error 404 Not Found/, on(master, "curl -k https://#{master}:8140/task-files/non_existent_task").stdout.chomp)
 
-    run_pxp_errored_task(master, agents, 'echo', "some_file", "1234", {}, "/task-files/non_existent_task") do |description|
+    run_pxp_errored_task(master, agents, 'echo', "some_file", "1234", {}, nil, "/task-files/non_existent_task") do |description|
       assert_match(/HTTP status 404/, description, 'Expected 404 HTTP status was not detected')
       assert_match(/Error 404 Not Found/, description, 'Expected response body was not detected')
     end
