@@ -273,33 +273,6 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         REQUIRE(output == "hello");
     }
 
-    SECTION("passes input only as a file name on argv when input_method is file") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
-        auto echo_txt =
-#ifndef _WIN32
-            (DATA_FORMAT % "\"0632\""
-                         % "\"task\""
-                         % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"input_method\": \"file\", \"files\" : [{\"sha256\": \"77a33c79b7827c8c70b60dfe133977dab033e636c2211a90a7eab4aa52b56637\", \"filename\": \"file\"}]}").str();
-#else
-            (DATA_FORMAT % "\"0632\""
-                         % "\"task\""
-                         % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"input_method\": \"file\", \"files\" : [{\"sha256\": \"942295a79a7d8395c92ad3a2beaedce5a8a09765df755e774ac34304ae2b0ae6\", \"filename\": \"file.bat\"}]}").str();
-#endif
-
-        PCPClient::ParsedChunks echo_content {
-            lth_jc::JsonContainer(ENVELOPE_TXT),
-            lth_jc::JsonContainer(echo_txt),
-            {},
-            0 };
-        ActionRequest request { RequestType::Blocking, echo_content };
-
-        auto output = e_m.executeAction(request).action_metadata.get<std::string>({ "results", "stdout" });
-        boost::trim(output);
-        REQUIRE(output == "{\"message\":\"hello\"}");
-    }
-
     SECTION("succeeds on non-zero exit") {
         Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
         auto echo_txt =
@@ -366,28 +339,6 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         REQUIRE(response.output.std_out == std::string(reinterpret_cast<char*>(badchar), 3));
         REQUIRE(response.output.std_err == "");
         REQUIRE(response.output.exitcode == 0);
-    }
-
-    SECTION("errors on unknown input_method") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, {}, CA, CRT, KEY, SPOOL_DIR };
-        auto task_txt = (DATA_FORMAT % "\"0632\""
-                                     % "\"task\""
-                                     % "\"run\""
-                                     % "{\"task\": \"unparseable\", \"input\":{\"message\":\"hello\"}, "
-                                       "\"input_method\": \"foo\", "
-                                       "\"files\" : [{\"sha256\": \"some_sha\", \"filename\": \"some_file\"}]}").str();
-        PCPClient::ParsedChunks task_content {
-            lth_jc::JsonContainer(ENVELOPE_TXT),
-            lth_jc::JsonContainer(task_txt),
-            {},
-            0 };
-        ActionRequest request { RequestType::Blocking, task_content };
-        auto response = e_m.executeAction(request);
-
-        REQUIRE_FALSE(response.action_metadata.includes("results"));
-        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
-        REQUIRE(response.action_metadata.includes("execution_error"));
-        REQUIRE(boost::contains(response.action_metadata.get<std::string>("execution_error"), "unsupported task input method: foo"));
     }
 
     SECTION("errors on download when no master-uri is provided") {

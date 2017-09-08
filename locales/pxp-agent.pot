@@ -650,10 +650,6 @@ msgid "debug entry is not valid JSON"
 msgstr ""
 
 #: lib/src/modules/task.cc
-msgid "Failed to write input to file {1}: {2}"
-msgstr ""
-
-#: lib/src/modules/task.cc
 msgid "No such file or directory: {1}"
 msgstr ""
 

@@ -3,7 +3,6 @@
 This is a feature release.
 
 * [PCP-786](https://tickets.puppetlabs.com/browse/PCP-786) Send error response to status if found
-* [PCP-771](https://tickets.puppetlabs.com/browse/PCP-771) Add acceptance tests for task download
 * [PCP-785](https://tickets.puppetlabs.com/browse/PCP-785) Report task download failure for 400+ HTTP statuses
 * [#645](https://github.com/puppetlabs/pxp-agent/pull/645) Restrict permissions on spool files created by pxp-module-puppet
 * [#644](https://github.com/puppetlabs/pxp-agent/pull/644) Prevent possible leak of `env_md_ctx_st` struct
