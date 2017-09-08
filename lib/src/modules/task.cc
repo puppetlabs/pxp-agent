@@ -19,6 +19,7 @@
 #include <curl/curl.h>
 
 #include <tuple>
+#include <set>
 
 namespace PXPAgent {
 namespace Modules {
@@ -112,7 +113,7 @@ Task::Task(const fs::path& exec_prefix,
            const std::string& spool_dir) :
     storage_ { spool_dir },
     task_cache_dir_ { task_cache_dir },
-    wrapper_executable_ { (exec_prefix / TASK_WRAPPER_EXECUTABLE).string() },
+    exec_prefix_ { exec_prefix },
     master_uris_ { master_uris }
 {
     module_name = "task";
@@ -395,7 +396,7 @@ void Task::callNonBlockingAction(
     wrapper_input.set<std::string>("exitcode", (results_dir / "exitcode").string());
 
     auto exec = lth_exec::execute(
-        wrapper_executable_,
+        (exec_prefix_ / TASK_WRAPPER_EXECUTABLE).string(),
         {},
         wrapper_input.toString(),
         environment,
@@ -421,30 +422,45 @@ ActionResponse Task::callAction(const ActionRequest& request)
     auto task_execution_params = request.params();
     auto task_input_method = task_execution_params.includes("input_method") ?
         task_execution_params.get<std::string>("input_method") : std::string{""};
-    std::map<std::string, std::string> task_environment;
-    std::string task_input;
 
-    bool has_input = false;
-    if (task_input_method.empty() || task_input_method == "stdin") {
-        task_input = task_execution_params.get<lth_jc::JsonContainer>("input").toString();
-        has_input = true;
-    }
-
-    if (task_input_method.empty() || task_input_method == "environment") {
-        addParametersToEnvironment(task_execution_params.get<lth_jc::JsonContainer>("input"), task_environment);
-        has_input = true;
-    }
-
-    if (!has_input) {
+    static std::set<std::string> input_methods{{"stdin", "environment", "powershell"}};
+    if (!task_input_method.empty() && input_methods.count(task_input_method) == 0) {
         throw Module::ProcessingError {
             lth_loc::format("unsupported task input method: {1}", task_input_method) };
     }
 
-    auto task_command = getTaskCommand(
-        getCachedTaskFile(task_cache_dir_,
-                          master_uris_,
-                          client_,
-                          task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files")));
+    auto task_file = getCachedTaskFile(task_cache_dir_,
+                                       master_uris_,
+                                       client_,
+                                       task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files"));
+
+    // Use powershell input method by default if task uses .ps1 extension.
+    if (task_input_method.empty() && task_file.extension().string() == ".ps1") {
+        task_input_method = "powershell";
+    }
+
+    std::map<std::string, std::string> task_environment;
+    std::string task_input;
+    TaskCommand task_command;
+
+    if (task_input_method == "powershell") {
+        // Run using the powershell shim
+        task_command = getTaskCommand(exec_prefix_ / "powershell_shim.ps1");
+        task_command.arguments.push_back(task_file.string());
+        // Pass input on stdin ($input)
+        task_input = task_execution_params.get<lth_jc::JsonContainer>("input").toString();
+    } else {
+        if (task_input_method.empty() || task_input_method == "stdin") {
+            task_input = task_execution_params.get<lth_jc::JsonContainer>("input").toString();
+        }
+
+        if (task_input_method.empty() || task_input_method == "environment") {
+            addParametersToEnvironment(task_execution_params.get<lth_jc::JsonContainer>("input"), task_environment);
+        }
+
+        task_command = getTaskCommand(task_file);
+    }
+
     ActionResponse response { ModuleType::Internal, request };
 
     if (request.type() == RequestType::Blocking) {

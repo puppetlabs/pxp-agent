@@ -42,7 +42,9 @@ class Task : public PXPAgent::Module {
   private:
     ResultsStorage storage_;
 
-    std::string task_cache_dir_, wrapper_executable_;
+    std::string task_cache_dir_;
+
+    boost::filesystem::path exec_prefix_;
 
     std::vector<std::string> master_uris_;
 
