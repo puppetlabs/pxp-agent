@@ -1,6 +1,4 @@
 require 'puppet/acceptance/common_utils'
-require 'puppet/acceptance/install_utils'
-extend Puppet::Acceptance::InstallUtils
 require 'beaker/dsl/install_utils'
 extend Beaker::DSL::InstallUtils
 
