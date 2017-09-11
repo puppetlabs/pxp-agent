@@ -35,8 +35,27 @@ def run_successful_task(broker, targets, task, filename, sha256, input = {}, pat
   run_task(broker, target_identities, task, filename, sha256, input, path, method(:rpc_non_blocking_request), "http://puppetlabs.com/rpc_provisional_response") do |datas|
     transaction_ids = datas.map { |data| data["transaction_id"] }
     target_identities.zip(transaction_ids).map do |identity, transaction_id|
-      check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval) do |stdout|
-        block.call(stdout)
+      check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval) do |result|
+        assert_equal('success', result['status'], 'Task was expected to succeed')
+        assert_equal(nil, result['stderr'], 'Successful task expected to have no output on stderr')
+        assert_equal(0, result['exitcode'], 'Successful task expected to have exit code 0')
+        block.call(result['stdout'])
+      end
+    end
+  end
+end
+
+def run_failed_task(broker, targets, task, filename, sha256, input = {}, path = "foo", max_retries = 30, query_interval = 1, &block)
+  target_identities = targets.map {|agent| "pcp://#{agent}/agent"}
+
+  run_task(broker, target_identities, task, filename, sha256, input, path, method(:rpc_non_blocking_request), "http://puppetlabs.com/rpc_provisional_response") do |datas|
+    transaction_ids = datas.map { |data| data["transaction_id"] }
+    target_identities.zip(transaction_ids).map do |identity, transaction_id|
+      check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval) do |result|
+        assert_equal('failure', result['status'], 'Task was expected to fail')
+        assert_equal(nil, result['stdout'], 'Successful task expected to have no output on stdout')
+        assert_equal(1, result['exitcode'], 'Successful task expected to have exit code 1')
+        block.call(result['stderr'])
       end
     end
   end
@@ -62,7 +81,8 @@ end
 def create_task_on(agent, mod, task, body)
   tasks_cache = get_tasks_cache(agent)
 
-  sha256 = Digest::SHA256.hexdigest(body+"\n")
+  body += "\n" if body[-1] != "\n"
+  sha256 = Digest::SHA256.hexdigest(body)
   task_path = "#{tasks_cache}/#{sha256}"
   on agent, "mkdir -p #{task_path}"
 

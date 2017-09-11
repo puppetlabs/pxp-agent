@@ -1,4 +1,5 @@
 require 'pxp-agent/task_helper.rb'
+require 'json'
 
 test_name 'run powershell task' do
 
@@ -18,18 +19,48 @@ test_name 'run powershell task' do
     end
   end
 
+  fixtures = File.absolute_path('files')
+
   step 'Create powershell task on agent hosts' do
+    task_body = File.read(File.join(fixtures, 'complex-task.ps1'))
     windows_hosts.each do |agent|
-      task_body = "foreach ($i in $input) { Write-Output $i }\nWrite-Output $env:PT_data";
       @sha256 = create_task_on(agent, 'echo', 'init.ps1', task_body)
     end
   end
 
   step 'Run powershell task on Windows agent hosts' do
-    run_successful_task(master, windows_hosts, 'echo', 'init.ps1', @sha256, {:data => [1, 2, 3]}) do |stdout|
-      json, data = stdout.delete("\r").split("\n")
-      assert_equal('{"data":[1,2,3]}', json, "Output did not contain 'data'")
-      assert_equal('[1,2,3]', data, "Output did not contain 'data'")
+    task_input = JSON.parse(File.read(File.join(fixtures, 'complex-args.json')))
+    task_output = File.read(File.join(fixtures, 'complex-output'))
+    run_successful_task(master, windows_hosts, 'echo', 'init.ps1', @sha256, task_input) do |stdout|
+      # Handle some known variations
+      stdout.gsub!(/System\.DateTime/, 'datetime')
+      stdout.gsub!(/System\.Guid/, 'guid')
+      stdout.gsub!(/System\.TimeSpan/, 'timespan')
+
+      assert_equal(task_output, stdout, "Output did not match")
     end
   end # test step
+
+  step 'Try erroring powershell task on agent hosts' do
+    task_body = 'throw "Error trying to do a task"'
+    windows_hosts.each do |agent|
+      @sha256 = create_task_on(agent, 'echo', 'init.ps1', task_body)
+    end
+
+    run_failed_task(master, windows_hosts, 'echo', 'init.ps1', @sha256, {}) do |stderr|
+      assert_match(/Error trying to do a task/, stderr.delete("\n"), 'stderr did not contain error text')
+    end
+  end
+
+  step 'Try non-zero exit powershell task on agent hosts' do
+    # run_failed_task expects exit 1
+    task_body = 'exit 1'
+    windows_hosts.each do |agent|
+      @sha256 = create_task_on(agent, 'echo', 'init.ps1', task_body)
+    end
+
+    run_failed_task(master, windows_hosts, 'echo', 'init.ps1', @sha256, {}) do |stderr|
+      assert_equal(nil, stderr)
+    end
+  end
 end # test
