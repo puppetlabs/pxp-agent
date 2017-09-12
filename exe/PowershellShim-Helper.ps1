@@ -1,6 +1,3 @@
-#!/usr/bin/env powershell
-#requires -version 2.0
-
 # Based on v 1.7 of the JSON_1.7.psm1 from
 #
 #  > $Json = Get-Process |
@@ -8,8 +5,6 @@
 #  >> ConvertTo-Json -NoType
 #
 #  > $Json | ConvertFrom-json -Type PSObject
-
-try {
 
 Add-Type -AssemblyName System.ServiceModel.Web, System.Runtime.Serialization
 $utf8 = [System.Text.Encoding]::UTF8
@@ -150,22 +145,6 @@ Function ConvertFrom-Json2 {
   }
 }
 
-function Get-ContentAsJson
-{
-  [CmdletBinding()]
-  PARAM(
-    [Parameter(Mandatory = $true)] $Text,
-    [Parameter(Mandatory = $false)] [Text.Encoding] $Encoding = [Text.Encoding]::UTF8
-  )
-
-  # using polyfill cmdlet on PS2, so pass type info
-  if ($PSVersionTable.PSVersion -lt [Version]'3.0') {
-    $Text | ConvertFrom-Json2 -Type PSObject
-  } else {
-    $Text | ConvertFrom-Json
-  }
-}
-
 function ConvertFrom-PSCustomObject
 {
   PARAM([Parameter(ValueFromPipeline = $true)] $InputObject)
@@ -188,6 +167,22 @@ function ConvertFrom-PSCustomObject
     } else {
       $InputObject
     }
+  }
+}
+
+function Get-ContentAsJson
+{
+  [CmdletBinding()]
+  PARAM(
+    [Parameter(Mandatory = $true)] $Text,
+    [Parameter(Mandatory = $false)] [Text.Encoding] $Encoding = [Text.Encoding]::UTF8
+  )
+
+  # using polyfill cmdlet on PS2, so pass type info
+  if ($PSVersionTable.PSVersion -lt [Version]'3.0') {
+    $Text | ConvertFrom-Json2 -Type PSObject | ConvertFrom-PSCustomObject
+  } else {
+    $Text | ConvertFrom-Json | ConvertFrom-PSCustomObject
   }
 }
 
@@ -216,21 +211,3 @@ function HashtableTo-String
 
   ($Hashtable.GetEnumerator() | % { "$($_.Key): $($_.Value)" }) -join "`n"
 }
-
-$scriptArgsHash = Get-ContentAsJson ($input -join "") | ConvertFrom-PSCustomObject
-
-Write-Debug "`nTask-shim deserialized arguments to Hashtable:`n"
-
-if ($scriptArgsHash) {
-  $scriptArgsHash.GetEnumerator() | % {
-    Write-Debug "* $($_.Key) ($($_.Value.GetType())):`n$($_.Value | ConvertTo-String)"
-  }
-}
-
-& $args[0] @scriptArgsHash
-
-} catch {
-  Write-Error $_
-  if ($LASTEXITCODE -eq $null) { $LASTEXITCODE = 1 }
-}
-exit $LASTEXITCODE

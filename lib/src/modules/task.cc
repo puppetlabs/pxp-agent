@@ -445,7 +445,7 @@ ActionResponse Task::callAction(const ActionRequest& request)
 
     if (task_input_method == "powershell") {
         // Run using the powershell shim
-        task_command = getTaskCommand(exec_prefix_ / "powershell_shim.ps1");
+        task_command = getTaskCommand(exec_prefix_ / "PowershellShim.ps1");
         task_command.arguments.push_back(task_file.string());
         // Pass input on stdin ($input)
         task_input = task_execution_params.get<lth_jc::JsonContainer>("input").toString();
