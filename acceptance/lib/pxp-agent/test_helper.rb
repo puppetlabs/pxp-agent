@@ -504,7 +504,7 @@ def start_puppet_non_blocking_request(broker, targets, environment = 'production
 end
 
 def check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval, &block)
-  run_result = rpc_action_status = nil
+  run_result = nil
   query_attempts = 0
   loop do
     query_responses = rpc_blocking_request(broker, [identity],
@@ -512,8 +512,7 @@ def check_non_blocking_response(broker, identity, transaction_id, max_retries, q
     action_result = query_responses[identity][:data]['results']
     assert(action_result, "Response to status query was an error: #{query_responses[identity][:data]}")
     if action_result.has_key?('exitcode')
-      rpc_action_status = action_result['status']
-      run_result = action_result['stdout']
+      run_result = action_result
       break
     end
     query_attempts += 1
@@ -524,17 +523,16 @@ def check_non_blocking_response(broker, identity, transaction_id, max_retries, q
   fail("Run puppet non-blocking transaction did not contain stdout of puppet run after #{query_attempts} attempts " \
        "and #{query_attempts * query_interval} seconds") unless run_result
 
-  assert_equal("success", rpc_action_status, "PXP run puppet action did not have expected 'success' result")
-  # Tasks may not return a JSON object on stdout.
-  run_result = begin JSON.parse(run_result) rescue run_result end
   block.call run_result
-
   run_result
 end
 
 def check_puppet_non_blocking_response(identity, transaction_id, max_retries, query_interval,
                                        expected_result, expected_environment = 'production')
-  run_result = check_non_blocking_response(master, identity, transaction_id, max_retries, query_interval) do |stdout|
+  run_result = check_non_blocking_response(master, identity, transaction_id, max_retries, query_interval) do |run_result|
+    assert_equal("success", run_result['status'], "PXP run puppet action did not have expected 'success' result")
+
+    stdout = JSON.parse(run_result['stdout'])
     puppet_run_result = stdout['status']
     puppet_run_environment = stdout['environment']
     assert_equal(expected_environment, stdout['environment'], "Puppet run did not use the expected environment")

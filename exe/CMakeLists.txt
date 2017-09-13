@@ -22,6 +22,18 @@ install(TARGETS task_wrapper DESTINATION bin)
 add_executable(task_wrapper-tests tests/main.cc)
 target_link_libraries(task_wrapper-tests ${TASK_WRAPPER_LIBS})
 
+# Copy powershell shim to bin so we can use with local testing.
+foreach(shim PowershellShim.ps1 PowershellShim-Helper.ps1)
+    set(shim_local ${CMAKE_BINARY_DIR}/bin/${shim})
+    add_custom_command(
+        OUTPUT ${shim_local}
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${shim} ${shim_local}
+        DEPENDS ${shim})
+    add_custom_target(${shim} ALL DEPENDS ${shim_local})
+    install(FILES ${shim} DESTINATION bin
+        PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+endforeach(shim)
+
 add_test(
     NAME "task\\ wrapper\\ tests"
     COMMAND "${EXECUTABLE_OUTPUT_PATH}/task_wrapper-tests"
