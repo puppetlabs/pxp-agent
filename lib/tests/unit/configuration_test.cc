@@ -32,11 +32,13 @@ static const std::string MULTI_BROKER_CONFIG { std::string { PXP_AGENT_ROOT_PATH
 static const std::string DUPLICATE_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
                                             + "/lib/tests/resources/config/duplicate.conf" };
 static const std::string BAD_BROKER_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
-                                          + "/lib/tests/resources/config/bad-broker.conf" };
+                                             + "/lib/tests/resources/config/bad-broker.conf" };
 static const std::string BAD_MASTER_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
-                                          + "/lib/tests/resources/config/bad-master.conf" };
+                                             + "/lib/tests/resources/config/bad-master.conf" };
 static const std::string INVALID_CONFIG_NAME { std::string { PXP_AGENT_ROOT_PATH }
-                                          + "/lib/tests/resources/config/foo.cfg" };
+                                               + "/lib/tests/resources/config/foo.cfg" };
+static const std::string UNKNOWN_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
+                                          + "/lib/tests/resources/config/unknown.conf" };
 static const std::string TEST_BROKER_WS_URI { "wss:///test_c_t_h_u_n_broker" };
 static const std::string CA { getCaPath() };
 static const std::string CERT { getCertPath() };
@@ -44,11 +46,11 @@ static const std::string KEY { getKeyPath() };
 static const std::string MODULES_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                        + "/lib/tests/resources/modules/" };
 static const std::string MODULES_CONFIG_DIR { std::string { PXP_AGENT_ROOT_PATH }
-                                       + "/lib/tests/resources/modules_config" };
+                                              + "/lib/tests/resources/modules_config" };
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
 static const std::string TASK_CACHE_DIR { std::string { PXP_AGENT_ROOT_PATH }
-                                     + "/lib/tests/resources/test_task_cache" };
+                                          + "/lib/tests/resources/test_task_cache" };
 
 
 static const char* ARGV[] = {
@@ -371,6 +373,30 @@ TEST_CASE("Configuration::validate", "[configuration]") {
         REQUIRE(fs::exists(test_spool));
 
         fs::remove_all(test_spool);
+    }
+}
+
+TEST_CASE("Configuration::validate with unknown config options", "[configuration]") {
+    const char* altArgv[] = {
+    "test-command",
+    "--config-file", UNKNOWN_CONFIG.data(),
+    "--ssl-ca-cert", CA.data(),
+    "--ssl-cert", CERT.data(),
+    "--ssl-key", KEY.data(),
+    "--modules-dir", MODULES_DIR.data(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.data(),
+    "--spool-dir", SPOOL_DIR.data(),
+    "--task-cache-dir", TASK_CACHE_DIR.data(),
+    "--foreground=true",
+    nullptr };
+    const int altArgc = 18;
+
+    lth_util::scope_exit config_cleaner { resetTest };
+    configureTest();
+    Configuration::Instance().parseOptions(altArgc, const_cast<char**>(altArgv));
+
+    SECTION("it validates") {
+        REQUIRE_NOTHROW(Configuration::Instance().validate());
     }
 }
 

@@ -813,9 +813,8 @@ void Configuration::parseConfigFile()
                 });
                 continue;
             } else {
-                throw Configuration::Error {
-                    lth_loc::format("field '{1}' is not a valid configuration variable",
-                                    key) };
+                LOG_INFO("Ignoring unrecognized option '{1}'", key);
+                continue;
             }
         }
 

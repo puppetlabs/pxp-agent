@@ -333,8 +333,9 @@ msgstr ""
 msgid "array of strings"
 msgstr ""
 
+#. info
 #: lib/src/configuration.cc
-msgid "field '{1}' is not a valid configuration variable"
+msgid "Ignoring unrecognized option '{1}'"
 msgstr ""
 
 #: lib/src/configuration.cc
