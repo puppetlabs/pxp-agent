@@ -25,10 +25,14 @@
 #include <boost/nowide/iostream.hpp>
 
 #ifdef _WIN32
+    #include <leatherman/windows/file_util.hpp>
     #include <leatherman/windows/system_error.hpp>
+    #include <leatherman/windows/user.hpp>
     #include <leatherman/windows/windows.hpp>
     #undef ERROR
     #include <Shlobj.h>
+#else
+    #include <leatherman/util/environment.hpp>
 #endif
 
 namespace PXPAgent {
@@ -48,21 +52,22 @@ namespace lth_util = leatherman::util;
 #ifdef _WIN32
     namespace lth_w = leatherman::windows;
     static const fs::path DATA_DIR = []() {
-        wchar_t szPath[MAX_PATH+1];
-        if (FAILED(SHGetFolderPathW(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szPath))) {
-            throw Configuration::Error {
-                lth_loc::format("failure getting Windows AppData directory: {1}",
-                                lth_w::system_error()) };
+        if (lth_w::user::is_admin()) {
+            try {
+                return fs::path(lth_w::file_util::get_programdata_dir()) / "PuppetLabs" / "pxp-agent";
+            } catch (lth_w::file_util::unknown_folder_exception &e) {
+                throw Configuration::Error {
+                    lth_loc::format("failure getting Windows AppData directory: {1}", e.what()) };
+            }
+        } else {
+            auto home = lth_w::user::home_dir();
+            if (!home.empty()) {
+                return fs::path(home) / ".puppetlabs" / "pxp-agent";
+            }
+            throw Configuration::Error { lth_loc::format("failure getting HOME directory") };
         }
-        return fs::path(szPath) / "PuppetLabs" / "pxp-agent";
     }();
 
-    static const fs::path DEFAULT_CONF_DIR { DATA_DIR / "etc" };
-    const std::string DEFAULT_SPOOL_DIR { (DATA_DIR / "var" / "spool").string() };
-    static const std::string DEFAULT_LOG_FILE {
-        (DATA_DIR / "var" / "log" / "pxp-agent.log").string() };
-    static const std::string DEFAULT_PCP_ACCESS_FILE {
-        (DATA_DIR / "var" / "log" / "pcp-access.log").string() };
 
     static const std::string DEFAULT_MODULES_DIR = []() {
         wchar_t szPath[MAX_PATH];
@@ -85,21 +90,41 @@ namespace lth_util = leatherman::util;
         }
     }();
 
-    static const std::string DEFAULT_TASK_CACHE_DIR { (DATA_DIR / "tasks-cache").string() };
 #else
-    static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
-    const std::string DEFAULT_SPOOL_DIR { "/opt/puppetlabs/pxp-agent/spool" };
-    static const std::string DEFAULT_PID_FILE { "/var/run/puppetlabs/pxp-agent.pid" };
-    static const std::string DEFAULT_LOG_FILE { "/var/log/puppetlabs/pxp-agent/pxp-agent.log" };
-    static const std::string DEFAULT_PCP_ACCESS_FILE { "/var/log/puppetlabs/pxp-agent/pcp-access.log" };
+    static const fs::path DATA_DIR = []() {
+        if (getuid()) {
+            std::string home;
+            if (lth_util::environment::get("HOME", home)) {
+                return fs::path(home) / ".puppetlabs" / "pxp-agent";
+            }
+            throw Configuration::Error { lth_loc::format("failure getting HOME directory") };
+        } else {
+            return fs::path();
+        }
+    }();
+
+    static const std::string DEFAULT_PID_FILE { DATA_DIR.empty() ?
+        std::string("/var/run/puppetlabs/pxp-agent.pid") :
+        (DATA_DIR / "var" / "run" / "pxp-agent.pid").string() };
     static const std::string DEFAULT_MODULES_DIR { "/opt/puppetlabs/pxp-agent/modules" };
-    static const std::string DEFAULT_TASK_CACHE_DIR { "/opt/puppetlabs/pxp-agent/tasks-cache" };
 #endif
 
-static const std::string DEFAULT_MODULES_CONF_DIR {
-    (DEFAULT_CONF_DIR / "modules").string() };
-static const std::string DEFAULT_CONFIG_FILE {
-    (DEFAULT_CONF_DIR / "pxp-agent.conf").string() };
+static const fs::path DEFAULT_CONF_DIR { DATA_DIR.empty() ?
+    fs::path("/etc/puppetlabs/pxp-agent") : (DATA_DIR / "etc") };
+static const fs::path DEFAULT_LOG_DIR { DATA_DIR.empty() ?
+    fs::path("/var/log/puppetlabs/pxp-agent") : (DATA_DIR / "var" / "log") };
+// TODO: change this to DATA_DIR/spool in a future major release.
+const std::string DEFAULT_SPOOL_DIR { DATA_DIR.empty() ?
+    std::string("/opt/puppetlabs/pxp-agent/spool") : (DATA_DIR / "var" / "spool").string() };
+static const std::string DEFAULT_TASK_CACHE_DIR { DATA_DIR.empty() ?
+    std::string("/opt/puppetlabs/pxp-agent/tasks-cache") :
+    (DATA_DIR / "tasks-cache").string() };
+
+static const std::string DEFAULT_LOG_FILE { (DEFAULT_LOG_DIR / "pxp-agent.log").string() };
+static const std::string DEFAULT_PCP_ACCESS_FILE { (DEFAULT_LOG_DIR / "pcp-access.log").string() };
+
+static const std::string DEFAULT_MODULES_CONF_DIR { (DEFAULT_CONF_DIR / "modules").string() };
+static const std::string DEFAULT_CONFIG_FILE { (DEFAULT_CONF_DIR / "pxp-agent.conf").string() };
 static const std::string DEFAULT_PCP_VERSION { "1" };
 static const std::string DEFAULT_SPOOL_DIR_PURGE_TTL { "14d" };
 
@@ -107,6 +132,36 @@ static const std::string AGENT_CLIENT_TYPE { "agent" };
 
 const fs::perms NIX_FILE_PERMS { fs::owner_read | fs::owner_write | fs::group_read };
 const fs::perms NIX_DIR_PERMS  { NIX_FILE_PERMS | fs::owner_exe | fs::group_exe };
+
+// Helper function
+static void check_and_create_dir(const fs::path& dir_path,
+                                 const std::string& opt,
+                                 const bool& create)
+{
+    if (!fs::exists(dir_path)) {
+        if (create) {
+            try {
+                LOG_INFO("Creating the {1} '{2}'", opt, dir_path.string());
+                fs::create_directories(dir_path);
+                fs::permissions(dir_path, NIX_DIR_PERMS);
+            } catch (const std::exception& e) {
+                LOG_DEBUG("Failed to create the {1} '{2}': {3}",
+                          opt, dir_path.string(), e.what());
+                throw Configuration::Error {
+                    lth_loc::format("failed to create the {1} '{2}'",
+                                    opt, dir_path.string()) };
+            }
+        } else {
+            throw Configuration::Error {
+                lth_loc::format("the {1} '{2}' does not exist",
+                                opt, dir_path.string()) };
+        }
+    } else if (!fs::is_directory(dir_path)) {
+        throw Configuration::Error {
+                lth_loc::format("the {1} '{2}' is not a directory",
+                                opt, dir_path.string()) };
+    }
+}
 
 //
 // Public interface
@@ -187,27 +242,28 @@ HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
             parseConfigFile();
         }
     }
+
+    // Normalize and generate log dirs
+    std::vector<std::string> options { "logfile" };
+    if (HW::GetFlag<bool>("log-pcp-access")) {
+        options.emplace_back("pcp-access-logfile");
+    }
+
+    for (const auto& option : options) {
+        auto val = HW::GetFlag<std::string>(option);
+        // Ignore not-a-directory options
+        if (val == "-")
+            continue;
+
+        fs::path val_path { lth_file::tilde_expand(val) };
+        HW::SetFlag(option, val_path.string());
+        auto dir = val_path.parent_path();
+        check_and_create_dir(dir, option, true);
+    }
+
     // No further processing or user interaction are required if
     // the parsing outcome is HW::ParseResult::HELP or VERSION
-
     return parse_result;
-}
-
-static void validateLogDirPath(const std::string& logfile)
-{
-    auto logdir_path = fs::path(logfile).parent_path();
-
-    if (fs::exists(logdir_path)) {
-        if (!fs::is_directory(logdir_path)) {
-            throw Configuration::Error {
-                lth_loc::format("cannot write to the specified logfile; '{1}' is "
-                                "not a directory", logdir_path.string()) };
-        }
-    } else {
-        throw Configuration::Error {
-            lth_loc::format("cannot write to '{1}'; its parent directory does "
-                            "not exist", logfile) };
-    }
 }
 
 std::string Configuration::setupLogging()
@@ -221,11 +277,6 @@ std::string Configuration::setupLogging()
 
     if (!log_on_stdout) {
         // We should log on file
-        logfile_ = lth_file::tilde_expand(logfile_);
-
-        // NOTE(ale): we must validate the logfile path since we set
-        // up logging before calling validateAndNormalizeConfiguration
-        validateLogDirPath(logfile_);
         logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
         fs::permissions(logfile_, NIX_FILE_PERMS);
 
@@ -236,7 +287,6 @@ std::string Configuration::setupLogging()
 
     if (log_access) {
         pcp_access_logfile_ = lth_file::tilde_expand(pcp_access_logfile_);
-        validateLogDirPath(pcp_access_logfile_);
         pcp_access_fstream_ptr_.reset(
             new boost::nowide::ofstream(pcp_access_logfile_.c_str(),
                                         std::ios_base::app));
@@ -879,83 +929,25 @@ void Configuration::validateAndNormalizeWebsocketSettings()
     HW::SetFlag<std::string>("ssl-key", key);
 }
 
-// Helper function
-void check_and_create_dir(const fs::path& dir_path,
-                          const std::string& opt,
-                          const bool& create)
-{
-    if (!fs::exists(dir_path)) {
-        if (create) {
-            try {
-                LOG_INFO("Creating the {1} '{2}'", opt, dir_path.string());
-                fs::create_directories(dir_path);
-            } catch (const std::exception& e) {
-                LOG_DEBUG("Failed to create the {1} '{2}': {3}",
-                          opt, dir_path.string(), e.what());
-                throw Configuration::Error {
-                    lth_loc::format("failed to create the {1} '{2}'",
-                                    opt, dir_path.string()) };
-            }
-        } else {
-            throw Configuration::Error {
-                lth_loc::format("the {1} '{2}' does not exist",
-                                opt, dir_path.string()) };
-        }
-    } else if (!fs::is_directory(dir_path)) {
-        throw Configuration::Error {
-                lth_loc::format("the {1} '{2}' is not a directory",
-                                opt, dir_path.string()) };
-    }
-}
-
 void Configuration::validateAndNormalizeOtherSettings()
 {
-    // Normalize and check modules' directories
-    std::vector<std::string> options { "modules-dir", "modules-config-dir" };
+    // Normalize and check directories. The modules directory
+    // is expected to exist, and will usually come from packaging.
+    std::vector<std::pair<std::string, bool>> options {
+        std::make_pair(std::string("modules-dir"), false),
+        std::make_pair(std::string("modules-config-dir"), true),
+        std::make_pair(std::string("task-cache-dir"), true),
+        std::make_pair(std::string("spool-dir"), true) };
 
     for (const auto& option : options) {
-        auto val = HW::GetFlag<std::string>(option);
-
-        if (val.empty())
-            continue;
-
+        auto val = HW::GetFlag<std::string>(option.first);
         fs::path val_path { lth_file::tilde_expand(val) };
-        check_and_create_dir(val_path, val, false);
-        HW::SetFlag<std::string>(option, val_path.string());
+        HW::SetFlag(option.first, val_path.string());
+        check_and_create_dir(val_path, option.first, option.second);
     }
 
-    // Create the task-cache-dir if needed and ensure that we
-    // have the required user rwx, and group rx permissions.
-    const auto task_cache_dir = HW::GetFlag<std::string>("task-cache-dir");
-
-    if (task_cache_dir.empty()) {
-        throw Configuration::Error {
-            lth_loc::translate("task-cache-dir must be defined") };
-    }
-
-    fs::path task_cache_dir_path { lth_file::tilde_expand(task_cache_dir) };
-    check_and_create_dir(task_cache_dir_path, "task-cache-dir", true);
-    try {
-        fs::permissions(task_cache_dir_path, NIX_DIR_PERMS);
-    } catch (const fs::filesystem_error& e) {
-            throw Configuration::Error {
-                lth_loc::format("Failed to make the task-cache-dir '{1}' user/group readable and executable, and user writable during configuration validation: {2}",
-                            task_cache_dir_path.string(), e.what()) };
-    }
-
-    HW::SetFlag<std::string>("task-cache-dir", task_cache_dir_path.string());
-
-    // Create the spool-dir if needed and ensure we can write in it
-    const auto spool_dir = HW::GetFlag<std::string>("spool-dir");
-
-    if (spool_dir.empty())
-        throw Configuration::Error {
-            lth_loc::translate("spool-dir must be defined") };
-
-    fs::path spool_dir_path { lth_file::tilde_expand(spool_dir) };
-    check_and_create_dir(spool_dir_path, "spool-dir", true);
+    fs::path spool_dir_path = HW::GetFlag<std::string>("spool-dir");
     fs::path tmp_path;
-
     do {
         tmp_path = spool_dir_path / lth_util::get_UUID();
     } while (fs::exists(tmp_path));
@@ -977,8 +969,6 @@ void Configuration::validateAndNormalizeOtherSettings()
             lth_loc::format("the spool-dir '{1}' is not writable",
                             spool_dir_path.string()) };
 
-    HW::SetFlag<std::string>("spool-dir", spool_dir_path.string());
-
 #ifndef _WIN32
     if (!HW::GetFlag<bool>("foreground")) {
         auto pid_file = lth_file::tilde_expand(HW::GetFlag<std::string>("pidfile"));
@@ -988,33 +978,8 @@ void Configuration::validateAndNormalizeOtherSettings()
                 lth_loc::format("the PID file '{1}' is not a regular file", pid_file) };
 
         auto pid_dir = fs::path(pid_file).parent_path().string();
-
-        // We know that, on Solaris, the /var/run when gets cleaned up
-        // at reboot; daemonization assumes that the PID file
-        // directory exists. So, if we're using the default PID
-        // directory, ensure it exists (PCP-297)
-        if (pid_dir == "/var/run/puppetlabs" && !fs::exists(pid_dir)) {
-            try {
-                LOG_DEBUG("Creating the PID file directory '{1}'", pid_dir);
-                fs::create_directories(pid_dir);
-            } catch (const std::exception& e) {
-                LOG_DEBUG("Failed to create '{1}' directory: {2}", pid_dir, e.what());
-                throw Configuration::Error {
-                    lth_loc::translate("failed to create the PID file directory") };
-            }
-        }
-
-        if (fs::exists(pid_dir)) {
-            if (!fs::is_directory(pid_dir))
-                throw Configuration::Error {
-                    lth_loc::format("'{1}' is not a directory", pid_dir) };
-        } else {
-            throw Configuration::Error {
-                lth_loc::format("the PID directory '{1}' does not exist; "
-                                "cannot create the PID file", pid_dir) };
-        }
-
         HW::SetFlag<std::string>("pidfile", pid_file);
+        check_and_create_dir(pid_dir, "pidfile", true);
     }
 #endif
 

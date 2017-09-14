@@ -149,11 +149,37 @@ msgid "failure getting Windows AppData directory: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
+msgid "failure getting HOME directory"
+msgstr ""
+
+#: lib/src/configuration.cc
 msgid "failed to retrive pxp-agent binary path"
 msgstr ""
 
 #: lib/src/configuration.cc
 msgid "failed to determine the modules directory path: {1}"
+msgstr ""
+
+#. info
+#: lib/src/configuration.cc
+msgid "Creating the {1} '{2}'"
+msgstr ""
+
+#. debug
+#: lib/src/configuration.cc
+msgid "Failed to create the {1} '{2}': {3}"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "failed to create the {1} '{2}'"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "the {1} '{2}' does not exist"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "the {1} '{2}' is not a directory"
 msgstr ""
 
 #: lib/src/configuration.cc
@@ -162,14 +188,6 @@ msgstr ""
 
 #: lib/src/configuration.cc
 msgid "An error occurred while parsing cli options"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "cannot write to the specified logfile; '{1}' is not a directory"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "cannot write to '{1}'; its parent directory does not exist"
 msgstr ""
 
 #: lib/src/configuration.cc
@@ -339,42 +357,6 @@ msgstr ""
 msgid "pcp-version must be either '1' or '2'"
 msgstr ""
 
-#. info
-#: lib/src/configuration.cc
-msgid "Creating the {1} '{2}'"
-msgstr ""
-
-#. debug
-#: lib/src/configuration.cc
-msgid "Failed to create the {1} '{2}': {3}"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "failed to create the {1} '{2}'"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "the {1} '{2}' does not exist"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "the {1} '{2}' is not a directory"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "task-cache-dir must be defined"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid ""
-"Failed to make the task-cache-dir '{1}' user/group readable and executable, "
-"and user writable during configuration validation: {2}"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "spool-dir must be defined"
-msgstr ""
-
 #. debug
 #: lib/src/configuration.cc
 msgid ""
@@ -388,28 +370,6 @@ msgstr ""
 
 #: lib/src/configuration.cc
 msgid "the PID file '{1}' is not a regular file"
-msgstr ""
-
-#. debug
-#: lib/src/configuration.cc
-msgid "Creating the PID file directory '{1}'"
-msgstr ""
-
-#. debug
-#: lib/src/configuration.cc
-msgid "Failed to create '{1}' directory: {2}"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "failed to create the PID file directory"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "'{1}' is not a directory"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "the PID directory '{1}' does not exist; cannot create the PID file"
 msgstr ""
 
 #: lib/src/configuration.cc
