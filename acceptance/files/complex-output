@@ -2,7 +2,6 @@ Defined with arguments:
 * ArgArray of type array
 * ArgArrayOfHashes of type hashtable[]
 * ArgBool of type bool
-* ArgDateTime of type datetime
 * ArgFileInfo of type System.IO.FileInfo
 * ArgFloat of type float
 * ArgGuid of type guid
@@ -26,8 +25,6 @@ name: pe
 version_requirement: >= 5.0.0
 * ArgBool (bool):
 False
-* ArgDateTime (datetime):
-9/8/2017 2:23:59 PM
 * ArgFileInfo (System.IO.FileInfo):
 /Users/foo/source/puppet/Gemfile
 * ArgFloat (float):
