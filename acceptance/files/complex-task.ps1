@@ -37,10 +37,6 @@ param(
   $ArgTimeSpan,
 
   [Parameter(Mandatory = $False)]
-  [DateTime]
-  $ArgDateTime,
-
-  [Parameter(Mandatory = $False)]
   [Guid]
   $ArgGuid,
 
