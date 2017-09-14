@@ -33,7 +33,6 @@ test_name 'run powershell task' do
     task_output = File.read(File.join(fixtures, 'complex-output'))
     run_successful_task(master, windows_hosts, 'echo', 'init.ps1', @sha256, task_input) do |stdout|
       # Handle some known variations
-      stdout.gsub!(/System\.DateTime/, 'datetime')
       stdout.gsub!(/System\.Guid/, 'guid')
       stdout.gsub!(/System\.TimeSpan/, 'timespan')
 
