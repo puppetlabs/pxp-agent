@@ -3,6 +3,8 @@
 
 #include "version-inl.hpp"
 
+#include <hocon/config.hpp>
+
 #include <cpp-pcp-client/util/logging.hpp>
 #include <cpp-pcp-client/connector/client_metadata.hpp>  // validate SSL certs
 #include <cpp-pcp-client/connector/errors.hpp>
@@ -21,6 +23,7 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <boost/nowide/iostream.hpp>
 
@@ -753,49 +756,61 @@ void Configuration::setDefaultValues()
 
 void Configuration::parseConfigFile()
 {
-    if (!lth_file::file_readable(config_file_))
+    if (!lth_file::file_readable(config_file_)) {
+        LOG_DEBUG("Config file {1} absent", config_file_);
         return;
-
-    lth_jc::JsonContainer config_json;
-
-    try {
-        config_json = lth_jc::JsonContainer(lth_file::read(config_file_));
-    } catch (lth_jc::data_parse_error& e) {
-        throw Configuration::Error {
-            lth_loc::translate("cannot parse config file; invalid JSON") };
     }
 
-    if (config_json.type() != lth_jc::DataType::Object)
-        throw Configuration::Error { "invalid config file content; not a "
-                                     "JSON object" };
+    using boost::algorithm::ends_with;
+    if (!ends_with(config_file_, ".conf") && !ends_with(config_file_, ".json")) {
+        // This is required by the HOCON parser.
+        throw Configuration::Error {
+            lth_loc::format("config-file {1} must end with .conf or .json", config_file_) };
+    }
 
-    auto check_key_type =
-        [&config_json] (const std::string& key,
-                        const std::string& type_str,
-                        const lth_jc::DataType& type) -> void
-        {
-            if (config_json.type(key) != type)
-                throw Configuration::Error {
-                    lth_loc::format("field '{1}' must be of type {2}",
-                                    key, type_str) };
+    hocon::shared_config config;
+    try {
+        LOG_TRACE("Parsing {1}", config_file_);
+        config = hocon::config::parse_file_any_syntax(config_file_)->resolve();
+    } catch (hocon::config_exception& e) {
+        throw Configuration::Error {
+            lth_loc::format("cannot parse config file: {1}", e.what()) };
+    }
+
+    auto wrap =
+        [] (const std::string& key,
+            const std::string& type_str,
+            std::function<void()> assignment) {
+            try {
+                assignment();
+            } catch (hocon::config_exception& e) {
+                throw Configuration::Error { lth_loc::format("field '{1}' must be of type {2}", key, type_str) };
+            }
         };
 
     bool broker_ws_uri_in_file = false;
 
-    for (const auto& key : config_json.keys()) {
+    LOG_TRACE("Iterating config: {1}", config->root()->render());
+    for (const auto& entry : config->entry_set()) {
+        auto key = entry.first;
+        LOG_TRACE("Key = {1}", key);
         const auto& opt_idx = defaults_.get<Option::ByName>().find(key);
 
         if (opt_idx == defaults_.get<Option::ByName>().end()) {
             // broker-ws-uris is restricted to the config file, so it's handled
             // specially here. It's not part of defaults_ because all the extra
             // meta-data for Horsewhisperer isn't needed.
+            // TODO: add `servers`, which will populate broker-ws-uris and master-uris
+            //       using default ports; expects hostnames only
             if (key == "broker-ws-uris") {
-                check_key_type(key, "Array", lth_jc::DataType::Array);
-                broker_ws_uris_ = config_json.get<std::vector<std::string>>(key);
+                wrap(key, lth_loc::translate("array of strings"), [&]() {
+                    broker_ws_uris_ = config->get_string_list(key);
+                });
                 continue;
             } else if (key == "master-uris") {
-                check_key_type(key, "Array", lth_jc::DataType::Array);
-                master_uris_ = config_json.get<std::vector<std::string>>(key);
+                wrap(key, lth_loc::translate("array of strings"), [&]() {
+                    master_uris_ = config->get_string_list(key);
+                });
                 continue;
             } else {
                 throw Configuration::Error {
@@ -809,23 +824,27 @@ void Configuration::parseConfigFile()
 
         switch (opt_idx->ptr->type) {
             case Types::Int:
-                check_key_type(key, "Integer", lth_jc::DataType::Int);
-                HW::SetFlag<int>(key, config_json.get<int>(key));
+                wrap(key, lth_loc::translate("integer"), [&]() {
+                    HW::SetFlag(key, config->get_int(key));
+                });
                 break;
             case Types::Bool:
-                check_key_type(key, "Bool", lth_jc::DataType::Bool);
-                HW::SetFlag<bool>(key, config_json.get<bool>(key));
+                wrap(key, lth_loc::translate("boolean"), [&]() {
+                    HW::SetFlag(key, config->get_bool(key));
+                });
                 break;
             case Types::Double:
-                check_key_type(key, "Double", lth_jc::DataType::Double);
-                HW::SetFlag<double>(key, config_json.get<double>(key));
+                wrap(key, lth_loc::translate("double"), [&]() {
+                    HW::SetFlag(key, config->get_double(key));
+                });
                 break;
             case Types::String:
                 if (key == "broker-ws-uri") {
                     broker_ws_uri_in_file = true;
                 }
-                check_key_type(key, "String", lth_jc::DataType::String);
-                HW::SetFlag<std::string>(key, config_json.get<std::string>(key));
+                wrap(key, lth_loc::translate("string"), [&]() {
+                    HW::SetFlag(key, config->get_string(key));
+                });
                 break;
             default:
                 // Present because FlagType is not an enum class, and I don't trust

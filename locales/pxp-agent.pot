@@ -312,8 +312,17 @@ msgstr ""
 msgid "PID file path, default: {1}"
 msgstr ""
 
+#. debug
 #: lib/src/configuration.cc
-msgid "cannot parse config file; invalid JSON"
+msgid "Config file {1} absent"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "config-file {1} must end with .conf or .json"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "cannot parse config file: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
@@ -321,7 +330,27 @@ msgid "field '{1}' must be of type {2}"
 msgstr ""
 
 #: lib/src/configuration.cc
+msgid "array of strings"
+msgstr ""
+
+#: lib/src/configuration.cc
 msgid "field '{1}' is not a valid configuration variable"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "integer"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "boolean"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "double"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "string"
 msgstr ""
 
 #: lib/src/configuration.cc
