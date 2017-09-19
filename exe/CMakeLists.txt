@@ -19,6 +19,7 @@ add_executable(task_wrapper task_wrapper.cc)
 target_link_libraries(task_wrapper ${TASK_WRAPPER_LIBS})
 install(TARGETS task_wrapper DESTINATION bin)
 
+include_directories(${LEATHERMAN_CATCH_INCLUDE})
 add_executable(task_wrapper-tests tests/main.cc)
 target_link_libraries(task_wrapper-tests ${TASK_WRAPPER_LIBS})
 

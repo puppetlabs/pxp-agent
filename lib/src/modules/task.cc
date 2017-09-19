@@ -11,6 +11,10 @@
 #include <boost/system/error_code.hpp>
 
 #include <rapidjson/rapidjson.h>
+#if RAPIDJSON_MAJOR_VERSION > 1 || RAPIDJSON_MAJOR_VERSION == 1 && RAPIDJSON_MINOR_VERSION >= 1
+// Header for StringStream was added in rapidjson 1.1 in a backwards incompatible way.
+#include <rapidjson/stream.h>
+#endif
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.modules.task"
 #include <leatherman/logging/logging.hpp>
