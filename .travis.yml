@@ -48,6 +48,9 @@ script:
 
 env:
   global:
+    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+    #   via the "travis encrypt" command using the project repo's public key
+    - secure: "KucDHNeQ/WAwcYZgA/YJNNRai1BYv2YoRmYIOUoZztlGNvXL5mptXIGB4o3SELwgIjXaoljdLusIV5Uu8SNNrvXqGkbboa0fp38XwzntpZic6tEBvkpBdC13R6iNlCMwobKqUQXJ+PWg0UGnb6lI9iqdZgdWtKTxR+6aHNCh2uG+MHH6NiuYktA+LjBPPR24y7JWRqbfT8YL8d3galNS1smFYp4hUyb7ieeSIXcC1lg85TSHlwEblCItT39vdts2g0OD2Untjbk3hzBG2tH5S2nShvXwcWtuqy5WvkDWCwD4O24PMU1Mlgz0W/DqonekDPB7kpXaWHPltct76oSLL6xVm9Xg2YLxCHQ608RLHzQ3AWYfHSvT5ZiCNcu50h0HTE4DH+z8E5rAKUw5c00OOuGklZfiLyr0Le3fx6g3jFBVwFeiq+HpeY5bHSDIRTJZ+8XyozIcSSQa0/hZDSO2ELJHCqFctLKGo2tPFV9FqvC1oYg4cQodt3VkJErVDXXIRF9Dcw6kx1MLgRPNnxTF2jCSswmWVtG+60wW5jJk7wwFQHV3DHbosmHQZRZ7cVcrZA3p31QSAvb59lT7EkcuKEWwMekirPI6Mq38LPLtE8MM7H+NAIzmeaoOizqPupHn8/CY5hvjievMESJQbLO6fKn+1vMI41S/PJHHLlyWzCQ="
     - USERDIR=/tmp/userdir
     - PYTHONUSERBASE=$USERDIR
     - PATH=$USERDIR/bin:$PATH
