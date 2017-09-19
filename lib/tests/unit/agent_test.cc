@@ -21,13 +21,15 @@ const std::string SPOOL { std::string { PXP_AGENT_ROOT_PATH }
 TEST_CASE("Agent::Agent", "[agent]") {
     Configuration::Agent agent_configuration { MODULES,
                                                TEST_BROKER_WS_URIS,
-                                               "1",  // PCPv1
+                                               std::vector<std::string> {},  // master uris
+                                               "1",   // PCPv1
                                                getCaPath(),
                                                getCertPath(),
                                                getKeyPath(),
                                                SPOOL,
                                                "0d",  // don't purge!
-                                               "",  // modules config dir
+                                               "",    // modules config dir
+                                               "",    // task cache dir
                                                "test_agent",
                                                5000, 10, 5, 5, 2, 15 };
 
@@ -40,7 +42,7 @@ TEST_CASE("Agent::Agent", "[agent]") {
     SECTION("should throw an Agent::Error if client cert path is invalid") {
         agent_configuration.crt = "spam";
 
-        REQUIRE_THROWS_AS(Agent { agent_configuration }, Agent::Error);
+        REQUIRE_THROWS_AS(Agent { agent_configuration }, Agent::Error&);
     }
 
     SECTION("successfully instantiates with valid arguments") {

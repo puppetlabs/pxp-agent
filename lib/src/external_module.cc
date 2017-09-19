@@ -1,6 +1,7 @@
 #include <pxp-agent/external_module.hpp>
 #include <pxp-agent/module_type.hpp>
 #include <pxp-agent/action_output.hpp>
+#include <pxp-agent/configuration.hpp>
 
 #include <leatherman/execution/execution.hpp>
 
@@ -330,7 +331,7 @@ ActionResponse ExternalModule::callBlockingAction(const ActionRequest& request)
           lth_exec::execution_options::inherit_locale });  // options
 
     response.output = ActionOutput { exec.exit_code, exec.output, exec.error };
-    ExternalModule::processOutputAndUpdateMetadata(response);
+    processOutputAndUpdateMetadata(response);
     return response;
 }
 
@@ -361,7 +362,8 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
         std::map<std::string, std::string>(),  // environment
         [results_dir_path](size_t pid) {
             auto pid_file = (results_dir_path / "pid").string();
-            lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file);
+            lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file,
+                                           NIX_FILE_PERMS, std::ios::binary);
         },          // pid callback
         0,          // timeout
         { lth_exec::execution_options::thread_safe,
@@ -394,7 +396,7 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
 
     // Stdout / stderr output should be on file; read it
     response.output = storage_.getOutput(request.transactionId(), exec.exit_code);
-    ExternalModule::processOutputAndUpdateMetadata(response);
+    processOutputAndUpdateMetadata(response);
     return response;
 }
 

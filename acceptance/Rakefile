@@ -1,9 +1,6 @@
 require 'rake/clean'
 require 'pp'
 require 'yaml'
-$LOAD_PATH << File.expand_path(File.join(File.dirname(__FILE__), 'lib'))
-require 'puppet/acceptance/git_utils'
-extend Puppet::Acceptance::GitUtils
 require 'securerandom'
 require 'fileutils'
 require 'beaker-hostgenerator'
@@ -69,11 +66,6 @@ end
 def beaker_test(mode = :aio, options = {})
   final_options = HarnessOptions.options(mode, options)
 
-  if mode == :git
-    final_options[:install] ||= []
-    final_options[:install] << "#{build_giturl('pxp-agent')}##{sha}"
-  end
-
   options_file = 'merged_options.rb'
   File.open(options_file, 'w') do |merged|
     merged.puts <<-EOS
@@ -86,7 +78,7 @@ EOS
   tests = ENV['TESTS'] || ENV['TEST']
   tests_opt = "--tests=#{tests}" if tests
 
-  target = ENV['TEST_TARGET']
+  target = ENV['TEST_TARGET'] || 'redhat7-64a'
 
   master_host = ENV['MASTER_TEST_TARGET'] || 'redhat7-64m'
   if target && !target.start_with?(master_host)
@@ -273,14 +265,6 @@ Run the acceptance tests through Beaker and install packages as part of the AIO 
 EOS
     task :aio => 'ci:check_env' do
       beaker_test(:aio)
-    end
-
-    desc <<-EOS
-Run the acceptance tests through Beaker and install from git on the configuration targets.
-#{USAGE}
-EOS
-    task :git => 'ci:check_env' do
-      beaker_test(:git)
     end
   end
 

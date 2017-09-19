@@ -17,8 +17,6 @@ namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
 
-static const std::string PING_ACTION { "ping" };
-
 static const std::string PING_TXT {
     (DATA_FORMAT % "\"0563\""
                  % "\"ping\""

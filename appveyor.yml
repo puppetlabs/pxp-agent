@@ -1,41 +1,37 @@
 environment:
-  LEATHERMAN_VERSION: 0.11.0
+  LEATHERMAN_VERSION: 1.2.1
+  CPP_PCP_CLIENT_VERSION: 1.5.4
 
 install:
-  - choco install -y mingw-w64 -Version 4.8.3 -source https://www.myget.org/F/puppetlabs
+  - choco install -y mingw-w64 -Version 5.2.0 -source https://www.myget.org/F/puppetlabs
   - choco install -y cmake -Version 3.2.2 -source https://www.myget.org/F/puppetlabs
+  - choco install -y gettext -Version 0.19.6 -source https://www.myget.org/F/puppetlabs
+  - choco install -y pl-toolchain-x64 -Version 2015.12.01.1 -source https://www.myget.org/F/puppetlabs
+  - choco install -y pl-boost-x64 -Version 1.58.0.2 -source https://www.myget.org/F/puppetlabs
+  - choco install -y pl-openssl-x64 -Version 1.0.24.1 -source https://www.myget.org/F/puppetlabs
+  - choco install -y pl-curl-x64 -Version 7.46.0.1 -source https://www.myget.org/F/puppetlabs
+  - choco install -y pl-zlib-x64 -Version 1.2.8.1 -source https://www.myget.org/F/puppetlabs
+  - choco install -y pester --pre
 
-  - ps: wget 'https://s3.amazonaws.com/kylo-pl-bucket/boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh.7z' -OutFile "$pwd\boost.7z"
-  - ps: 7z.exe x boost.7z -oC:\tools | FIND /V "ing  "
-
-  - ps: wget 'https://s3.amazonaws.com/kylo-pl-bucket/openssl-1.0.2e-x64-windows.tar.lzma' -OutFile "$pwd\openssl.tar.lzma"
-  - ps: 7z.exe x openssl.tar.lzma | FIND /V "ing  "
-    # Install locally so OpenSSL DLLs are in the same directory as the build artifacts. This avoids
-    # issues from picking up OpenSSL DLLs in C:\Windows\System32.
-  - ps: 7z.exe x openssl.tar | FIND /V "ing  "
-  - SET OPENSSL_ROOT_DIR=%cd%
-
-  - ps: wget 'https://s3.amazonaws.com/kylo-pl-bucket/curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh.7z' -OutFile "$pwd\curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh.7z"
-  - ps: 7z.exe x "curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh.7z" -oC:\tools | FIND /V "ing "
+    # Minimize environment polution; previously we were linking against the wrong OpenSSL DLLs.
+    # Include Ruby and Powershell for unit tests.
+  - SET PATH=C:\tools\pl-build-tools\bin;C:\tools\mingw64\bin;C:\ProgramData\chocolatey\bin;C:\Ruby22-x64\bin;C:\Program Files\7-Zip;C:\Windows\system32;C:\Windows;C:\Windows\System32\WindowsPowerShell\v1.0
+  - ps: rm -r C:\OpenSSL-Win64
 
   - ps: wget "https://github.com/puppetlabs/leatherman/releases/download/$env:LEATHERMAN_VERSION/leatherman.7z" -OutFile "$pwd\leatherman.7z"
   - ps: 7z.exe x leatherman.7z -oC:\tools | FIND /V "ing "
 
-  - git clone https://github.com/puppetlabs/cpp-pcp-client
-  - cd cpp-pcp-client
-  - git checkout master
-
-    # Minimize environment polution; previously we were linking against the wrong OpenSSL DLLs.
-    # Include Ruby for unit tests.
-  - SET PATH=C:\tools\bin;C:\tools\openssl\bin;C:\tools\mingw64\bin;C:\ProgramData\chocolatey\bin;C:\Ruby22-x64\bin;C:\Windows\system32;C:\Windows
-
-  - ps: cmake -G "MinGW Makefiles" -DBOOST_ROOT="C:\tools\boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh" -DBOOST_STATIC=ON -DCURL_STATIC=ON -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh" -Wno-dev -DCMAKE_INSTALL_PREFIX=C:\tools .
-  - ps: mingw32-make install
-  - cd ..
+  - ps: wget "https://github.com/puppetlabs/cpp-pcp-client/releases/download/$env:CPP_PCP_CLIENT_VERSION/cpp-pcp-client.7z" -OutFile "$pwd\cpp-pcp-client.7z"
+  - ps: 7z.exe x cpp-pcp-client.7z -oC:\tools | FIND /V "ing "
 
 build_script:
-  - ps: cmake -G "MinGW Makefiles" -DBOOST_ROOT="C:\tools\boost_1_58_0-x86_64_mingw-w64_4.8.3_win32_seh" -DBOOST_STATIC=ON -DCURL_STATIC=ON -Wno-dev -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\curl-7.42.1-x86_64_mingw-w64_4.8.3_win32_seh;C:\tools;C:\tools\bin" -DCMAKE_INSTALL_PREFIX=C:\tools .
+  - ps: cmake -G "MinGW Makefiles" -DCMAKE_TOOLCHAIN_FILE="C:\tools\pl-build-tools\pl-build-toolchain.cmake" -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\cpp-pcp-client" -DCMAKE_INSTALL_PREFIX=C:\tools -DBOOST_STATIC=ON .
   - ps: mingw32-make install
 
 test_script:
+    # DLLs in C:\Windows\system32 somehow get picked up first, despite PATH. Make local copies to override that behavior.
+  - ps: cp C:\Tools\pl-build-tools\bin\libeay32.dll .\bin
+  - ps: cp C:\Tools\pl-build-tools\bin\ssleay32.dll .\bin
   - ps: ctest -V 2>&1 | %{ if ($_ -is [System.Management.Automation.ErrorRecord]) { $_ | c++filt } else { $_ } }
+  - ps: type ./acceptance/files/complex-args.json | ./exe/PowershellShim.ps1 ./acceptance/files/complex-task.ps1
+  - ps: Invoke-Pester -EnableExit

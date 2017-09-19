@@ -8,9 +8,6 @@ if [ ${TRAVIS_TARGET} == MODULES ]; then
   exit
 fi
 
-# Set compiler to GCC 4.8 here, as Travis overrides the global variables.
-export CC=gcc-4.8 CXX=g++-4.8
-
 get_gettext() {
   wget https://s3.amazonaws.com/kylo-pl-bucket/gettext-0.19.6_install.tar.bz2
   tar xjvf gettext-0.19.6_install.tar.bz2 --strip 1 -C $USERDIR
@@ -30,13 +27,6 @@ elif [ ${TRAVIS_TARGET} == DEBUG ]; then
 else
   get_gettext
 fi
-
-git clone https://github.com/puppetlabs/cpp-pcp-client
-cd cpp-pcp-client
-git checkout $CPP_PCP_CLIENT_VERSION
-cmake -DCMAKE_INSTALL_PREFIX=$USERDIR .
-make install -j2
-cd ..
 
 # Generate build files
 if [ ${TRAVIS_TARGET} == DEBUG ]; then

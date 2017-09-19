@@ -1,7 +1,6 @@
 require 'pxp-agent/config_helper.rb'
 require 'puppet/acceptance/common_utils'
 require 'pcp/client'
-require 'pcp/simple_logger'
 require 'net/http'
 require 'openssl'
 require 'socket'
@@ -16,6 +15,9 @@ GIT_CLONE_FOLDER = '/opt/puppet-git-repos'
 # Some helpers for working with the log file
 PXP_LOG_DIR_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/var/log'
 PXP_LOG_DIR_POSIX = '/var/log/puppetlabs/pxp-agent'
+
+# Set lein profile based on configuration to access puppet.net internal network or not.
+LEIN_PROFILE = (ENV['GEM_SOURCE'] =~ /puppetlabs.net/) ? 'internal-mirrors' : 'integration'
 
 def logdir(host)
   windows?(host)?
@@ -58,11 +60,12 @@ end
 
 # Some helpers for working with a pcp-broker 'lein tk' instance
 def run_pcp_broker(host, instance=0)
+  timeout = 120
   host[:pcp_broker_instance] = instance
   on(host, "cd #{GIT_CLONE_FOLDER}/pcp-broker#{instance}; export LEIN_ROOT=ok; \
-     lein with-profile internal-mirrors tk </dev/null >/var/log/puppetlabs/pcp-broker.log.#{SecureRandom.uuid} 2>&1 &")
-  assert(port_open_within?(host, PCP_BROKER_PORTS[instance], 60),
-         "pcp-broker port #{PCP_BROKER_PORTS[instance].to_s} not open within 1 minutes of starting the broker")
+     lein with-profile #{LEIN_PROFILE} tk </dev/null >/var/log/puppetlabs/pcp-broker.log.#{SecureRandom.uuid} 2>&1 &")
+  assert(port_open_within?(host, PCP_BROKER_PORTS[instance], timeout),
+         "pcp-broker port #{PCP_BROKER_PORTS[instance].to_s} not open within #{(timeout/60).to_s} minutes of starting the broker")
   broker_state = nil
   attempts = 0
   until broker_state == "running" or attempts == 100 do
@@ -291,11 +294,6 @@ def rpc_request(broker, targets,
     end
   end
 
-  message = PCP::Message.new({
-    :message_type => blocking ? 'http://puppetlabs.com/rpc_blocking_request' : 'http://puppetlabs.com/rpc_non_blocking_request',
-    :targets => targets
-  })
-
   message_data = {
     :transaction_id => transaction_id,
     :module         => pxp_module,
@@ -305,13 +303,22 @@ def rpc_request(broker, targets,
   if !blocking then
     message_data[:notify_outcome] = false
   end
-  message.data = message_data.to_json
 
-  message_expiry = 10 # Seconds for the PCP message to be considered failed
+  targets.each do |target|
+    message = PCP::Message.new({
+      :message_type => blocking ? 'http://puppetlabs.com/rpc_blocking_request' : 'http://puppetlabs.com/rpc_non_blocking_request',
+      :targets => [target]
+    })
+
+    message.data = message_data.to_json
+
+    message_expiry = 10 # Seconds for the PCP message to be considered failed
+    message.expires(message_expiry)
+
+    client.send(message)
+  end
+
   rpc_action_expiry = 60 # Seconds for the entire RPC action to be considered failed
-  message.expires(message_expiry)
-
-  client.send(message)
 
   begin
     Timeout::timeout(rpc_action_expiry) do
@@ -358,15 +365,17 @@ def connect_pcp_client(broker)
       :ssl_ca_cert => "tmp/ssl/certs/ca.pem",
       :ssl_cert => "tmp/ssl/certs/#{hostname.downcase}.pem",
       :ssl_key => "tmp/ssl/private_keys/#{hostname.downcase}.pem",
-      :logger => PCP::SimpleLogger.new,
       :loglevel => logger.is_debug? ? Logger::DEBUG : Logger::WARN,
       :type => client_type
     })
     connected = client.connect(5)
     retries += 1
+
+    # If the connection was not established, close it. Otherwise we can end up with 2 successful connections
+    # and get an earlier attempt superseding later connections.
+    client.close if !connected
   end
   if !connected
-    client.close
     raise "Controller PCP client failed to connect with pcp-broker on #{broker} after #{max_retries} attempts: #{client.inspect}"
   end
   if !client.associated?
@@ -429,17 +438,17 @@ def get_process_pids(host, process)
   pids
 end
 
-def wait_for_sleep_process(target)
+def wait_for_sleep_process(target, seconds_to_sleep)
   begin
     ps_cmd = target['platform'] =~ /win/ ? 'ps -efW' : 'ps -ef'
-    sleep_process = target['platform'] =~ /win/ ? 'PING' : '/bin/sleep'
+    sleep_process = target['platform'] =~ /win/ ? 'PING' : " /bin/sleep #{seconds_to_sleep}"
     retry_on(target, "#{ps_cmd} | grep '#{sleep_process}' | grep -v 'grep'", {:max_retries => 120, :retry_interval => 1})
   rescue
     raise("After triggering a puppet run on #{target} the expected sleep process did not appear in process list")
   end
 end
 
-def stop_sleep_process(targets, accept_no_pid_found = false)
+def stop_sleep_process(targets, seconds_to_sleep, accept_no_pid_found = false)
   targets = [targets].flatten
 
   targets.each do |target|
@@ -449,7 +458,7 @@ def stop_sleep_process(targets, accept_no_pid_found = false)
     when /win/
       command = "ps -efW | grep PING | sed 's/^[^0-9]*[0-9]*[^0-9]*//g' | cut -d ' ' -f1"
     else
-      command = "ps -ef | grep 'bin/sleep ' | grep -v 'grep' | grep -v 'true' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
+      command = "ps -ef | grep ' /bin/sleep #{seconds_to_sleep}' | grep -v 'grep' | grep -v 'true' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
     end
 
     # A failed test may leave an orphaned sleep process, handle multiple matches.
@@ -494,42 +503,43 @@ def start_puppet_non_blocking_request(broker, targets, environment = 'production
   transaction_ids
 end
 
-def check_puppet_non_blocking_response(identity, transaction_id, max_retries, query_interval,
-                                       expected_result, expected_environment = 'production')
-  puppet_run_result = nil
+def check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval, &block)
+  run_result = nil
   query_attempts = 0
-  unknown_count = 0
-  until (query_attempts == max_retries || puppet_run_result) do
-    query_responses = rpc_blocking_request(master, [identity],
+  loop do
+    query_responses = rpc_blocking_request(broker, [identity],
                                            'status', 'query', {:transaction_id => transaction_id})
-    action_result = query_responses[identity][:data]["results"]
+    action_result = query_responses[identity][:data]['results']
     assert(action_result, "Response to status query was an error: #{query_responses[identity][:data]}")
-    if (action_result.has_key?('stdout') && (action_result['stdout'] != ""))
-      rpc_action_status = action_result['status']
-      if rpc_action_status == 'unknown' && unknown_count < 3
-        # pxp-agent will sometimes respond unknown if the puppet process has not yet started
-        # allow a few unknowns before giving up
-        unknown_count += 1
-      else
-        puppet_run_result = JSON.parse(action_result['stdout'])['status']
-        puppet_run_environment = JSON.parse(action_result['stdout'])['environment']
-      end
+    if action_result.has_key?('exitcode')
+      run_result = action_result
+      break
     end
     query_attempts += 1
-    if (!puppet_run_result)
-      sleep query_interval
-    end
-  end
-  if (!puppet_run_result)
-    fail("Run puppet non-blocking transaction did not contain stdout of puppet run after #{query_attempts} attempts " \
-         "and #{query_attempts * query_interval} seconds")
-  else
-    assert_equal("success", rpc_action_status, "PXP run puppet action did not have expected 'success' result")
-    assert_equal(expected_environment, puppet_run_environment, "Puppet run did not use the expected environment")
-    assert_equal(expected_result, puppet_run_result, "Puppet run did not have expected result of '#{expected_result}'")
+    break if query_attempts >= max_retries
+    sleep query_interval
   end
 
-  puppet_run_result
+  fail("Run puppet non-blocking transaction did not contain stdout of puppet run after #{query_attempts} attempts " \
+       "and #{query_attempts * query_interval} seconds") unless run_result
+
+  block.call run_result
+  run_result
+end
+
+def check_puppet_non_blocking_response(identity, transaction_id, max_retries, query_interval,
+                                       expected_result, expected_environment = 'production')
+  run_result = check_non_blocking_response(master, identity, transaction_id, max_retries, query_interval) do |run_result|
+    assert_equal("success", run_result['status'], "PXP run puppet action did not have expected 'success' result")
+
+    stdout = JSON.parse(run_result['stdout'])
+    puppet_run_result = stdout['status']
+    puppet_run_environment = stdout['environment']
+    assert_equal(expected_environment, stdout['environment'], "Puppet run did not use the expected environment")
+    assert_equal(expected_result, stdout['status'], "Puppet run did not have expected result of '#{expected_result}'")
+  end
+
+  run_result['status']
 end
 
 def get_mode(host, path)

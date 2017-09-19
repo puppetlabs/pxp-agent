@@ -1,3 +1,85 @@
+## 1.7.0
+
+This is a feature release.
+
+* [PCP-786](https://tickets.puppetlabs.com/browse/PCP-786) Send error response to status if found
+* [PCP-785](https://tickets.puppetlabs.com/browse/PCP-785) Report task download failure for 400+ HTTP statuses
+* [#645](https://github.com/puppetlabs/pxp-agent/pull/645) Restrict permissions on spool files created by pxp-module-puppet
+* [#644](https://github.com/puppetlabs/pxp-agent/pull/644) Prevent possible leak of `env_md_ctx_st` struct
+* [PCP-782](https://tickets.puppetlabs.com/browse/PCP-782) Add port 8140 to `master-uris` if absent
+* [#639](https://github.com/puppetlabs/pxp-agent/pull/639) Update task blocking response to return all results
+* [PCP-783](https://tickets.puppetlabs.com/browse/PCP-783) Specify required sleep process more thoroughly
+* [#641](https://github.com/puppetlabs/pxp-agent/pull/641) Fix permissions hacks
+* [#635](https://github.com/puppetlabs/pxp-agent/pull/635) Support `input_method` on tasks
+* [PCP-773](https://tickets.puppetlabs.com/browse/PCP-773) Implement client-side failover for task downloads
+* [PCP-769](https://tickets.puppetlabs.com/browse/PCP-769) Download tasks from `master-uris`
+* [#629](https://github.com/puppetlabs/pxp-agent/pull/629) Update appveyor config to use maintained packages
+* [PCP-776](https://tickets.puppetlabs.com/browse/PCP-776) Detect disabled/running Puppet via lock files
+* [PCP-766](https://tickets.puppetlabs.com/browse/PCP-766) Restrict permissions on spool files, logfile
+* [#625](https://github.com/puppetlabs/pxp-agent/pull/625) Unblock acceptance tests on Japanese locale instance
+* [PCP-633](https://tickets.puppetlabs.com/browse/PCP-633) Report running if action thread is still active
+* [PCP-767](https://tickets.puppetlabs.com/browse/PCP-767) Introduce internal task module
+* [#622](https://github.com/puppetlabs/pxp-agent/pull/622) Enable running acceptance from local package
+* [PCP-768](https://tickets.puppetlabs.com/browse/PCP-768) Add `master-uris` config variable
+* [PCP-775](https://tickets.puppetlabs.com/browse/PCP-775) Enable DEP support in Windows version of PCP/PXP binaries
+* [PCP-758](https://tickets.puppetlabs.com/browse/PCP-758) Introduce puppet task support
+* [#605](https://github.com/puppetlabs/pxp-agent/pull/605) Fix the test on win-10-ent-i386
+* [#599](https://github.com/puppetlabs/pxp-agent/pull/599) Log program version and debug level at startup
+* [#583](https://github.com/puppetlabs/pxp-agent/pull/583) Add testing around exec via Puppet
+
+## 1.6.1
+
+This is a maintenance and bug fix release.
+
+* [PCP-755](https://tickets.puppetlabs.com/browse/PCP-755) Stop using versioned executables. Support
+restarting the pxp-agent service when the binary path changes.
+* [PCP-697](https://tickets.puppetlabs.com/browse/PCP-697) Ensure default log location exists on
+service startup.
+* [PCP-759](https://tickets.puppetlabs.com/browse/PCP-759) Enable testing against an EC2 master
+* [PCP-750](https://tickets.puppetlabs.com/browse/PCP-750) Ensure failed connection attempts from test
+code are closed before retrying.
+
+Does not include fixes from 1.5.5.
+
+## 1.6.0
+
+This is a feature release.
+
+* [PCP-603](https://tickets.puppetlabs.com/browse/PCP-603) Additional acceptance tests for pxp-module-puppet whitelist
+* [PCP-699](https://tickets.puppetlabs.com/browse/PCP-699) pxp-module-puppet now accepts job-id as an argument and passes it to Puppet.
+* [PCP-742](https://tickets.puppetlabs.com/browse/PCP-742) pxp-module-puppet will now return metrics about resource events when a run finishes.
+* [PCP-748](https://tickets.puppetlabs.com/browse/PCP-748) Update pxp-agent component tests to allow SERVER_VERSION=latest
+* [PCP-751](https://tickets.puppetlabs.com/browse/PCP-751) Remove kind from pxp-module-puppet
+
+Does not include fixes from 1.5.5.
+
+## 1.5.5
+
+This is a maintenance release.
+
+* [PCP-775](https://tickets.puppetlabs.com/browse/PCP-775) Enable DEP support via nxcompat and dynamicbase on Windows.
+
+## 1.5.4
+
+This is a maintenance release.
+
+* [PCP-759](https://tickets.puppetlabs.com/browse/PCP-759) Enable acceptance pre-suite to install puppetserver on EC2
+* [PCP-755](https://tickets.puppetlabs.com/browse/PCP-755) pxp-agent service now cleanly restarts after upgrade on SLES 11
+* [PCP-750](https://tickets.puppetlabs.com/browse/PCP-750) Fix intermittent test failures due to inventory request timeouts
+* [PCP-697](https://tickets.puppetlabs.com/browse/PCP-697) Ensure logdir exists before starting service
+
+## 1.5.3
+
+This is a maintenance release.
+
+* [PCP-745](https://tickets.puppetlabs.com/browse/PCP-745) Populate missing manpage field in the SMF manifest
+
+## 1.5.2
+
+This is a maintenance release.
+
+* [PCP-740](https://tickets.puppetlabs.com/browse/PCP-740) Fix umask test on AIX.
+
 ## 1.5.1
 
 This is a maintenance release.

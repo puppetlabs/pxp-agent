@@ -9,6 +9,7 @@ include_directories(
     ${HORSEWHISPERER_INCLUDE_DIRS}
     ${INIH_INCLUDE_DIRS}
     ${cpp-pcp-client_INCLUDE_DIR}
+    ${OPENSSL_INCLUDE_DIR}
 )
 
 set(LIBRARY_COMMON_SOURCES
@@ -28,6 +29,7 @@ set(LIBRARY_COMMON_SOURCES
     src/time.cc
     src/modules/echo.cc
     src/modules/ping.cc
+    src/modules/task.cc
 )
 
 if (UNIX)

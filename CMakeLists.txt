@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2.2)
-project(pxp-agent VERSION 1.5.1)
+project(pxp-agent VERSION 1.7.0)
 
 if (NOT CMAKE_BUILD_TYPE)
     message(STATUS "Defaulting to a release build.")
@@ -44,7 +44,7 @@ if ("${INSTALL_IS_SYSTEM_DIR}" STREQUAL "-1")
 endif()
 
 # Find libraries
-set(LEATHERMAN_COMPONENTS locale nowide catch logging rapidjson json_container util file_util execution)
+set(LEATHERMAN_COMPONENTS locale nowide catch logging rapidjson json_container util file_util execution curl)
 
 if (WIN32)
     list(APPEND LEATHERMAN_COMPONENTS windows)
@@ -71,6 +71,10 @@ leatherman_logging_line_numbers()
 set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS}")
 add_definitions(${LEATHERMAN_DEFINITIONS})
 
+if (WIN32)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--nxcompat -Wl,--dynamicbase")
+endif()
+
 # TODO(ale): enable i18n with add_definitions(-DLEATHERMAN_I18N) - PCP-257
 # TODO(ale): enable translation with set(LEATHERMAN_LOCALES "...;...") and
 # gettext_compile(${CMAKE_CURRENT_SOURCE_DIR}/locales share/locale)
@@ -82,6 +86,9 @@ gettext_templates(${CMAKE_CURRENT_SOURCE_DIR}/locales ${PXP_AGENT_SOURCES})
 # Display a summary of the features
 include(FeatureSummary)
 feature_summary(WHAT ALL)
+
+# Add the test suite
+enable_testing()
 
 # Add the main binary
 add_subdirectory(lib)
@@ -98,9 +105,6 @@ install(FILES modules/pxp-module-puppet.bat
         DESTINATION ${MODULES_INSTALL_PATH}
         PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 endif()
-
-# Add the test suite
-enable_testing()
 
 add_test(
     NAME "pxp-agent\\ library\\ tests"

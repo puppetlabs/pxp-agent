@@ -12,6 +12,7 @@
 #include <leatherman/file_util/file.hpp>
 
 #include <leatherman/util/strings.hpp>
+#include <leatherman/util/uri.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
 
@@ -83,6 +84,8 @@ namespace lth_util = leatherman::util;
                                 e.what()) };
         }
     }();
+
+    static const std::string DEFAULT_TASK_CACHE_DIR { (DATA_DIR / "tasks-cache").string() };
 #else
     static const fs::path DEFAULT_CONF_DIR { "/etc/puppetlabs/pxp-agent" };
     const std::string DEFAULT_SPOOL_DIR { "/opt/puppetlabs/pxp-agent/spool" };
@@ -90,6 +93,7 @@ namespace lth_util = leatherman::util;
     static const std::string DEFAULT_LOG_FILE { "/var/log/puppetlabs/pxp-agent/pxp-agent.log" };
     static const std::string DEFAULT_PCP_ACCESS_FILE { "/var/log/puppetlabs/pxp-agent/pcp-access.log" };
     static const std::string DEFAULT_MODULES_DIR { "/opt/puppetlabs/pxp-agent/modules" };
+    static const std::string DEFAULT_TASK_CACHE_DIR { "/opt/puppetlabs/pxp-agent/tasks-cache" };
 #endif
 
 static const std::string DEFAULT_MODULES_CONF_DIR {
@@ -100,6 +104,9 @@ static const std::string DEFAULT_PCP_VERSION { "1" };
 static const std::string DEFAULT_SPOOL_DIR_PURGE_TTL { "14d" };
 
 static const std::string AGENT_CLIENT_TYPE { "agent" };
+
+const fs::perms NIX_FILE_PERMS { fs::owner_read | fs::owner_write | fs::group_read };
+const fs::perms NIX_DIR_PERMS  { NIX_FILE_PERMS | fs::owner_exe | fs::group_exe };
 
 //
 // Public interface
@@ -152,6 +159,20 @@ HW::ParseResult parseArguments(const int argc, char* const argv[])
 
 HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
 {
+    // If parsing options, clear the previous value for master_uris.
+    // This is primarily for testing.
+    master_uris_.clear();
+
+    // Remember the path to the pxp-agent executable used to start
+    // this process, it is supposed to be used to start executables
+    // which are installed alongside the pxp-agent executable.
+    exec_prefix_ = fs::path(argv[0]).parent_path();
+    // If a relative or absolute path was specified, convert to absolute.
+    // Otherwise, we'll depend on using PATH to find the task_wrapper.
+    if (!exec_prefix_.empty()) {
+        exec_prefix_ = fs::absolute(exec_prefix_);
+    }
+
     auto parse_result = parseArguments(argc, argv);
 
     if (parse_result == HW::ParseResult::FAILURE
@@ -189,7 +210,7 @@ static void validateLogDirPath(const std::string& logfile)
     }
 }
 
-void Configuration::setupLogging()
+std::string Configuration::setupLogging()
 {
     logfile_ = HW::GetFlag<std::string>("logfile");
     pcp_access_logfile_ = HW::GetFlag<std::string>("pcp-access-logfile");
@@ -206,6 +227,8 @@ void Configuration::setupLogging()
         // up logging before calling validateAndNormalizeConfiguration
         validateLogDirPath(logfile_);
         logfile_fstream_.open(logfile_.c_str(), std::ios_base::app);
+        fs::permissions(logfile_, NIX_FILE_PERMS);
+
         log_stream = &logfile_fstream_;
     } else {
         log_stream = &boost::nowide::cout;
@@ -217,6 +240,7 @@ void Configuration::setupLogging()
         pcp_access_fstream_ptr_.reset(
             new boost::nowide::ofstream(pcp_access_logfile_.c_str(),
                                         std::ios_base::app));
+        fs::permissions(pcp_access_logfile_, NIX_FILE_PERMS);
     }
 
 #ifndef _WIN32
@@ -268,14 +292,14 @@ void Configuration::setupLogging()
                                   loglevel,
                                   pcp_access_fstream_ptr_);
 
-    LOG_DEBUG("Logging configured");
-
     if (!log_on_stdout) {
         // Configure platform-specific things for file logging
         // NB: we do that after setting up lth_log in order to log in
         //     case of failure
         configure_platform_file_logging();
     }
+
+    return loglevel;
 }
 
 void Configuration::validate()
@@ -291,6 +315,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
     agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
         broker_ws_uris_,
+        master_uris_,
         HW::GetFlag<std::string>("pcp-version"),
         HW::GetFlag<std::string>("ssl-ca-cert"),
         HW::GetFlag<std::string>("ssl-cert"),
@@ -298,6 +323,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         HW::GetFlag<std::string>("spool-dir"),
         HW::GetFlag<std::string>("spool-dir-purge-ttl"),
         HW::GetFlag<std::string>("modules-config-dir"),
+        HW::GetFlag<std::string>("task-cache-dir"),
         AGENT_CLIENT_TYPE,
         HW::GetFlag<int>("connection-timeout") * 1000,
         static_cast<uint32_t >(HW::GetFlag<int>("association-timeout")),
@@ -378,6 +404,15 @@ void Configuration::defineDefaultValues()
                     "broker-ws-uri",
                     "",
                     lth_loc::translate("WebSocket URI of the PCP broker"),
+                    Types::String,
+                    "") } });
+
+    defaults_.insert(
+        Option { "master-uri",
+                 Base_ptr { new Entry<std::string>(
+                    "master-uri",
+                    "",
+                    lth_loc::translate("URI of the Puppet Master"),
                     Types::String,
                     "") } });
 
@@ -541,6 +576,16 @@ void Configuration::defineDefaultValues()
                     DEFAULT_MODULES_CONF_DIR) } });
 
     defaults_.insert(
+        Option { "task-cache-dir",
+                 Base_ptr { new Entry<std::string>(
+                    "task-cache-dir",
+                    "",
+                    lth_loc::format("Tasks cache directory, default: {1}",
+                                    DEFAULT_TASK_CACHE_DIR),
+                    Types::String,
+                    DEFAULT_TASK_CACHE_DIR) } });
+
+    defaults_.insert(
         Option { "spool-dir",
                  Base_ptr { new Entry<std::string>(
                     "spool-dir",
@@ -698,6 +743,10 @@ void Configuration::parseConfigFile()
                 check_key_type(key, "Array", lth_jc::DataType::Array);
                 broker_ws_uris_ = config_json.get<std::vector<std::string>>(key);
                 continue;
+            } else if (key == "master-uris") {
+                check_key_type(key, "Array", lth_jc::DataType::Array);
+                master_uris_ = config_json.get<std::vector<std::string>>(key);
+                continue;
             } else {
                 throw Configuration::Error {
                     lth_loc::format("field '{1}' is not a valid configuration variable",
@@ -786,6 +835,21 @@ void Configuration::validateAndNormalizeWebsocketSettings()
         }
     }
 
+    for (auto &uri : master_uris_) {
+        auto parsed = lth_util::uri(uri);
+        if (parsed.protocol.empty()) {
+            parsed.protocol = "https";
+        } else if (parsed.protocol != "https") {
+            throw Configuration::Error {
+                lth_loc::format("master-uris value \"{1}\" must start with https://", uri) };
+        }
+
+        if (parsed.port.empty()) {
+            parsed.port = "8140";
+        }
+        uri = parsed.str();
+    }
+
     if (broker_ws_uris_.empty())
         throw Configuration::Error {
             lth_loc::translate("broker-ws-uri or broker-ws-uris must be defined") };
@@ -859,6 +923,27 @@ void Configuration::validateAndNormalizeOtherSettings()
         check_and_create_dir(val_path, val, false);
         HW::SetFlag<std::string>(option, val_path.string());
     }
+
+    // Create the task-cache-dir if needed and ensure that we
+    // have the required user rwx, and group rx permissions.
+    const auto task_cache_dir = HW::GetFlag<std::string>("task-cache-dir");
+
+    if (task_cache_dir.empty()) {
+        throw Configuration::Error {
+            lth_loc::translate("task-cache-dir must be defined") };
+    }
+
+    fs::path task_cache_dir_path { lth_file::tilde_expand(task_cache_dir) };
+    check_and_create_dir(task_cache_dir_path, "task-cache-dir", true);
+    try {
+        fs::permissions(task_cache_dir_path, NIX_DIR_PERMS);
+    } catch (const fs::filesystem_error& e) {
+            throw Configuration::Error {
+                lth_loc::format("Failed to make the task-cache-dir '{1}' user/group readable and executable, and user writable during configuration validation: {2}",
+                            task_cache_dir_path.string(), e.what()) };
+    }
+
+    HW::SetFlag<std::string>("task-cache-dir", task_cache_dir_path.string());
 
     // Create the spool-dir if needed and ensure we can write in it
     const auto spool_dir = HW::GetFlag<std::string>("spool-dir");

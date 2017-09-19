@@ -38,7 +38,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for it to be
 
   step 'Wait until Puppet starts executing' do
     agents.each do |agent|
-      wait_for_sleep_process(agent)
+      wait_for_sleep_process(agent, SECONDS_TO_SLEEP)
     end
   end
 
@@ -50,11 +50,6 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for it to be
   transaction_ids = []
   step 'Run Puppet on agents' do
     transaction_ids = start_puppet_non_blocking_request(master, target_identities)
-  end
-
-  teardown do
-    # Make sure we stop sleep processes when the test finishes, to avoid leaving stranded processes running.
-    stop_sleep_process(agents)
   end
 
   agents.each do |agent|
@@ -75,6 +70,10 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for it to be
       else
         on agent, "kill -9 #{pid}"
       end
+
+      # Also halt the sleep process here, as on Windows the parent process won't exit while the child process
+      # has an open handle shared with it (the stdout pipe).
+      stop_sleep_process(agent, SECONDS_TO_SLEEP)
     end
   end
 

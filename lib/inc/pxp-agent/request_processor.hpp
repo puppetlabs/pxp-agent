@@ -120,8 +120,11 @@ class RequestProcessor {
     /// Load the modules configuration files
     void loadModulesConfiguration();
 
+    /// Register module in the module map
+    void registerModule(Module *module);
+
     /// Load the modules from the src/modules directory
-    void loadInternalModules();
+    void loadInternalModules(const Configuration::Agent& agent_configuration);
 
     /// Load the external modules contained in the specified directory
     void loadExternalModulesFrom(boost::filesystem::path modules_dir_path);

@@ -20,6 +20,8 @@ using MessageCallback = std::function<void(const PCPClient::ParsedChunks& parsed
 // no exception will be propagated.
 class PXPConnector {
   public:
+    virtual ~PXPConnector() = default;
+
     virtual void sendPCPError(const std::string& request_id,
                               const std::string& description,
                               const std::vector<std::string>& endpoints) = 0;

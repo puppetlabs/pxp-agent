@@ -114,6 +114,11 @@ Build
       cmake -DCMAKE_BUILD_TYPE=Debug -DDEV_LOG_COLOR=ON ..
       make
 
+  NOTE: If the versions of OpenSSL and libcurl conflict with each other, curl may fail
+  to load SSL files. On macOS this is common when using Homebrew. Invoke cmake with the
+  following commands to use the Homebrew versions of OpenSSL and libcurl:
+    cmake -DCMAKE_PREFIX_PATH="/usr/local/opt/openssl;/usr/local/opt/curl" ..
+
 Usage
 -----
 
@@ -319,6 +324,13 @@ are specified, it will use them in a failover capacity, where if it's unable
 to connect to one it will try the next in the list, and repeat until a
 successful connection is made. In the event of a disconnect, the agent will
 retry that connection before trying a new broker.
+
+**master-uris (optional)**
+
+An array of HTTPS URIs of servers hosting task files for download. When multiple
+are specified, it will use them in a failover capacity, where if it's unable
+to connect to one it will try the next in the list until all have been tried.
+If all are unavailable, task download will fail.
 
 **pcp-version (optional)**
 

@@ -36,7 +36,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
 
   step 'Wait until Puppet starts executing' do
     agents.each do |agent|
-      wait_for_sleep_process(agent)
+      wait_for_sleep_process(agent, SECONDS_TO_SLEEP)
     end
   end
 
@@ -51,7 +51,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
   end
 
   step 'Signal sleep process to end so 1st Puppet run will complete' do
-    stop_sleep_process(agents)
+    stop_sleep_process(agents, SECONDS_TO_SLEEP)
   end
 
   target_identities.zip(transaction_ids).each do |identity, transaction_id|

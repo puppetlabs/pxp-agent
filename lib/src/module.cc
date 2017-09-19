@@ -26,6 +26,14 @@ bool Module::hasAction(const std::string& action_name)
            != actions.end();
 }
 
+void Module::processOutputAndUpdateMetadata(ActionResponse& response) {
+    // Calling this implementation is equivalent to calling a pure virtual method.
+    // It can in theory happen for a module which returns true from its implementation
+    // of `supportsAsync()`. Such modules must override this method.
+    LOG_FATAL("Module does not support output processing: {1}", module_name);
+    response.setBadResultsAndEnd(lth_loc::format("Module does not support output processing: {1}", module_name));
+}
+
 void Module::validateOutputAndUpdateMetadata(ActionResponse& response)
 {
     LOG_TRACE("Validating the results for the {1}", response.prettyRequestLabel());
@@ -37,7 +45,7 @@ void Module::validateOutputAndUpdateMetadata(ActionResponse& response)
             response.action_metadata.get<std::string>("action"));
         LOG_TRACE("Successfully validated the results for the {1}",
                   response.prettyRequestLabel());
-    } catch (PCPClient::validation_error) {
+    } catch (PCPClient::validation_error&) {
         // Modify the response metadata to indicate the failure
         if (type() == ModuleType::Internal) {
             // This is unexpected

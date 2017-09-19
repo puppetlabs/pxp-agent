@@ -3,6 +3,8 @@
 
 #include <horsewhisperer/horsewhisperer.h>
 
+#include <boost/filesystem.hpp>
+
 #include <boost/nowide/fstream.hpp>
 
 #include <boost/multi_index_container.hpp>
@@ -21,6 +23,10 @@ namespace PXPAgent {
 //
 
 extern const std::string DEFAULT_SPOOL_DIR;     // used by unit tests
+
+// Note that on Windows we rely on inherited directory ACLs.
+extern const boost::filesystem::perms NIX_FILE_PERMS;
+extern const boost::filesystem::perms NIX_DIR_PERMS;
 
 //
 // Types
@@ -126,6 +132,7 @@ class Configuration
     {
         std::string modules_dir;
         std::vector<std::string> broker_ws_uris;
+        std::vector<std::string> master_uris;
         std::string pcp_version;
         std::string ca;
         std::string crt;
@@ -133,6 +140,7 @@ class Configuration
         std::string spool_dir;
         std::string spool_dir_purge_ttl;
         std::string modules_config_dir;
+        std::string task_cache_dir;
         std::string client_type;
         long ws_connection_timeout_ms;
         uint32_t association_timeout_s;
@@ -164,7 +172,8 @@ class Configuration
     /// Throw a Configuration::Error: in case of invalid the specified
     /// log file is in a non-esixtent directory.
     /// Other execeptions are propagated.
-    void setupLogging();
+    /// Returns the log level.
+    std::string setupLogging();
 
     /// Ensure all required values are valid. If necessary, expand
     /// file paths to the expected format.
@@ -203,6 +212,12 @@ class Configuration
         return broker_ws_uris_;
     }
 
+    /// Return the list of configured masters.
+    std::vector<std::string> get_master_uris()
+    {
+        return master_uris_;
+    }
+
     /// Set the specified value for a given configuration flag.
     /// Throw an Configuration::Error in case the Configuration was
     /// not initialized so far.
@@ -215,15 +230,22 @@ class Configuration
 
         try {
             HorseWhisperer::SetFlag<T>(flagname, std::move(value));
-        } catch (HorseWhisperer::flag_validation_error) {
+        } catch (HorseWhisperer::flag_validation_error&) {
             throw Configuration::Error { getInvalidFlagError(flagname) };
-        } catch (HorseWhisperer::undefined_flag_error) {
+        } catch (HorseWhisperer::undefined_flag_error&) {
             throw Configuration::Error { getUnknownFlagError(flagname) };
         }
     }
 
     /// Return an object containing all agent configuration options
     const Agent& getAgentConfiguration() const;
+
+    // Get the path used to start this pxp-agent process, its intended use
+    // is to start executables which are installed alongside the pxp-agent
+    // executable
+    boost::filesystem::path& getExecPrefix() {
+        return exec_prefix_;
+    }
 
     /// Try to close the log file streams,  then try to open the log
     /// files (pxp-agent app log and PCP access log) in append mode
@@ -251,6 +273,9 @@ class Configuration
     // List of brokers
     std::vector<std::string> broker_ws_uris_;
 
+    // List of masters
+    std::vector<std::string> master_uris_;
+
     // Path to the logfile
     std::string logfile_;
 
@@ -262,6 +287,10 @@ class Configuration
 
     // Stream abstraction object for the PCP Access logfile
     mutable std::shared_ptr<boost::nowide::ofstream> pcp_access_fstream_ptr_;
+
+    // The path used to start this pxp-agent process, it is used to start
+    // executables which are installed alongside the pxp-agent executable
+    boost::filesystem::path exec_prefix_;
 
     // Defines the default values
     Configuration();

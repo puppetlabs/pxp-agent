@@ -9,6 +9,7 @@
 #include <pxp-agent/time.hpp>
 #include <pxp-agent/modules/echo.hpp>
 #include <pxp-agent/modules/ping.hpp>
+#include <pxp-agent/modules/task.hpp>
 #include <pxp-agent/util/process.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
@@ -181,7 +182,7 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
 {
     assert(!spool_dir_path_.string().empty());
     loadModulesConfiguration();
-    loadInternalModules();
+    loadInternalModules(agent_configuration);
 
     if (!agent_configuration.modules_dir.empty()) {
         loadExternalModulesFrom(agent_configuration.modules_dir);
@@ -311,12 +312,13 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) cons
                                                         request.module()) };
     }
 
-    // If it's an internal module, the request must be blocking
+    // Verify the module supports the non-blocking / asynchronous requests
+    // if such a request is passed.
     // NB: we rely on short-circuiting OR (otherwise, modules_ access
     // could break)
     if (request.type() == RequestType::NonBlocking
             && (is_status_request
-                || modules_.at(request.module())->type() == ModuleType::Internal))
+                || !modules_.at(request.module())->supportsAsync()))
         throw RequestProcessor::Error {
             lth_loc::format("the module '{1}' supports only blocking PXP requests",
                             request.module()) };
@@ -421,32 +423,32 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
 
 //                       TRANSACTION STATUS RESPONSE TABLE
 //
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// |         |          |         |          |           |                     |
-// |metadata |completed |exitcode | PID file |PID process|      response:      |
-// | exists? |    by    |  file   |  exists? |  exists?  |       status        |
-// |  valid  |metadata? | exists? |          |           |          &          |
-// |metadata?|(status   |(got     |          |           |   included files    |
-// |         |!=RUNNING)| output?)|          |           |                     |
-// |         |          |         |          |           |                     |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// | ~exists |     -    |    -    |     -    |     -     |       UNKNOWN       |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// | ~valid  |     -    |    -    |     -    |     -     |       UNKNOWN       |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// |   yes   |    no    |   no    |    no    |     -     |       UNKNOWN       |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// |   yes   |    no    |   no    |    yes   |    yes    |       RUNNING       |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// |   yes   |    no    |   no    |    yes   |    no     |       UNKNOWN       |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// |   yes   |    no    |   yes   |     -    |     -     |  SUCCESS / FAILURE  |
-// |         |          |         |          |           | + stdout & stderr   |
-// |         |          |         |          |           | + metadata update   |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
-// |   yes   |    yes   |         |     -    |     -     |  SUCCESS / FAILURE  |
-// |         |          |         |          |           | + stdout & stderr   |
-// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |         |          |         |          |           |         |                     |
+// |metadata |completed |exitcode | PID file |PID process| action  |      response:      |
+// | exists? |    by    |  file   |  exists? |  exists?  | thread  |       status        |
+// |  valid  |metadata? | exists? |          |           | exists? |          &          |
+// |metadata?|(status   |(got     |          |           |         |   included files    |
+// |         |!=RUNNING)| output?)|          |           |         |                     |
+// |         |          |         |          |           |         |                     |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// | ~exists |     -    |    -    |     -    |     -     |    -    |       UNKNOWN       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// | ~valid  |     -    |    -    |     -    |     -     |    -    |       UNKNOWN       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    no    |   no    |    no    |     -     |   yes   |       RUNNING       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    no    |   no    |    yes   |    yes    |    -    |       RUNNING       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    no    |   no    |    yes   |    no     |    -    |       UNKNOWN       |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    no    |   yes   |     -    |     -     |    -    |  SUCCESS / FAILURE  |
+// |         |          |         |          |           |         | + stdout & stderr   |
+// |         |          |         |          |           |         | + metadata update   |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+// |   yes   |    yes   |    -    |     -    |     -     |    -    |  SUCCESS / FAILURE  |
+// |         |          |         |          |           |         | + stdout & stderr   |
+// |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
 //
 
 void RequestProcessor::processStatusRequest(const ActionRequest& request)
@@ -646,6 +648,12 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
                           "transaction {1}: {2}",
                           t_id, err.what());
             }
+        } else if (thread_container_.find(t_id)) {
+            // Leave checking the thread container until now, as the thread may still
+            // be running if we never restarted. It runs until the external action ends
+            // to send a non-blocking response (if notify_outcome is true).
+            LOG_TRACE("The action thread of the transaction {1} is running", t_id);
+            status_results.set<std::string>("status", AS.at(ActionStatus::Running));
         } else {
             // We failed to get any indication from the PID file;
             // leave the status as UNKNOWN as the process may finish
@@ -708,6 +716,8 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
         return;
     }
 
+    // We previously verified the module and action pair to exist
+    // so this cannot throw
     std::shared_ptr<Module> mod_ptr {
         modules_.at(metadata.get<std::string>("module")) };
 
@@ -721,7 +731,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
                          std::move(metadata) };
     // HERE(ale): ^^ don't use the 'metadata' ref below!!!
 
-    ExternalModule::processOutputAndUpdateMetadata(a_r);
+    mod_ptr->processOutputAndUpdateMetadata(a_r);
 
     if (a_r.action_metadata.get<bool>("results_are_valid"))
         // Validate by using the action's output JSON schema
@@ -800,11 +810,26 @@ void RequestProcessor::loadModulesConfiguration()
     }
 }
 
-void RequestProcessor::loadInternalModules()
+void RequestProcessor::registerModule(Module *module)
 {
-    // HERE(ale): no external configuration for internal modules
-    modules_["echo"] = std::shared_ptr<Module>(new Modules::Echo);
-    modules_["ping"] = std::shared_ptr<Module>(new Modules::Ping);
+    std::shared_ptr<Module> module_ptr { module };
+
+    if (!modules_.emplace(module_ptr->module_name, module_ptr).second) {
+        LOG_WARNING("Ignoring attempt to re-register module: {1}", module_ptr->module_name);
+    }
+}
+
+void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_configuration)
+{
+    registerModule(new Modules::Echo);
+    registerModule(new Modules::Ping);
+    registerModule(new Modules::Task(Configuration::Instance().getExecPrefix(),
+                                     agent_configuration.task_cache_dir,
+                                     agent_configuration.master_uris,
+                                     agent_configuration.ca,
+                                     agent_configuration.crt,
+                                     agent_configuration.key,
+                                     spool_dir_path_.string()));
 }
 
 void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
@@ -828,7 +853,7 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
 #ifndef _WIN32
             if (extension == "") {
 #else
-            if (extension == ".bat") {
+            if (extension == ".bat" || extension == ".exe") {
 #endif
                 try {
                     ExternalModule* e_m;
@@ -847,7 +872,7 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
                                                  spool_dir_path_.string());
                     }
 
-                    modules_[e_m->module_name] = std::shared_ptr<Module>(e_m);
+                    registerModule(e_m);
                 } catch (Module::LoadingError& e) {
                     LOG_ERROR("Failed to load {1}; {2}", f_p, e.what());
                 } catch (PCPClient::validation_error& e) {

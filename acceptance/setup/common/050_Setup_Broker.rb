@@ -1,22 +1,16 @@
-require 'puppet/acceptance/install_utils'
-extend Puppet::Acceptance::InstallUtils
 require 'pxp-agent/test_helper'
 
 step 'Install build dependencies for broker' do
-  BROKER_DEP_PACKAGES = {
-    :redhat => [
-      'git',
-      'java-1.8.0-openjdk-devel',
-    ],
-  }
-  install_packages_on(master, BROKER_DEP_PACKAGES, :check_if_exists => true)
+  # Assumes RedHat master
+  master.install_package('git')
+  master.install_package('java-1.8.0-openjdk-devel')
 end
 
 NUM_BROKERS = 2
 have_broker_replica = NUM_BROKERS > 1
 
 PCP_BROKER_FORK = ENV['PCP_BROKER_FORK'] || nil
-PCP_BROKER_REF  = ENV['PCP_BROKER_REF'] || 'refs/tags/1.2.1'
+PCP_BROKER_REF  = ENV['PCP_BROKER_REF'] || 'refs/tags/1.4.0'
 
 step 'Clone pcp-broker to broker_hosts' do
   pcp_broker_url = build_git_url('pcp-broker', PCP_BROKER_FORK, nil, 'https')
@@ -60,7 +54,7 @@ step 'Run lein deps to download dependencies' do
   # 'lein tk' will download dependencies automatically, but downloading them will take
   # some time and will eat into the polling period we allow for the broker to start
   for i in 0..NUM_BROKERS-1
-    on master, "cd #{GIT_CLONE_FOLDER}/pcp-broker#{i}; export LEIN_ROOT=ok; lein with-profile internal-mirrors deps"
+    on master, "cd #{GIT_CLONE_FOLDER}/pcp-broker#{i}; export LEIN_ROOT=ok; lein with-profile #{LEIN_PROFILE} deps"
   end
 end
 

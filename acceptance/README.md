@@ -16,3 +16,8 @@ To run acceptance tests, a build of puppet-agent is required. An example of how 
     rake ci:test:aio SHA=1.8.2 TEST_TARGET=centos7-64a
 
 You can run `rake ci:test:aio` to get more detailed help about how to configure testing.
+
+Additionally, PACKAGE can be set to install a local package built via [puppet-agent](https://github.com/puppetlabs/puppet-agent)
+on agents during testing; SHA is still required for the version to install on the master. For example
+
+    rake ci:test:aio SHA=1.8.2 TEST_TARGET=centos7-64a PACKAGE=/path/to/puppet-agent/output/el/7/PC1/x86_64/puppet-agent-5.0.1.190.g4263fa6d-1.el7.x86_64.rpm
