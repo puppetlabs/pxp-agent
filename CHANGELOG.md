@@ -1,3 +1,10 @@
+## 1.8.0
+
+This is a feature release.
+
+* [PCP-780](https://tickets.puppetlabs.com/browse/PCP-780) Add `input_method: powershell` supporting
+named params in powershell scripts.
+
 ## 1.7.0
 
 This is a feature release.
