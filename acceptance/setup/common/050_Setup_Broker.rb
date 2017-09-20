@@ -1,15 +1,9 @@
-require 'puppet/acceptance/install_utils'
-extend Puppet::Acceptance::InstallUtils
 require 'pxp-agent/test_helper'
 
 step 'Install build dependencies for broker' do
-  BROKER_DEP_PACKAGES = {
-    :redhat => [
-      'git',
-      'java-1.8.0-openjdk-devel',
-    ],
-  }
-  install_packages_on(master, BROKER_DEP_PACKAGES, :check_if_exists => true)
+  # Assumes RedHat master
+  master.install_package('git')
+  master.install_package('java-1.8.0-openjdk-devel')
 end
 
 NUM_BROKERS = 2
