@@ -229,6 +229,8 @@ static std::string createUrlEndpoint(const lth_jc::JsonContainer& uri) {
            lth_curl::curl_escaped_string(curl_handle, params.get<std::string>(key)));
         url += escaped_key + "=" + escaped_val + "&";
     }
+    // Remove trailing ampersand (&)
+    url.pop_back();
     return url;
 }
 
