@@ -55,16 +55,16 @@ static const std::string TASK_CACHE_DIR { std::string { PXP_AGENT_ROOT_PATH }
 
 static const char* ARGV[] = {
     "test-command",
-    "--config-file", CONFIG.data(),
-    "--broker-ws-uri", TEST_BROKER_WS_URI.data(),
+    "--config-file", CONFIG.c_str(),
+    "--broker-ws-uri", TEST_BROKER_WS_URI.c_str(),
     "--pcp-version=2",
-    "--ssl-ca-cert", CA.data(),
-    "--ssl-cert", CERT.data(),
-    "--ssl-key", KEY.data(),
-    "--modules-dir", MODULES_DIR.data(),
-    "--modules-config-dir", MODULES_CONFIG_DIR.data(),
-    "--spool-dir", SPOOL_DIR.data(),
-    "--task-cache-dir", TASK_CACHE_DIR.data(),
+    "--ssl-ca-cert", CA.c_str(),
+    "--ssl-cert", CERT.c_str(),
+    "--ssl-key", KEY.c_str(),
+    "--modules-dir", MODULES_DIR.c_str(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
+    "--spool-dir", SPOOL_DIR.c_str(),
+    "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
 static const int ARGC = 21;
@@ -379,14 +379,14 @@ TEST_CASE("Configuration::validate", "[configuration]") {
 TEST_CASE("Configuration::validate with unknown config options", "[configuration]") {
     const char* altArgv[] = {
     "test-command",
-    "--config-file", UNKNOWN_CONFIG.data(),
-    "--ssl-ca-cert", CA.data(),
-    "--ssl-cert", CERT.data(),
-    "--ssl-key", KEY.data(),
-    "--modules-dir", MODULES_DIR.data(),
-    "--modules-config-dir", MODULES_CONFIG_DIR.data(),
-    "--spool-dir", SPOOL_DIR.data(),
-    "--task-cache-dir", TASK_CACHE_DIR.data(),
+    "--config-file", UNKNOWN_CONFIG.c_str(),
+    "--ssl-ca-cert", CA.c_str(),
+    "--ssl-cert", CERT.c_str(),
+    "--ssl-key", KEY.c_str(),
+    "--modules-dir", MODULES_DIR.c_str(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
+    "--spool-dir", SPOOL_DIR.c_str(),
+    "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
     const int altArgc = 18;
@@ -403,14 +403,14 @@ TEST_CASE("Configuration::validate with unknown config options", "[configuration
 TEST_CASE("Configuration::validate multiple brokers", "[configuration]") {
     const char* altArgv[] = {
     "test-command",
-    "--config-file", MULTI_BROKER_CONFIG.data(),
-    "--ssl-ca-cert", CA.data(),
-    "--ssl-cert", CERT.data(),
-    "--ssl-key", KEY.data(),
-    "--modules-dir", MODULES_DIR.data(),
-    "--modules-config-dir", MODULES_CONFIG_DIR.data(),
-    "--spool-dir", SPOOL_DIR.data(),
-    "--task-cache-dir", TASK_CACHE_DIR.data(),
+    "--config-file", MULTI_BROKER_CONFIG.c_str(),
+    "--ssl-ca-cert", CA.c_str(),
+    "--ssl-cert", CERT.c_str(),
+    "--ssl-key", KEY.c_str(),
+    "--modules-dir", MODULES_DIR.c_str(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
+    "--spool-dir", SPOOL_DIR.c_str(),
+    "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
     const int altArgc = 18;
@@ -442,14 +442,14 @@ TEST_CASE("Configuration::validate multiple brokers", "[configuration]") {
 TEST_CASE("Configuration::parseOptions duplicate broker-ws-uris", "[configuration]") {
     const char* altArgv[] = {
     "test-command",
-    "--config-file", DUPLICATE_CONFIG.data(),
-    "--ssl-ca-cert", CA.data(),
-    "--ssl-cert", CERT.data(),
-    "--ssl-key", KEY.data(),
-    "--modules-dir", MODULES_DIR.data(),
-    "--modules-config-dir", MODULES_CONFIG_DIR.data(),
-    "--spool-dir", SPOOL_DIR.data(),
-    "--task-cache-dir", TASK_CACHE_DIR.data(),
+    "--config-file", DUPLICATE_CONFIG.c_str(),
+    "--ssl-ca-cert", CA.c_str(),
+    "--ssl-cert", CERT.c_str(),
+    "--ssl-key", KEY.c_str(),
+    "--modules-dir", MODULES_DIR.c_str(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
+    "--spool-dir", SPOOL_DIR.c_str(),
+    "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
     const int altArgc = 18;
@@ -466,14 +466,14 @@ TEST_CASE("Configuration::parseOptions duplicate broker-ws-uris", "[configuratio
 TEST_CASE("Configuration::parseOptions invalid config-file name", "[configuration]") {
     const char* altArgv[] = {
     "test-command",
-    "--config-file", INVALID_CONFIG_NAME.data(),
-    "--ssl-ca-cert", CA.data(),
-    "--ssl-cert", CERT.data(),
-    "--ssl-key", KEY.data(),
-    "--modules-dir", MODULES_DIR.data(),
-    "--modules-config-dir", MODULES_CONFIG_DIR.data(),
-    "--spool-dir", SPOOL_DIR.data(),
-    "--task-cache-dir", TASK_CACHE_DIR.data(),
+    "--config-file", INVALID_CONFIG_NAME.c_str(),
+    "--ssl-ca-cert", CA.c_str(),
+    "--ssl-cert", CERT.c_str(),
+    "--ssl-key", KEY.c_str(),
+    "--modules-dir", MODULES_DIR.c_str(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
+    "--spool-dir", SPOOL_DIR.c_str(),
+    "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
     const int altArgc = 18;
@@ -490,14 +490,14 @@ TEST_CASE("Configuration::parseOptions invalid config-file name", "[configuratio
 TEST_CASE("Configuration::validate bad broker-ws-uris", "[configuration]") {
     const char* altArgv[] = {
     "test-command",
-    "--config-file", BAD_BROKER_CONFIG.data(),
-    "--ssl-ca-cert", CA.data(),
-    "--ssl-cert", CERT.data(),
-    "--ssl-key", KEY.data(),
-    "--modules-dir", MODULES_DIR.data(),
-    "--modules-config-dir", MODULES_CONFIG_DIR.data(),
-    "--spool-dir", SPOOL_DIR.data(),
-    "--task-cache-dir", TASK_CACHE_DIR.data(),
+    "--config-file", BAD_BROKER_CONFIG.c_str(),
+    "--ssl-ca-cert", CA.c_str(),
+    "--ssl-cert", CERT.c_str(),
+    "--ssl-key", KEY.c_str(),
+    "--modules-dir", MODULES_DIR.c_str(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
+    "--spool-dir", SPOOL_DIR.c_str(),
+    "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
     const int altArgc = 18;
@@ -515,14 +515,14 @@ TEST_CASE("Configuration::validate bad broker-ws-uris", "[configuration]") {
 TEST_CASE("Configuration::validate bad master-uris", "[configuration]") {
     const char* altArgv[] = {
     "test-command",
-    "--config-file", BAD_MASTER_CONFIG.data(),
-    "--ssl-ca-cert", CA.data(),
-    "--ssl-cert", CERT.data(),
-    "--ssl-key", KEY.data(),
-    "--modules-dir", MODULES_DIR.data(),
-    "--modules-config-dir", MODULES_CONFIG_DIR.data(),
-    "--spool-dir", SPOOL_DIR.data(),
-    "--task-cache-dir", TASK_CACHE_DIR.data(),
+    "--config-file", BAD_MASTER_CONFIG.c_str(),
+    "--ssl-ca-cert", CA.c_str(),
+    "--ssl-cert", CERT.c_str(),
+    "--ssl-key", KEY.c_str(),
+    "--modules-dir", MODULES_DIR.c_str(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
+    "--spool-dir", SPOOL_DIR.c_str(),
+    "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
     const int altArgc = 18;
