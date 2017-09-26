@@ -51,8 +51,18 @@ if (WIN32)
 endif()
 
 find_package(Leatherman REQUIRED COMPONENTS ${LEATHERMAN_COMPONENTS})
-find_package(Boost 1.54 REQUIRED
-  COMPONENTS filesystem chrono system date_time thread log regex random)
+
+# Include LEATHERMAN_USE_LOCALES
+include(options)
+
+if (LEATHERMAN_USE_LOCALES)
+    # TODO(ale): enable i18n with add_definitions(-DLEATHERMAN_I18N) - PCP-257
+    # add_definitions(-DLEATHERMAN_I18N)
+    SET(BOOST_COMPONENTS locale)
+endif()
+LIST(APPEND BOOST_COMPONENTS filesystem chrono system date_time thread log regex random)
+
+find_package(Boost 1.54 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 find_package(CPPHOCON REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(cpp-pcp-client REQUIRED)
@@ -64,7 +74,6 @@ include(${VENDOR_DIRECTORY}/horsewhisperer.cmake)
 include(leatherman)
 
 # Leatherman it up
-include(options)
 include(cflags)
 leatherman_logging_line_numbers()
 
@@ -76,7 +85,6 @@ if (WIN32)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--nxcompat -Wl,--dynamicbase")
 endif()
 
-# TODO(ale): enable i18n with add_definitions(-DLEATHERMAN_I18N) - PCP-257
 # TODO(ale): enable translation with set(LEATHERMAN_LOCALES "...;...") and
 # gettext_compile(${CMAKE_CURRENT_SOURCE_DIR}/locales share/locale)
 
