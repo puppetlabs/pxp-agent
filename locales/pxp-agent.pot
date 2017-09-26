@@ -145,11 +145,11 @@ msgid "PCP connection established; about to start monitoring it"
 msgstr ""
 
 #: lib/src/configuration.cc
-msgid "failure getting Windows AppData directory: {1}"
+msgid "failure getting HOME directory"
 msgstr ""
 
 #: lib/src/configuration.cc
-msgid "failure getting HOME directory"
+msgid "failure getting Windows AppData directory: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc

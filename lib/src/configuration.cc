@@ -55,22 +55,26 @@ namespace lth_util = leatherman::util;
 #ifdef _WIN32
     namespace lth_w = leatherman::windows;
     static const fs::path DATA_DIR = []() {
-        if (lth_w::user::is_admin()) {
-            try {
-                return fs::path(lth_w::file_util::get_programdata_dir()) / "PuppetLabs" / "pxp-agent";
-            } catch (lth_w::file_util::unknown_folder_exception &e) {
-                throw Configuration::Error {
-                    lth_loc::format("failure getting Windows AppData directory: {1}", e.what()) };
-            }
-        } else {
+        if (!lth_w::user::is_admin()) {
             auto home = lth_w::user::home_dir();
             if (!home.empty()) {
-                return fs::path(home) / ".puppetlabs" / "pxp-agent";
+                return fs::path(home) / ".puppetlabs";
             }
             throw Configuration::Error { lth_loc::format("failure getting HOME directory") };
+        } else {
+            return fs::path();
         }
     }();
 
+    static const fs::path& sys_dir() {
+        try {
+            static auto ddir = fs::path(lth_w::file_util::get_programdata_dir()) / "PuppetLabs" / "pxp-agent";
+            return ddir;
+        } catch (lth_w::file_util::unknown_folder_exception &e) {
+            throw Configuration::Error {
+                lth_loc::format("failure getting Windows AppData directory: {1}", e.what()) };
+        }
+    }
 
     static const std::string DEFAULT_MODULES_DIR = []() {
         wchar_t szPath[MAX_PATH];
@@ -93,12 +97,16 @@ namespace lth_util = leatherman::util;
         }
     }();
 
+    static fs::path conf_dir() { return sys_dir() / "etc"; }
+    static fs::path log_dir() { return sys_dir() / "var" / "log"; }
+    static std::string spool_dir() { return (sys_dir() / "var" / "spool").string(); }
+    static std::string cache_dir() { return (sys_dir() / "tasks-cache").string(); }
 #else
     static const fs::path DATA_DIR = []() {
         if (getuid()) {
             std::string home;
             if (lth_util::environment::get("HOME", home)) {
-                return fs::path(home) / ".puppetlabs" / "pxp-agent";
+                return fs::path(home) / ".puppetlabs";
             }
             throw Configuration::Error { lth_loc::format("failure getting HOME directory") };
         } else {
@@ -107,21 +115,22 @@ namespace lth_util = leatherman::util;
     }();
 
     static const std::string DEFAULT_PID_FILE { DATA_DIR.empty() ?
-        std::string("/var/run/puppetlabs/pxp-agent.pid") :
-        (DATA_DIR / "var" / "run" / "pxp-agent.pid").string() };
+        std::string("/var/run/puppetlabs/pxp-agent.pid") : (DATA_DIR / "var" / "run" / "pxp-agent.pid").string() };
     static const std::string DEFAULT_MODULES_DIR { "/opt/puppetlabs/pxp-agent/modules" };
+
+    static fs::path conf_dir()     { return "/etc/puppetlabs/pxp-agent"; }
+    static fs::path log_dir()      { return "/var/log/puppetlabs/pxp-agent"; }
+    static std::string spool_dir() { return "/opt/puppetlabs/pxp-agent/spool"; }
+    static std::string cache_dir() { return "/opt/puppetlabs/pxp-agent/tasks-cache"; }
 #endif
 
-static const fs::path DEFAULT_CONF_DIR { DATA_DIR.empty() ?
-    fs::path("/etc/puppetlabs/pxp-agent") : (DATA_DIR / "etc") };
-static const fs::path DEFAULT_LOG_DIR { DATA_DIR.empty() ?
-    fs::path("/var/log/puppetlabs/pxp-agent") : (DATA_DIR / "var" / "log") };
-// TODO: change this to DATA_DIR/spool in a future major release.
+// DATA_DIR defines the non-root data directory. Functions define the system default.
+static const fs::path DEFAULT_CONF_DIR { DATA_DIR.empty() ? conf_dir() : (DATA_DIR / "etc" / "pxp-agent") };
+static const fs::path DEFAULT_LOG_DIR { DATA_DIR.empty() ? log_dir() : (DATA_DIR / "var" / "log") };
 const std::string DEFAULT_SPOOL_DIR { DATA_DIR.empty() ?
-    std::string("/opt/puppetlabs/pxp-agent/spool") : (DATA_DIR / "var" / "spool").string() };
+    spool_dir() : (DATA_DIR / "opt" / "pxp-agent" / "spool").string() };
 static const std::string DEFAULT_TASK_CACHE_DIR { DATA_DIR.empty() ?
-    std::string("/opt/puppetlabs/pxp-agent/tasks-cache") :
-    (DATA_DIR / "tasks-cache").string() };
+    cache_dir() : (DATA_DIR / "opt" / "pxp-agent" / "tasks-cache").string() };
 
 static const std::string DEFAULT_LOG_FILE { (DEFAULT_LOG_DIR / "pxp-agent.log").string() };
 static const std::string DEFAULT_PCP_ACCESS_FILE { (DEFAULT_LOG_DIR / "pcp-access.log").string() };
