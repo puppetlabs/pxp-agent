@@ -72,6 +72,11 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "SunOS" OR CM
     list(APPEND LIBS rt ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" AND BOOST_STATIC AND LEATHERMAN_USE_LOCALES)
+    # Needed with cpp-hocon using Boost.Locale
+    list(APPEND LIBS iconv)
+endif()
+
 add_library(libpxp-agent STATIC ${LIBRARY_COMMON_SOURCES} ${LIBRARY_STANDARD_SOURCES})
 add_dependencies(libpxp-agent horsewhisperer)
 target_link_libraries(libpxp-agent ${LIBS})
