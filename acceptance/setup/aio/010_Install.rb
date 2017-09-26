@@ -4,16 +4,15 @@ extend Beaker::DSL::InstallUtils
 
 test_name "Install Packages"
 
-dev_builds_url = ENV['DEV_BUILDS_URL'] || 'http://builds.delivery.puppetlabs.net'
-
 step "Install puppet-agent..." do
-  if dev_builds_url == 'http://builds.delivery.puppetlabs.net'
-    install_from_build_data_url('puppet-agent', "#{dev_builds_url}/puppet-agent/#{ENV['SHA']}/artifacts/#{ENV['SHA']}.yaml")
-  else
-    hosts.each do |host|
-      install_puppetlabs_dev_repo(host, 'puppet-agent', ENV['SHA'], nil, :dev_builds_url => dev_builds_url)
-      host.install_package('puppet-agent')
-    end
+  opts = {
+    :puppet_collection    => 'PC1',
+    :puppet_agent_sha     => ENV['SHA'],
+    :puppet_agent_version => ENV['SUITE_VERSION'] || ENV['SHA']
+  }
+  agents.each do |agent|
+    next if agent == master # Avoid SERVER-528
+    install_puppet_agent_dev_repo_on(agent, opts)
   end
 end
 
@@ -30,20 +29,17 @@ step "Install puppetserver..." do
       on(master, "rpm -Uvh https://yum.puppetlabs.com/puppet5-release-el-#{version}.noarch.rpm")
     end
   else
-    if ENV['SERVER_VERSION'] && ENV['SERVER_VERSION'] != 'latest' && dev_builds_url == 'http://builds.delivery.puppetlabs.net'
-      install_from_build_data_url('puppetserver', "#{dev_builds_url}/puppetserver/#{ENV['SERVER_VERSION']}/artifacts/#{ENV['SERVER_VERSION']}.yaml", master)
+    if ENV['SERVER_VERSION']
+      install_puppetlabs_dev_repo(master, 'puppetserver', ENV['SERVER_VERSION'])
+      install_puppetlabs_dev_repo(master, 'puppet-agent', ENV['SHA'])
     else
-      if ENV['SERVER_VERSION'].nil? || ENV['SERVER_VERSION'] == 'latest'
-        server_version = ''
-        project = 'puppetserver-latest'
-      else
-        server_version = ENV['SERVER_VERSION']
-        project = 'puppetserver'
-      end
-      install_puppetlabs_dev_repo(master, project, server_version, nil, :dev_builds_url => dev_builds_url)
-      master.install_package('puppetserver')
+      # beaker can't install puppetserver from nightlies (BKR-673)
+      repo_configs_dir = 'repo-configs'
+      install_repos_on(master, 'puppetserver', 'nightly', repo_configs_dir)
+      install_repos_on(master, 'puppet-agent', ENV['SHA'], repo_configs_dir)
     end
   end
+  master.install_package('puppetserver')
 end
 
 step 'Make sure install is sane' do
