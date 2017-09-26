@@ -185,7 +185,7 @@ static void testConcurrentLock(int child_lock_type,
         case 0:
             {
                 // CHILD: acquire lock, signal parent, wait for signal, exit
-                auto child_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+                auto child_fd = open(LOCK_PATH.c_str(), O_RDWR | O_CREAT, 0640);
                 PIDFile::lockFile(child_fd, child_lock_type);
                 kill(getppid(), SIGUSR1);
                 sigemptyset(&empty_mask);
@@ -198,7 +198,7 @@ static void testConcurrentLock(int child_lock_type,
         default:
             {
                 // PARENT: wait for child signal, acquire lock, signal child
-                auto parent_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+                auto parent_fd = open(LOCK_PATH.c_str(), O_RDWR | O_CREAT, 0640);
                 sigemptyset(&empty_mask);
                 if (sigsuspend(&empty_mask) == -1 && errno != EINTR) {
                     // Just warn; we don't want the child hanging
@@ -240,7 +240,7 @@ TEST_CASE("PIDFile::lockFile", "[util]") {
     }
 
     SECTION("it can lock a file (read lock)") {
-        auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+        auto fd = open(LOCK_PATH.c_str(), O_RDWR | O_CREAT, 0640);
         if (fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
 
         REQUIRE_NOTHROW(PIDFile::lockFile(fd, F_RDLCK));
@@ -248,7 +248,7 @@ TEST_CASE("PIDFile::lockFile", "[util]") {
     }
 
     SECTION("it can lock a file (write lock)") {
-        auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+        auto fd = open(LOCK_PATH.c_str(), O_RDWR | O_CREAT, 0640);
         if (fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
 
         REQUIRE_NOTHROW(PIDFile::lockFile(fd, F_WRLCK));
@@ -273,7 +273,7 @@ TEST_CASE("PIDFile::lockFile", "[util]") {
 
     SECTION("locking is idempotent, i.e. we can lock the same open fd "
             "multiple times (read lock)") {
-        auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+        auto fd = open(LOCK_PATH.c_str(), O_RDWR | O_CREAT, 0640);
         if (fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
         PIDFile::lockFile(fd, F_RDLCK);
 
@@ -291,7 +291,7 @@ TEST_CASE("PIDFile::unlockFile", "[util]") {
     }
 
     SECTION("it unlocks a locked file") {
-        auto first_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+        auto first_fd = open(LOCK_PATH.c_str(), O_RDWR | O_CREAT, 0640);
         if (first_fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
         PIDFile::lockFile(first_fd, F_WRLCK);
 
@@ -302,7 +302,7 @@ TEST_CASE("PIDFile::unlockFile", "[util]") {
     }
 
     SECTION("unlocking is idempotent, i.e. we can unlock an unlocked file") {
-        auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+        auto fd = open(LOCK_PATH.c_str(), O_RDWR | O_CREAT, 0640);
         if (fd == -1) FAIL(std::string { "failed to open " } + LOCK_PATH);
 
         REQUIRE_NOTHROW(PIDFile::unlockFile(fd));
@@ -342,7 +342,7 @@ static void testLockCheck(int child_lock_type,
         case 0:
             {
                 // CHILD: acquire lock, signal parent, wait for signal, exit
-                auto child_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+                auto child_fd = open(LOCK_PATH.c_str(), O_RDWR | O_CREAT, 0640);
                 PIDFile::lockFile(child_fd, child_lock_type);
                 kill(getppid(), SIGUSR1);
                 sigemptyset(&empty_mask);
@@ -355,7 +355,7 @@ static void testLockCheck(int child_lock_type,
         default:
             {
                 // PARENT: wait for child signal, check lock status, signal child
-                auto parent_fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+                auto parent_fd = open(LOCK_PATH.c_str(), O_RDWR | O_CREAT, 0640);
                 sigemptyset(&empty_mask);
                 if (sigsuspend(&empty_mask) == -1 && errno != EINTR) {
                     // Just warn; we don't want the child hanging
@@ -390,21 +390,21 @@ TEST_CASE("PIDFile::canLockFile", "[util]") {
     }
 
     SECTION("successfully check read lock on unlocked file") {
-        auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+        auto fd = open(LOCK_PATH.c_str(), O_RDWR | O_CREAT, 0640);
 
         REQUIRE(PIDFile::canLockFile(fd, F_RDLCK));
         close(fd);
     }
 
     SECTION("successfully check write lock on unlocked file") {
-        auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+        auto fd = open(LOCK_PATH.c_str(), O_RDWR | O_CREAT, 0640);
 
         REQUIRE(PIDFile::canLockFile(fd, F_WRLCK));
         close(fd);
     }
 
     SECTION("successfully check file locked by the same process") {
-        auto fd = open(LOCK_PATH.data(), O_RDWR | O_CREAT, 0640);
+        auto fd = open(LOCK_PATH.c_str(), O_RDWR | O_CREAT, 0640);
         PIDFile::lockFile(fd, F_RDLCK);
 
         REQUIRE(PIDFile::canLockFile(fd, F_RDLCK));

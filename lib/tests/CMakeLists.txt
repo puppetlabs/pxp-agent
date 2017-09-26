@@ -39,7 +39,7 @@ endif()
 set(test_BIN pxp-agent-unittests)
 
 add_executable(${test_BIN} ${COMMON_TEST_SOURCES} ${STANDARD_TEST_SOURCES})
-target_link_libraries(${test_BIN} ${CPP_PCP_CLIENT_LIB} libpxp-agent)
+target_link_libraries(${test_BIN} libpxp-agent)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lpthread -pthread")

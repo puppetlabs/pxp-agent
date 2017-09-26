@@ -6,7 +6,7 @@ include_directories(
 )
 
 add_executable(pxp-agent main.cc)
-target_link_libraries(pxp-agent ${CPP_PCP_CLIENT_LIB} libpxp-agent)
+target_link_libraries(pxp-agent libpxp-agent)
 install(TARGETS pxp-agent DESTINATION bin)
 
 set(TASK_WRAPPER_LIBS ${Boost_LIBRARIES} ${LEATHERMAN_LIBRARIES})

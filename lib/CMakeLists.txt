@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.2.2)
 include_directories(
     inc
     ${LEATHERMAN_INCLUDE_DIRS}
+    ${CPPHOCON_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${HORSEWHISPERER_INCLUDE_DIRS}
     ${INIH_INCLUDE_DIRS}
@@ -51,6 +52,7 @@ endif()
 
 set (LIBS
     ${cpp-pcp-client_LIBRARY}
+    ${CPPHOCON_LIBRARIES}
     ${Boost_LIBRARIES}
     ${OPENSSL_SSL_LIBRARY}
     ${OPENSSL_CRYPTO_LIBRARY}

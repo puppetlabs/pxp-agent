@@ -1,6 +1,7 @@
 environment:
   LEATHERMAN_VERSION: 1.2.1
   CPP_PCP_CLIENT_VERSION: 1.5.4
+  CPPHOCON_VERSION: 0.1.6
 
 install:
   - choco install -y mingw-w64 -Version 5.2.0 -source https://www.myget.org/F/puppetlabs
@@ -24,8 +25,11 @@ install:
   - ps: wget "https://github.com/puppetlabs/cpp-pcp-client/releases/download/$env:CPP_PCP_CLIENT_VERSION/cpp-pcp-client.7z" -OutFile "$pwd\cpp-pcp-client.7z"
   - ps: 7z.exe x cpp-pcp-client.7z -oC:\tools | FIND /V "ing "
 
+  - ps: wget "https://github.com/puppetlabs/cpp-hocon/releases/download/$env:CPPHOCON_VERSION/cpp-hocon.7z" -OutFile "$env:temp\cpp-hocon.7z"
+  - ps: 7z.exe x $env:temp\cpp-hocon.7z -oC:\tools | FIND /V "ing "
+
 build_script:
-  - ps: cmake -G "MinGW Makefiles" -DCMAKE_TOOLCHAIN_FILE="C:\tools\pl-build-tools\pl-build-toolchain.cmake" -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\cpp-pcp-client" -DCMAKE_INSTALL_PREFIX=C:\tools -DBOOST_STATIC=ON .
+  - ps: cmake -G "MinGW Makefiles" -DCMAKE_TOOLCHAIN_FILE="C:\tools\pl-build-tools\pl-build-toolchain.cmake" -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\cpp-pcp-client;C:\tools\cpp-hocon" -DCMAKE_INSTALL_PREFIX=C:\tools -DBOOST_STATIC=ON .
   - ps: mingw32-make install
 
 test_script:
