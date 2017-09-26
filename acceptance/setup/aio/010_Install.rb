@@ -4,8 +4,7 @@ extend Beaker::DSL::InstallUtils
 
 test_name "Install Packages"
 
-DEFAULT_BUILDS_URL = 'http://builds.delivery.puppetlabs.net'
-dev_builds_url = ENV['DEV_BUILDS_URL'] || DEFAULT_BUILDS_URL
+dev_builds_url = ENV['DEV_BUILDS_URL'] || 'http://builds.delivery.puppetlabs.net'
 
 step "Install puppet-agent..." do
   if dev_builds_url == 'http://builds.delivery.puppetlabs.net'
@@ -31,12 +30,17 @@ step "Install puppetserver..." do
       on(master, "rpm -Uvh https://yum.puppetlabs.com/puppet5-release-el-#{version}.noarch.rpm")
     end
   else
-    if ENV['SERVER_VERSION'] && ENV['SERVER_VERSION'] != 'latest' && dev_builds_url == DEFAULT_BUILDS_URL
+    if ENV['SERVER_VERSION'] && ENV['SERVER_VERSION'] != 'latest' && dev_builds_url == 'http://builds.delivery.puppetlabs.net'
       install_from_build_data_url('puppetserver', "#{dev_builds_url}/puppetserver/#{ENV['SERVER_VERSION']}/artifacts/#{ENV['SERVER_VERSION']}.yaml", master)
     else
-      dev_builds_url = 'https://nightlies.puppetlabs.com' if dev_builds_url == DEFAULT_BUILDS_URL
-      server_version = ENV['SERVER_VERSION'] || 'latest'
-      install_puppetlabs_dev_repo(master, 'puppetserver', server_version, nil, :dev_builds_url => dev_builds_url)
+      if ENV['SERVER_VERSION'].nil? || ENV['SERVER_VERSION'] == 'latest'
+        server_version = ''
+        project = 'puppetserver-latest'
+      else
+        server_version = ENV['SERVER_VERSION']
+        project = 'puppetserver'
+      end
+      install_puppetlabs_dev_repo(master, project, server_version, nil, :dev_builds_url => dev_builds_url)
       master.install_package('puppetserver')
     end
   end
