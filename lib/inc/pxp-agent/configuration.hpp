@@ -54,6 +54,8 @@ struct EntryBase
               help { std::move(_help) },
               type { std::move(_type) } {
     }
+
+    virtual ~EntryBase() = default;
 };
 
 template <typename T>
