@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+#define ARGUMENT_COUNT(argv) (sizeof(argv)/sizeof((argv)[0]) - 1)
+
 namespace PXPAgent {
 
 namespace fs = boost::filesystem;
@@ -67,7 +69,6 @@ static const char* ARGV[] = {
     "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
-static const int ARGC = 21;
 
 static void configureTest() {
     if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR)) {
@@ -107,7 +108,7 @@ TEST_CASE("Configuration - metatest", "[configuration]") {
 
     SECTION("Metatest - we can inject CL options into HorseWhisperer") {
         configureTest();
-        Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+        Configuration::Instance().parseOptions(ARGUMENT_COUNT(ARGV), const_cast<char**>(ARGV));
         REQUIRE(HW::GetFlag<std::string>("ssl-ca-cert") == CA);
         REQUIRE(HW::GetFlag<std::string>("modules-dir") == MODULES_DIR);
         REQUIRE(HW::GetFlag<std::string>("spool-dir") == SPOOL_DIR);
@@ -135,7 +136,7 @@ TEST_CASE("Configuration::initialize()", "[configuration]") {
 
 TEST_CASE("Configuration::set", "[configuration]") {
     configureTest();
-    Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+    Configuration::Instance().parseOptions(ARGUMENT_COUNT(ARGV), const_cast<char**>(ARGV));
     Configuration::Instance().validate();
     lth_util::scope_exit config_cleaner { resetTest };
 
@@ -197,14 +198,14 @@ TEST_CASE("Configuration::get", "[configuration]") {
         configureTest();
 
         SECTION("can get a defined flag") {
-            Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+            Configuration::Instance().parseOptions(ARGUMENT_COUNT(ARGV), const_cast<char**>(ARGV));
             Configuration::Instance().validate();
             REQUIRE_NOTHROW(Configuration::Instance().get<std::string>("ssl-ca-cert"));
         }
 
         SECTION("return the default value if the flag was not set") {
             // NB: ignoring --foreground in ARGV since argc is set to 19
-            Configuration::Instance().parseOptions(ARGC - 1, const_cast<char**>(ARGV));
+            Configuration::Instance().parseOptions(ARGUMENT_COUNT(ARGV) - 1, const_cast<char**>(ARGV));
 #ifndef _WIN32
             HW::SetFlag<std::string>("pidfile", SPOOL_DIR + "/test.pid");
 #endif
@@ -214,7 +215,7 @@ TEST_CASE("Configuration::get", "[configuration]") {
         }
 
         SECTION("return the correct value after the flag has been set") {
-            Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+            Configuration::Instance().parseOptions(ARGUMENT_COUNT(ARGV), const_cast<char**>(ARGV));
             Configuration::Instance().validate();
             Configuration::Instance().set<std::string>("spool-dir", "/fake/dir");
             REQUIRE(Configuration::Instance().get<std::string>("spool-dir")
@@ -222,7 +223,7 @@ TEST_CASE("Configuration::get", "[configuration]") {
         }
 
         SECTION("throw a Configuration::Error if the flag is unknown") {
-            Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+            Configuration::Instance().parseOptions(ARGUMENT_COUNT(ARGV), const_cast<char**>(ARGV));
             Configuration::Instance().validate();
             REQUIRE_THROWS_AS(
                 Configuration::Instance().get<std::string>("still_dont_exist"),
@@ -234,7 +235,7 @@ TEST_CASE("Configuration::get", "[configuration]") {
 TEST_CASE("Configuration::validate", "[configuration]") {
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
-    Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+    Configuration::Instance().parseOptions(ARGUMENT_COUNT(ARGV), const_cast<char**>(ARGV));
 
     SECTION("it throws an Error when the broker WebSocket URI is undefined") {
         HW::SetFlag<std::string>("broker-ws-uri", "");
@@ -389,11 +390,10 @@ TEST_CASE("Configuration::validate with unknown config options", "[configuration
     "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
-    const int altArgc = 18;
 
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
-    Configuration::Instance().parseOptions(altArgc, const_cast<char**>(altArgv));
+    Configuration::Instance().parseOptions(ARGUMENT_COUNT(altArgv), const_cast<char**>(altArgv));
 
     SECTION("it validates") {
         REQUIRE_NOTHROW(Configuration::Instance().validate());
@@ -413,11 +413,10 @@ TEST_CASE("Configuration::validate multiple brokers", "[configuration]") {
     "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
-    const int altArgc = 18;
 
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
-    Configuration::Instance().parseOptions(altArgc, const_cast<char**>(altArgv));
+    Configuration::Instance().parseOptions(ARGUMENT_COUNT(altArgv), const_cast<char**>(altArgv));
 
     SECTION("it allows broker-ws-uris in place of broker-ws-uri") {
         HW::SetFlag<std::string>("broker-ws-uri", TEST_BROKER_WS_URI);
@@ -452,13 +451,12 @@ TEST_CASE("Configuration::parseOptions duplicate broker-ws-uris", "[configuratio
     "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
-    const int altArgc = 18;
 
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
 
     SECTION("it throws an Error when broker-ws-uri and broker-ws-uris are defined") {
-        REQUIRE_THROWS_AS(Configuration::Instance().parseOptions(altArgc, const_cast<char**>(altArgv)),
+        REQUIRE_THROWS_AS(Configuration::Instance().parseOptions(ARGUMENT_COUNT(altArgv), const_cast<char**>(altArgv)),
                           Configuration::Error);
     }
 }
@@ -476,13 +474,12 @@ TEST_CASE("Configuration::parseOptions invalid config-file name", "[configuratio
     "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
-    const int altArgc = 18;
 
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
 
     SECTION("it throws an Error when config-file is invalid") {
-        REQUIRE_THROWS_AS(Configuration::Instance().parseOptions(altArgc, const_cast<char**>(altArgv)),
+        REQUIRE_THROWS_AS(Configuration::Instance().parseOptions(ARGUMENT_COUNT(altArgv), const_cast<char**>(altArgv)),
                           Configuration::Error);
     }
 }
@@ -500,11 +497,10 @@ TEST_CASE("Configuration::validate bad broker-ws-uris", "[configuration]") {
     "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
-    const int altArgc = 18;
 
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
-    Configuration::Instance().parseOptions(altArgc, const_cast<char**>(altArgv));
+    Configuration::Instance().parseOptions(ARGUMENT_COUNT(altArgv), const_cast<char**>(altArgv));
 
     SECTION("it throws an Error when broker-ws-uris is invalid") {
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
@@ -525,11 +521,10 @@ TEST_CASE("Configuration::validate bad master-uris", "[configuration]") {
     "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--foreground=true",
     nullptr };
-    const int altArgc = 18;
 
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
-    Configuration::Instance().parseOptions(altArgc, const_cast<char**>(altArgv));
+    Configuration::Instance().parseOptions(ARGUMENT_COUNT(altArgv), const_cast<char**>(altArgv));
 
     SECTION("it throws an Error when master-uris is invalid") {
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
@@ -540,7 +535,7 @@ TEST_CASE("Configuration::validate bad master-uris", "[configuration]") {
 TEST_CASE("Configuration::setupLogging", "[configuration]") {
     lth_util::scope_exit config_cleaner { resetTest };
     configureTest();
-    Configuration::Instance().parseOptions(ARGC, const_cast<char**>(ARGV));
+    Configuration::Instance().parseOptions(ARGUMENT_COUNT(ARGV), const_cast<char**>(ARGV));
     Configuration::Instance().validate();
 
 #ifndef _WIN32
