@@ -8,7 +8,7 @@ test_name 'pxp-module-puppet run with PCP v1' do
   teardown do
     agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
-      create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
+      create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
       on agent, puppet('resource service pxp-agent ensure=running')
     end
   end
@@ -19,7 +19,7 @@ test_name 'pxp-module-puppet run with PCP v1' do
       pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
       pxp_config['pcp-version'] = '1'
       pxp_config['broker-ws-uris'] = [broker_ws_uri(master, 1)]
-      create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
+      create_remote_file(agent, pxp_agent_config_file(agent), to_hocon(pxp_config))
       on agent, puppet('resource service pxp-agent ensure=running')
       assert(is_associated?(master, "pcp://#{agent}/agent"),
              "Agent #{agent} with PCP identity pcp://#{agent}/agent should be associated with pcp-broker")

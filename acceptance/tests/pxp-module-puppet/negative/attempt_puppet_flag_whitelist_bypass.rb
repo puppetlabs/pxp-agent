@@ -29,7 +29,7 @@ echo 'ALL YOUR BASE BELONG TO US NOW' >> #{@test_file}
 
   step 'Ensure host has pxp-agent running and associated' do
     on @test_host, puppet('resource service pxp-agent ensure=stopped')
-    create_remote_file(@test_host, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
+    create_remote_file(@test_host, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
     on @test_host, puppet('resource service pxp-agent ensure=running')
 
     assert(is_associated?(master, "pcp://#{@test_host}/agent"),

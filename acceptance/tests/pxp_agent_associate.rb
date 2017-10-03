@@ -4,7 +4,7 @@ test_name 'C93807 - Associate pxp-agent with a PCP broker'
 
 agents.each do |agent|
 
-  create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
+  create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
 
   step 'Stop pxp-agent if it is currently running' do
     on agent, puppet('resource service pxp-agent ensure=stopped')

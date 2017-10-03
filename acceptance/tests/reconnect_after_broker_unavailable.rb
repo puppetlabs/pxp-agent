@@ -6,7 +6,7 @@ test_name 'C94789 - An associated agent should automatically reconnect when the 
 step 'Ensure each agent host has pxp-agent running and associated' do
   agents.each do |agent|
     on agent, puppet('resource service pxp-agent ensure=stopped')
-    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
+    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
     reset_logfile(agent)
     on agent, puppet('resource service pxp-agent ensure=running')
 

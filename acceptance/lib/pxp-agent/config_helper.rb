@@ -1,4 +1,4 @@
-require 'json'
+require 'hocon/config_value_factory'
 # This file contains common strings and functions for working with pxp-agent's config file
 
 PXP_CONFIG_DIR_CYGPATH = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/etc/'
@@ -8,6 +8,18 @@ PCP_BROKER_PORTS       = [8142, 8143]
 PCP_BROKER_REPL_PORTS  = [7888, 7889]
 
 PCP_VERSION = ENV['PCP_VERSION'] || '2'
+
+HOCON_RENDER_OPTIONS = Hocon::ConfigRenderOptions.new(
+  false,  # origin_comments?
+  true,   # comments?
+  true,   # formatted?
+  false,  # json?
+  :colon, # key_value_separator (:colon or :equals)
+)
+
+def to_hocon(config)
+  Hocon::ConfigValueFactory.from_any_ref(config).render(HOCON_RENDER_OPTIONS)
+end
 
 def windows?(host)
   host.platform.upcase.start_with?('WINDOWS')
@@ -33,9 +45,9 @@ end
 #                   :ssl_key - the private key file (mandatory)
 #                   :ssl_ca_cert - the ca file for the ssl keys (mandatory)
 #                   :ssl_cert - the public cert file (mandatory)
-# @return JSON object with pxp-agent config
+# @return a string contianing the pxp-agent config in the HOCON syntax
 # @raise ArgumentError if one of the mandatory config keys is not passed into the method
-def pxp_config_json(broker, agent, ssl_config = {})
+def pxp_config_hocon(broker, agent, ssl_config = {})
   mandatory_config_keys = [:ssl_key, :ssl_ca_cert, :ssl_cert]
   missing_config = mandatory_config_keys - ssl_config.keys
   if (missing_config != [])
@@ -44,17 +56,18 @@ def pxp_config_json(broker, agent, ssl_config = {})
   if not ssl_config[:broker_ws_uri]
     ssl_config[:broker_ws_uri] = broker_ws_uri(broker)
   end
-  { "broker-ws-uri" => ssl_config[:broker_ws_uri],
+  to_hocon({
+    "broker-ws-uri" => ssl_config[:broker_ws_uri],
     "pcp-version" => PCP_VERSION,
     "loglevel" => logger.is_debug? ? "debug" : "info",
     "ssl-key" => ssl_config[:ssl_key],
     "ssl-ca-cert" => ssl_config[:ssl_ca_cert],
     "ssl-cert" => ssl_config[:ssl_cert]
-  }.to_json
+  })
 end
 
-def pxp_config_json_using_puppet_certs(broker, agent, num_brokers=1)
-  pxp_config_hash_using_puppet_certs(broker, agent, num_brokers).to_json
+def pxp_config_hocon_using_puppet_certs(broker, agent, num_brokers=1)
+  to_hocon(pxp_config_hash_using_puppet_certs(broker, agent, num_brokers))
 end
 
 def pxp_config_hash_using_puppet_certs(broker, agent, num_brokers=1)
