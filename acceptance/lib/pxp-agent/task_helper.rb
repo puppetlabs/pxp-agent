@@ -1,5 +1,4 @@
 require 'pxp-agent/test_helper.rb'
-require 'json'
 require 'digest'
 
 def run_task(broker, target_identities, task, filename, sha256, input, path, rpc_request, expected_response_type, &check_datas)

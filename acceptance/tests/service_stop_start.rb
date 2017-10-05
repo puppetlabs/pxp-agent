@@ -8,7 +8,7 @@ test_name 'Service Start stop/start, with configuration)'
 teardown do
   agents.each do |agent|
     # Create a valid config file
-    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
+    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
 
     # Ensure pxp-agent service is running
     # PUP-6702 - on Windows, the service may be in the Paused state
@@ -52,7 +52,7 @@ end
 agents.each_with_index do |agent, i|
   @agent = agent
 
-  create_remote_file(@agent, pxp_agent_config_file(@agent), pxp_config_json_using_puppet_certs(master, @agent).to_s)
+  create_remote_file(@agent, pxp_agent_config_file(@agent), pxp_config_hocon_using_puppet_certs(master, @agent))
 
   step 'C93070 - Service Start (from stopped, with configuration)' do
     stop_service

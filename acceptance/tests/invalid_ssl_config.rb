@@ -1,6 +1,5 @@
 require 'pxp-agent/config_helper.rb'
 require 'pxp-agent/test_helper.rb'
-require 'json'
 
 test_name 'Attempt to start pxp-agent with invalid SSL config'
 
@@ -8,7 +7,7 @@ test_name 'Attempt to start pxp-agent with invalid SSL config'
 teardown do
   agents.each do |agent|
     on agent, puppet('resource service pxp-agent ensure=stopped')
-    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
+    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
     on agent, puppet('resource service pxp-agent ensure=running')
   end
 end
@@ -33,7 +32,7 @@ agents.each do |agent|
 
   step 'Ensure pxp-agent is currently running and associated' do
     on agent, puppet('resource service pxp-agent ensure=stopped')
-    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
+    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
     on agent, puppet('resource service pxp-agent ensure=running')
 
     assert(is_associated?(master, "pcp://#{agent}/agent"),
@@ -48,7 +47,7 @@ agents.each do |agent|
   step "Setup - Change pxp-agent config to use a cert that doesn't match private key" do
     pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
     pxp_config["ssl-cert"] = alternate_cert
-    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
+    create_remote_file(agent, pxp_agent_config_file(agent), to_hocon(pxp_config))
   end
 
   step 'C94730 - Attempt to run pxp-agent with mismatching SSL cert and private key' do
@@ -72,7 +71,7 @@ agents.each do |agent|
     pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
     pxp_config["ssl-cert"] = alternate_cert
     pxp_config["ssl-key"] = alternate_key
-    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
+    create_remote_file(agent, pxp_agent_config_file(agent), to_hocon(pxp_config))
   end
 
   step 'C94729 - Attempt to run pxp-agent with SSL keypair from a different ca' do
@@ -100,7 +99,7 @@ agents.each do |agent|
     step 'Create pxp-agent.conf with an alternate CA cert'
     pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
     pxp_config['ssl-ca-cert'] = alternate_ca_cert
-    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
+    create_remote_file(agent, pxp_agent_config_file(agent), to_hocon(pxp_config))
 
     step 'Start pxp-agent and assert that it does not connect to pcp-broker'
     on agent, puppet('resource service pxp-agent ensure=running')
@@ -120,7 +119,7 @@ agents.each do |agent|
     pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
     pxp_config.delete('broker-ws-uris')
     pxp_config['broker-ws-uri'] = broker_ws_uri(master.ip)
-    create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
+    create_remote_file(agent, pxp_agent_config_file(agent), to_hocon(pxp_config))
 
     step 'Start pxp-agent and assert that it does not connect to broker'
     on agent, puppet('resource service pxp-agent ensure=running')

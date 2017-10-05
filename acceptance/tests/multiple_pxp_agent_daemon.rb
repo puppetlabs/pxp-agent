@@ -24,7 +24,7 @@ test_name 'Start pxp-agent daemon with pidfile present' do
   step 'Ensure each agent host has pxp-agent service running and enabled' do
     applicable_agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
-      create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
+      create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
       on agent, puppet('resource service pxp-agent ensure=running enable=true')
 
       assert(is_associated?(master, "pcp://#{agent}/agent"),

@@ -19,7 +19,7 @@ test_name 'C97964 - agent should use next broker if primary is timing out' do
       # Should attempt to reconnect in ~10 seconds.
       pxp_config['allowed-keepalive-timeouts'] = 0
       pxp_config['ping-interval'] = 6
-      create_remote_file(agent, pxp_agent_config_file(agent), pxp_config.to_json.to_s)
+      create_remote_file(agent, pxp_agent_config_file(agent), to_hocon(pxp_config))
       reset_logfile(agent)
       on agent, puppet('resource service pxp-agent ensure=running')
 

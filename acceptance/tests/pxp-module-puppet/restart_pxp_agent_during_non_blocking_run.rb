@@ -1,6 +1,5 @@
 require 'pxp-agent/test_helper.rb'
 require 'puppet/acceptance/environment_utils'
-require 'json'
 
 SECONDS_TO_SLEEP = 500 # The test will use SIGALARM to end this as soon as required
 STATUS_QUERY_MAX_RETRIES = 60
@@ -40,7 +39,7 @@ test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent serv
   step 'Ensure each agent host has pxp-agent running and associated' do
     agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
-      create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_json_using_puppet_certs(master, agent).to_s)
+      create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
       on agent, puppet('resource service pxp-agent ensure=running enable=true')
 
       assert(is_associated?(master, "pcp://#{agent}/agent"),
