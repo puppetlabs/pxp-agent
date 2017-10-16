@@ -8,22 +8,29 @@ test_name  'Run puppet agent as non-root' do
     skip_test "Test is not compatible with #{platform}" if platform =~ /windows/
 
     step 'create non-root user on all nodes' do
-      @user_home_dir = '/foo'
+      @user_name = 'foo'
+      @group_name = 'foobar'
+      @user_home_dir = platform =~ /solaris/ ? "/export/home#{@user_name}" : "/home/#{@user_name}"
       @user_puppetlabs_dir = "#{@user_home_dir}/.puppetlabs"
       @user_puppet_dir = "#{@user_puppetlabs_dir}/etc/puppet"
       @user_pxp_dir = "#{@user_puppetlabs_dir}/etc/pxp-agent"
       on(agent, "mkdir -p #{@user_puppet_dir}")
       on(agent, "mkdir -p #{@user_pxp_dir}")
-      on(agent, puppet("resource group foo ensure=present"))
-      on(agent, puppet("resource user foo ensure=present home=#{@user_home_dir} groups=foo"))
+      on(agent, puppet("resource group #{@group_name} ensure=present"))
+      if platform =~ /eos/
+        #arista
+        on(agent, "useradd #{@user_name} -p p@ssw0rd")
+      else
+        on(agent, puppet("resource user #{@user_name} ensure=present home=#{@user_home_dir} groups=#{@group_name}"))
+      end
     end
 
     teardown do
       get_process_pids(agent, 'pxp-agent').each do |pid|
         on(agent, "kill -9 #{pid}", :accept_all_exit_codes => true)
       end
-      on(agent, puppet("resource user foo ensure=absent"))
-      on(agent, "rm -rf /foo")
+      on(agent, puppet("resource user #{@user_name} ensure=absent"))
+      on(agent, "rm -rf #{@user_home_dir}")
     end
 
     step 'Ensure pxp-agent is stopped' do
@@ -44,12 +51,12 @@ test_name  'Run puppet agent as non-root' do
       }
 
       create_remote_file(agent, "#{@user_pxp_dir}/pxp-agent.conf", pxp_config_hocon(master, agent, ssl_config).to_s)
-      on(agent, "chown -R foo:foo #{@user_home_dir}")
+      on(agent, "chown -R #{@user_name}:#{@group_name} #{@user_home_dir}")
 
-      if platform =~ /solaris/
-        command = "HOME=/foo su foo -c \"/opt/puppetlabs/puppet/bin/pxp-agent\""
+      if platform =~ /solaris|aix|eos/
+        command = "cd #{@user_home_dir} && HOME=#{@user_home_dir} su #{@user_name} -c \"/opt/puppetlabs/puppet/bin/pxp-agent\""
       else
-        command = "su -l foo -c \"/opt/puppetlabs/puppet/bin/pxp-agent\""
+        command = "su -l #{@user_name} -c \"/opt/puppetlabs/puppet/bin/pxp-agent\""
       end
 
       on(agent, command, :accept_all_exit_codes => true) do |result|
