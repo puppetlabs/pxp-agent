@@ -10,7 +10,13 @@ test_name  'Run puppet agent as non-root' do
     step 'create non-root user on all nodes' do
       @user_name = 'foo'
       @group_name = 'foobar'
-      @user_home_dir = platform =~ /solaris/ ? "/export/home#{@user_name}" : "/home/#{@user_name}"
+      if platform =~ /solaris/
+        @user_home_dir = "/export/home/#{@user_name}"
+      elsif platform =~ /osx/
+        @user_home_dir = "/Users/#{@user_name}"
+      else
+        @user_home_dir = "/home/#{@user_name}"
+      end
       @user_puppetlabs_dir = "#{@user_home_dir}/.puppetlabs"
       @user_puppet_dir = "#{@user_puppetlabs_dir}/etc/puppet"
       @user_pxp_dir = "#{@user_puppetlabs_dir}/etc/pxp-agent"
