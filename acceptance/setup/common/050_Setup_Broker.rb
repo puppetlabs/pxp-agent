@@ -1,15 +1,9 @@
-require 'puppet/acceptance/install_utils'
-extend Puppet::Acceptance::InstallUtils
 require 'pxp-agent/test_helper'
 
 step 'Install build dependencies for broker' do
-  BROKER_DEP_PACKAGES = {
-    :redhat => [
-      'git',
-      'java-1.8.0-openjdk-devel',
-    ],
-  }
-  install_packages_on(master, BROKER_DEP_PACKAGES, :check_if_exists => true)
+  # Assumes RedHat master
+  master.install_package('git')
+  master.install_package('java-1.8.0-openjdk-devel')
 end
 
 NUM_BROKERS = 2
@@ -49,7 +43,7 @@ end
 
 step 'Download lein bootstrap' do
   on master, 'cd /usr/bin && '\
-           'curl -O https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein'
+    'curl -O https://raw.githubusercontent.com/technomancy/leiningen/2.7.1/bin/lein'
 end
 
 step 'Run lein once so it sets itself up' do
