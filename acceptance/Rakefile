@@ -84,12 +84,14 @@ EOS
   if target && !target.start_with?(master_host)
     target = "#{master_host}-#{target}"
   end
+
+  # Tests depend on this dir existing, always create it
+  FileUtils.mkdir_p('tmp')
   if config and File.exists?(config)
     config_opt = "--hosts=#{config}"
   elsif target
     cli = BeakerHostGenerator::CLI.new([target, '--disable-default-role', '--osinfo-version', '1'])
     ENV['BEAKER_HOSTS'] = "tmp/#{target}-#{SecureRandom.uuid}.yaml"
-    FileUtils.mkdir_p('tmp')
     File.open(config, 'w') do |fh|
       fh.print(cli.execute)
     end
