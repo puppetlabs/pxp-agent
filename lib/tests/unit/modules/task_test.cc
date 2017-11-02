@@ -413,5 +413,27 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         REQUIRE(fs::status(cache).permissions() == 0666);
 #endif
     }
+
+    SECTION("succeeds even if tasks-cache was deleted") {
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        fs::remove_all(TEMP_TASK_CACHE_DIR);
+
+        auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_other_sha";
+        auto task_txt = (DATA_FORMAT % "\"0632\""
+                                     % "\"task\""
+                                     % "\"run\""
+                                     % "{\"task\": \"unparseable\", \"input\":{\"message\":\"hello\"}, "
+                                       "\"files\" : [{\"sha256\": \"some_other_sha\"}]}").str();
+        PCPClient::ParsedChunks task_content {
+            lth_jc::JsonContainer(ENVELOPE_TXT),
+            lth_jc::JsonContainer(task_txt),
+            {},
+            0 };
+        ActionRequest request { RequestType::Blocking, task_content };
+        e_m.executeAction(request);
+
+        REQUIRE(fs::exists(cache));
+        REQUIRE(fs::is_directory(cache));
+    }
 }
 }  // namespace PXPAgent

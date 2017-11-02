@@ -167,7 +167,7 @@ static Module::ProcessingError toModuleProcessingError(const fs::filesystem_erro
 // A define is used here because creating a local variable is subject to static initialization ordering.
 #define NIX_TASK_FILE_PERMS NIX_DIR_PERMS
 
-// Creates the <task_cache_dir>/<sha256> directory for a single
+// Creates the <task_cache_dir>/<sha256> directory (and parent dirs) for a single
 // task, ensuring that its permissions are readable by
 // the PXP agent owner/group (for unix OSes), writable for the PXP agent owner,
 // and executable by both PXP agent owner and group. Returns the path to this directory.
@@ -175,7 +175,7 @@ static Module::ProcessingError toModuleProcessingError(const fs::filesystem_erro
 // will not fail if the directory already exists.
 static fs::path createCacheDir(const fs::path& task_cache_dir, const std::string& sha256) {
     auto cache_dir = task_cache_dir / sha256;
-    fs::create_directory(cache_dir);
+    fs::create_directories(cache_dir);
     fs::last_write_time(cache_dir, time(nullptr));
     fs::permissions(cache_dir, NIX_DIR_PERMS);
     return cache_dir;
