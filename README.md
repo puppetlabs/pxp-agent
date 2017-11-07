@@ -391,7 +391,7 @@ it when starting.
 
 **spool-dir-purge-ttl (optional)**
 
-Automatically delete results subdirectories located in the `spool` directory
+Automatically delete results subdirectories located in the `spool-dir` directory
 that have a `start` timestamp that has expired in respect to the specified TTL.
 The TTL value must be an integer with one of the following suffixes:
  - 'm' - minutes
@@ -401,6 +401,16 @@ The TTL value must be an integer with one of the following suffixes:
 The default TTL value is "14d" (14 days). Specifying a 0, with any of the above
 suffixes, will disable the purge functionality. Note that the purge will take
 place when pxp-agent starts and will be repeated at each 1.2*TTL interval.
+
+**task-cache-dir (optional)**
+
+The location where the tasks are cached; the default location is:
+ - \*nix: */opt/puppetlabs/pxp-agent/tasks-cache*
+ - Windows: *C:\ProgramData\PuppetLabs\pxp-agent\tasks-cache*
+
+Note that if the specified task-cache directory does not exist, pxp-agent will
+create it when starting. It will also be recreated before attempting to download
+a task to it in case it was deleted without restarting pxp-agent.
 
 **foreground (optional flag)**
 
