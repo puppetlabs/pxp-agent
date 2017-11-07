@@ -705,6 +705,35 @@ msgid ""
 "The task executed for the {1} returned invalid UTF-8 on stdout - stderr:{2}"
 msgstr ""
 
+#. info
+#: lib/src/modules/task.cc
+msgid "About to purge cached tasks from '{1}'; TTL = {2}"
+msgstr ""
+
+#. error
+#: lib/src/modules/task.cc
+#: lib/src/results_storage.cc
+msgid "Failed to remove '{1}': {2}"
+msgstr ""
+
+#. LOCALE: info
+#: lib/src/modules/task.cc
+#: lib/src/results_storage.cc
+msgid "Removed {1} directory from '{2}'"
+msgid_plural "Removed {1} directories from '{2}'"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/src/modules/task.cc
+msgid ""
+"Scheduling the check every {1} minute for task cache directories to purge; "
+"thread id {2}"
+msgid_plural ""
+"Scheduling the check every {1} minutes for task cache directories to purge; "
+"thread id {2}"
+msgstr[0] ""
+msgstr[1] ""
+
 #. LOCALE: warning
 #: lib/src/pxp_connector_v1.cc
 msgid "Message {1} contained {2} bad debug chunk"
@@ -1185,11 +1214,6 @@ msgstr ""
 msgid "About to purge the results directories from '{1}'; TTL = {2}"
 msgstr ""
 
-#. error
-#: lib/src/results_storage.cc
-msgid "Failed to remove '{1}': {2}"
-msgstr ""
-
 #. warning
 #: lib/src/results_storage.cc
 msgid ""
@@ -1203,13 +1227,6 @@ msgid ""
 "Failed to process the metadata for the transaction {1} (the results "
 "directory will not be removed): {2}"
 msgstr ""
-
-#. LOCALE: info
-#: lib/src/results_storage.cc
-msgid "Removed {1} directory from '{2}'"
-msgid_plural "Removed {1} directories from '{2}'"
-msgstr[0] ""
-msgstr[1] ""
 
 #. warning
 #: lib/src/thread_container.cc

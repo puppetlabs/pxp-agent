@@ -1,9 +1,13 @@
 #include <pxp-agent/modules/task.hpp>
 #include <pxp-agent/configuration.hpp>
+#include <pxp-agent/time.hpp>
+
+#include <cpp-pcp-client/util/chrono.hpp>
 
 #include <leatherman/locale/locale.hpp>
 #include <leatherman/execution/execution.hpp>
 #include <leatherman/file_util/file.hpp>
+#include <leatherman/file_util/directory.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/hex.hpp>
@@ -31,6 +35,7 @@ namespace Modules {
 namespace fs = boost::filesystem;
 namespace alg = boost::algorithm;
 namespace boost_error = boost::system::errc;
+namespace pcp_util = PCPClient::Util;
 
 namespace lth_exec = leatherman::execution;
 namespace lth_file = leatherman::file_util;
@@ -110,6 +115,7 @@ static const std::map<std::string, std::function<TaskCommand(std::string)>> BUIL
 
 Task::Task(const fs::path& exec_prefix,
            const std::string& task_cache_dir,
+           const std::string& task_cache_dir_purge_ttl,
            const std::vector<std::string>& master_uris,
            const std::string& ca,
            const std::string& crt,
@@ -117,6 +123,7 @@ Task::Task(const fs::path& exec_prefix,
            const std::string& spool_dir) :
     storage_ { spool_dir },
     task_cache_dir_ { task_cache_dir },
+    task_cache_dir_purge_ttl_ { task_cache_dir_purge_ttl },
     exec_prefix_ { exec_prefix },
     master_uris_ { master_uris }
 {
@@ -132,6 +139,25 @@ Task::Task(const fs::path& exec_prefix,
     client_.set_ca_cert(ca);
     client_.set_client_cert(crt, key);
     client_.set_supported_protocols(CURLPROTO_HTTPS);
+
+    if (Timestamp::getMinutes(task_cache_dir_purge_ttl_) > 0) {
+        Modules::Task::purge(task_cache_dir_purge_ttl_);
+        task_cache_dir_purge_thread_ptr_.reset(
+            new pcp_util::thread(&Task::taskCacheDirPurgeTask, this));
+    }
+}
+
+Task::~Task()
+{
+    {
+        pcp_util::lock_guard<pcp_util::mutex> the_lock { task_cache_dir_purge_mutex_ };
+        is_destructing_ = true;
+        task_cache_dir_purge_cond_var_.notify_one();
+    }
+
+    if (task_cache_dir_purge_thread_ptr_ != nullptr
+            && task_cache_dir_purge_thread_ptr_->joinable())
+        task_cache_dir_purge_thread_ptr_->join();
 }
 
 static void addParametersToEnvironment(const lth_jc::JsonContainer &input, std::map<std::string, std::string> &environment)
@@ -344,6 +370,7 @@ static fs::path updateTaskFile(const std::vector<std::string>& master_uris,
 // Return the full path of the cached version of the first file from the list (which
 // is assumed to be the task executable).
 static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
+                                  PCPClient::Util::mutex& task_cache_dir_mutex,
                                   const std::vector<std::string>& master_uris,
                                   lth_curl::client& client,
                                   const std::vector<lth_jc::JsonContainer> &files) {
@@ -355,7 +382,10 @@ static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
     LOG_DEBUG("Verifying task file based on {1}", file.toString());
 
     try {
-        auto cache_dir = createCacheDir(task_cache_dir, file.get<std::string>("sha256"));
+        auto cache_dir = [&]() {
+            pcp_util::lock_guard<pcp_util::mutex> the_lock { task_cache_dir_mutex };
+            return createCacheDir(task_cache_dir, file.get<std::string>("sha256"));
+        }();
         return updateTaskFile(master_uris, client, cache_dir, file);
     } catch (fs::filesystem_error& e) {
         throw toModuleProcessingError(e);
@@ -436,6 +466,7 @@ ActionResponse Task::callAction(const ActionRequest& request)
     }
 
     auto task_file = getCachedTaskFile(task_cache_dir_,
+                                       task_cache_dir_mutex_,
                                        master_uris_,
                                        client_,
                                        task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files"));
@@ -540,6 +571,85 @@ void Task::processOutputAndUpdateMetadata(ActionResponse& response)
                                 ? lth_loc::translate(" (empty)")
                                 : "\n" + response.output.std_err)) };
         response.setBadResultsAndEnd(execution_error);
+    }
+}
+
+static void defaultPurgeCallback(const std::string& dir_path)
+{
+    fs::remove_all(dir_path);
+}
+
+unsigned int Task::purge(
+    const std::string& ttl,
+    std::function<void(const std::string& dir_path)> purge_callback)
+{
+    unsigned int num_purged_dirs { 0 };
+    Timestamp ts { ttl };
+    if (purge_callback == nullptr)
+        purge_callback = &defaultPurgeCallback;
+
+    LOG_INFO("About to purge cached tasks from '{1}'; TTL = {2}",
+             task_cache_dir_, ttl);
+
+    lth_file::each_subdirectory(
+        task_cache_dir_,
+        [&](std::string const& s) -> bool {
+            fs::path dir_path { s };
+            LOG_TRACE("Inspecting '{1}' for purging", s);
+
+            boost::system::error_code ec;
+            pcp_util::lock_guard<pcp_util::mutex> the_lock { task_cache_dir_mutex_ };
+            auto last_update = fs::last_write_time(dir_path, ec);
+            if (ec) {
+                LOG_ERROR("Failed to remove '{1}': {2}", s, ec.message());
+            } else if (ts.isNewerThan(last_update)) {
+                LOG_TRACE("Removing '{1}'", s);
+
+                try {
+                    purge_callback(dir_path.string());
+                    num_purged_dirs++;
+                } catch (const std::exception& e) {
+                    LOG_ERROR("Failed to remove '{1}': {2}", s, e.what());
+                }
+            }
+
+            return true;
+        });
+
+    LOG_INFO(lth_loc::format_n(
+        // LOCALE: info
+        "Removed {1} directory from '{2}'",
+        "Removed {1} directories from '{2}'",
+        num_purged_dirs, num_purged_dirs, task_cache_dir_));
+    return num_purged_dirs;
+}
+
+//
+// Task cache directory purge task (private interface)
+//
+
+void Task::taskCacheDirPurgeTask()
+{
+    auto task_minutes = Timestamp::getMinutes(task_cache_dir_purge_ttl_);
+    auto num_minutes = std::min(60u, task_minutes);
+    LOG_INFO(lth_loc::format_n(
+        "Scheduling the check every {1} minute for task cache directories to purge; thread id {2}",
+        "Scheduling the check every {1} minutes for task cache directories to purge; thread id {2}",
+        num_minutes, num_minutes, pcp_util::this_thread::get_id()));
+
+    while (true) {
+        pcp_util::unique_lock<pcp_util::mutex> the_lock { task_cache_dir_purge_mutex_ };
+        auto now = pcp_util::chrono::system_clock::now();
+
+        if (!is_destructing_)
+            task_cache_dir_purge_cond_var_.wait_until(
+                the_lock,
+                now + pcp_util::chrono::minutes(num_minutes));
+
+        if (is_destructing_)
+            return;
+
+        purge(task_cache_dir_purge_ttl_);
     }
 }
 

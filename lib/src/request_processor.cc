@@ -825,6 +825,7 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
     registerModule(new Modules::Ping);
     registerModule(new Modules::Task(Configuration::Instance().getExecPrefix(),
                                      agent_configuration.task_cache_dir,
+                                     agent_configuration.task_cache_dir_purge_ttl,
                                      agent_configuration.master_uris,
                                      agent_configuration.ca,
                                      agent_configuration.crt,
