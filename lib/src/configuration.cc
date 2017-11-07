@@ -1017,17 +1017,11 @@ void Configuration::validateAndNormalizeOtherSettings()
             lth_loc::format("invalid spool-dir-purge-ttl: {1}", e.what()) };
     }
 
-    if (HW::GetFlag<int>("association-timeout") < 0)
-        throw Configuration::Error {
-            lth_loc::translate("association-timeout must be positive") };
-
-    if (HW::GetFlag<int>("association-request-ttl") < 0)
-        throw Configuration::Error {
-                lth_loc::translate("association-request-ttl must be positive") };
-
-    if (HW::GetFlag<int>("pcp-message-ttl") < 0)
-        throw Configuration::Error {
-            lth_loc::translate("association-request-ttl must be positive") };
+    for (auto msg_ttl : {"association-timeout", "association-request-ttl", "pcp-message-ttl"}) {
+        if (HW::GetFlag<int>(msg_ttl) < 0)
+            throw Configuration::Error {
+                lth_loc::format("{1} must be positive", msg_ttl) };
+    }
 }
 
 const Options::iterator Configuration::getDefaultIndex(const std::string& flagname)

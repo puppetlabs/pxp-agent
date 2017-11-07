@@ -407,11 +407,7 @@ msgid "invalid spool-dir-purge-ttl: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
-msgid "association-timeout must be positive"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "association-request-ttl must be positive"
+msgid "{1} must be positive"
 msgstr ""
 
 #: lib/src/configuration.cc
