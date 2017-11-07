@@ -27,9 +27,10 @@ TEST_CASE("Agent::Agent", "[agent]") {
                                                getCertPath(),
                                                getKeyPath(),
                                                SPOOL,
-                                               "0d",  // don't purge!
+                                               "0d",  // don't purge spool!
                                                "",    // modules config dir
                                                "",    // task cache dir
+                                               "0d",  // don't purge task cache!
                                                "test_agent",
                                                5000, 10, 5, 5, 2, 15 };
 

@@ -413,6 +413,20 @@ Note that if the specified task-cache directory does not exist, pxp-agent will
 create it when starting. It will also be recreated before attempting to download
 a task to it in case it was deleted without restarting pxp-agent.
 
+**task-cache-dir-purge-ttl (optional)**
+
+Automatically delete cached tasks located in the `task-cache-dir` directory
+that have a `start` timestamp that has expired in respect to the specified TTL.
+The TTL value must be an integer with one of the following suffixes:
+ - 'm' - minutes
+ - 'h' - hours
+ - 'd' - days
+
+The default TTL value is "14d" (14 days). Specifying a 0, with any of the above
+suffixes, will disable the purge functionality. Note that the purge will take
+place when pxp-agent starts and will be repeated every hour or TTL, whichever
+is shorter.
+
 **foreground (optional flag)**
 
 Don't become a daemon and execute on foreground on the associated terminal.

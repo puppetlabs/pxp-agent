@@ -53,7 +53,7 @@ static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
 static const std::string TASK_CACHE_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                           + "/lib/tests/resources/test_task_cache" };
-
+static const std::string DIR_PURGE_TTL { "1h" };
 
 static const char* ARGV[] = {
     "test-command",
@@ -66,7 +66,9 @@ static const char* ARGV[] = {
     "--modules-dir", MODULES_DIR.c_str(),
     "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
     "--spool-dir", SPOOL_DIR.c_str(),
+    "--spool-dir-purge-ttl", DIR_PURGE_TTL.c_str(),
     "--task-cache-dir", TASK_CACHE_DIR.c_str(),
+    "--task-cache-dir-purge-ttl", DIR_PURGE_TTL.c_str(),
     "--foreground=true",
     nullptr };
 
@@ -353,6 +355,12 @@ TEST_CASE("Configuration::validate", "[configuration]") {
         fs::remove_all(test_task_cache_dir);
     }
 
+    SECTION("it fails when -task-cache-dir-purge-ttl as not a valid timestamp") {
+        HW::SetFlag<std::string>("task-cache-dir-purge-ttl", "1.0");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::Error);
+    }
+
     SECTION("it fails when --spool-dir is empty") {
         HW::SetFlag<std::string>("spool-dir", "");
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
@@ -374,6 +382,12 @@ TEST_CASE("Configuration::validate", "[configuration]") {
         REQUIRE(fs::exists(test_spool));
 
         fs::remove_all(test_spool);
+    }
+
+    SECTION("it fails when -spool-dir-purge-ttl as not a valid timestamp") {
+        HW::SetFlag<std::string>("spool-dir-purge-ttl", "1.0");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::Error);
     }
 }
 

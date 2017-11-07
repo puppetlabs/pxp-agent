@@ -143,6 +143,7 @@ class Configuration
         std::string spool_dir_purge_ttl;
         std::string modules_config_dir;
         std::string task_cache_dir;
+        std::string task_cache_dir_purge_ttl;
         std::string client_type;
         long ws_connection_timeout_ms;
         uint32_t association_timeout_s;

@@ -306,6 +306,10 @@ msgid "TTL for action results before being deleted, default: '{1}' (days)"
 msgstr ""
 
 #: lib/src/configuration.cc
+msgid "TTL for cached tasks before being deleted, default: '{1}' (days)"
+msgstr ""
+
+#: lib/src/configuration.cc
 msgid "Don't daemonize, default: false"
 msgstr ""
 
@@ -403,8 +407,9 @@ msgstr ""
 msgid "the PID file '{1}' is not a regular file"
 msgstr ""
 
+#. LOCALE: invalid configuration option
 #: lib/src/configuration.cc
-msgid "invalid spool-dir-purge-ttl: {1}"
+msgid "invalid {1}: {2}"
 msgstr ""
 
 #: lib/src/configuration.cc

@@ -138,7 +138,7 @@ static const std::string DEFAULT_PCP_ACCESS_FILE { (DEFAULT_LOG_DIR / "pcp-acces
 static const std::string DEFAULT_MODULES_CONF_DIR { (DEFAULT_CONF_DIR / "modules").string() };
 static const std::string DEFAULT_CONFIG_FILE { (DEFAULT_CONF_DIR / "pxp-agent.conf").string() };
 static const std::string DEFAULT_PCP_VERSION { "1" };
-static const std::string DEFAULT_SPOOL_DIR_PURGE_TTL { "14d" };
+static const std::string DEFAULT_DIR_PURGE_TTL { "14d" };
 
 static const std::string AGENT_CLIENT_TYPE { "agent" };
 
@@ -386,6 +386,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         HW::GetFlag<std::string>("spool-dir-purge-ttl"),
         HW::GetFlag<std::string>("modules-config-dir"),
         HW::GetFlag<std::string>("task-cache-dir"),
+        HW::GetFlag<std::string>("task-cache-dir-purge-ttl"),
         AGENT_CLIENT_TYPE,
         HW::GetFlag<int>("connection-timeout") * 1000,
         static_cast<uint32_t >(HW::GetFlag<int>("association-timeout")),
@@ -664,9 +665,20 @@ void Configuration::defineDefaultValues()
                     "",
                     lth_loc::format("TTL for action results before being deleted, "
                                     "default: '{1}' (days)",
-                                    DEFAULT_SPOOL_DIR_PURGE_TTL),
+                                    DEFAULT_DIR_PURGE_TTL),
                     Types::String,
-                    DEFAULT_SPOOL_DIR_PURGE_TTL) } });
+                    DEFAULT_DIR_PURGE_TTL) } });
+
+    defaults_.insert(
+        Option { "task-cache-dir-purge-ttl",
+                 Base_ptr { new Entry<std::string>(
+                    "task-cache-dir-purge-ttl",
+                    "",
+                    lth_loc::format("TTL for cached tasks before being deleted, "
+                                    "default: '{1}' (days)",
+                                    DEFAULT_DIR_PURGE_TTL),
+                    Types::String,
+                    DEFAULT_DIR_PURGE_TTL) } });
 
     defaults_.insert(
         Option { "foreground",
@@ -1010,11 +1022,14 @@ void Configuration::validateAndNormalizeOtherSettings()
     }
 #endif
 
-    try {
-        Timestamp(HW::GetFlag<std::string>("spool-dir-purge-ttl"));
-    } catch (const Timestamp::Error& e) {
-        throw Configuration::Error {
-            lth_loc::format("invalid spool-dir-purge-ttl: {1}", e.what()) };
+    for (auto purge_ttl : {"spool-dir-purge-ttl", "task-cache-dir-purge-ttl"}) {
+        try {
+            Timestamp(HW::GetFlag<std::string>(purge_ttl));
+        } catch (const Timestamp::Error& e) {
+            throw Configuration::Error {
+                // LOCALE: invalid configuration option
+                lth_loc::format("invalid {1}: {2}", purge_ttl, e.what()) };
+        }
     }
 
     for (auto msg_ttl : {"association-timeout", "association-request-ttl", "pcp-message-ttl"}) {
