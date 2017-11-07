@@ -1088,11 +1088,11 @@ msgstr ""
 #. LOCALE: info
 #: lib/src/request_processor.cc
 msgid ""
-"Starting the task for purging the spool directory every {1} minute; thread "
+"Scheduling the check every {1} minute for spool directories to purge; thread "
 "id {2}"
 msgid_plural ""
-"Starting the task for purging the spool directory every {1} minutes; thread "
-"id {2}"
+"Scheduling the check every {1} minutes for spool directories to purge; "
+"thread id {2}"
 msgstr[0] ""
 msgstr[1] ""
 

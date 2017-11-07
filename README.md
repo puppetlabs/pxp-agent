@@ -400,7 +400,8 @@ The TTL value must be an integer with one of the following suffixes:
 
 The default TTL value is "14d" (14 days). Specifying a 0, with any of the above
 suffixes, will disable the purge functionality. Note that the purge will take
-place when pxp-agent starts and will be repeated at each 1.2*TTL interval.
+place when pxp-agent starts and will be repeated every hour or TTL, whichever
+is shorter.
 
 **task-cache-dir (optional)**
 

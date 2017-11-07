@@ -920,12 +920,12 @@ void RequestProcessor::logLoadedModules() const
 
 void RequestProcessor::spoolDirPurgeTask()
 {
-    auto num_minutes = Timestamp::getMinutes(spool_dir_purge_ttl_);
-    num_minutes *= 1.2;
+    auto config_minutes = Timestamp::getMinutes(spool_dir_purge_ttl_);
+    auto num_minutes = std::min(60u, config_minutes);
     LOG_INFO(lth_loc::format_n(
         // LOCALE: info
-        "Starting the task for purging the spool directory every {1} minute; thread id {2}",
-        "Starting the task for purging the spool directory every {1} minutes; thread id {2}",
+        "Scheduling the check every {1} minute for spool directories to purge; thread id {2}",
+        "Scheduling the check every {1} minutes for spool directories to purge; thread id {2}",
         num_minutes, num_minutes, pcp_util::this_thread::get_id()));
 
     while (true) {

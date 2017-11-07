@@ -133,7 +133,7 @@ class RequestProcessor {
     void logLoadedModules() const;
 
     /// Spool directory purge task; the purge call will be triggered
-    /// in intervals of (TTL + TTL * 1.2) duration
+    /// in intervals of min("1h", TTL) duration
     void spoolDirPurgeTask();
 };
 
