@@ -263,14 +263,11 @@ unsigned int ResultsStorage::purge(
             return true;
         });
 
-    // TODO(ale): deal with locale & plural (PCP-257)
-    if (num_purged_dirs == 1) {
-        LOG_INFO("Removed {1} directory from '{2}'",
-                 num_purged_dirs, spool_dir_path_.string());
-    } else {
-        LOG_INFO("Removed {1} directories from '{2}'",
-                 num_purged_dirs, spool_dir_path_.string());
-    }
+    LOG_INFO(lth_loc::format_n(
+        // LOCALE: info
+        "Removed {1} directory from '{2}'",
+        "Removed {1} directories from '{2}'",
+        num_purged_dirs, num_purged_dirs, spool_dir_path_.string()));
     return num_purged_dirs;
 }
 

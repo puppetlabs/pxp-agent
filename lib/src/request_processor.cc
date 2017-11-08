@@ -922,16 +922,11 @@ void RequestProcessor::spoolDirPurgeTask()
 {
     auto num_minutes = Timestamp::getMinutes(spool_dir_purge_ttl_);
     num_minutes *= 1.2;
-    // TODO(ale): deal with locale & plural (PCP-257)
-    if (num_minutes == 1) {
-        LOG_INFO("Starting the task for purging the spool directory every {1} "
-                 "minute; thread id {2}",
-                 num_minutes, pcp_util::this_thread::get_id());
-    } else {
-        LOG_INFO("Starting the task for purging the spool directory every {1} "
-                 "minutes; thread id {2}",
-                 num_minutes, pcp_util::this_thread::get_id());
-    }
+    LOG_INFO(lth_loc::format_n(
+        // LOCALE: info
+        "Starting the task for purging the spool directory every {1} minute; thread id {2}",
+        "Starting the task for purging the spool directory every {1} minutes; thread id {2}",
+        num_minutes, num_minutes, pcp_util::this_thread::get_id()));
 
     while (true) {
         pcp_util::unique_lock<pcp_util::mutex> the_lock { spool_dir_purge_mutex_ };
