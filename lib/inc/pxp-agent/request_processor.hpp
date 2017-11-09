@@ -121,7 +121,7 @@ class RequestProcessor {
     void loadModulesConfiguration();
 
     /// Register module in the module map
-    void registerModule(Module *module);
+    void registerModule(std::shared_ptr<Module>);
 
     /// Load the modules from the src/modules directory
     void loadInternalModules(const Configuration::Agent& agent_configuration);

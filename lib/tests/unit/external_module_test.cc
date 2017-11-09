@@ -36,6 +36,8 @@ namespace lth_file = leatherman::file_util;
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
 
+static const auto STORAGE = std::make_shared<ResultsStorage>(SPOOL_DIR);
+
 static const std::string REVERSE_TXT {
     (DATA_FORMAT % "\"0987\""
                  % "\"reverse\""
@@ -68,14 +70,14 @@ TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
         REQUIRE_NOTHROW(ExternalModule(PXP_AGENT_ROOT_PATH
                                        "/lib/tests/resources/modules/reverse_valid"
                                        EXTENSION,
-                                       SPOOL_DIR));
+                                       STORAGE));
     }
 
     SECTION("all actions are successfully loaded from a valid external module") {
         ExternalModule mod { PXP_AGENT_ROOT_PATH
                              "/lib/tests/resources/modules/failures_test"
                              EXTENSION,
-                             SPOOL_DIR };
+                             STORAGE };
         REQUIRE(mod.actions.size() == 2u);
     }
 
@@ -85,7 +87,7 @@ TEST_CASE("ExternalModule::ExternalModule", "[modules]") {
             ExternalModule(PXP_AGENT_ROOT_PATH
                            "/lib/tests/resources/modules_broken/reverse_broken"
                            EXTENSION,
-                           SPOOL_DIR),
+                           STORAGE),
             Module::LoadingError);
     }
 }
@@ -94,7 +96,7 @@ TEST_CASE("ExternalModule::type", "[modules]") {
     ExternalModule mod { PXP_AGENT_ROOT_PATH
                          "/lib/tests/resources/modules/reverse_valid"
                          EXTENSION,
-                         SPOOL_DIR };
+                         STORAGE };
 
     SECTION("correctly reports its type") {
         REQUIRE(mod.type() == ModuleType::External);
@@ -105,7 +107,7 @@ TEST_CASE("ExternalModule::hasAction", "[modules]") {
     ExternalModule mod { PXP_AGENT_ROOT_PATH
                          "/lib/tests/resources/modules/reverse_valid"
                          EXTENSION,
-                         SPOOL_DIR };
+                         STORAGE };
 
     SECTION("correctly reports false") {
         REQUIRE(!mod.hasAction("foo"));
@@ -140,7 +142,7 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
         ExternalModule reverse_module { PXP_AGENT_ROOT_PATH
                                         "/lib/tests/resources//modules/reverse_valid"
                                         EXTENSION,
-                                        SPOOL_DIR };
+                                        STORAGE };
 
         SECTION("correctly call the reverse module") {
             ActionRequest request { RequestType::Blocking, CONTENT };
@@ -155,7 +157,7 @@ TEST_CASE("ExternalModule::callAction - blocking", "[modules]") {
         ExternalModule test_reverse_module { PXP_AGENT_ROOT_PATH
                                              "/lib/tests/resources/modules/failures_test"
                                              EXTENSION,
-                                             SPOOL_DIR };
+                                             STORAGE };
 
         SECTION("mark the results as invalid if the module returns an invalid result") {
             std::string failure_txt { (DATA_FORMAT % "\"1234987\""
@@ -208,7 +210,7 @@ TEST_CASE("ExternalModule::callAction - non blocking", "[modules]") {
         ExternalModule e_m { PXP_AGENT_ROOT_PATH
                              "/lib/tests/resources/modules/reverse_valid"
                              EXTENSION,
-                             SPOOL_DIR };
+                             STORAGE };
         ActionRequest request { RequestType::NonBlocking, NON_BLOCKING_CONTENT };
         fs::path spool_path { SPOOL_DIR };
         auto results_dir = (spool_path / request.transactionId()).string();
@@ -237,7 +239,7 @@ TEST_CASE("ExternalModule::getModuleMetadata", "[modules][metadata]") {
             ExternalModule e_m { PXP_AGENT_ROOT_PATH
                                  "/lib/tests/resources/modules/reverse_valid"
                                  EXTENSION,
-                                 SPOOL_DIR };
+                                 STORAGE };
             std::vector<std::string> expected_actions { "string", "hash" };
             REQUIRE(e_m.actions == expected_actions);
         } catch (const std::exception& e) {
@@ -250,7 +252,7 @@ TEST_CASE("ExternalModule::getModuleMetadata", "[modules][metadata]") {
             ExternalModule(PXP_AGENT_ROOT_PATH
                            "/lib/tests/resources/broken_modules/reverse_no_metadata"
                            EXTENSION,
-                           SPOOL_DIR),
+                           STORAGE),
             Module::LoadingError);
     }
 
@@ -259,7 +261,7 @@ TEST_CASE("ExternalModule::getModuleMetadata", "[modules][metadata]") {
             ExternalModule(PXP_AGENT_ROOT_PATH
                            "/lib/tests/resources/broken_modules/reverse_bad_json_format"
                            EXTENSION,
-                           SPOOL_DIR),
+                           STORAGE),
             Module::LoadingError);
     }
 
@@ -268,7 +270,7 @@ TEST_CASE("ExternalModule::getModuleMetadata", "[modules][metadata]") {
             ExternalModule(PXP_AGENT_ROOT_PATH
                            "/lib/tests/resources/broken_modules/reverse_broken"
                            EXTENSION,
-                           SPOOL_DIR),
+                           STORAGE),
             Module::LoadingError);
     }
 }
@@ -284,7 +286,7 @@ TEST_CASE("ExternalModule::validateConfiguration", "[modules][configuration]") {
             EXTENSION,
             lth_jc::JsonContainer(
                 "{ \"rate\" : 1.1, \"fee_percent\" : 0.1, \"fee_max\" : 10 }"),
-            SPOOL_DIR };
+            STORAGE };
 
         REQUIRE_NOTHROW(e_m.validateConfiguration());
     }
@@ -296,7 +298,7 @@ TEST_CASE("ExternalModule::validateConfiguration", "[modules][configuration]") {
             EXTENSION,
             lth_jc::JsonContainer(
                 "{ \"rate\" : 1.1, \"fee_percent\" : 0.1, \"foo_max\" : 10 }"),
-            SPOOL_DIR };
+            STORAGE };
 
         REQUIRE_THROWS_AS(e_m.validateConfiguration(),
                           PCPClient::validation_error);
@@ -314,7 +316,7 @@ TEST_CASE("ExternalModule::executeAction", "[modules][output]") {
             EXTENSION,
             lth_jc::JsonContainer(
                 "{ \"rate\" : 1.1, \"fee_percent\" : 0.1, \"fee_max\" : 10 }"),
-            SPOOL_DIR };
+            STORAGE };
         auto convert_txt = (DATA_FORMAT % "\"0632\""
                                         % "\"convert_test\""
                                         % "\"convert\""
@@ -342,7 +344,7 @@ TEST_CASE("ExternalModule::executeAction", "[modules][output]") {
             EXTENSION,
             lth_jc::JsonContainer(
                 "{ \"rate\" : 1.1, \"fee_percent\" : 0.1, \"fee_max\" : 10 }"),
-            SPOOL_DIR };
+            STORAGE };
         auto convert_txt = (DATA_FORMAT % "\"0633\""
                                         % "\"convert_test\""
                                         % "\"convert2\""

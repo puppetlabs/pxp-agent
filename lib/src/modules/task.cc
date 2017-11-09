@@ -120,8 +120,8 @@ Task::Task(const fs::path& exec_prefix,
            const std::string& ca,
            const std::string& crt,
            const std::string& key,
-           const std::string& spool_dir) :
-    storage_ { spool_dir },
+           std::shared_ptr<ResultsStorage> storage) :
+    storage_ { std::move(storage) },
     task_cache_dir_ { task_cache_dir },
     task_cache_dir_purge_ttl_ { task_cache_dir_purge_ttl },
     exec_prefix_ { exec_prefix },
@@ -449,7 +449,7 @@ void Task::callNonBlockingAction(
             lth_exec::execution_options::inherit_locale });  // options
 
     // Stdout / stderr output should be on file; read it
-    response.output = storage_.getOutput(request.transactionId(), exec.exit_code);
+    response.output = storage_->getOutput(request.transactionId(), exec.exit_code);
     processOutputAndUpdateMetadata(response);
 }
 

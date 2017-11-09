@@ -810,10 +810,8 @@ void RequestProcessor::loadModulesConfiguration()
     }
 }
 
-void RequestProcessor::registerModule(Module *module)
+void RequestProcessor::registerModule(std::shared_ptr<Module> module_ptr)
 {
-    std::shared_ptr<Module> module_ptr { module };
-
     if (!modules_.emplace(module_ptr->module_name, module_ptr).second) {
         LOG_WARNING("Ignoring attempt to re-register module: {1}", module_ptr->module_name);
     }
@@ -821,16 +819,17 @@ void RequestProcessor::registerModule(Module *module)
 
 void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_configuration)
 {
-    registerModule(new Modules::Echo);
-    registerModule(new Modules::Ping);
-    registerModule(new Modules::Task(Configuration::Instance().getExecPrefix(),
-                                     agent_configuration.task_cache_dir,
-                                     agent_configuration.task_cache_dir_purge_ttl,
-                                     agent_configuration.master_uris,
-                                     agent_configuration.ca,
-                                     agent_configuration.crt,
-                                     agent_configuration.key,
-                                     spool_dir_path_.string()));
+    registerModule(std::make_shared<Modules::Echo>());
+    registerModule(std::make_shared<Modules::Ping>());
+    registerModule(std::make_shared<Modules::Task>(
+        Configuration::Instance().getExecPrefix(),
+        agent_configuration.task_cache_dir,
+        agent_configuration.task_cache_dir_purge_ttl,
+        agent_configuration.master_uris,
+        agent_configuration.ca,
+        agent_configuration.crt,
+        agent_configuration.key,
+        storage_ptr_));
 }
 
 void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
@@ -857,20 +856,19 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
             if (extension == ".bat" || extension == ".exe") {
 #endif
                 try {
-                    ExternalModule* e_m;
+                    std::shared_ptr<ExternalModule> e_m;
                     auto config_itr = modules_config_.find(f_p.stem().string());
 
                     if (config_itr != modules_config_.end()) {
-                        e_m = new ExternalModule(f_p.string(),
-                                                 config_itr->second,
-                                                 spool_dir_path_.string());
+                        e_m = std::make_shared<ExternalModule>(
+                            f_p.string(), config_itr->second, storage_ptr_);
                         e_m->validateConfiguration();
                         LOG_DEBUG("The '{1}' module configuration has been "
                                   "validated: {2}", e_m->module_name,
                                   config_itr->second.toString());
                     } else {
-                        e_m = new ExternalModule(f_p.string(),
-                                                 spool_dir_path_.string());
+                        e_m = std::make_shared<ExternalModule>(
+                            f_p.string(), storage_ptr_);
                     }
 
                     registerModule(e_m);

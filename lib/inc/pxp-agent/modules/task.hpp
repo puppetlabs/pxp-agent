@@ -26,7 +26,7 @@ class Task : public PXPAgent::Module {
          const std::string& ca,
          const std::string& crt,
          const std::string& key,
-         const std::string& spool_dir);
+         std::shared_ptr<ResultsStorage> storage);
 
     ~Task() override;
 
@@ -52,7 +52,7 @@ class Task : public PXPAgent::Module {
         std::function<void(const std::string& dir_path)> purge_callback = nullptr);
 
   private:
-    ResultsStorage storage_;
+    std::shared_ptr<ResultsStorage> storage_;
 
     std::string task_cache_dir_;
     std::string task_cache_dir_purge_ttl_;

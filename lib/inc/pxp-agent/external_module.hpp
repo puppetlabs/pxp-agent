@@ -30,12 +30,12 @@ class ExternalModule : public Module {
     /// module metadata; if the metadata is invalid; in case of
     /// invalid input or output schemas.
     explicit ExternalModule(const std::string& exec_path,
-                            const std::string& spool_dir);
+                            std::shared_ptr<ResultsStorage> storage);
 
     explicit ExternalModule(
         const std::string& path,
         const leatherman::json_container::JsonContainer& config,
-        const std::string& spool_dir);
+        std::shared_ptr<ResultsStorage> storage);
 
     /// The type of the module.
     ModuleType type() override { return ModuleType::External; }
@@ -67,7 +67,7 @@ class ExternalModule : public Module {
     leatherman::json_container::JsonContainer config_;
 
     /// Results Storage
-    ResultsStorage storage_;
+    std::shared_ptr<ResultsStorage> storage_;
 
     /// Metadata validator
     static const PCPClient::Validator metadata_validator_;

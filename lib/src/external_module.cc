@@ -80,10 +80,10 @@ PCPClient::Validator getMetadataValidator()
 
 ExternalModule::ExternalModule(const std::string& path,
                                const lth_jc::JsonContainer& config,
-                               const std::string& spool_dir)
+                               std::shared_ptr<ResultsStorage> storage)
         : path_ { path },
           config_ { config },
-          storage_ { spool_dir }
+          storage_ { std::move(storage) }
 {
     fs::path module_path { path };
     module_name = module_path.stem().string();
@@ -107,10 +107,10 @@ ExternalModule::ExternalModule(const std::string& path,
 }
 
 ExternalModule::ExternalModule(const std::string& path,
-                               const std::string& spool_dir)
+                               std::shared_ptr<ResultsStorage> storage)
         : path_ { path },
           config_ { "{}" },
-          storage_ { spool_dir }
+          storage_ { std::move(storage) }
 {
     fs::path module_path { path };
     module_name = module_path.stem().string();
@@ -395,7 +395,7 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
         pcp_util::chrono::milliseconds(OUTPUT_DELAY_MS));
 
     // Stdout / stderr output should be on file; read it
-    response.output = storage_.getOutput(request.transactionId(), exec.exit_code);
+    response.output = storage_->getOutput(request.transactionId(), exec.exit_code);
     processOutputAndUpdateMetadata(response);
     return response;
 }

@@ -40,6 +40,8 @@ namespace lth_file = leatherman::file_util;
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
 
+static const auto STORAGE = std::make_shared<ResultsStorage>(SPOOL_DIR);
+
 static const std::string TASK_CACHE_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                           + "/lib/tests/resources/tasks-cache" };
 
@@ -76,12 +78,12 @@ static const PCPClient::ParsedChunks NON_BLOCKING_CONTENT {
 
 TEST_CASE("Modules::Task", "[modules]") {
     SECTION("can successfully instantiate") {
-        REQUIRE_NOTHROW(Modules::Task(PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR));
+        REQUIRE_NOTHROW(Modules::Task(PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE));
     }
 }
 
 TEST_CASE("Modules::Task::hasAction", "[modules]") {
-    Modules::Task mod { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+    Modules::Task mod { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
 
     SECTION("correctly reports false") {
         REQUIRE(!mod.hasAction("foo"));
@@ -119,7 +121,7 @@ TEST_CASE("Modules::Task::callAction", "[modules]") {
   lth_util::scope_exit config_cleaner { resetTest };
 
   SECTION("throws module processing error when a file system error is thrown") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto existent_sha = "existent";
         boost::nowide::ofstream(TEMP_TASK_CACHE_DIR + "/" + existent_sha);
         auto task_txt = (DATA_FORMAT % "\"0632\""
@@ -146,7 +148,7 @@ TEST_CASE("Modules::Task::callAction - non blocking", "[modules]") {
     lth_util::scope_exit config_cleaner { resetTest };
 
     SECTION("the pid is written to file") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         ActionRequest request { RequestType::NonBlocking, NON_BLOCKING_CONTENT };
         fs::path spool_path { SPOOL_DIR };
         auto results_dir = (spool_path / request.transactionId()).string();
@@ -171,7 +173,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     lth_util::scope_exit config_cleaner { resetTest };
 
     SECTION("passes input as json") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto echo_txt =
 #ifndef _WIN32
             (DATA_FORMAT % "\"0632\""
@@ -197,7 +199,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("passes input only on stdin when input_method is stdin") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto echo_txt =
 #ifndef _WIN32
             (DATA_FORMAT % "\"0632\""
@@ -227,7 +229,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("passes input as env variables") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto echo_txt =
 #ifndef _WIN32
             (DATA_FORMAT % "\"0632\""
@@ -253,7 +255,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("passes input only as env variables when input_method is environment") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto echo_txt =
 #ifndef _WIN32
             (DATA_FORMAT % "\"0632\""
@@ -279,7 +281,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("succeeds on non-zero exit") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto echo_txt =
 #ifndef _WIN32
             (DATA_FORMAT % "\"0632\""
@@ -312,7 +314,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("errors on unparseable output") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto echo_txt =
 #ifndef _WIN32
             (DATA_FORMAT % "\"0632\""
@@ -347,7 +349,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("errors on download when no master-uri is provided") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, {}, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, {}, CA, CRT, KEY, STORAGE };
         auto task_txt = (DATA_FORMAT % "\"0632\""
                                      % "\"task\""
                                      % "\"run\""
@@ -368,7 +370,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("if a master-uri has a server-side error, then it proceeds to try the next master-uri. if they all fail, it errors on download and removes all temporary files") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_sha";
         std::string bad_path = "bad_path";
         auto task_txt = (DATA_FORMAT % "\"0632\""
@@ -395,7 +397,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("creates the tasks-cache/<sha> directory with ower/group read and write permissions") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_other_sha";
         auto task_txt = (DATA_FORMAT % "\"0632\""
                                      % "\"task\""
@@ -420,7 +422,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("succeeds even if tasks-cache was deleted") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         fs::remove_all(TEMP_TASK_CACHE_DIR);
 
         auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_other_sha";
@@ -456,7 +458,7 @@ TEST_CASE("purge old tasks", "[modules]") {
     const std::string RECENT_TRANSACTION { "valid_recent" };
 
     // Start with 0 TTL to prevent initial cleanup
-    Modules::Task e_m { PXP_AGENT_BIN_PATH, PURGE_TASK_CACHE, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+    Modules::Task e_m { PXP_AGENT_BIN_PATH, PURGE_TASK_CACHE, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
 
     unsigned int num_purged_results { 0 };
     auto purgeCallback =
