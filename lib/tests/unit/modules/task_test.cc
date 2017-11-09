@@ -40,7 +40,7 @@ namespace lth_file = leatherman::file_util;
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
 
-static const auto STORAGE = std::make_shared<ResultsStorage>(SPOOL_DIR);
+static const auto STORAGE = std::make_shared<ResultsStorage>(SPOOL_DIR, "0d");
 
 static const std::string TASK_CACHE_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                           + "/lib/tests/resources/tasks-cache" };
@@ -472,7 +472,7 @@ TEST_CASE("purge old tasks", "[modules]") {
         fs::last_write_time(fs::path(PURGE_TASK_CACHE)/OLD_TRANSACTION, my_to_time_t(old));
         fs::last_write_time(fs::path(PURGE_TASK_CACHE)/RECENT_TRANSACTION, my_to_time_t(recent));
 
-        auto results = e_m.purge("1h", purgeCallback);
+        auto results = e_m.purge("1h", {}, purgeCallback);
         REQUIRE(results == 1);
         REQUIRE(num_purged_results == 1);
     }

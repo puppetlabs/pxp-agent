@@ -18,6 +18,10 @@
 
 namespace PXPAgent {
 
+namespace Util {
+    class Purgeable;
+}
+
 class RequestProcessor {
   public:
     struct Error : public std::runtime_error {
@@ -79,9 +83,6 @@ class RequestProcessor {
     /// non-blocking actions will be created
     const boost::filesystem::path spool_dir_path_;
 
-    /// Time duration after which results directories get deleted
-    const std::string spool_dir_purge_ttl_;
-
     /// Modules
     std::map<std::string, std::shared_ptr<Module>> modules_;
 
@@ -92,12 +93,15 @@ class RequestProcessor {
     std::map<std::string, leatherman::json_container::JsonContainer> modules_config_;
 
     /// To manage the spool purge task
-    std::unique_ptr<PCPClient::Util::thread> spool_dir_purge_thread_ptr_;
-    PCPClient::Util::mutex spool_dir_purge_mutex_;
-    PCPClient::Util::condition_variable spool_dir_purge_cond_var_;
+    std::unique_ptr<PCPClient::Util::thread> purge_thread_ptr_;
+    PCPClient::Util::mutex purge_mutex_;
+    PCPClient::Util::condition_variable purge_cond_var_;
 
     /// Flag; set to true if the dtor has been called
     bool is_destructing_;
+
+    /// Resources to purge
+    std::vector<std::shared_ptr<Util::Purgeable>> purgeables_;
 
     /// Throw a RequestProcessor::Error in case of unknown module,
     /// unknown action, or if the requested input parameters entry
@@ -123,6 +127,9 @@ class RequestProcessor {
     /// Register module in the module map
     void registerModule(std::shared_ptr<Module>);
 
+    /// Registers a purgeable if it has a non-zero TTL
+    void registerPurgeable(std::shared_ptr<Util::Purgeable>);
+
     /// Load the modules from the src/modules directory
     void loadInternalModules(const Configuration::Agent& agent_configuration);
 
@@ -132,9 +139,9 @@ class RequestProcessor {
     /// Log the loaded modules
     void logLoadedModules() const;
 
-    /// Spool directory purge task; the purge call will be triggered
-    /// in intervals of min("1h", TTL) duration
-    void spoolDirPurgeTask();
+    /// Purge task for resources that need to purge e.g. directories; the purge
+    /// call will be triggered min("1h", gcd(TTLS))
+    void purgeTask();
 };
 
 }  // namespace PXPAgent

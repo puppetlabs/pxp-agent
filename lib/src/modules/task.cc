@@ -121,9 +121,9 @@ Task::Task(const fs::path& exec_prefix,
            const std::string& crt,
            const std::string& key,
            std::shared_ptr<ResultsStorage> storage) :
+    Purgeable { task_cache_dir_purge_ttl },
     storage_ { std::move(storage) },
     task_cache_dir_ { task_cache_dir },
-    task_cache_dir_purge_ttl_ { task_cache_dir_purge_ttl },
     exec_prefix_ { exec_prefix },
     master_uris_ { master_uris }
 {
@@ -139,25 +139,6 @@ Task::Task(const fs::path& exec_prefix,
     client_.set_ca_cert(ca);
     client_.set_client_cert(crt, key);
     client_.set_supported_protocols(CURLPROTO_HTTPS);
-
-    if (Timestamp::getMinutes(task_cache_dir_purge_ttl_) > 0) {
-        Modules::Task::purge(task_cache_dir_purge_ttl_);
-        task_cache_dir_purge_thread_ptr_.reset(
-            new pcp_util::thread(&Task::taskCacheDirPurgeTask, this));
-    }
-}
-
-Task::~Task()
-{
-    {
-        pcp_util::lock_guard<pcp_util::mutex> the_lock { task_cache_dir_purge_mutex_ };
-        is_destructing_ = true;
-        task_cache_dir_purge_cond_var_.notify_one();
-    }
-
-    if (task_cache_dir_purge_thread_ptr_ != nullptr
-            && task_cache_dir_purge_thread_ptr_->joinable())
-        task_cache_dir_purge_thread_ptr_->join();
 }
 
 static void addParametersToEnvironment(const lth_jc::JsonContainer &input, std::map<std::string, std::string> &environment)
@@ -574,19 +555,15 @@ void Task::processOutputAndUpdateMetadata(ActionResponse& response)
     }
 }
 
-static void defaultPurgeCallback(const std::string& dir_path)
-{
-    fs::remove_all(dir_path);
-}
-
 unsigned int Task::purge(
     const std::string& ttl,
+    std::vector<std::string> ongoing_transactions,
     std::function<void(const std::string& dir_path)> purge_callback)
 {
     unsigned int num_purged_dirs { 0 };
     Timestamp ts { ttl };
     if (purge_callback == nullptr)
-        purge_callback = &defaultPurgeCallback;
+        purge_callback = &Purgeable::defaultDirPurgeCallback;
 
     LOG_INFO("About to purge cached tasks from '{1}'; TTL = {2}",
              task_cache_dir_, ttl);
@@ -622,35 +599,6 @@ unsigned int Task::purge(
         "Removed {1} directories from '{2}'",
         num_purged_dirs, num_purged_dirs, task_cache_dir_));
     return num_purged_dirs;
-}
-
-//
-// Task cache directory purge task (private interface)
-//
-
-void Task::taskCacheDirPurgeTask()
-{
-    auto task_minutes = Timestamp::getMinutes(task_cache_dir_purge_ttl_);
-    auto num_minutes = std::min(60u, task_minutes);
-    LOG_INFO(lth_loc::format_n(
-        "Scheduling the check every {1} minute for task cache directories to purge; thread id {2}",
-        "Scheduling the check every {1} minutes for task cache directories to purge; thread id {2}",
-        num_minutes, num_minutes, pcp_util::this_thread::get_id()));
-
-    while (true) {
-        pcp_util::unique_lock<pcp_util::mutex> the_lock { task_cache_dir_purge_mutex_ };
-        auto now = pcp_util::chrono::system_clock::now();
-
-        if (!is_destructing_)
-            task_cache_dir_purge_cond_var_.wait_until(
-                the_lock,
-                now + pcp_util::chrono::minutes(num_minutes));
-
-        if (is_destructing_)
-            return;
-
-        purge(task_cache_dir_purge_ttl_);
-    }
 }
 
 }  // namespace Modules

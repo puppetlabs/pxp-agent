@@ -36,7 +36,7 @@ namespace lth_file = leatherman::file_util;
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
 
-static const auto STORAGE = std::make_shared<ResultsStorage>(SPOOL_DIR);
+static const auto STORAGE = std::make_shared<ResultsStorage>(SPOOL_DIR, "0d");
 
 static const std::string REVERSE_TXT {
     (DATA_FORMAT % "\"0987\""

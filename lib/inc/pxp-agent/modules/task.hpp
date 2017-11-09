@@ -4,6 +4,7 @@
 #include <pxp-agent/module.hpp>
 #include <pxp-agent/action_response.hpp>
 #include <pxp-agent/results_storage.hpp>
+#include <pxp-agent/util/purgeable.hpp>
 
 #include <cpp-pcp-client/util/thread.hpp>
 
@@ -17,7 +18,7 @@ struct TaskCommand {
     std::vector<std::string> arguments;
 };
 
-class Task : public PXPAgent::Module {
+class Task : public PXPAgent::Module, public PXPAgent::Util::Purgeable {
   public:
     Task(const boost::filesystem::path& exec_prefix,
          const std::string& task_cache_dir,
@@ -27,8 +28,6 @@ class Task : public PXPAgent::Module {
          const std::string& crt,
          const std::string& key,
          std::shared_ptr<ResultsStorage> storage);
-
-    ~Task() override;
 
     /// Whether or not the module supports non-blocking / asynchronous requests.
     bool supportsAsync() override { return true; }
@@ -49,22 +48,14 @@ class Task : public PXPAgent::Module {
     /// Returns number of directories purged.
     unsigned int purge(
         const std::string& ttl,
-        std::function<void(const std::string& dir_path)> purge_callback = nullptr);
+        std::vector<std::string> ongoing_transactions,
+        std::function<void(const std::string& dir_path)> purge_callback = nullptr) override;
 
   private:
     std::shared_ptr<ResultsStorage> storage_;
 
     std::string task_cache_dir_;
-    std::string task_cache_dir_purge_ttl_;
     PCPClient::Util::mutex task_cache_dir_mutex_;
-
-    /// To manage the task cache purge task
-    std::unique_ptr<PCPClient::Util::thread> task_cache_dir_purge_thread_ptr_;
-    PCPClient::Util::mutex task_cache_dir_purge_mutex_;
-    PCPClient::Util::condition_variable task_cache_dir_purge_cond_var_;
-
-    /// Flag; set to true if the dtor has been called
-    bool is_destructing_;
 
     boost::filesystem::path exec_prefix_;
 
@@ -87,10 +78,6 @@ class Task : public PXPAgent::Module {
         ActionResponse &response);
 
     ActionResponse callAction(const ActionRequest& request) override;
-
-    /// Task cache directory purge task; the purge call will be
-    /// triggered in intervals of min("1h", TTL) duration
-    void taskCacheDirPurgeTask();
 };
 
 }  // namespace Modules

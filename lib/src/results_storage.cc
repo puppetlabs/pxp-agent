@@ -29,8 +29,8 @@ static const std::string STDERR { "stderr" };
 static const std::string EXITCODE { "exitcode" };
 static const std::string PID { "pid" };
 
-ResultsStorage::ResultsStorage(const std::string& spool_dir)
-        : spool_dir_path_ { spool_dir }
+ResultsStorage::ResultsStorage(std::string spool_dir, std::string spool_dir_ttl)
+        : Purgeable { std::move(spool_dir_ttl) }, spool_dir_path_ { std::move(spool_dir) }
 {
 }
 
@@ -204,20 +204,15 @@ ActionOutput ResultsStorage::getOutput(const std::string& transaction_id,
     return output;
 }
 
-static void defaultPurgeCallback(const std::string& dir_path)
-{
-    fs::remove_all(dir_path);
-}
-
 unsigned int ResultsStorage::purge(
                 const std::string& ttl,
-                const std::vector<std::string>& ongoing_transactions,
+                std::vector<std::string> ongoing_transactions,
                 std::function<void(const std::string& dir_path)> purge_callback)
 {
     unsigned int num_purged_dirs { 0 };
     Timestamp ts { ttl };
     if (purge_callback == nullptr)
-        purge_callback = &defaultPurgeCallback;
+        purge_callback = &Purgeable::defaultDirPurgeCallback;
 
     LOG_INFO("About to purge the results directories from '{1}'; TTL = {2}",
              spool_dir_path_.string(), ttl);

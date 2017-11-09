@@ -2,6 +2,7 @@
 #define SRC_AGENT_RESULTS_STORAGE_HPP_
 
 #include <pxp-agent/action_output.hpp>
+#include <pxp-agent/util/purgeable.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
 
@@ -18,14 +19,14 @@ namespace PXPAgent {
 // NOTE(ale): possible execptions thrown while inspecting files are
 // propagated by ResultsStorage methods (more specifically, errors
 // raised by boost::filesystem::exists() are not filtered).
-class ResultsStorage {
+class ResultsStorage : public PXPAgent::Util::Purgeable {
   public:
     struct Error : public std::runtime_error {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
     };
 
     ResultsStorage() = delete;
-    ResultsStorage(const std::string& spool_dir);
+    ResultsStorage(std::string spool_dir, std::string spool_dir_ttl);
     ResultsStorage(const ResultsStorage&) = delete;
     ResultsStorage& operator=(const ResultsStorage&) = delete;
 
@@ -89,11 +90,11 @@ class ResultsStorage {
     // remove_all() will be used.
     unsigned int purge(
         const std::string& ttl,
-        const std::vector<std::string>& ongoing_transactions,
-        std::function<void(const std::string& dir_path)> purge_callback = nullptr);
+        std::vector<std::string> ongoing_transactions,
+        std::function<void(const std::string& dir_path)> purge_callback = nullptr) override;
 
   private:
-    const boost::filesystem::path spool_dir_path_;
+    boost::filesystem::path spool_dir_path_;
 
     ActionOutput getOutput_(const std::string& transaction_id,
                             bool get_exitcode);

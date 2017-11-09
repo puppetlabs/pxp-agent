@@ -724,16 +724,6 @@ msgid_plural "Removed {1} directories from '{2}'"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/src/modules/task.cc
-msgid ""
-"Scheduling the check every {1} minute for task cache directories to purge; "
-"thread id {2}"
-msgid_plural ""
-"Scheduling the check every {1} minutes for task cache directories to purge; "
-"thread id {2}"
-msgstr[0] ""
-msgstr[1] ""
-
 #. LOCALE: warning
 #: lib/src/pxp_connector_v1.cc
 msgid "Message {1} contained {2} bad debug chunk"
@@ -1122,11 +1112,10 @@ msgstr ""
 #. LOCALE: info
 #: lib/src/request_processor.cc
 msgid ""
-"Scheduling the check every {1} minute for spool directories to purge; thread "
-"id {2}"
+"Scheduling the check every {1} minute for directories to purge; thread id {2}"
 msgid_plural ""
-"Scheduling the check every {1} minutes for spool directories to purge; "
-"thread id {2}"
+"Scheduling the check every {1} minutes for directories to purge; thread id "
+"{2}"
 msgstr[0] ""
 msgstr[1] ""
 
