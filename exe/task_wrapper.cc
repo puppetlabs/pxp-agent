@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
             lth_util::option_set<lth_exec::execution_options> {
                 lth_exec::execution_options::thread_safe,
                 lth_exec::execution_options::merge_environment,
+                lth_exec::execution_options::allow_stdin_unread,
                 lth_exec::execution_options::inherit_locale });
         exitcode = exec.exit_code;
     } catch (lth_exec::execution_exception &e) {
