@@ -70,7 +70,7 @@ TEST_CASE("Invalid (by metadata) External Module Configuration", "[component]") 
     }
 }
 
-static ResultsStorage test_storage { SPOOL };
+static ResultsStorage test_storage { SPOOL, "0d" };
 
 void wait_for_module(ResultsStorage& storage, const std::string& t_id)
 {

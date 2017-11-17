@@ -124,4 +124,9 @@ bool Timestamp::isNewerThan(const std::string& extended_ISO8601_time)
     }
 }
 
+bool Timestamp::isNewerThan(const std::time_t& t)
+{
+    return time_point > pt::from_time_t(t);
+}
+
 }  // namespace PXPAgent

@@ -1,9 +1,13 @@
 #include <pxp-agent/modules/task.hpp>
 #include <pxp-agent/configuration.hpp>
+#include <pxp-agent/time.hpp>
+
+#include <cpp-pcp-client/util/chrono.hpp>
 
 #include <leatherman/locale/locale.hpp>
 #include <leatherman/execution/execution.hpp>
 #include <leatherman/file_util/file.hpp>
+#include <leatherman/file_util/directory.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/hex.hpp>
@@ -31,6 +35,7 @@ namespace Modules {
 namespace fs = boost::filesystem;
 namespace alg = boost::algorithm;
 namespace boost_error = boost::system::errc;
+namespace pcp_util = PCPClient::Util;
 
 namespace lth_exec = leatherman::execution;
 namespace lth_file = leatherman::file_util;
@@ -110,12 +115,14 @@ static const std::map<std::string, std::function<TaskCommand(std::string)>> BUIL
 
 Task::Task(const fs::path& exec_prefix,
            const std::string& task_cache_dir,
+           const std::string& task_cache_dir_purge_ttl,
            const std::vector<std::string>& master_uris,
            const std::string& ca,
            const std::string& crt,
            const std::string& key,
-           const std::string& spool_dir) :
-    storage_ { spool_dir },
+           std::shared_ptr<ResultsStorage> storage) :
+    Purgeable { task_cache_dir_purge_ttl },
+    storage_ { std::move(storage) },
     task_cache_dir_ { task_cache_dir },
     exec_prefix_ { exec_prefix },
     master_uris_ { master_uris }
@@ -344,6 +351,7 @@ static fs::path updateTaskFile(const std::vector<std::string>& master_uris,
 // Return the full path of the cached version of the first file from the list (which
 // is assumed to be the task executable).
 static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
+                                  PCPClient::Util::mutex& task_cache_dir_mutex,
                                   const std::vector<std::string>& master_uris,
                                   lth_curl::client& client,
                                   const std::vector<lth_jc::JsonContainer> &files) {
@@ -355,7 +363,10 @@ static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
     LOG_DEBUG("Verifying task file based on {1}", file.toString());
 
     try {
-        auto cache_dir = createCacheDir(task_cache_dir, file.get<std::string>("sha256"));
+        auto cache_dir = [&]() {
+            pcp_util::lock_guard<pcp_util::mutex> the_lock { task_cache_dir_mutex };
+            return createCacheDir(task_cache_dir, file.get<std::string>("sha256"));
+        }();
         return updateTaskFile(master_uris, client, cache_dir, file);
     } catch (fs::filesystem_error& e) {
         throw toModuleProcessingError(e);
@@ -419,7 +430,7 @@ void Task::callNonBlockingAction(
             lth_exec::execution_options::inherit_locale });  // options
 
     // Stdout / stderr output should be on file; read it
-    response.output = storage_.getOutput(request.transactionId(), exec.exit_code);
+    response.output = storage_->getOutput(request.transactionId(), exec.exit_code);
     processOutputAndUpdateMetadata(response);
 }
 
@@ -436,6 +447,7 @@ ActionResponse Task::callAction(const ActionRequest& request)
     }
 
     auto task_file = getCachedTaskFile(task_cache_dir_,
+                                       task_cache_dir_mutex_,
                                        master_uris_,
                                        client_,
                                        task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files"));
@@ -541,6 +553,52 @@ void Task::processOutputAndUpdateMetadata(ActionResponse& response)
                                 : "\n" + response.output.std_err)) };
         response.setBadResultsAndEnd(execution_error);
     }
+}
+
+unsigned int Task::purge(
+    const std::string& ttl,
+    std::vector<std::string> ongoing_transactions,
+    std::function<void(const std::string& dir_path)> purge_callback)
+{
+    unsigned int num_purged_dirs { 0 };
+    Timestamp ts { ttl };
+    if (purge_callback == nullptr)
+        purge_callback = &Purgeable::defaultDirPurgeCallback;
+
+    LOG_INFO("About to purge cached tasks from '{1}'; TTL = {2}",
+             task_cache_dir_, ttl);
+
+    lth_file::each_subdirectory(
+        task_cache_dir_,
+        [&](std::string const& s) -> bool {
+            fs::path dir_path { s };
+            LOG_TRACE("Inspecting '{1}' for purging", s);
+
+            boost::system::error_code ec;
+            pcp_util::lock_guard<pcp_util::mutex> the_lock { task_cache_dir_mutex_ };
+            auto last_update = fs::last_write_time(dir_path, ec);
+            if (ec) {
+                LOG_ERROR("Failed to remove '{1}': {2}", s, ec.message());
+            } else if (ts.isNewerThan(last_update)) {
+                LOG_TRACE("Removing '{1}'", s);
+
+                try {
+                    purge_callback(dir_path.string());
+                    num_purged_dirs++;
+                } catch (const std::exception& e) {
+                    LOG_ERROR("Failed to remove '{1}': {2}", s, e.what());
+                }
+            }
+
+            return true;
+        });
+
+    LOG_INFO(lth_loc::format_n(
+        // LOCALE: info
+        "Removed {1} directory from '{2}'",
+        "Removed {1} directories from '{2}'",
+        num_purged_dirs, num_purged_dirs, task_cache_dir_));
+    return num_purged_dirs;
 }
 
 }  // namespace Modules

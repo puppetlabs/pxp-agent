@@ -16,6 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
 #. error
 #: exe/main.cc
@@ -305,6 +306,10 @@ msgid "TTL for action results before being deleted, default: '{1}' (days)"
 msgstr ""
 
 #: lib/src/configuration.cc
+msgid "TTL for cached tasks before being deleted, default: '{1}' (days)"
+msgstr ""
+
+#: lib/src/configuration.cc
 msgid "Don't daemonize, default: false"
 msgstr ""
 
@@ -402,16 +407,13 @@ msgstr ""
 msgid "the PID file '{1}' is not a regular file"
 msgstr ""
 
+#. LOCALE: invalid configuration option
 #: lib/src/configuration.cc
-msgid "invalid spool-dir-purge-ttl: {1}"
+msgid "invalid {1}: {2}"
 msgstr ""
 
 #: lib/src/configuration.cc
-msgid "association-timeout must be positive"
-msgstr ""
-
-#: lib/src/configuration.cc
-msgid "association-request-ttl must be positive"
+msgid "{1} must be positive"
 msgstr ""
 
 #: lib/src/configuration.cc
@@ -703,15 +705,31 @@ msgid ""
 "The task executed for the {1} returned invalid UTF-8 on stdout - stderr:{2}"
 msgstr ""
 
-#. warning
-#: lib/src/pxp_connector_v1.cc
-msgid "Message {1} contained {2} bad debug chunk"
+#. info
+#: lib/src/modules/task.cc
+msgid "About to purge cached tasks from '{1}'; TTL = {2}"
 msgstr ""
 
-#. warning
-#: lib/src/pxp_connector_v1.cc
-msgid "Message {1} contained {2} bad debug chunks"
+#. error
+#: lib/src/modules/task.cc
+#: lib/src/results_storage.cc
+msgid "Failed to remove '{1}': {2}"
 msgstr ""
+
+#. LOCALE: info
+#: lib/src/modules/task.cc
+#: lib/src/results_storage.cc
+msgid "Removed {1} directory from '{2}'"
+msgid_plural "Removed {1} directories from '{2}'"
+msgstr[0] ""
+msgstr[1] ""
+
+#. LOCALE: warning
+#: lib/src/pxp_connector_v1.cc
+msgid "Message {1} contained {2} bad debug chunk"
+msgid_plural "Message {1} contained {2} bad debug chunks"
+msgstr[0] ""
+msgstr[1] ""
 
 #. info
 #: lib/src/pxp_connector_v1.cc
@@ -1091,19 +1109,15 @@ msgstr ""
 msgid "Loaded '{1}' module - {2}{3}"
 msgstr ""
 
-#. info
+#. LOCALE: info
 #: lib/src/request_processor.cc
 msgid ""
-"Starting the task for purging the spool directory every {1} minute; thread "
-"id {2}"
-msgstr ""
-
-#. info
-#: lib/src/request_processor.cc
-msgid ""
-"Starting the task for purging the spool directory every {1} minutes; thread "
-"id {2}"
-msgstr ""
+"Scheduling the check every {1} minute for directories to purge; thread id {2}"
+msgid_plural ""
+"Scheduling the check every {1} minutes for directories to purge; thread id "
+"{2}"
+msgstr[0] ""
+msgstr[1] ""
 
 #: lib/src/results_mutex.cc
 msgid "does not exists"
@@ -1189,11 +1203,6 @@ msgstr ""
 msgid "About to purge the results directories from '{1}'; TTL = {2}"
 msgstr ""
 
-#. error
-#: lib/src/results_storage.cc
-msgid "Failed to remove '{1}': {2}"
-msgstr ""
-
 #. warning
 #: lib/src/results_storage.cc
 msgid ""
@@ -1208,16 +1217,6 @@ msgid ""
 "directory will not be removed): {2}"
 msgstr ""
 
-#. info
-#: lib/src/results_storage.cc
-msgid "Removed {1} directory from '{2}'"
-msgstr ""
-
-#. info
-#: lib/src/results_storage.cc
-msgid "Removed {1} directories from '{2}'"
-msgstr ""
-
 #. warning
 #: lib/src/thread_container.cc
 msgid ""
@@ -1225,23 +1224,31 @@ msgid ""
 "agent will not terminate gracefully"
 msgstr ""
 
+#. LOCALE: trace
+#: lib/src/thread_container.cc
+msgid ""
+"Adding thread {1} (named '{2}') to the '{3}' ThreadContainer; added {4} "
+"thread so far"
+msgid_plural ""
+"Adding thread {1} (named '{2}') to the '{3}' ThreadContainer; added {4} "
+"threads so far"
+msgstr[0] ""
+msgstr[1] ""
+
 #: lib/src/thread_container.cc
 msgid "thread name is already stored"
 msgstr ""
 
-#. debug
+#. LOCALE: debug
 #: lib/src/thread_container.cc
 msgid ""
 "{1} thread stored in the '{2}' ThreadContainer; about to start the "
 "monitoring thread"
-msgstr ""
-
-#. debug
-#: lib/src/thread_container.cc
-msgid ""
+msgid_plural ""
 "{1} threads stored in the '{2}' ThreadContainer; about to start the "
 "monitoring thread"
-msgstr ""
+msgstr[0] ""
+msgstr[1] ""
 
 #. debug
 #: lib/src/thread_container.cc

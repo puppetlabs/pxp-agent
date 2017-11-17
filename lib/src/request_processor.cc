@@ -28,12 +28,14 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/format.hpp>
+#include <boost/math/common_factor_rt.hpp>
 
 #include <vector>
 #include <atomic>
 #include <functional>
 #include <stdexcept>  // out_of_range
 #include <memory>
+#include <numeric>
 #include <stdint.h>
 
 namespace PXPAgent {
@@ -169,18 +171,16 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
         : thread_container_ { "Action Executer" },
           thread_container_mutex_ {},
           connector_ptr_ { connector_ptr },
-          storage_ptr_ { new ResultsStorage(agent_configuration.spool_dir) },
+          storage_ptr_ { new ResultsStorage(agent_configuration.spool_dir,
+                                            agent_configuration.spool_dir_purge_ttl) },
           spool_dir_path_ { agent_configuration.spool_dir },
-          spool_dir_purge_ttl_ { agent_configuration.spool_dir_purge_ttl },
           modules_ {},
           modules_config_dir_ { agent_configuration.modules_config_dir },
           modules_config_ {},
-          spool_dir_purge_thread_ptr_ { nullptr },
-          spool_dir_purge_mutex_ {},
-          spool_dir_purge_cond_var_ {},
           is_destructing_ { false }
 {
     assert(!spool_dir_path_.string().empty());
+    registerPurgeable(storage_ptr_);
     loadModulesConfiguration();
     loadInternalModules(agent_configuration);
 
@@ -193,25 +193,25 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
 
     logLoadedModules();
 
-    if (Timestamp::getMinutes(spool_dir_purge_ttl_) > 0) {
-        storage_ptr_->purge(spool_dir_purge_ttl_,
-                            thread_container_.getThreadNames());
-        spool_dir_purge_thread_ptr_.reset(
-            new pcp_util::thread(&RequestProcessor::spoolDirPurgeTask, this));
+    if (!purgeables_.empty()) {
+        for (auto purgeable : purgeables_) {
+            purgeable->purge(purgeable->get_ttl(), thread_container_.getThreadNames());
+        }
+        purge_thread_ptr_.reset(
+            new pcp_util::thread(&RequestProcessor::purgeTask, this));
     }
 }
 
 RequestProcessor::~RequestProcessor()
 {
     {
-        pcp_util::lock_guard<pcp_util::mutex> the_lock { spool_dir_purge_mutex_ };
+        pcp_util::lock_guard<pcp_util::mutex> the_lock { purge_mutex_ };
         is_destructing_ = true;
-        spool_dir_purge_cond_var_.notify_one();
+        purge_cond_var_.notify_one();
     }
 
-    if (spool_dir_purge_thread_ptr_ != nullptr
-            && spool_dir_purge_thread_ptr_->joinable())
-        spool_dir_purge_thread_ptr_->join();
+    if (purge_thread_ptr_ != nullptr && purge_thread_ptr_->joinable())
+        purge_thread_ptr_->join();
 }
 
 void RequestProcessor::processRequest(const RequestType& request_type,
@@ -810,26 +810,35 @@ void RequestProcessor::loadModulesConfiguration()
     }
 }
 
-void RequestProcessor::registerModule(Module *module)
+void RequestProcessor::registerModule(std::shared_ptr<Module> module_ptr)
 {
-    std::shared_ptr<Module> module_ptr { module };
-
     if (!modules_.emplace(module_ptr->module_name, module_ptr).second) {
         LOG_WARNING("Ignoring attempt to re-register module: {1}", module_ptr->module_name);
     }
 }
 
+void RequestProcessor::registerPurgeable(std::shared_ptr<Util::Purgeable> p)
+{
+    if (Timestamp::getMinutes(p->get_ttl()) > 0) {
+        purgeables_.emplace_back(std::move(p));
+    }
+}
+
 void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_configuration)
 {
-    registerModule(new Modules::Echo);
-    registerModule(new Modules::Ping);
-    registerModule(new Modules::Task(Configuration::Instance().getExecPrefix(),
-                                     agent_configuration.task_cache_dir,
-                                     agent_configuration.master_uris,
-                                     agent_configuration.ca,
-                                     agent_configuration.crt,
-                                     agent_configuration.key,
-                                     spool_dir_path_.string()));
+    registerModule(std::make_shared<Modules::Echo>());
+    registerModule(std::make_shared<Modules::Ping>());
+    auto task = std::make_shared<Modules::Task>(
+        Configuration::Instance().getExecPrefix(),
+        agent_configuration.task_cache_dir,
+        agent_configuration.task_cache_dir_purge_ttl,
+        agent_configuration.master_uris,
+        agent_configuration.ca,
+        agent_configuration.crt,
+        agent_configuration.key,
+        storage_ptr_);
+    registerModule(task);
+    registerPurgeable(task);
 }
 
 void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
@@ -856,20 +865,19 @@ void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
             if (extension == ".bat" || extension == ".exe") {
 #endif
                 try {
-                    ExternalModule* e_m;
+                    std::shared_ptr<ExternalModule> e_m;
                     auto config_itr = modules_config_.find(f_p.stem().string());
 
                     if (config_itr != modules_config_.end()) {
-                        e_m = new ExternalModule(f_p.string(),
-                                                 config_itr->second,
-                                                 spool_dir_path_.string());
+                        e_m = std::make_shared<ExternalModule>(
+                            f_p.string(), config_itr->second, storage_ptr_);
                         e_m->validateConfiguration();
                         LOG_DEBUG("The '{1}' module configuration has been "
                                   "validated: {2}", e_m->module_name,
                                   config_itr->second.toString());
                     } else {
-                        e_m = new ExternalModule(f_p.string(),
-                                                 spool_dir_path_.string());
+                        e_m = std::make_shared<ExternalModule>(
+                            f_p.string(), storage_ptr_);
                     }
 
                     registerModule(e_m);
@@ -915,38 +923,48 @@ void RequestProcessor::logLoadedModules() const
 }
 
 //
-// Spool directory purge task (private interface)
+// Resource purge task (private interface)
 //
 
-void RequestProcessor::spoolDirPurgeTask()
+static unsigned int minutes_gcd(std::vector<std::shared_ptr<Util::Purgeable>> purgeables)
 {
-    auto num_minutes = Timestamp::getMinutes(spool_dir_purge_ttl_);
-    num_minutes *= 1.2;
-    // TODO(ale): deal with locale & plural (PCP-257)
-    if (num_minutes == 1) {
-        LOG_INFO("Starting the task for purging the spool directory every {1} "
-                 "minute; thread id {2}",
-                 num_minutes, pcp_util::this_thread::get_id());
+    assert(!purgeables.empty());
+    auto init = Timestamp::getMinutes(purgeables.front()->get_ttl());
+    if (purgeables.size() > 1) {
+        return std::accumulate(purgeables.begin()+1, purgeables.end(), init,
+            [](unsigned int result, std::shared_ptr<Util::Purgeable> &p) {
+                return boost::math::gcd(result, Timestamp::getMinutes(p->get_ttl()));
+            });
     } else {
-        LOG_INFO("Starting the task for purging the spool directory every {1} "
-                 "minutes; thread id {2}",
-                 num_minutes, pcp_util::this_thread::get_id());
+        return init;
     }
+}
+
+void RequestProcessor::purgeTask()
+{
+    // Use min of 1h and gcd of purgeable TTLs.
+    auto num_minutes = std::min(60u, minutes_gcd(purgeables_));
+    LOG_INFO(lth_loc::format_n(
+        // LOCALE: info
+        "Scheduling the check every {1} minute for directories to purge; thread id {2}",
+        "Scheduling the check every {1} minutes for directories to purge; thread id {2}",
+        num_minutes, num_minutes, pcp_util::this_thread::get_id()));
 
     while (true) {
-        pcp_util::unique_lock<pcp_util::mutex> the_lock { spool_dir_purge_mutex_ };
+        pcp_util::unique_lock<pcp_util::mutex> the_lock { purge_mutex_ };
         auto now = pcp_util::chrono::system_clock::now();
 
         if (!is_destructing_)
-            spool_dir_purge_cond_var_.wait_until(
+            purge_cond_var_.wait_until(
                 the_lock,
                 now + pcp_util::chrono::minutes(num_minutes));
 
         if (is_destructing_)
             return;
 
-        storage_ptr_->purge(spool_dir_purge_ttl_,
-                            thread_container_.getThreadNames());
+        for (auto purgeable : purgeables_) {
+            purgeable->purge(purgeable->get_ttl(), thread_container_.getThreadNames());
+        }
     }
 }
 

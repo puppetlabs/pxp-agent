@@ -11,6 +11,7 @@
 namespace PXPAgent {
 
 namespace lth_jc = leatherman::json_container;
+namespace lth_loc = leatherman::locale;
 
 //
 // PXPConnector V1
@@ -21,14 +22,11 @@ wrapDebug(const PCPClient::ParsedChunks& parsed_chunks)
 {
     auto request_id = parsed_chunks.envelope.get<std::string>("id");
     if (parsed_chunks.num_invalid_debug) {
-        // TODO(ale): deal with locale & plural (PCP-257)
-        if (parsed_chunks.num_invalid_debug == 1) {
-            LOG_WARNING("Message {1} contained {2} bad debug chunk",
-                        request_id, parsed_chunks.num_invalid_debug);
-        } else {
-            LOG_WARNING("Message {1} contained {2} bad debug chunks",
-                        request_id, parsed_chunks.num_invalid_debug);
-        }
+        LOG_WARNING(lth_loc::format_n(
+            // LOCALE: warning
+            "Message {1} contained {2} bad debug chunk",
+            "Message {1} contained {2} bad debug chunks",
+            parsed_chunks.num_invalid_debug, request_id, parsed_chunks.num_invalid_debug));
     }
     std::vector<lth_jc::JsonContainer> debug {};
     for (auto& debug_entry : parsed_chunks.debug) {

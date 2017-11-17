@@ -11,10 +11,11 @@
 #include <leatherman/util/scope_exit.hpp>
 #include <leatherman/file_util/file.hpp>
 
-#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/erase.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 
 #include <catch.hpp>
 
@@ -31,6 +32,7 @@
 namespace PXPAgent {
 
 namespace fs = boost::filesystem;
+namespace pt = boost::posix_time;
 namespace lth_jc = leatherman::json_container;
 namespace lth_util = leatherman::util;
 namespace lth_file = leatherman::file_util;
@@ -38,8 +40,13 @@ namespace lth_file = leatherman::file_util;
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
 
+static const auto STORAGE = std::make_shared<ResultsStorage>(SPOOL_DIR, "0d");
+
 static const std::string TASK_CACHE_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                           + "/lib/tests/resources/tasks-cache" };
+
+// Disable cache ttl so we don't delete fixtures.
+static const std::string TASK_CACHE_TTL { "0d" };
 
 static const std::string TEMP_TASK_CACHE_DIR { TASK_CACHE_DIR + "/temp" };
 
@@ -71,12 +78,12 @@ static const PCPClient::ParsedChunks NON_BLOCKING_CONTENT {
 
 TEST_CASE("Modules::Task", "[modules]") {
     SECTION("can successfully instantiate") {
-        REQUIRE_NOTHROW(Modules::Task(PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR));
+        REQUIRE_NOTHROW(Modules::Task(PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE));
     }
 }
 
 TEST_CASE("Modules::Task::hasAction", "[modules]") {
-    Modules::Task mod { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+    Modules::Task mod { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
 
     SECTION("correctly reports false") {
         REQUIRE(!mod.hasAction("foo"));
@@ -114,7 +121,7 @@ TEST_CASE("Modules::Task::callAction", "[modules]") {
   lth_util::scope_exit config_cleaner { resetTest };
 
   SECTION("throws module processing error when a file system error is thrown") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto existent_sha = "existent";
         boost::nowide::ofstream(TEMP_TASK_CACHE_DIR + "/" + existent_sha);
         auto task_txt = (DATA_FORMAT % "\"0632\""
@@ -141,7 +148,7 @@ TEST_CASE("Modules::Task::callAction - non blocking", "[modules]") {
     lth_util::scope_exit config_cleaner { resetTest };
 
     SECTION("the pid is written to file") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         ActionRequest request { RequestType::NonBlocking, NON_BLOCKING_CONTENT };
         fs::path spool_path { SPOOL_DIR };
         auto results_dir = (spool_path / request.transactionId()).string();
@@ -166,7 +173,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     lth_util::scope_exit config_cleaner { resetTest };
 
     SECTION("passes input as json") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto echo_txt =
 #ifndef _WIN32
             (DATA_FORMAT % "\"0632\""
@@ -192,7 +199,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("passes input only on stdin when input_method is stdin") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto echo_txt =
 #ifndef _WIN32
             (DATA_FORMAT % "\"0632\""
@@ -222,7 +229,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("passes input as env variables") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto echo_txt =
 #ifndef _WIN32
             (DATA_FORMAT % "\"0632\""
@@ -248,7 +255,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("passes input only as env variables when input_method is environment") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto echo_txt =
 #ifndef _WIN32
             (DATA_FORMAT % "\"0632\""
@@ -274,7 +281,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("succeeds on non-zero exit") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto echo_txt =
 #ifndef _WIN32
             (DATA_FORMAT % "\"0632\""
@@ -307,7 +314,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("errors on unparseable output") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto echo_txt =
 #ifndef _WIN32
             (DATA_FORMAT % "\"0632\""
@@ -342,7 +349,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("errors on download when no master-uri is provided") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, {}, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, {}, CA, CRT, KEY, STORAGE };
         auto task_txt = (DATA_FORMAT % "\"0632\""
                                      % "\"task\""
                                      % "\"run\""
@@ -363,7 +370,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("if a master-uri has a server-side error, then it proceeds to try the next master-uri. if they all fail, it errors on download and removes all temporary files") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_sha";
         std::string bad_path = "bad_path";
         auto task_txt = (DATA_FORMAT % "\"0632\""
@@ -390,7 +397,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("creates the tasks-cache/<sha> directory with ower/group read and write permissions") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_other_sha";
         auto task_txt = (DATA_FORMAT % "\"0632\""
                                      % "\"task\""
@@ -415,7 +422,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("succeeds even if tasks-cache was deleted") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, MASTER_URIS, CA, CRT, KEY, SPOOL_DIR };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
         fs::remove_all(TEMP_TASK_CACHE_DIR);
 
         auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_other_sha";
@@ -436,4 +443,39 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         REQUIRE(fs::is_directory(cache));
     }
 }
+
+// Present in Boost 1.58. That's currently not required, so reproducing it here since it's simple.
+static std::time_t my_to_time_t(pt::ptime t)
+{
+    return (t - pt::ptime(boost::gregorian::date(1970, 1, 1))).total_seconds();
+}
+
+TEST_CASE("purge old tasks", "[modules]") {
+    const std::string PURGE_TASK_CACHE { std::string { PXP_AGENT_ROOT_PATH }
+        + "/lib/tests/resources/purge_test" };
+
+    const std::string OLD_TRANSACTION { "valid_old" };
+    const std::string RECENT_TRANSACTION { "valid_recent" };
+
+    // Start with 0 TTL to prevent initial cleanup
+    Modules::Task e_m { PXP_AGENT_BIN_PATH, PURGE_TASK_CACHE, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, STORAGE };
+
+    unsigned int num_purged_results { 0 };
+    auto purgeCallback =
+        [&num_purged_results](const std::string&) -> void { num_purged_results++; };
+
+    SECTION("Purges only the old results based on ttl") {
+        num_purged_results = 0;
+        auto now = pt::second_clock::universal_time();
+        auto recent = now - pt::minutes(50);
+        auto old = now - pt::minutes(61);
+        fs::last_write_time(fs::path(PURGE_TASK_CACHE)/OLD_TRANSACTION, my_to_time_t(old));
+        fs::last_write_time(fs::path(PURGE_TASK_CACHE)/RECENT_TRANSACTION, my_to_time_t(recent));
+
+        auto results = e_m.purge("1h", {}, purgeCallback);
+        REQUIRE(results == 1);
+        REQUIRE(num_purged_results == 1);
+    }
+}
+
 }  // namespace PXPAgent

@@ -24,12 +24,14 @@ namespace lth_util = leatherman::util;
 
 TEST_CASE("ResultsStorage ctor", "[module]") {
     SECTION("can instantiate") {
-        REQUIRE_NOTHROW(ResultsStorage("/some/spool/dir"));
+        REQUIRE_NOTHROW(ResultsStorage("/some/spool/dir", "0d"));
     }
 }
 
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                      + "/lib/tests/resources/test_spool" };
+
+static const std::string SPOOL_TTL { "0d" };
 
 static void configureTest() {
     if (!fs::exists(SPOOL_DIR) && !fs::create_directories(SPOOL_DIR))
@@ -45,13 +47,13 @@ TEST_CASE("ResultsStorage::find", "[module][results]") {
     configureTest();
 
     SECTION("returns false when the spool directory does not exist") {
-        ResultsStorage storage { SPOOL_DIR };
+        ResultsStorage storage { SPOOL_DIR, SPOOL_TTL };
 
         REQUIRE_FALSE(storage.find("some_transaction_id"));
     }
 
     SECTION("returns true when the spool directory exists") {
-        ResultsStorage storage { SPOOL_DIR };
+        ResultsStorage storage { SPOOL_DIR, SPOOL_TTL };
         auto dir = SPOOL_DIR + "/some_transaction_id";
 
         if (!fs::exists(dir) && !fs::create_directories(dir))
@@ -69,7 +71,7 @@ TEST_CASE("ResultsStorage::initializeMetadataFile", "[module][results]") {
     configureTest();
 
     SECTION("it does create the results dir for the given transaction") {
-        ResultsStorage storage { SPOOL_DIR };
+        ResultsStorage storage { SPOOL_DIR, SPOOL_TTL };
         lth_jc::JsonContainer metadata {};
         metadata.set<std::string>("foo", "bar");
         storage.initializeMetadataFile("1234", metadata);
@@ -87,7 +89,7 @@ static const std::string VALID_TRANSACTION { "valid" };
 static const std::string BROKEN_TRANSACTION { "broken" };
 
 TEST_CASE("ResultsStorage::getActionMetadata", "[module][results]") {
-    ResultsStorage st { TESTING_RESULTS };
+    ResultsStorage st { TESTING_RESULTS, SPOOL_TTL };
 
     SECTION("Throws an Error if the metadata file does not exist") {
         REQUIRE_THROWS_AS(st.getActionMetadata("does_not_exist"),
@@ -118,7 +120,7 @@ TEST_CASE("ResultsStorage::updateMetadataFile", "[module][results]") {
     some_valid_metadata.set<std::string>("status", "running");
 
     configureTest();
-    ResultsStorage st { SPOOL_DIR };
+    ResultsStorage st { SPOOL_DIR, SPOOL_TTL };
 
     SECTION("Throws an Error if the results directory does not exist") {
         REQUIRE_THROWS_AS(st.updateMetadataFile(valid_transaction_id,
@@ -139,7 +141,7 @@ TEST_CASE("ResultsStorage::updateMetadataFile", "[module][results]") {
 }
 
 TEST_CASE("ResultsStorage::pidFileExists", "[module][results]") {
-    ResultsStorage st { TESTING_RESULTS };
+    ResultsStorage st { TESTING_RESULTS, SPOOL_TTL };
 
     SECTION("returns true if exists") {
         REQUIRE(st.pidFileExists(VALID_TRANSACTION));
@@ -151,7 +153,7 @@ TEST_CASE("ResultsStorage::pidFileExists", "[module][results]") {
 }
 
 TEST_CASE("ResultsStorage::getPID", "[module][results]") {
-    ResultsStorage st { TESTING_RESULTS };
+    ResultsStorage st { TESTING_RESULTS, SPOOL_TTL };
 
     SECTION("Throws an Error if the PID file does not exist") {
         REQUIRE_THROWS_AS(st.getPID("does_not_exist"),
@@ -169,7 +171,7 @@ TEST_CASE("ResultsStorage::getPID", "[module][results]") {
 }
 
 TEST_CASE("ResultsStorage::getOutput", "[module][results]") {
-    ResultsStorage st { TESTING_RESULTS };
+    ResultsStorage st { TESTING_RESULTS, SPOOL_TTL };
 
     SECTION("Throws an Error if the exitcode is invalid") {
         REQUIRE_THROWS_AS(st.getOutput(BROKEN_TRANSACTION),
@@ -192,7 +194,7 @@ static const std::string OLD_TRANSACTION { "valid_old" };
 static const std::string RECENT_TRANSACTION { "valid_recent" };
 
 TEST_CASE("ResultsStorage::purge", "[module][results]") {
-    ResultsStorage st { PURGE_TEST_RESULTS };
+    ResultsStorage st { PURGE_TEST_RESULTS, SPOOL_TTL };
     auto recent_metadata_old = st.getActionMetadata(RECENT_TRANSACTION);
     lth_jc::JsonContainer recent_metadata { recent_metadata_old };
     recent_metadata.set<std::string>("start", lth_util::get_ISO8601_time());

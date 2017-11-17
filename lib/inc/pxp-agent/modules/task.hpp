@@ -4,6 +4,9 @@
 #include <pxp-agent/module.hpp>
 #include <pxp-agent/action_response.hpp>
 #include <pxp-agent/results_storage.hpp>
+#include <pxp-agent/util/purgeable.hpp>
+
+#include <cpp-pcp-client/util/thread.hpp>
 
 #include <leatherman/curl/client.hpp>
 
@@ -15,15 +18,16 @@ struct TaskCommand {
     std::vector<std::string> arguments;
 };
 
-class Task : public PXPAgent::Module {
+class Task : public PXPAgent::Module, public PXPAgent::Util::Purgeable {
   public:
     Task(const boost::filesystem::path& exec_prefix,
          const std::string& task_cache_dir,
+         const std::string& task_cache_dir_purge_ttl,
          const std::vector<std::string>& master_uris,
          const std::string& ca,
          const std::string& crt,
          const std::string& key,
-         const std::string& spool_dir);
+         std::shared_ptr<ResultsStorage> storage);
 
     /// Whether or not the module supports non-blocking / asynchronous requests.
     bool supportsAsync() override { return true; }
@@ -39,10 +43,19 @@ class Task : public PXPAgent::Module {
     /// in the response object's metadata.
     void processOutputAndUpdateMetadata(ActionResponse& response) override;
 
+    /// Utility to purge tasks from the task_cache_dir that have surpassed the ttl.
+    /// If a purge_callback is not specified, the boost filesystem's remove_all() will be used.
+    /// Returns number of directories purged.
+    unsigned int purge(
+        const std::string& ttl,
+        std::vector<std::string> ongoing_transactions,
+        std::function<void(const std::string& dir_path)> purge_callback = nullptr) override;
+
   private:
-    ResultsStorage storage_;
+    std::shared_ptr<ResultsStorage> storage_;
 
     std::string task_cache_dir_;
+    PCPClient::Util::mutex task_cache_dir_mutex_;
 
     boost::filesystem::path exec_prefix_;
 

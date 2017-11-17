@@ -38,9 +38,10 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   CERT,
                                                   KEY,
                                                   SPOOL,
-                                                  "0d",  // don't purge!
+                                                  "0d",  // don't purge spool!
                                                   "",    // modules config dir
                                                   "",    // task cache dir
+                                                  "0d",  // don't purge task cache!
                                                   "test_agent",
                                                   5000,  // connection timeout
                                                   10,    // association timeout

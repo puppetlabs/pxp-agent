@@ -46,6 +46,8 @@ class Timestamp {
     // Throws an Error in case it fails to create a time point from
     // the specified extended ISO date time string
     bool isNewerThan(const std::string& extended_ISO8601_time);
+
+    bool isNewerThan(const std::time_t&);
 };
 
 }  // namespace PXPAgents
