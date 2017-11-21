@@ -82,6 +82,7 @@ def kill_all_pcp_brokers(host)
   on(host, "ps -C java -f | grep pcp-broker | sed 's/[^0-9]*//' | cut -d\\  -f1") do |result|
     pids = result.stdout.chomp.split("\n")
     pids.each do |pid|
+      # Send SIGKILL (9); not all shells support '-s KILL'
       on(host, "kill -9 #{pid}")
     end
   end
@@ -473,7 +474,8 @@ def stop_sleep_process(targets, seconds_to_sleep, accept_no_pid_found = false)
     pids.each do |pid|
       target['platform'] =~ /win/ ?
         on(target, "taskkill /F /pid #{pid}") :
-        on(target, "kill -s TERM #{pid}")
+        # Send SIGTERM (15); not all shells support '-s TERM'
+        on(target, "kill -15 #{pid}")
     end
   end
 end
