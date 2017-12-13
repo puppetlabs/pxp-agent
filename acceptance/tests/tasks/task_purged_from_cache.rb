@@ -47,7 +47,7 @@ test_name 'remove old task from pxp-agent cache' do
       agent_cache_path = (agent['platform'] =~ /win/) ? win_cache_path : nix_cache_path
       stamp = (DateTime.now - 4).strftime('%Y%m%d%H%M')
       on(agent, "find #{agent_cache_path} -type d") do |result|
-        @target_directory_path = result.stdout.match(/#{Regexp.escape(agent_cache_path)}(\w+)$/)[0]
+        @target_directory_path = result.stdout.match(/#{Regexp.escape(agent_cache_path)}\/*(\w+)$/)[0]
       end
       on(agent, "touch -m -t #{stamp} #{@target_directory_path}")
       on(agent, puppet('resource service pxp-agent ensure=stopped'))
