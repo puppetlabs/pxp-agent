@@ -7,3 +7,5 @@ that we need contributors to follow so that we can have a chance of keeping on
 top of things.  For more info, see our canonical guide to contributing:
 
 [https://github.com/puppetlabs/puppet/blob/master/CONTRIBUTING.md](https://github.com/puppetlabs/puppet/blob/master/CONTRIBUTING.md)
+
+foo
