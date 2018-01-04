@@ -6,7 +6,7 @@
 #
 #  > $Json | ConvertFrom-json -Type PSObject
 
-Add-Type -AssemblyName System.ServiceModel.Web, System.Runtime.Serialization
+Add-Type -AssemblyName System.Runtime.Serialization
 $utf8 = [System.Text.Encoding]::UTF8
 
 function Write-Stream {
