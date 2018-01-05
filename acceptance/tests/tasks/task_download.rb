@@ -107,8 +107,7 @@ test_name 'task download' do
     assert_match(/Error 404 Not Found/, on(master, "curl -k https://#{master}:8140/task-files/non_existent_task").stdout.chomp)
 
     run_pxp_errored_task(master, agents, 'echo', "some_file", "1234", {}, "/task-files/non_existent_task") do |description|
-      assert_match(/HTTP status 404/, description, 'Expected 404 HTTP status was not detected')
-      assert_match(/Error 404 Not Found/, description, 'Expected response body was not detected')
+      assert_match(/Error:?\s+404/i, description, 'Expected 404 HTTP status was not detected')
     end
 
     # Ensure things were properly cleaned up

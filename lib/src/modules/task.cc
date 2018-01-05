@@ -197,7 +197,7 @@ static std::string calculateSha256(const std::string& path) {
     {
         constexpr std::streamsize CHUNK_SIZE = 0x8000;  // 32 kB
         char buffer[CHUNK_SIZE];
-        boost::nowide::ifstream ifs(path);
+        boost::nowide::ifstream ifs(path, std::ios::binary);
 
         while (ifs.read(buffer, CHUNK_SIZE)) {
             EVP_DigestUpdate(mdctx, buffer, CHUNK_SIZE);
