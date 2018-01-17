@@ -6,7 +6,12 @@
 #
 #  > $Json | ConvertFrom-json -Type PSObject
 
-Add-Type -AssemblyName System.ServiceModel.Web, System.Runtime.Serialization
+try {
+  Add-Type -AssemblyName System.ServiceModel.Web, System.Runtime.Serialization -ErrorAction "Stop"
+} catch {
+  throw "PXP Agent could not load the assemblies needed for JSON parsing. Please install .NET Framework 3.5 or greater, or rewrite the task to use a different input method than 'powershell'."
+}
+
 $utf8 = [System.Text.Encoding]::UTF8
 
 function Write-Stream {

@@ -1,3 +1,11 @@
+Describe 'Loading Shim' {
+  Mock Add-Type { throw "Could not load file or assembly 'System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35' or one of its dependencies. The system cannot find the file specified." }
+
+  It 'Throws a helpful error message' {
+    { . $PSScriptRoot\..\PowershellShim-Helper.ps1 } | Should -Throw "PXP Agent could not load the assemblies needed for JSON parsing. Please install .NET Framework 3.5 or greater, or rewrite the task to use a different input method than 'powershell'."
+  }
+}
+
 . $PSScriptRoot\..\PowershellShim-Helper.ps1
 
 Describe 'ConvertFrom-Json2 | ConvertFrom-PSCustomObject' {
