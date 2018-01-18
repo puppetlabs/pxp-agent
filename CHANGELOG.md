@@ -1,3 +1,9 @@
+## 1.5.6
+
+This is a maintenance release.
+
+* [PCP-801](https://tickets.puppetlabs.com/browse/PCP-801) Use kill -15 rather than kill -s TERM for broader support
+
 ## 1.5.5
 
 This is a maintenance release.
