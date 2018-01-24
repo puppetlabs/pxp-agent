@@ -1,3 +1,15 @@
+## 1.8.1
+
+This is a bug fix release.
+
+* [PCP-826](https://tickets.puppetlabs.com/browse/PCP-826) Tasks that use the powershell input method (which is the
+default for powershell scripts) require .NET Framework 3.5. PXP Agent will now give a clear error message when this
+requirement is not satisfied.
+* [PCP-825](https://tickets.puppetlabs.com/browse/PCP-825) PXP Agent will now correctly sync files using Windows line
+endings (CRLF).
+* [PCP-822](https://tickets.puppetlabs.com/browse/PCP-822) Tasks that didn't read standard input would occasionally return
+an error when using the default input method. That seemed especially common on AIX platforms. The issue has been fixed.
+
 ## 1.8.0
 
 This is a feature release.
