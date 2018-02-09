@@ -51,7 +51,7 @@ step "Install puppetserver..." do
   else
     if ENV['SERVER_VERSION'].nil? || ENV['SERVER_VERSION'] == 'latest'
       server_version = 'latest'
-      server_download_url = "http://nightlies.puppet.com"
+      server_download_url = "http://ravi.puppetlabs.com"
     else
       server_version = ENV['SERVER_VERSION']
       server_download_url = "http://builds.delivery.puppetlabs.net"
