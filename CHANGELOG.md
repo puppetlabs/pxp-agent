@@ -1,3 +1,18 @@
+## 1.9.0
+
+This is a feature release.
+
+* [PCP-763](https://tickets.puppetlabs.com/browse/PCP-763) Cached tasks that have not been used in
+`task-cache-dir-purge-ttl` - expressed as a time duration such as 30m, 4h, 1d - will be removed from disk. Running
+them later will redownload from the `master-uri`. Default `task-cache-dir-purge-ttl` is `14d` (days).
+* [PCP-791](https://tickets.puppetlabs.com/browse/PCP-791) pxp-agent will continue to function if task cache directory
+is deleted. Specific task runs may fail, subsequent runs will recreate the cache directory and re-download task files.
+* [PCP-511](https://tickets.puppetlabs.com/browse/PCP-511) Use hocon to load config. `.conf` files will be loaded
+as HOCON, `.json` as JSON, and other file types will error.
+* [PCP-792](https://tickets.puppetlabs.com/browse/PCP-792) When run as an unprivileged user, pxp-agent will now use
+default user-directory paths, noted in
+https://github.com/puppetlabs/puppet-specifications/blob/master/file_paths.md#puppet-agent-non-root.
+
 ## 1.8.3
 
 This is a bug fix release.
