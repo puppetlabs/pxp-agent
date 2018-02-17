@@ -71,11 +71,7 @@ endif()
 add_library(libpxp-agent STATIC ${LIBRARY_COMMON_SOURCES} ${LIBRARY_STANDARD_SOURCES})
 add_dependencies(libpxp-agent horsewhisperer)
 target_link_libraries(libpxp-agent ${LIBS})
-set_target_properties(libpxp-agent PROPERTIES PREFIX "" IMPORT_PREFIX "")
 
-install(TARGETS libpxp-agent
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib)
+leatherman_install(lib${PROJECT_NAME})
 
 add_subdirectory(tests)
