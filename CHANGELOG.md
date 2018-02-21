@@ -1,3 +1,9 @@
+## 1.5.7
+
+This is a maintenance release
+
+* [FACT-1772] Use CMAKE\_INSTALL\_LIBDIR when setting RPATH and installing libpxp-agent instead of LIB\_SUFFIX
+
 ## 1.5.6
 
 This is a maintenance release.
