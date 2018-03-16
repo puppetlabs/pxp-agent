@@ -6,6 +6,6 @@
     notifempty
     sharedscripts
     postrotate
-        if [ systemctl status pxp-agent.service > /dev/null 2>&1 ]; then systemctl kill --signal=USR2 --kill-who=main pxp-agent.service; fi
+        systemctl is-active --quiet pxp-agent.service && systemctl kill --signal=USR2 --kill-who=main pxp-agent.service
     endscript
 }
