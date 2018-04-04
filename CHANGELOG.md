@@ -1,3 +1,9 @@
+## 1.9.1
+
+This is a bug fix release.
+
+* [PCP-834](https://tickets.puppetlabs.com/browse/PCP-834) Fix pxp-agent log rotation on systemd
+
 ## 1.9.0
 
 This is a feature release.
@@ -12,6 +18,16 @@ as HOCON, `.json` as JSON, and other file types will error.
 * [PCP-792](https://tickets.puppetlabs.com/browse/PCP-792) When run as an unprivileged user, pxp-agent will now use
 default user-directory paths, noted in
 https://github.com/puppetlabs/puppet-specifications/blob/master/file_paths.md#puppet-agent-non-root.
+
+## 1.8.3
+
+This is a bug fix release.
+
+* [PCP-834](https://tickets.puppetlabs.com/browse/PCP-834) Fix pxp-agent log rotation on systemd
+
+## 1.8.2
+
+This is a maintenance release with no bug fixes.
 
 ## 1.8.1
 
@@ -86,6 +102,12 @@ This is a feature release.
 * [PCP-751](https://tickets.puppetlabs.com/browse/PCP-751) Remove kind from pxp-module-puppet
 
 Does not include fixes from 1.5.5.
+
+## 1.5.7
+
+This is a bug fix release.
+
+* [PCP-834](https://tickets.puppetlabs.com/browse/PCP-834) Fix pxp-agent log rotation on systemd
 
 ## 1.5.6
 
