@@ -23,7 +23,6 @@ test_name 'C97964 - agent should use next broker if primary is timing out' do
       reset_logfile(agent)
       on agent, puppet('resource service pxp-agent ensure=running')
 
-      assert_equal(master[:pcp_broker_instance], PRIMARY_BROKER_INSTANCE, "broker instance is not set correctly: #{master[:pcp_broker_instance]}")
       assert(is_associated?(master, "pcp://#{agent}/agent"),
              "Agent identity pcp://#{agent}/agent for agent host #{agent} does not appear in pcp-broker's (#{broker_ws_uri(master)}) client inventory after ~#{PCP_INVENTORY_RETRIES} seconds")
     end
@@ -35,7 +34,6 @@ test_name 'C97964 - agent should use next broker if primary is timing out' do
   end
 
   step 'On each agent, test that a new association has occurred' do
-    assert_equal(master[:pcp_broker_instance], REPLICA_BROKER_INSTANCE, "broker instance is not set correctly: #{master[:pcp_broker_instance]}")
     agents.each do |agent|
       inventory_retries = 60
       assert(is_associated?(master, "pcp://#{agent}/agent", inventory_retries),
