@@ -12,7 +12,7 @@ test_name 'umask inherited by puppet' do
 
   env_name = File.basename(__FILE__, '.*')
   environment_name = mk_tmp_environment(env_name)
-  test_file = "/tmp/#{environment_name}"
+  test_file = '/tmp/umask_acceptance_test'
 
   step 'On master, create a new environment that creates a file' do
     site_manifest = "#{environmentpath}/#{environment_name}/manifests/site.pp"
