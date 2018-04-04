@@ -1,3 +1,9 @@
+## 1.9.1
+
+This is a bug fix release.
+
+* [PCP-834](https://tickets.puppetlabs.com/browse/PCP-834) Fix pxp-agent log rotation on systemd
+
 ## 1.9.0
 
 This is a feature release.
