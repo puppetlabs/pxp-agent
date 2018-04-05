@@ -1,5 +1,4 @@
 require 'pxp-agent/config_helper.rb'
-require 'puppet/acceptance/common_utils'
 require 'pcp/client'
 require 'net/http'
 require 'openssl'
@@ -545,6 +544,6 @@ def check_puppet_non_blocking_response(identity, transaction_id, max_retries, qu
 end
 
 def get_mode(host, path)
-  ruby = Puppet::Acceptance::CommandUtils.ruby_command(host)
+  ruby = ruby_command(host)
   on(host, "#{ruby} -e 'puts (File.stat(\"#{path}\").mode & 07777).to_s(8)'").stdout.chomp
 end
