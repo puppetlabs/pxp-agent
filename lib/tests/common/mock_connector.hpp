@@ -47,8 +47,10 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   10,    // association timeout
                                                   5,     // association ttl
                                                   5,     // general PCP ttl
-                                                  2,
-                                                  15 };  // keepalive timeouts
+                                                  2,     // keepalive timeouts
+                                                  15,    // ping interval
+                                                  30,    // task download connection timeout
+                                                  120};  // task download timeout
 
 static const std::string VALID_ENVELOPE_TXT {
     " { \"id\" : \"123456\","

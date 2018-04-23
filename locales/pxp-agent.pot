@@ -256,6 +256,14 @@ msgid "Timeout (in seconds) for starting the WebSocket handshake, default: 5 s"
 msgstr ""
 
 #: lib/src/configuration.cc
+msgid "Connection timeout when downloading tasks, default: 120 s"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "Total timeout when downloading tasks, default: 1800 s"
+msgstr ""
+
+#: lib/src/configuration.cc
 msgid "SSL CA certificate"
 msgstr ""
 

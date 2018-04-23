@@ -69,6 +69,8 @@ static const char* ARGV[] = {
     "--spool-dir-purge-ttl", DIR_PURGE_TTL.c_str(),
     "--task-cache-dir", TASK_CACHE_DIR.c_str(),
     "--task-cache-dir-purge-ttl", DIR_PURGE_TTL.c_str(),
+    "--task-download-connect-timeout", "5",
+    "--task-download-timeout", "120",
     "--foreground=true",
     nullptr };
 
@@ -384,8 +386,20 @@ TEST_CASE("Configuration::validate", "[configuration]") {
         fs::remove_all(test_spool);
     }
 
-    SECTION("it fails when -spool-dir-purge-ttl as not a valid timestamp") {
+    SECTION("it fails when --spool-dir-purge-ttl as not a valid timestamp") {
         HW::SetFlag<std::string>("spool-dir-purge-ttl", "1.0");
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::Error);
+    }
+
+    SECTION("it fails when --task-download-connect-timeout is negative") {
+        HW::SetFlag<int>("task-download-connect-timeout", -1);
+        REQUIRE_THROWS_AS(Configuration::Instance().validate(),
+                          Configuration::Error);
+    }
+
+    SECTION("it fails when --task-download-timeout is negative") {
+        HW::SetFlag<int>("task-download-timeout", -1);
         REQUIRE_THROWS_AS(Configuration::Instance().validate(),
                           Configuration::Error);
     }
