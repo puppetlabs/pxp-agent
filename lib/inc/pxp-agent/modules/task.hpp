@@ -27,6 +27,8 @@ class Task : public PXPAgent::Module, public PXPAgent::Util::Purgeable {
          const std::string& ca,
          const std::string& crt,
          const std::string& key,
+         uint32_t task_download_connect_timeout_s,
+         uint32_t task_download_timeout_s,
          std::shared_ptr<ResultsStorage> storage);
 
     /// Whether or not the module supports non-blocking / asynchronous requests.
@@ -60,6 +62,8 @@ class Task : public PXPAgent::Module, public PXPAgent::Util::Purgeable {
     boost::filesystem::path exec_prefix_;
 
     std::vector<std::string> master_uris_;
+
+    uint32_t task_download_connect_timeout_, task_download_timeout_;
 
     leatherman::curl::client client_;
 
