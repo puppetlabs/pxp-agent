@@ -120,12 +120,16 @@ Task::Task(const fs::path& exec_prefix,
            const std::string& ca,
            const std::string& crt,
            const std::string& key,
+           uint32_t task_download_connect_timeout,
+           uint32_t task_download_timeout,
            std::shared_ptr<ResultsStorage> storage) :
     Purgeable { task_cache_dir_purge_ttl },
     storage_ { std::move(storage) },
     task_cache_dir_ { task_cache_dir },
     exec_prefix_ { exec_prefix },
-    master_uris_ { master_uris }
+    master_uris_ { master_uris },
+    task_download_connect_timeout_ { task_download_connect_timeout },
+    task_download_timeout_ { task_download_timeout }
 {
     module_name = "task";
     actions.push_back(TASK_RUN_ACTION);
@@ -263,6 +267,8 @@ static std::string createUrlEndpoint(const lth_jc::JsonContainer& uri) {
 // false otherwise. err_msg contains the most recent http_file_download_exception's error
 // message; it is initially empty.
 static std::tuple<bool, std::string> downloadTaskFile(const std::vector<std::string>& master_uris,
+                                                      uint32_t connect_timeout_s,
+                                                      uint32_t timeout_s,
                                                       lth_curl::client& client,
                                                       const fs::path& file_path,
                                                       const lth_jc::JsonContainer& uri) {
@@ -271,8 +277,11 @@ static std::tuple<bool, std::string> downloadTaskFile(const std::vector<std::str
     for (auto& master_uri : master_uris) {
         auto url = master_uri + endpoint;
         lth_curl::request req(url);
-        // timeout from connection after one minute, can configure
-        req.connection_timeout(60000);
+
+        // Request timeouts expect milliseconds.
+        req.connection_timeout(connect_timeout_s*1000);
+        req.timeout(timeout_s*1000);
+
         try {
             lth_curl::response resp;
             client.download_file(req, file_path.string(), resp, NIX_TASK_FILE_PERMS);
@@ -313,6 +322,8 @@ static std::tuple<bool, std::string> downloadTaskFile(const std::vector<std::str
 //    (3) If (1) and (2) both succeed, then the downloaded file is atomically
 //        renamed to cache_dir/<filename>
 static fs::path updateTaskFile(const std::vector<std::string>& master_uris,
+                               uint32_t connect_timeout,
+                               uint32_t timeout,
                                lth_curl::client& client,
                                const fs::path& cache_dir,
                                const lth_jc::JsonContainer& file) {
@@ -330,7 +341,7 @@ static fs::path updateTaskFile(const std::vector<std::string>& master_uris,
     }
 
     auto tempname = cache_dir / fs::unique_path("temp_task_%%%%-%%%%-%%%%-%%%%");
-    auto download_result = downloadTaskFile(master_uris, client, tempname, file.get<lth_jc::JsonContainer>("uri"));
+    auto download_result = downloadTaskFile(master_uris, connect_timeout, timeout, client, tempname, file.get<lth_jc::JsonContainer>("uri"));
     if (!std::get<0>(download_result)) {
         throw Module::ProcessingError(lth_loc::format(
               "Downloading the task file {1} failed after trying all the available master-uris. Most recent error message: {2}",
@@ -353,6 +364,8 @@ static fs::path updateTaskFile(const std::vector<std::string>& master_uris,
 static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
                                   PCPClient::Util::mutex& task_cache_dir_mutex,
                                   const std::vector<std::string>& master_uris,
+                                  uint32_t connect_timeout,
+                                  uint32_t timeout,
                                   lth_curl::client& client,
                                   const std::vector<lth_jc::JsonContainer> &files) {
     if (files.empty()) {
@@ -367,7 +380,7 @@ static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
             pcp_util::lock_guard<pcp_util::mutex> the_lock { task_cache_dir_mutex };
             return createCacheDir(task_cache_dir, file.get<std::string>("sha256"));
         }();
-        return updateTaskFile(master_uris, client, cache_dir, file);
+        return updateTaskFile(master_uris, connect_timeout, timeout, client, cache_dir, file);
     } catch (fs::filesystem_error& e) {
         throw toModuleProcessingError(e);
     }
@@ -449,6 +462,8 @@ ActionResponse Task::callAction(const ActionRequest& request)
     auto task_file = getCachedTaskFile(task_cache_dir_,
                                        task_cache_dir_mutex_,
                                        master_uris_,
+                                       task_download_connect_timeout_,
+                                       task_download_timeout_,
                                        client_,
                                        task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files"));
 

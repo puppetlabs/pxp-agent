@@ -151,6 +151,8 @@ class Configuration
         uint32_t pcp_message_ttl_s;
         uint32_t allowed_keepalive_timeouts;
         uint32_t ping_interval_s;
+        uint32_t task_download_connect_timeout_s;
+        uint32_t task_download_timeout_s;
     };
 
     /// Reset the HorseWhisperer singleton.
