@@ -393,7 +393,9 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         static_cast<uint32_t >(HW::GetFlag<int>("association-request-ttl")),
         static_cast<uint32_t >(HW::GetFlag<int>("pcp-message-ttl")),
         static_cast<uint32_t >(HW::GetFlag<int>("allowed-keepalive-timeouts")),
-        static_cast<uint32_t >(HW::GetFlag<int>("ping-interval")) };
+        static_cast<uint32_t >(HW::GetFlag<int>("ping-interval")),
+        static_cast<uint32_t >(HW::GetFlag<int>("task-download-connect-timeout")),
+        static_cast<uint32_t >(HW::GetFlag<int>("task-download-timeout")) };
     return agent_configuration_;
 }
 
@@ -548,6 +550,24 @@ void Configuration::defineDefaultValues()
                     "<hidden>",
                     Types::Int,
                     5) } });
+
+    defaults_.insert(
+        Option { "task-download-connect-timeout",
+                 Base_ptr { new Entry<int>(
+                    "task-download-connect-timeout",
+                    "",
+                    lth_loc::translate("Connection timeout when downloading tasks, default: 120 s"),
+                    Types::Int,
+                    2*60) } });
+
+    defaults_.insert(
+        Option { "task-download-timeout",
+                 Base_ptr { new Entry<int>(
+                    "task-download-timeout",
+                    "",
+                    lth_loc::translate("Total timeout when downloading tasks, default: 1800 s"),
+                    Types::Int,
+                    30*60) } });
 
     defaults_.insert(
         Option { "ssl-ca-cert",
@@ -1032,7 +1052,11 @@ void Configuration::validateAndNormalizeOtherSettings()
         }
     }
 
-    for (auto msg_ttl : {"association-timeout", "association-request-ttl", "pcp-message-ttl"}) {
+    for (auto msg_ttl : {"association-timeout",
+                         "association-request-ttl",
+                         "pcp-message-ttl",
+                         "task-download-connect-timeout",
+                         "task-download-timeout"}) {
         if (HW::GetFlag<int>(msg_ttl) < 0)
             throw Configuration::Error {
                 lth_loc::format("{1} must be positive", msg_ttl) };
