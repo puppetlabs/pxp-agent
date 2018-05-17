@@ -1,8 +1,14 @@
+## 1.9.2
+
+This is a bug fix release.
+
+* [PCP-797](https://tickets.puppetlabs.com/browse/PCP-797) Allow configuring task download timeouts.
+
 ## 1.9.1
 
 This is a bug fix release.
 
-* [PCP-834](https://tickets.puppetlabs.com/browse/PCP-834) Fix pxp-agent log rotation on systemd
+* [PCP-834](https://tickets.puppetlabs.com/browse/PCP-834) Fix pxp-agent log rotation on systemd.
 
 ## 1.9.0
 
@@ -23,7 +29,7 @@ https://github.com/puppetlabs/puppet-specifications/blob/master/file_paths.md#pu
 
 This is a bug fix release.
 
-* [PCP-834](https://tickets.puppetlabs.com/browse/PCP-834) Fix pxp-agent log rotation on systemd
+* [PCP-834](https://tickets.puppetlabs.com/browse/PCP-834) Fix pxp-agent log rotation on systemd.
 
 ## 1.8.2
 
