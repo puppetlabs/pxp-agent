@@ -72,6 +72,12 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "SunOS" OR CM
     list(APPEND LIBS rt ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
+if (CMAKE_SYSTEM_NAME MATCHES "SunOS")
+    # Necessary when statically linking cpp-pcp-client on Solaris.
+    # Shouldn't hurt when cpp-pcp-client is a shared library.
+    list(APPEND LIBS socket nsl)
+endif()
+
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" AND BOOST_STATIC AND LEATHERMAN_USE_LOCALES)
     # Needed with cpp-hocon using Boost.Locale
     list(APPEND LIBS iconv)
