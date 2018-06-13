@@ -388,6 +388,8 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         HW::GetFlag<std::string>("task-cache-dir"),
         HW::GetFlag<std::string>("task-cache-dir-purge-ttl"),
         AGENT_CLIENT_TYPE,
+        HW::GetFlag<std::string>("broker-ws-proxy"),
+        HW::GetFlag<std::string>("master-proxy"),
         HW::GetFlag<int>("connection-timeout") * 1000,
         static_cast<uint32_t >(HW::GetFlag<int>("association-timeout")),
         static_cast<uint32_t >(HW::GetFlag<int>("association-request-ttl")),
@@ -699,6 +701,24 @@ void Configuration::defineDefaultValues()
                                     DEFAULT_DIR_PURGE_TTL),
                     Types::String,
                     DEFAULT_DIR_PURGE_TTL) } });
+
+    defaults_.insert(
+        Option { "broker-ws-proxy",
+                 Base_ptr { new Entry<std::string>(
+                    "broker-ws-proxy",
+                    "",
+                    lth_loc::translate("PCP-broker WebSocket proxy"),
+                    Types::String,
+                    "") } });
+
+    defaults_.insert(
+        Option { "master-proxy",
+                 Base_ptr { new Entry<std::string>(
+                    "master-proxy",
+                    "",
+                    lth_loc::translate("Puppet Master proxy"),
+                    Types::String,
+                    "") } });
 
     defaults_.insert(
         Option { "foreground",

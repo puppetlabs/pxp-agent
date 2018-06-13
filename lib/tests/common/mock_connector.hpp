@@ -43,6 +43,8 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   "",    // task cache dir
                                                   "0d",  // don't purge task cache!
                                                   "test_agent",
+                                                  "",    // don't set broker proxy
+                                                  "",    // don't set master proxy
                                                   5000,  // connection timeout
                                                   10,    // association timeout
                                                   5,     // association ttl

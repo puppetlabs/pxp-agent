@@ -32,6 +32,8 @@ TEST_CASE("Agent::Agent", "[agent]") {
                                                "",    // task cache dir
                                                "0d",  // don't purge task cache!
                                                "test_agent",
+                                               "",    // don't set broker proxy
+                                               "",    // don't set master proxy
                                                5000, 10, 5, 5, 2, 15, 30, 120 };
 
     SECTION("does not throw if it fails to find the external modules directory") {

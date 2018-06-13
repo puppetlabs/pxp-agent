@@ -547,3 +547,35 @@ def get_mode(host, path)
   ruby = ruby_command(host)
   on(host, "#{ruby} -e 'puts (File.stat(\"#{path}\").mode & 07777).to_s(8)'").stdout.chomp
 end
+
+def get_package_manager(host)
+  platform = fact_on(host, 'osfamily')
+
+  case platform
+    when 'RedHat'
+      pkg_manager = 'yum'
+    when 'Suse'
+      pkg_manager = 'zypper'
+  end
+  pkg_manager
+end  
+
+def setup_squid_proxy(host)
+  squid_conf = "/etc/squid/squid.conf"
+  ssl_port_ws = "acl SSL_ports port 8142"
+  ssl_port_master = "acl SSL_ports port 8140"
+  pkg_manager = get_package_manager(host)
+  install_squid = "#{pkg_manager} install -y squid"
+  on(host, install_squid)
+  on(host, "sed -i \'1s;^;#{ssl_port_ws}\\n#{ssl_port_master}\\n;\' #{squid_conf}")
+  on(host, puppet("apply -e 'service {'squid' : ensure => running}'"))
+end
+
+def teardown_squid_proxy(host)
+  pkg_manager = get_package_manager(host)
+  remove_squid = "#{pkg_manager} remove -y squid"
+  delete_squid_log = "rm -rf /var/log/squid/"
+  on(host, puppet("apply -e 'service {'squid' : ensure => stopped}'"))
+  on(host, remove_squid)
+  on(host, delete_squid_log)
+end
