@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 namespace lth_jc = leatherman::json_container;
 
@@ -63,5 +63,3 @@ TEST_CASE("Module::executeAction", "[modules]") {
         REQUIRE(txt == "maradona");
     }
 }
-
-}  // namespace PXPAgent

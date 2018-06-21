@@ -9,8 +9,8 @@
     #include <unistd.h>
 #endif
 
-namespace PXPAgent {
-namespace Util {
+using namespace PXPAgent;
+using namespace Util;
 
 TEST_CASE("processExists", "[util]") {
     SECTION("this process is executing") {
@@ -27,6 +27,3 @@ TEST_CASE("getPid", "[util]") {
         REQUIRE_NOTHROW(getPid());
     }
 }
-
-}  // namespace Util
-}  // namespace PXPAgent

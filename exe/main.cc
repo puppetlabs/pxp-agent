@@ -42,6 +42,7 @@ static int PXP_AGENT_CONFIGURATION_FAILURE = 3;
 // Exit code returned after daemonization failure (only on POSIX)
 static int PXP_AGENT_DAEMONIZATION_FAILURE = 4;
 
+// cppcheck-suppress passedByValue
 int startAgent(std::vector<std::string> arguments) {
 #ifndef _WIN32
     std::unique_ptr<Util::PIDFile> pidf_ptr;

@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <atomic>
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 namespace lth_jc = leatherman::json_container;
 namespace pcp_util = PCPClient::Util;
@@ -154,5 +154,3 @@ TEST_CASE("RequestProcessor::processRequest", "[agent]") {
 
     fs::remove_all(SPOOL);
 }
-
-}  // namespace PXPAgent

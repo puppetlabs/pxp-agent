@@ -75,10 +75,12 @@ static PCPClient::Validator getStatusQueryValidator()
 // Non-blocking action task
 //
 
+
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ActionRequest request,
                            std::shared_ptr<PXPConnector> connector_ptr,
                            std::shared_ptr<ResultsStorage> storage_ptr,
+                           // cppcheck-suppress passedByValue
                            std::shared_ptr<std::atomic<bool>> done)
 {
     ResultsMutex::Mutex_Ptr mtx_ptr;

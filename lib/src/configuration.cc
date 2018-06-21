@@ -942,7 +942,7 @@ std::string check_and_expand_ssl_cert(const std::string& cert_name)
 
 static void validate_wss(std::string const& uri, std::string const& name)
 {
-    if (uri.find("wss://") != 0)
+    if (uri.compare(0, 6, "wss://") != 0)
         throw Configuration::Error {
             lth_loc::format("{1} value \"{2}\" must start with wss://", name, uri) };
 }

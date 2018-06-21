@@ -16,7 +16,7 @@
 #include <utility>  // std::move
 #include <vector>
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 namespace fs = boost::filesystem;
 namespace lth_jc = leatherman::json_container;
@@ -214,5 +214,3 @@ TEST_CASE("ResultsStorage::purge", "[module][results]") {
     // updating it at every "git add -A"...
     st.updateMetadataFile(RECENT_TRANSACTION, recent_metadata_old);
 }
-
-}  // namespace PXPAgent

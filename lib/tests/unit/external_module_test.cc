@@ -26,7 +26,7 @@
 #define EXTENSION ""
 #endif
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 namespace fs = boost::filesystem;
 namespace lth_jc = leatherman::json_container;
@@ -362,5 +362,3 @@ TEST_CASE("ExternalModule::executeAction", "[modules][output]") {
         REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
     }
 }
-
-}  // namespace PXPAgent
