@@ -74,8 +74,6 @@ static PCPClient::Validator getStatusQueryValidator()
 //
 // Non-blocking action task
 //
-
-
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ActionRequest request,
                            std::shared_ptr<PXPConnector> connector_ptr,

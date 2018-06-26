@@ -10,17 +10,6 @@ test_name 'task download' do
     '/cygdrive/c/ProgramData/PuppetLabs/puppetserver/etc/conf.d/webserver.conf'
   : '/etc/puppetlabs/puppetserver/conf.d/webserver.conf'
 
-  teardown do
-    agents.each do |agent|
-      on agent, puppet('resource service pxp-agent ensure=stopped')
-      create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
-      on agent, puppet('resource service pxp-agent ensure=running')
-      unless windows?(agent)
-        teardown_squid_proxy(agent)
-      end
-    end
-  end
-
   step 'Ensure each agent host has pxp-agent running and associated' do
     agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
@@ -127,36 +116,4 @@ test_name 'task download' do
       assert_equal("", on(agent, "ls #{tasks_cache}/1234").stdout.chomp, 'tasks-cache/<sha> directory was not properly cleaned up')
     end
   end # test step
-
-  step 'Make proxy request when downloading task from master when master-proxy is set' do
-    test_cases = { nix_agents => ["init", @nix_sha256] }
-    squid_log = "/var/log/squid/access.log"
-
-    test_cases.each do |agents, (filename, sha256)|
-      # Ensure that the task file does not exist beforehand so we know that
-      # if it runs successfully in the later assertions, then it was downloaded.
-      # install squid and set master proxy
-      agents.each do |agent|
-        on(agent, puppet('resource service pxp-agent ensure=stopped'))
-        proxy = "http://#{agent}:3128"
-        create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent, master_proxy: proxy))
-        on(agent, puppet('resource service pxp-agent ensure=running'))
-        tasks_cache = get_tasks_cache(agent)
-        on(agent, "rm -rf #{tasks_cache}/#{sha256}")
-        assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{sha256}")).stdout)
-        setup_squid_proxy(agent)
-      end
-      # This should trigger event that has to pass proxy info to download task from master
-      run_successful_task(master, agents, 'echo', filename, sha256, {:message => 'hello'}, "/task-files/#{filename}") do |stdout|
-        assert_equal('hello', stdout.strip, "Output did not contain 'hello'")
-      end
-      # stop agent to ensure log is generated in proxy access log
-      on(agent, puppet('resource service pxp-agent ensure=stopped'))
-      agents.each do |agent|
-        on(agent, "cat #{squid_log}") do |result|
-          assert_match(/CONNECT #{master}/, result.stdout, 'Proxy logs did not indicate use of the proxy.' )
-        end
-      end
-    end
-  end
 end # test
