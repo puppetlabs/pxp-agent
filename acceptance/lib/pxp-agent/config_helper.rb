@@ -66,11 +66,11 @@ def pxp_config_hocon(broker, agent, ssl_config = {})
   })
 end
 
-def pxp_config_hocon_using_puppet_certs(broker, agent, num_brokers=1, master_proxy: "", broker_proxy: "")
-  to_hocon(pxp_config_hash_using_puppet_certs(broker, agent, num_brokers, master_proxy: master_proxy, broker_proxy: broker_proxy))
+def pxp_config_hocon_using_puppet_certs(broker, agent, num_brokers: 1, master_proxy: "", broker_proxy: "")
+  to_hocon(pxp_config_hash_using_puppet_certs(broker, agent, num_brokers: num_brokers, master_proxy: master_proxy, broker_proxy: broker_proxy))
 end
 
-def pxp_config_hash_using_puppet_certs(broker, agent, num_brokers=1, master_proxy: "", broker_proxy: "")
+def pxp_config_hash_using_puppet_certs(broker, agent, num_brokers: 1, master_proxy: "", broker_proxy: "")
   broker_uris = []
   for i in 1..num_brokers
     broker_uris << broker_ws_uri(master).sub!(PCP_BROKER_PORTS[0].to_s,PCP_BROKER_PORTS[i-1].to_s)
