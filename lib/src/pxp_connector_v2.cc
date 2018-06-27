@@ -22,6 +22,7 @@ PXPConnectorV2::PXPConnectorV2(const Configuration::Agent& agent_configuration)
                                    agent_configuration.ca,
                                    agent_configuration.crt,
                                    agent_configuration.key,
+                                   agent_configuration.broker_ws_proxy,
                                    agent_configuration.ws_connection_timeout_ms,
                                    agent_configuration.allowed_keepalive_timeouts+1)
 {

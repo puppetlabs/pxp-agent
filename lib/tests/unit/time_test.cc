@@ -6,7 +6,7 @@
 
 #include <catch.hpp>
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 namespace pt = boost::posix_time;
 namespace lth_util = leatherman::util;
@@ -134,5 +134,3 @@ TEST_CASE("Timestamp::isNewerThan", "[utils][time]") {
                           Timestamp::Error);
     }
 }
-
-}  // namespace PXPAgent

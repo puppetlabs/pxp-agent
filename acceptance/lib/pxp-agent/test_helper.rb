@@ -547,3 +547,48 @@ def get_mode(host, path)
   ruby = ruby_command(host)
   on(host, "#{ruby} -e 'puts (File.stat(\"#{path}\").mode & 07777).to_s(8)'").stdout.chomp
 end
+
+def get_package_manager(host)
+  platform = fact_on(host, 'osfamily')
+
+  case platform
+    when 'RedHat'
+      pkg_manager = 'yum'
+    when 'Debian'
+      pkg_manager = 'apt-get'
+  end
+  pkg_manager
+end  
+
+def setup_squid_proxy(host)
+  pkg_manager = get_package_manager(host)
+  install_squid = "#{pkg_manager} install -y squid"
+  squid_conf = "/etc/squid/squid.conf"
+  ssl_port_ws = "acl SSL_ports port 8142"
+  ssl_port_master = "acl SSL_ports port 8140"
+  iptables_conf_in = "iptables -A INPUT -p tcp --dport 3128 -m state --state NEW,ESTABLISHED -j ACCEPT"
+  iptables_conf_out = "iptables -A OUTPUT -p tcp --sport 3128 -m state --state ESTABLISHED -j ACCEPT"
+  on(host, install_squid)
+  # configure squid to allow tcp and open up squid port on iptables
+  on(host, "sed -i \'1s;^;#{ssl_port_ws}\\n#{ssl_port_master}\\n;\' #{squid_conf}")
+  on(host, puppet("apply -e 'service {'squid' : ensure => running}'"))
+  on(host, iptables_conf_in)
+  on(host, iptables_conf_out)
+  # return the address of the proxy
+  "http://#{host}:3128"
+end
+
+def teardown_squid_proxy(host)
+  pkg_manager = get_package_manager(host)
+  remove_squid = "#{pkg_manager} remove -y squid"
+  delete_squid_log = "rm -rf /var/log/squid/"
+  on(host, puppet("apply -e 'service {'squid' : ensure => stopped}'"))
+  on(host, remove_squid)
+  on(host, delete_squid_log)
+end
+
+def clear_squid_log(host)
+  squid_log = "/var/log/squid/access.log"
+  clear_log = "cat /dev/null > #{squid_log}"
+  on(host, clear_log)
+end

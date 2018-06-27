@@ -10,7 +10,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/operations.hpp>
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 const std::vector<std::string> TEST_BROKER_WS_URIS { "wss://127.0.0.1:8090/pxp/" };
 static const std::string MODULES { std::string { PXP_AGENT_ROOT_PATH }
@@ -32,6 +32,8 @@ TEST_CASE("Agent::Agent", "[agent]") {
                                                "",    // task cache dir
                                                "0d",  // don't purge task cache!
                                                "test_agent",
+                                               "",    // don't set broker proxy
+                                               "",    // don't set master proxy
                                                5000, 10, 5, 5, 2, 15, 30, 120 };
 
     SECTION("does not throw if it fails to find the external modules directory") {
@@ -52,5 +54,3 @@ TEST_CASE("Agent::Agent", "[agent]") {
 
     boost::filesystem::remove_all(SPOOL);
 }
-
-}  // namespace PXPAgent

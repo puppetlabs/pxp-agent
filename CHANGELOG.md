@@ -1,3 +1,9 @@
+## 1.9.3
+
+This is a feature release.
+
+* [PCP-848](https://tickets.puppetlabs.com/browse/PCP-848) Allow proxy to be configured via curl wrapper. 
+
 ## 1.9.2
 
 This is a bug fix release.

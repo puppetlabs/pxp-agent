@@ -120,6 +120,7 @@ Task::Task(const fs::path& exec_prefix,
            const std::string& ca,
            const std::string& crt,
            const std::string& key,
+           const std::string& proxy,
            uint32_t task_download_connect_timeout,
            uint32_t task_download_timeout,
            std::shared_ptr<ResultsStorage> storage) :
@@ -143,6 +144,7 @@ Task::Task(const fs::path& exec_prefix,
     client_.set_ca_cert(ca);
     client_.set_client_cert(crt, key);
     client_.set_supported_protocols(CURLPROTO_HTTPS);
+    client_.set_proxy(proxy);
 }
 
 static void addParametersToEnvironment(const lth_jc::JsonContainer &input, std::map<std::string, std::string> &environment)

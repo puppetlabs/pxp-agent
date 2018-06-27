@@ -74,11 +74,11 @@ static PCPClient::Validator getStatusQueryValidator()
 //
 // Non-blocking action task
 //
-
 void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            ActionRequest request,
                            std::shared_ptr<PXPConnector> connector_ptr,
                            std::shared_ptr<ResultsStorage> storage_ptr,
+                           // cppcheck-suppress passedByValue
                            std::shared_ptr<std::atomic<bool>> done)
 {
     ResultsMutex::Mutex_Ptr mtx_ptr;
@@ -836,6 +836,7 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
         agent_configuration.ca,
         agent_configuration.crt,
         agent_configuration.key,
+        agent_configuration.master_proxy,
         agent_configuration.task_download_connect_timeout_s,
         agent_configuration.task_download_timeout_s,
         storage_ptr_);

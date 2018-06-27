@@ -1,6 +1,7 @@
 {
   :type => 'aio',
   :is_puppetserver => true,
+  :'use-service' => true, # use service scripts for start/stop
   :puppetservice => 'puppetserver',
   :'puppetserver-confdir' => '/etc/puppetlabs/puppetserver/conf.d',
   :pre_suite => [

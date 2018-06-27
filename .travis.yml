@@ -1,61 +1,36 @@
-language: cpp
-compiler:
-  - gcc
-sudo: false
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - boost-latest
-    packages:
-      - gcc-4.8
-      - g++-4.8
-      - libboost-filesystem1.55-dev
-      - libboost-regex1.55-dev
-      - libboost-date-time1.55-dev
-      - libboost-thread1.55-dev
-      - libboost-log1.55-dev
-      - libboost-locale1.55-dev
-      - libboost-chrono1.55-dev
-      - libboost-random1.55-dev
+sudo: required
+services:
+  - docker
 
 before_install:
-  # Use a predefined install location; cppcheck requires the cfg location is defined at compile-time.
-  - mkdir -p $USERDIR
-  # grab a pre-built cmake 3.2.3
-  - wget https://s3.amazonaws.com/kylo-pl-bucket/cmake-3.2.3-Linux-x86_64.tar.gz
-  - tar xzvf cmake-3.2.3-Linux-x86_64.tar.gz --strip 1 -C $USERDIR
-  # Install pxp-agent's dependencies
-  - wget https://github.com/puppetlabs/leatherman/releases/download/${LEATHERMAN_VERSION}/leatherman.tar.gz
-  - tar xzvf leatherman.tar.gz -C $USERDIR
-  - wget https://github.com/puppetlabs/cpp-pcp-client/releases/download/${CPP_PCP_CLIENT_VERSION}/cpp-pcp-client.tar.gz
-  - tar xzvf cpp-pcp-client.tar.gz -C $USERDIR
-  - wget https://github.com/puppetlabs/cpp-hocon/releases/download/${CPPHOCON_VERSION}/cpp-hocon.tar.gz
-  - tar xzvf cpp-hocon.tar.gz -C $USERDIR
-  # For some reason this link is missing, need to fix it upstream.
-  - ln -s $USERDIR/lib/libcpp-pcp-client.so.1.5.4 $USERDIR/lib/libcpp-pcp-client.so
-  - rvm install 2.1.9
-  - export CC=gcc-4.8 CXX=g++-4.8
+  - docker pull gcr.io/cpp-projects/cpp-ci:1
 
 script:
-  - ./.travis_target.sh
+  - >
+    docker run -v `pwd`:/pxp-agent gcr.io/cpp-projects/cpp-ci:1 /bin/bash -c "
+    wget https://github.com/puppetlabs/leatherman/releases/download/${LEATHERMAN_VERSION}/leatherman.tar.gz &&
+    tar xzvf leatherman.tar.gz --strip 1 -C / &&
+    wget https://github.com/puppetlabs/cpp-pcp-client/releases/download/${CPP_PCP_CLIENT_VERSION}/cpp-pcp-client.tar.gz &&
+    tar xzvf cpp-pcp-client.tar.gz --strip 1 -C / &&
+    wget https://github.com/puppetlabs/cpp-hocon/releases/download/${CPP_HOCON_VERSION}/cpp-hocon.tar.gz &&
+    tar xzvf cpp-hocon.tar.gz --strip 1 -C / &&
+    cd /pxp-agent &&
+    cmake $EXTRA_VARS . &&
+    mkdir dest &&
+    make $TARGET DESTDIR=/pxp-agent/dest VERBOSE=1 -j2 &&
+    { [[ '$COVERALLS' != 'ON' ]] || coveralls --gcov-options '\-lp' -r . -b . -e src -e vendor >/dev/null || true; }
+    "
 
 env:
   global:
-    - USERDIR=/tmp/userdir
-    - PYTHONUSERBASE=$USERDIR
-    - PATH=$USERDIR/bin:$PATH
-    - LD_LIBRARY_PATH=$USERDIR/lib:$LD_LIBRARY_PATH
-    - LEATHERMAN_VERSION=1.2.2
-    - CPP_PCP_CLIENT_VERSION=1.5.4
-    - CPPHOCON_VERSION=0.1.6
+    - LEATHERMAN_VERSION=1.4.2
+    - CPP_PCP_CLIENT_VERSION=1.5.6
+    - CPP_HOCON_VERSION=0.1.7
   matrix:
-    - TRAVIS_TARGET=CPPLINT
-    - TRAVIS_TARGET=CPPCHECK
-    - TRAVIS_TARGET=RELEASE
-    - TRAVIS_TARGET=DEBUG
-    - TRAVIS_TARGET=MODULES
+    - TARGET=cpplint
+    - TARGET=cppcheck
+    - TARGET="all test install ARGS=-V" EXTRA_VARS="-DBOOST_STATIC=ON"
+    - TARGET="all test install ARGS=-V" EXTRA_VARS="-DBOOST_STATIC=ON -DCMAKE_BUILD_TYPE=Debug -DCOVERALLS=ON" COVERALLS=ON
 
 notifications:
   email: false
-

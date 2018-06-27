@@ -4,7 +4,7 @@
 
 #include <catch.hpp>
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 TEST_CASE("ResultsMutex::exists", "[async]") {
     ResultsMutex::Instance().reset();
@@ -79,5 +79,3 @@ TEST_CASE("ResultsMutex::remove", "[async]") {
                           ResultsMutex::Error);
     }
 }
-
-}  // namespace PXPAgent

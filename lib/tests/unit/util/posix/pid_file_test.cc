@@ -17,8 +17,8 @@
 #include <sys/wait.h>    // waitpid()
 #include <signal.h>      // sigemptyset()
 
-namespace PXPAgent {
-namespace Util {
+using namespace PXPAgent;
+using namespace Util;
 
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
@@ -435,6 +435,3 @@ TEST_CASE("PIDFile::canLockFile", "[util]") {
 
     fs::remove_all(SPOOL_DIR);
 }
-
-}  // namespace Util
-}  // namespace PXPAgent
