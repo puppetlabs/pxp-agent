@@ -55,7 +55,7 @@ test_name 'remove old task from pxp-agent cache' do
 
       # retry until file is purged from cache
       begin
-        Timeout::timeout(5) do
+        Timeout::timeout(10) do
           until @success
             on(agent, "test -d #{@target_directory_path}", accept_all_exit_codes: true) do |result|
               @success = true if result.exit_code == 1
