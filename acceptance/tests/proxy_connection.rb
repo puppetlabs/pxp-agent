@@ -5,6 +5,13 @@ require 'puppet/acceptance/environment_utils.rb'
 test_name 'Connect via proxy' do
   extend Puppet::Acceptance::EnvironmentUtils
 
+  # skip amazon6/7 tests
+  agents.each do |agent|
+    if agent['template'] =~ /amazon/
+      skip_test 'Amazon test instances not configured for proxy test setup'
+    end
+  end
+
   # init
   squid_log = "/var/log/squid/access.log"
   proxy = setup_squid_proxy(master)
