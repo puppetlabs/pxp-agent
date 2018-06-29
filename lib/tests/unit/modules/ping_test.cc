@@ -13,7 +13,7 @@
 #include <vector>
 #include <algorithm>
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 namespace lth_jc = leatherman::json_container;
 
@@ -146,5 +146,3 @@ TEST_CASE("Modules::Ping::ping", "[modules]") {
         REQUIRE(hops[3].get<std::string>("time") == "007");
     }
 }
-
-}  // namespace PXPAgent

@@ -20,7 +20,7 @@
 
 #define ARGUMENT_COUNT(argv) (sizeof(argv)/sizeof((argv)[0]) - 1)
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 namespace fs = boost::filesystem;
 namespace HW = HorseWhisperer;
@@ -585,5 +585,3 @@ TEST_CASE("Configuration::setupLogging", "[configuration]") {
     }
 #endif
 }
-
-}  // namespace PXPAgent

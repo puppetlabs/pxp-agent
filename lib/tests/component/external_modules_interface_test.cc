@@ -19,7 +19,7 @@
 
 #include <catch.hpp>
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 namespace lth_jc = leatherman::json_container;
 namespace lth_util = leatherman::util;
@@ -270,5 +270,3 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
 
     fs::remove_all(SPOOL);
 }
-
-}  // namespace PXPAgent

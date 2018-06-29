@@ -10,7 +10,7 @@
 
 #include <vector>
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 namespace lth_jc = leatherman::json_container;
 
@@ -137,5 +137,3 @@ TEST_CASE("ActionRequest results_dir setter / getter", "[request]") {
         REQUIRE(a_r.resultsDir() == results_dir);
     }
 }
-
-}  // namespace PXPAgent

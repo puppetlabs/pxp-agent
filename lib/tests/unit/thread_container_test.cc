@@ -11,7 +11,7 @@
 #include <string>
 #include <set>
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 namespace pcp_util = PCPClient::Util;
 
@@ -20,7 +20,7 @@ TEST_CASE("ThreadContainer::ThreadContainer", "[utils]") {
         REQUIRE_NOTHROW(ThreadContainer("TESTING_1_1"));
     }
 }
-
+// cppcheck-suppress passedByValue
 void testTask(std::shared_ptr<std::atomic<bool>> a,
               const uint32_t task_duration_us) {
     pcp_util::this_thread::sleep_for(
@@ -32,6 +32,7 @@ void addTasksTo(ThreadContainer& container,
                 const uint32_t num_tasks,
                 const uint32_t caller_duration_us,
                 const uint32_t task_duration_us,
+                // cppcheck-suppress passedByValue
                 std::string prefix = "") {
     uint32_t idx;
     for (idx = 0; idx < num_tasks; idx++) {
@@ -194,5 +195,3 @@ TEST_CASE("ThreadContainer::getThreadNames", "[async]") {
             REQUIRE(expected_names.find(name) != expected_names.end());
     }
 }
-
-}  // namespace PXPAgent

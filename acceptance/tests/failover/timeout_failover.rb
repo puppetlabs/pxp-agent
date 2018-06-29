@@ -15,7 +15,7 @@ test_name 'C97964 - agent should use next broker if primary is timing out' do
     agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
       num_brokers = 2
-      pxp_config = pxp_config_hash_using_puppet_certs(master, agent, num_brokers)
+      pxp_config = pxp_config_hash_using_puppet_certs(master, agent, num_brokers: num_brokers)
       # Should attempt to reconnect in ~10 seconds.
       pxp_config['allowed-keepalive-timeouts'] = 0
       pxp_config['ping-interval'] = 6

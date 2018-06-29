@@ -325,12 +325,20 @@ to connect to one it will try the next in the list, and repeat until a
 successful connection is made. In the event of a disconnect, the agent will
 retry that connection before trying a new broker.
 
+**broker-ws-proxy (optional)**
+
+Proxy URI for websocket connection with PCP broker. 
+
 **master-uris (optional)**
 
 An array of HTTPS URIs of servers hosting task files for download. When multiple
 are specified, it will use them in a failover capacity, where if it's unable
 to connect to one it will try the next in the list until all have been tried.
 If all are unavailable, task download will fail.
+
+**master-proxy (optional)**
+
+Proxy URI for downloading tasks from master. 
 
 **pcp-version (optional)**
 

@@ -53,11 +53,22 @@ endif()
 set (LIBS
     ${cpp-pcp-client_LIBRARY}
     ${CPPHOCON_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${OPENSSL_SSL_LIBRARY}
-    ${OPENSSL_CRYPTO_LIBRARY}
-    ${LEATHERMAN_LIBRARIES}
 )
+
+# Static libraries should come before shared libraries, or you can end up
+# with some really annoying link errors. However, we can configure whether
+# Boost and Leatherman are linked statically or dynamically.
+if (LEATHERMAN_SHARED)
+    # If Leatherman is shared, Boost should come first because
+    # it's static, or the order doesn't matter.
+    list(APPEND LIBS ${Boost_LIBRARIES} ${LEATHERMAN_LIBRARIES})
+else()
+    # If Leatherman is static, it should come first as it depends
+    # on Boost.
+    list(APPEND LIBS ${LEATHERMAN_LIBRARIES} ${Boost_LIBRARIES})
+endif()
+
+list(APPEND LIBS ${OPENSSL_SSL_LIBRARY} ${OPENSSL_CRYPTO_LIBRARY})
 
 if (WIN32)
     # Necessary when statically linking cpp-pcp-client on Windows.

@@ -4,12 +4,10 @@
 
 #include <catch.hpp>
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 TEST_CASE("PXPConnectorV1::PXPConnectorV1", "[agent]") {
     SECTION("successfully instantiates with valid arguments") {
         REQUIRE_NOTHROW(PXPConnectorV1{AGENT_CONFIGURATION});
     };
 }
-
-}  // namespace PXPAgent

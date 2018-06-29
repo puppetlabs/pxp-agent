@@ -10,7 +10,7 @@
 
 #include <vector>
 
-namespace PXPAgent {
+using namespace PXPAgent;
 
 namespace lth_jc = leatherman::json_container;
 using R_T = ActionResponse::ResponseType;
@@ -99,5 +99,3 @@ TEST_CASE("ActionResponse::toJSON", "[response]") {
                 "{\"transaction_id\":\"04352987\",\"results\":{\"transaction_id\":\"\",\"exitcode\":0,\"status\":\"failure\",\"stdout\":\"{\\\"_error\\\":{\\\"kind\\\":\\\"puppetlabs.pxp-agent/execution-error\\\",\\\"details\\\":{},\\\"msg\\\":\\\"other\\\"}}\"}}");
     }
 }
-
-}  // namespace PXPAgent

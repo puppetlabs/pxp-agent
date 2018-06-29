@@ -1,7 +1,7 @@
 environment:
-  LEATHERMAN_VERSION: 1.2.2
-  CPP_PCP_CLIENT_VERSION: 1.5.4
-  CPPHOCON_VERSION: 0.1.6
+  LEATHERMAN_VERSION: 1.4.2
+  CPP_PCP_CLIENT_VERSION: 1.5.6
+  CPPHOCON_VERSION: 0.1.7
 
 install:
   - choco install -y mingw-w64 -Version 5.2.0 -source https://www.myget.org/F/puppetlabs

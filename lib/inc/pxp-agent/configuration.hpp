@@ -145,6 +145,8 @@ class Configuration
         std::string task_cache_dir;
         std::string task_cache_dir_purge_ttl;
         std::string client_type;
+        std::string broker_ws_proxy;
+        std::string master_proxy;
         long ws_connection_timeout_ms;
         uint32_t association_timeout_s;
         uint32_t association_request_ttl_s;
