@@ -359,22 +359,16 @@ static fs::path updateTaskFile(const std::vector<std::string>& master_uris,
     return filepath;
 }
 
-// Verify (this includes checking the SHA256 checksums) that *all* task files are present
-// in the task cache downloading them if necessary.
-// Return the full path of the cached version of the first file from the list (which
-// is assumed to be the task executable).
+// Verify (this includes checking the SHA256 checksums) that task file is present
+// in the task cache downloading it if necessary.
+// Return the full path of the cached version of the file.
 static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
                                   PCPClient::Util::mutex& task_cache_dir_mutex,
                                   const std::vector<std::string>& master_uris,
                                   uint32_t connect_timeout,
                                   uint32_t timeout,
                                   lth_curl::client& client,
-                                  const std::vector<lth_jc::JsonContainer> &files) {
-    if (files.empty()) {
-        throw Module::ProcessingError {
-            lth_loc::format("at least one file must be specified for a task") };
-    }
-    auto file = files[0];
+                                  lth_jc::JsonContainer& file) {
     LOG_DEBUG("Verifying task file based on {1}", file.toString());
 
     try {
@@ -461,13 +455,19 @@ ActionResponse Task::callAction(const ActionRequest& request)
             lth_loc::format("unsupported task input method: {1}", task_input_method) };
     }
 
+    auto files = task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files");
+    if (files.empty()) {
+        throw Module::ProcessingError {
+            lth_loc::format("at least one file must be specified for a task") };
+    }
+
     auto task_file = getCachedTaskFile(task_cache_dir_,
                                        task_cache_dir_mutex_,
                                        master_uris_,
                                        task_download_connect_timeout_,
                                        task_download_timeout_,
                                        client_,
-                                       task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files"));
+                                       files[0]);
 
     // Use powershell input method by default if task uses .ps1 extension.
     if (task_input_method.empty() && task_file.extension().string() == ".ps1") {
