@@ -11,6 +11,7 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/hex.hpp>
+#include <boost/algorithm/string/join.hpp>
 #include <boost/nowide/cstdio.hpp>
 #include <boost/system/error_code.hpp>
 
@@ -50,6 +51,34 @@ static const std::string TASK_RUN_ACTION_INPUT_SCHEMA { R"(
   "properties": {
     "task": {
       "type": "string"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "input_method": {
+          "type": "string"
+        },
+        "implementations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "requirements": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "input_method": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
     },
     "files": {
       "type": "array",
@@ -387,6 +416,67 @@ static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
     }
 }
 
+struct Implementation {
+    std::string name;
+    std::string input_method;
+};
+
+static Implementation selectImplementation(std::vector<lth_jc::JsonContainer> const& implementations,
+                                           std::set<std::string> const& features)
+{
+    if (implementations.empty()) {
+        return {};
+    }
+
+    // Select first entry in implementations where all requirements are in features.
+    // If none, throw an error.
+    auto impl = std::find_if(implementations.cbegin(), implementations.cend(),
+        [&](lth_jc::JsonContainer const& impl) {
+            auto reqs = impl.getWithDefault<std::vector<std::string>>("requirements", {});
+            if (reqs.empty()) {
+                return true;
+            } else {
+                return all_of(reqs.cbegin(), reqs.cend(),
+                    [&](std::string const& req) { return features.count(req) != 0; });
+            }
+        });
+
+    if (impl != implementations.cend()) {
+        auto input_method = impl->getWithDefault<std::string>("input_method", {});
+        return Implementation { impl->get<std::string>("name"), input_method };
+    } else {
+        auto feature_list = boost::algorithm::join(features, ", ");
+        throw Module::ProcessingError {
+            lth_loc::format("no implementations match supported features: {1}", feature_list) };
+    }
+}
+
+static lth_jc::JsonContainer selectTaskFile(std::vector<lth_jc::JsonContainer> const& files,
+                                            Implementation const& impl)
+{
+    if (files.empty()) {
+        throw Module::ProcessingError {
+            lth_loc::format("at least one file must be specified for a task") };
+    }
+
+    if (impl.name.empty()) {
+        return files[0];
+    }
+
+    // Select file based on impl.
+    auto file = std::find_if(files.cbegin(), files.cend(),
+        [&](lth_jc::JsonContainer const& file) {
+            auto filename = file.get<std::string>("filename");
+            return filename == impl.name;
+        });
+
+    if (file == files.cend()) {
+        throw Module::ProcessingError {
+            lth_loc::format("'{1}' file requested by implementation not found", impl.name) };
+    }
+    return *file;
+}
+
 void Task::callBlockingAction(
     const ActionRequest& request,
     const TaskCommand &command,
@@ -451,20 +541,23 @@ void Task::callNonBlockingAction(
 ActionResponse Task::callAction(const ActionRequest& request)
 {
     auto task_execution_params = request.params();
-    auto task_input_method = task_execution_params.includes("input_method") ?
-        task_execution_params.get<std::string>("input_method") : std::string{""};
+    auto task_metadata = task_execution_params.getWithDefault<lth_jc::JsonContainer>("metadata", task_execution_params);
+
+    auto implementations = task_metadata.getWithDefault<std::vector<lth_jc::JsonContainer>>("implementations", {});
+    auto implementation = selectImplementation(implementations, features());
+
+    if (implementation.input_method.empty() && task_metadata.includes("input_method")) {
+        implementation.input_method = task_metadata.get<std::string>("input_method");
+    }
 
     static std::set<std::string> input_methods{{"stdin", "environment", "powershell"}};
-    if (!task_input_method.empty() && input_methods.count(task_input_method) == 0) {
+    if (!implementation.input_method.empty() && input_methods.count(implementation.input_method) == 0) {
         throw Module::ProcessingError {
-            lth_loc::format("unsupported task input method: {1}", task_input_method) };
+            lth_loc::format("unsupported task input method: {1}", implementation.input_method) };
     }
 
     auto files = task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files");
-    if (files.empty()) {
-        throw Module::ProcessingError {
-            lth_loc::format("at least one file must be specified for a task") };
-    }
+    auto file = selectTaskFile(files, implementation);
 
     auto task_file = getCachedTaskFile(task_cache_dir_,
                                        task_cache_dir_mutex_,
@@ -472,29 +565,29 @@ ActionResponse Task::callAction(const ActionRequest& request)
                                        task_download_connect_timeout_,
                                        task_download_timeout_,
                                        client_,
-                                       files[0]);
+                                       file);
 
     // Use powershell input method by default if task uses .ps1 extension.
-    if (task_input_method.empty() && task_file.extension().string() == ".ps1") {
-        task_input_method = "powershell";
+    if (implementation.input_method.empty() && task_file.extension().string() == ".ps1") {
+        implementation.input_method = "powershell";
     }
 
     std::map<std::string, std::string> task_environment;
     std::string task_input;
     TaskCommand task_command;
 
-    if (task_input_method == "powershell") {
+    if (implementation.input_method == "powershell") {
         // Run using the powershell shim
         task_command = getTaskCommand(exec_prefix_ / "PowershellShim.ps1");
         task_command.arguments.push_back(task_file.string());
         // Pass input on stdin ($input)
         task_input = task_execution_params.get<lth_jc::JsonContainer>("input").toString();
     } else {
-        if (task_input_method.empty() || task_input_method == "stdin") {
+        if (implementation.input_method.empty() || implementation.input_method == "stdin") {
             task_input = task_execution_params.get<lth_jc::JsonContainer>("input").toString();
         }
 
-        if (task_input_method.empty() || task_input_method == "environment") {
+        if (implementation.input_method.empty() || implementation.input_method == "environment") {
             addParametersToEnvironment(task_execution_params.get<lth_jc::JsonContainer>("input"), task_environment);
         }
 

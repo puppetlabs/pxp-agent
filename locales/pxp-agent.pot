@@ -702,11 +702,19 @@ msgid "Verifying task file based on {1}"
 msgstr ""
 
 #: lib/src/modules/task.cc
-msgid "unsupported task input method: {1}"
+msgid "no implementations match supported features: {1}"
 msgstr ""
 
 #: lib/src/modules/task.cc
 msgid "at least one file must be specified for a task"
+msgstr ""
+
+#: lib/src/modules/task.cc
+msgid "'{1}' file requested by implementation not found"
+msgstr ""
+
+#: lib/src/modules/task.cc
+msgid "unsupported task input method: {1}"
 msgstr ""
 
 #. debug
