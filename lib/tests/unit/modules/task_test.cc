@@ -82,6 +82,15 @@ TEST_CASE("Modules::Task", "[modules]") {
     }
 }
 
+TEST_CASE("Modules::Task::features", "[modules]") {
+    Modules::Task mod { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+
+    SECTION("reports available features") {
+        REQUIRE(mod.features().size() == 1);
+        REQUIRE(mod.features().find("puppet-agent") != mod.features().end());
+    }
+}
+
 TEST_CASE("Modules::Task::hasAction", "[modules]") {
     Modules::Task mod { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
 

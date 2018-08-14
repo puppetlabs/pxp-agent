@@ -27,7 +27,6 @@
 #include <curl/curl.h>
 
 #include <tuple>
-#include <set>
 
 namespace PXPAgent {
 namespace Modules {
@@ -130,7 +129,8 @@ Task::Task(const fs::path& exec_prefix,
     exec_prefix_ { exec_prefix },
     master_uris_ { master_uris },
     task_download_connect_timeout_ { task_download_connect_timeout },
-    task_download_timeout_ { task_download_timeout }
+    task_download_timeout_ { task_download_timeout },
+    features_ { "puppet-agent" }
 {
     module_name = "task";
     actions.push_back(TASK_RUN_ACTION);
@@ -145,6 +145,11 @@ Task::Task(const fs::path& exec_prefix,
     client_.set_client_cert(crt, key);
     client_.set_supported_protocols(CURLPROTO_HTTPS);
     client_.set_proxy(proxy);
+}
+
+std::set<std::string> const& Task::features() const
+{
+    return features_;
 }
 
 static void addParametersToEnvironment(const lth_jc::JsonContainer &input, std::map<std::string, std::string> &environment)
