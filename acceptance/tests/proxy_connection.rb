@@ -107,7 +107,8 @@ test_name 'Connect via proxy' do
         assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{sha256}")).stdout)
       end
       # download task through the web proxy
-      run_successful_task(master, agents, 'echo', filename, sha256, {:message => 'hello'}, "/task-files/#{filename}") do |stdout|
+      files = [file_entry(filename, sha256, "/task-files/#{filename}")]
+      run_successful_task(master, agents, 'echo', files, input: {:message => 'hello'}) do |stdout|
         assert_equal('hello', stdout.strip, "Output did not contain 'hello'")
       end
 
