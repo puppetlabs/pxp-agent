@@ -3,7 +3,7 @@ require 'json'
 
 test_name 'run powershell task' do
 
-  windows_hosts = hosts.select {|h| /windows/ =~ h[:platform]}
+  windows_hosts = agents.select {|h| /windows/ =~ h[:platform]}
   if windows_hosts.empty?
     skip_test "No windows hosts to test powershell on"
   end

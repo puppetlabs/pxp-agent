@@ -13,22 +13,16 @@ test_name 'run echo task' do
     end
   end
 
-  step 'Create echo task on agent hosts' do
-    agents.each do |agent|
-      if agent['platform'] =~ /win/
-        task_body = '@echo %PT_message%'
-      else
-        task_body = "#!/bin/sh\necho $PT_message"
+  step 'Create and run echo task on agent hosts' do
+    win_agents, nix_agents = agents.partition { |agent| windows?(agent) }
+    [[win_agents, '@echo %PT_message%'], [nix_agents, "#!/bin/sh\necho $PT_message"]].each do |targets, task_body|
+      targets.each do |agent|
+        @sha256 = create_task_on(agent, 'echo', 'init.bat', task_body)
       end
-
-      @sha256 = create_task_on(agent, 'echo', 'init.bat', task_body)
+      files = [file_entry('init.bat', @sha256)]
+      run_successful_task(master, targets, 'echo', files, {:message => 'hello'}) do |stdout|
+        assert_equal('hello', stdout.strip, "Output did not contain 'hello'")
+      end
     end
   end
-
-  step 'Run echo task on agent hosts' do
-    files = [file_entry('init.bat', @sha256)]
-    run_successful_task(master, agents, 'echo', files, input: {:message => 'hello'}) do |stdout|
-      assert_equal('hello', stdout.strip, "Output did not contain 'hello'")
-    end
-  end # test step
 end # test
