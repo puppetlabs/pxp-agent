@@ -9,6 +9,7 @@
 #include <cpp-pcp-client/util/thread.hpp>
 
 #include <leatherman/curl/client.hpp>
+#include <set>
 
 namespace PXPAgent {
 namespace Modules {
@@ -54,6 +55,8 @@ class Task : public PXPAgent::Module, public PXPAgent::Util::Purgeable {
         std::vector<std::string> ongoing_transactions,
         std::function<void(const std::string& dir_path)> purge_callback = nullptr) override;
 
+    std::set<std::string> const& features() const;
+
   private:
     std::shared_ptr<ResultsStorage> storage_;
 
@@ -65,6 +68,8 @@ class Task : public PXPAgent::Module, public PXPAgent::Util::Purgeable {
     std::vector<std::string> master_uris_;
 
     uint32_t task_download_connect_timeout_, task_download_timeout_;
+
+    std::set<std::string> features_;
 
     leatherman::curl::client client_;
 

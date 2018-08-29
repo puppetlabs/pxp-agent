@@ -39,7 +39,8 @@ EOF
   end
 
   step 'Run puppet task on agent hosts' do
-    run_successful_task(master, agents, 'hello', 'init.pp', @sha256, {:data => [1, 2, 3]}) do |stdout|
+    files = [file_entry('init.pp', @sha256)]
+    run_successful_task(master, agents, 'hello', files, input: {:data => [1, 2, 3]}) do |stdout|
       assert_match(/Notify\[hello\]\/message: defined 'message' as 'hello'/, stdout, "Output did not contain 'hello'")
     end
   end # test step

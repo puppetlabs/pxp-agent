@@ -82,6 +82,15 @@ TEST_CASE("Modules::Task", "[modules]") {
     }
 }
 
+TEST_CASE("Modules::Task::features", "[modules]") {
+    Modules::Task mod { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+
+    SECTION("reports available features") {
+        REQUIRE(mod.features().size() == 1);
+        REQUIRE(mod.features().find("puppet-agent") != mod.features().end());
+    }
+}
+
 TEST_CASE("Modules::Task::hasAction", "[modules]") {
     Modules::Task mod { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
 
@@ -435,6 +444,100 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
 
         REQUIRE(fs::exists(cache));
         REQUIRE(fs::is_directory(cache));
+    }
+}
+
+template <typename T>
+static ActionRequest getEchoRequest(T& metadata)
+{
+    auto files = "["
+        "{\"sha256\": \"823c013467ce03b12dbe005757a6c842894373e8bcfb0cf879329afb5abcd543\", \"filename\": \"multi\"},"
+        "{\"sha256\": \"88a07e5b672aa44a91aa7d63e22c91510af5d4707e12f75e0d5de2dfdbde1dec\", \"filename\": \"multi.bat\"}"
+        "]";
+    auto params = boost::format("{\"metadata\": %1%, \"input\":{\"message\":\"hello\"}, \"files\": %2%}") % metadata % files;
+    auto echo_txt = (DATA_FORMAT % "\"0632\"" % "\"task\"" % "\"run\"" % params).str();
+    PCPClient::ParsedChunks echo_content {
+        lth_jc::JsonContainer(ENVELOPE_TXT),
+        lth_jc::JsonContainer(echo_txt),
+        {},
+        0 };
+    return ActionRequest { RequestType::Blocking, echo_content };
+}
+
+TEST_CASE("Modules::Task::executeAction implementations", "[modules][output]") {
+    configureTest();
+    lth_util::scope_exit config_cleaner { resetTest };
+    Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+
+    SECTION("uses a matching implementation") {
+        auto impls = "["
+#ifdef _WIN32
+            "{\"name\": \"multi.bat\", \"requirements\": [\"puppet-agent\"]},"
+#else
+            "{\"name\": \"multi\", \"requirements\": [\"puppet-agent\"]},"
+#endif
+            "{\"name\": \"invalid\"}"
+            "]";
+        auto metadata = boost::format("{\"implementations\": %1%, \"input_method\": \"environment\"}") % impls;
+
+        auto output = e_m.executeAction(getEchoRequest(metadata)).action_metadata.get<std::string>({ "results", "stdout" });
+        boost::trim(output);
+        REQUIRE(output == "hello");
+    }
+
+    SECTION("uses an unrestricted implementation") {
+        auto impls = "["
+            "{\"name\": \"invalid\", \"requirements\": [\"foobar\"]},"
+#ifdef _WIN32
+            "{\"name\": \"multi.bat\"}"
+#else
+            "{\"name\": \"multi\"}"
+#endif
+            "]";
+        auto metadata = boost::format("{\"implementations\": %1%, \"input_method\": \"environment\"}") % impls;
+
+        auto output = e_m.executeAction(getEchoRequest(metadata)).action_metadata.get<std::string>({ "results", "stdout" });
+        boost::trim(output);
+        REQUIRE(output == "hello");
+    }
+
+    SECTION("uses the implementation's input_method") {
+        auto impls = "["
+#ifdef _WIN32
+            "{\"name\": \"multi.bat\", \"input_method\": \"environment\"}"
+#else
+            "{\"name\": \"multi\", \"input_method\": \"environment\"}"
+#endif
+            "]";
+        auto metadata = boost::format("{\"implementations\": %1%}") % impls;
+
+        auto output = e_m.executeAction(getEchoRequest(metadata)).action_metadata.get<std::string>({ "results", "stdout" });
+        boost::trim(output);
+        REQUIRE(output == "hello");
+    }
+
+    SECTION("errors if no implementations are accepted") {
+        auto impls = "[{\"name\": \"invalid\", \"requirements\": [\"foobar\"]}]";
+        auto metadata = boost::format("{\"implementations\": %1%, \"input_method\": \"environment\"}") % impls;
+
+        auto response = e_m.executeAction(getEchoRequest(metadata));
+        REQUIRE_FALSE(response.action_metadata.includes("results"));
+        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
+        REQUIRE(response.action_metadata.includes("execution_error"));
+        REQUIRE(boost::contains(response.action_metadata.get<std::string>("execution_error"),
+                                "no implementations match supported features: puppet-agent"));
+    }
+
+    SECTION("errors if implementation specifies file that doesn't exist") {
+        auto impls = "[{\"name\": \"invalid\"}]";
+        auto metadata = boost::format("{\"implementations\": %1%, \"input_method\": \"environment\"}") % impls;
+
+        auto response = e_m.executeAction(getEchoRequest(metadata));
+        REQUIRE_FALSE(response.action_metadata.includes("results"));
+        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
+        REQUIRE(response.action_metadata.includes("execution_error"));
+        REQUIRE(boost::contains(response.action_metadata.get<std::string>("execution_error"),
+                                "'invalid' file requested by implementation not found"));
     }
 }
 

@@ -26,7 +26,8 @@ test_name 'run echo task' do
   end
 
   step 'Run echo task on agent hosts' do
-    run_successful_task(master, agents, 'echo', 'init.bat', @sha256, {:message => 'hello'}) do |stdout|
+    files = [file_entry('init.bat', @sha256)]
+    run_successful_task(master, agents, 'echo', files, input: {:message => 'hello'}) do |stdout|
       assert_equal('hello', stdout.strip, "Output did not contain 'hello'")
     end
   end # test step
