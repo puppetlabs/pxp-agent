@@ -49,3 +49,15 @@ Describe 'ConvertFrom-Json2 | ConvertFrom-PSCustomObject' {
     $arr[1]['version'] | Should -Be 2015
   }
 }
+
+Describe 'PowershellShim' {
+  it 'Runs the powershell script with the parameters supplied as JSON' {
+    $result = '{"message": "hello world"}' | & $PSScriptRoot\..\PowershellShim.ps1 $PSScriptRoot\Echo.ps1
+    $result | Should -Be "hello world"
+  }
+
+  it 'Runs the powershell script with only the parameters it understands' {
+    $result = '{"message": "hello world", "_task": "echo"}' | & $PSScriptRoot\..\PowershellShim.ps1 $PSScriptRoot\Echo.ps1
+    $result | Should -Be "hello world"
+  }
+}

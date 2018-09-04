@@ -5,17 +5,21 @@ try {
   $here = (Split-Path -Parent $MyInvocation.MyCommand.Path)
   . $here\PowershellShim-Helper.ps1
 
-  $scriptArgsHash = Get-ContentAsJson ($input -join "")
+  $private:tempArgs = Get-ContentAsJson ($input -join "")
 
   Write-Debug "`nTask-shim deserialized arguments to Hashtable:`n"
 
-  if ($scriptArgsHash) {
-    $scriptArgsHash.GetEnumerator() | % {
+  if ($tempArgs) {
+    $tempArgs.GetEnumerator() | % {
       Write-Debug "* $($_.Key) ($($_.Value.GetType())):`n$($_.Value | ConvertTo-String)"
     }
   }
 
-  & $args[0] @scriptArgsHash
+  $allowedArgs = (Get-Command $args[0]).Parameters.Keys
+  $private:taskArgs = @{}
+  $private:tempArgs.Keys | ? { $allowedArgs -contains $_ } | % { $private:taskArgs[$_] = $private:tempArgs[$_] }
+
+  & $args[0] @taskArgs
 
 } catch {
   Write-Error $_
