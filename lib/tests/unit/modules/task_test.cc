@@ -136,7 +136,7 @@ TEST_CASE("Modules::Task::callAction", "[modules]") {
         auto task_txt = (DATA_FORMAT % "\"0632\""
                                      % "\"task\""
                                      % "\"run\""
-                                     % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"existent\"}]}").str();
+                                     % "{\"task\": \"test::existent\", \"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"existent\"}]}").str();
         PCPClient::ParsedChunks task_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
             lth_jc::JsonContainer(task_txt),
@@ -188,12 +188,12 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
             (DATA_FORMAT % "\"0632\""
                          % "\"task\""
                          % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"15f26bdeea9186293d256db95fed616a7b823de947f4e9bd0d8d23c5ac786d13\", \"filename\": \"init\"}]}").str();
+                         % "{\"task\": \"test\", \"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"15f26bdeea9186293d256db95fed616a7b823de947f4e9bd0d8d23c5ac786d13\", \"filename\": \"init\"}]}").str();
 #else
             (DATA_FORMAT % "\"0632\""
                          % "\"task\""
                          % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"e1c10f8c709f06f4327ac6a07a918e297a039a24a788fabf4e2ebc31d16e8dc3\", \"filename\": \"init.bat\"}]}").str();
+                         % "{\"task\": \"test\", \"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"e1c10f8c709f06f4327ac6a07a918e297a039a24a788fabf4e2ebc31d16e8dc3\", \"filename\": \"init.bat\"}]}").str();
 #endif
         PCPClient::ParsedChunks echo_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
@@ -204,7 +204,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
 
         auto output = e_m.executeAction(request).action_metadata.get<std::string>({"results", "stdout"});
         boost::trim(output);
-        REQUIRE(output == "{\"message\":\"hello\"}");
+        REQUIRE(output == "{\"message\":\"hello\",\"_task\":\"test\"}");
     }
 
     SECTION("passes input only on stdin when input_method is stdin") {
@@ -213,12 +213,12 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
             (DATA_FORMAT % "\"0632\""
                          % "\"task\""
                          % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"input_method\": \"stdin\", \"files\" : [{\"sha256\": \"823c013467ce03b12dbe005757a6c842894373e8bcfb0cf879329afb5abcd543\", \"filename\": \"multi\"}]}").str();
+                         % "{\"task\": \"test::multi\", \"input\":{\"message\":\"hello\"}, \"input_method\": \"stdin\", \"files\" : [{\"sha256\": \"823c013467ce03b12dbe005757a6c842894373e8bcfb0cf879329afb5abcd543\", \"filename\": \"multi\"}]}").str();
 #else
             (DATA_FORMAT % "\"0632\""
                          % "\"task\""
                          % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"input_method\": \"stdin\", \"files\" : [{\"sha256\": \"88a07e5b672aa44a91aa7d63e22c91510af5d4707e12f75e0d5de2dfdbde1dec\", \"filename\": \"multi.bat\"}]}").str();
+                         % "{\"task\": \"test::multi\", \"input\":{\"message\":\"hello\"}, \"input_method\": \"stdin\", \"files\" : [{\"sha256\": \"88a07e5b672aa44a91aa7d63e22c91510af5d4707e12f75e0d5de2dfdbde1dec\", \"filename\": \"multi.bat\"}]}").str();
 #endif
         PCPClient::ParsedChunks echo_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
@@ -230,9 +230,9 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         auto output = e_m.executeAction(request).action_metadata.get<std::string>({ "results", "stdout" });
         boost::trim(output);
 #ifdef _WIN32
-        REQUIRE(output == "ECHO is on.\r\n{\"message\":\"hello\"}");
+        REQUIRE(output == "ECHO is on.\r\n{\"message\":\"hello\",\"_task\":\"test::multi\"}");
 #else
-        REQUIRE(output == "{\"message\":\"hello\"}");
+        REQUIRE(output == "{\"message\":\"hello\",\"_task\":\"test::multi\"}");
 #endif
     }
 
@@ -242,12 +242,12 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
             (DATA_FORMAT % "\"0632\""
                          % "\"task\""
                          % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"936e85a9b7f1e7b4b593c9f051a36105ed36f7fb8dcff67ff23a3a9af2abe962\", \"filename\": \"printer\"}]}").str();
+                         % "{\"task\":\"test::printer\", \"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"936e85a9b7f1e7b4b593c9f051a36105ed36f7fb8dcff67ff23a3a9af2abe962\", \"filename\": \"printer\"}]}").str();
 #else
             (DATA_FORMAT % "\"0632\""
                          % "\"task\""
                          % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"1c616ed98f54880444d0c49036cdf930120457c20e7a9a204db750f2d6162999\", \"filename\": \"printer.bat\"}]}").str();
+                         % "{\"task\":\"test::printer\", \"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\": \"1c616ed98f54880444d0c49036cdf930120457c20e7a9a204db750f2d6162999\", \"filename\": \"printer.bat\"}]}").str();
 #endif
         PCPClient::ParsedChunks echo_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
@@ -267,12 +267,12 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
             (DATA_FORMAT % "\"0632\""
                          % "\"task\""
                          % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"input_method\": \"environment\", \"files\" : [{\"sha256\": \"823c013467ce03b12dbe005757a6c842894373e8bcfb0cf879329afb5abcd543\", \"filename\": \"multi\"}]}").str();
+                         % "{\"task\":\"test::multi\", \"input\":{\"message\":\"hello\"}, \"input_method\": \"environment\", \"files\" : [{\"sha256\": \"823c013467ce03b12dbe005757a6c842894373e8bcfb0cf879329afb5abcd543\", \"filename\": \"multi\"}]}").str();
 #else
             (DATA_FORMAT % "\"0632\""
                          % "\"task\""
                          % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"input_method\": \"environment\", \"files\" : [{\"sha256\": \"88a07e5b672aa44a91aa7d63e22c91510af5d4707e12f75e0d5de2dfdbde1dec\", \"filename\": \"multi.bat\"}]}").str();
+                         % "{\"task\":\"test::multi\", \"input\":{\"message\":\"hello\"}, \"input_method\": \"environment\", \"files\" : [{\"sha256\": \"88a07e5b672aa44a91aa7d63e22c91510af5d4707e12f75e0d5de2dfdbde1dec\", \"filename\": \"multi.bat\"}]}").str();
 #endif
         PCPClient::ParsedChunks echo_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
@@ -292,12 +292,12 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
             (DATA_FORMAT % "\"0632\""
                          % "\"task\""
                          % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\" : \"d5b8819b51ecd53b32de74c09def0e71f617076bc8e4f75e1eac99b8f77a6c70\", \"filename\": \"error\"}]}").str();
+                         % "{\"task\": \"test::error\", \"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\" : \"d5b8819b51ecd53b32de74c09def0e71f617076bc8e4f75e1eac99b8f77a6c70\", \"filename\": \"error\"}]}").str();
 #else
             (DATA_FORMAT % "\"0632\""
                          % "\"task\""
                          % "\"run\""
-                         % "{\"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\" : \"554f86a33add88c371c2bbb79839c9adfd3d420dc5f405a07e97fab54efbe1ba\", \"filename\": \"error.bat\"}]}").str();
+                         % "{\"task\": \"test::error\", \"input\":{\"message\":\"hello\"}, \"files\" : [{\"sha256\" : \"554f86a33add88c371c2bbb79839c9adfd3d420dc5f405a07e97fab54efbe1ba\", \"filename\": \"error.bat\"}]}").str();
 #endif
         PCPClient::ParsedChunks echo_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
@@ -454,7 +454,7 @@ static ActionRequest getEchoRequest(T& metadata)
         "{\"sha256\": \"823c013467ce03b12dbe005757a6c842894373e8bcfb0cf879329afb5abcd543\", \"filename\": \"multi\"},"
         "{\"sha256\": \"88a07e5b672aa44a91aa7d63e22c91510af5d4707e12f75e0d5de2dfdbde1dec\", \"filename\": \"multi.bat\"}"
         "]";
-    auto params = boost::format("{\"metadata\": %1%, \"input\":{\"message\":\"hello\"}, \"files\": %2%}") % metadata % files;
+    auto params = boost::format("{\"task\": \"test::multi\", \"metadata\": %1%, \"input\":{\"message\":\"hello\"}, \"files\": %2%}") % metadata % files;
     auto echo_txt = (DATA_FORMAT % "\"0632\"" % "\"task\"" % "\"run\"" % params).str();
     PCPClient::ParsedChunks echo_content {
         lth_jc::JsonContainer(ENVELOPE_TXT),

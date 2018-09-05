@@ -24,7 +24,7 @@ test_name 'run ruby task' do
     files = [file_entry('init.rb', @sha256)]
     run_successful_task(master, agents, 'echo', files, input: {:data => [1, 2, 3]}) do |stdout|
       json, data = stdout.delete("\r").split("\n")
-      assert_equal('{"data":[1,2,3]}', json, "Output did not contain 'data'")
+      assert_equal({"data" => [1,2,3], "_task" => "echo"}, JSON.parse(json), "Output did not contain 'data'")
       assert_equal('[1,2,3]', data, "Output did not contain 'data'")
     end
   end # test step

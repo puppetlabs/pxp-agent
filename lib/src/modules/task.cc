@@ -572,6 +572,11 @@ ActionResponse Task::callAction(const ActionRequest& request)
         implementation.input_method = "powershell";
     }
 
+    auto task_name = task_execution_params.get<std::string>("task");
+    auto task_params = task_execution_params.get<lth_jc::JsonContainer>("input");
+
+    task_params.set<std::string>("_task", task_name);
+
     std::map<std::string, std::string> task_environment;
     std::string task_input;
     TaskCommand task_command;
@@ -581,14 +586,14 @@ ActionResponse Task::callAction(const ActionRequest& request)
         task_command = getTaskCommand(exec_prefix_ / "PowershellShim.ps1");
         task_command.arguments.push_back(task_file.string());
         // Pass input on stdin ($input)
-        task_input = task_execution_params.get<lth_jc::JsonContainer>("input").toString();
+        task_input = task_params.toString();
     } else {
         if (implementation.input_method.empty() || implementation.input_method == "stdin") {
-            task_input = task_execution_params.get<lth_jc::JsonContainer>("input").toString();
+            task_input = task_params.toString();
         }
 
         if (implementation.input_method.empty() || implementation.input_method == "environment") {
-            addParametersToEnvironment(task_execution_params.get<lth_jc::JsonContainer>("input"), task_environment);
+            addParametersToEnvironment(task_params, task_environment);
         }
 
         task_command = getTaskCommand(task_file);
