@@ -480,7 +480,7 @@ TEST_CASE("Modules::Task::executeAction implementations", "[modules][output]") {
             "{\"name\": \"multi.bat\", \"requirements\": [\"powershell\"]},"
             "{\"name\": \"invalid\"}"
             "]";
-        auto metadata = boost::format("{\"implementations\": %1%, \"input_method\": \"environment\"}") % impls;
+        auto metadata = boost::format("{\"implementations\": %1%, \"input_method\": \"environment\", \"features\": [\"foobar\"]}") % impls;
 
         auto output = e_m.executeAction(getEchoRequest(metadata)).action_metadata.get<std::string>({ "results", "stdout" });
         boost::trim(output);
@@ -497,6 +497,21 @@ TEST_CASE("Modules::Task::executeAction implementations", "[modules][output]") {
 #endif
             "]";
         auto metadata = boost::format("{\"implementations\": %1%, \"input_method\": \"environment\"}") % impls;
+
+        auto output = e_m.executeAction(getEchoRequest(metadata)).action_metadata.get<std::string>({ "results", "stdout" });
+        boost::trim(output);
+        REQUIRE(output == "hello");
+    }
+
+    SECTION("accepts features as an argument") {
+        auto impls = "["
+#ifdef _WIN32
+            "{\"name\": \"multi.bat\", \"requirements\": [\"foobar\"]}"
+#else
+            "{\"name\": \"multi\", \"requirements\": [\"foobar\"]}"
+#endif
+            "]";
+        auto metadata = boost::format("{\"implementations\": %1%, \"input_method\": \"environment\", \"features\": [\"foobar\"]}") % impls;
 
         auto output = e_m.executeAction(getEchoRequest(metadata)).action_metadata.get<std::string>({ "results", "stdout" });
         boost::trim(output);

@@ -80,6 +80,12 @@ static const std::string TASK_RUN_ACTION_INPUT_SCHEMA { R"(
         }
       }
     },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "files": {
       "type": "array",
       "items": {
@@ -547,9 +553,12 @@ ActionResponse Task::callAction(const ActionRequest& request)
     auto task_execution_params = request.params();
     auto task_metadata = task_execution_params.getWithDefault<lth_jc::JsonContainer>("metadata", task_execution_params);
 
-    auto implementations = task_metadata.getWithDefault<std::vector<lth_jc::JsonContainer>>("implementations", {});
     std::set<std::string> feats = features();
+    auto extra_feats = task_metadata.getWithDefault<std::vector<std::string>>("features", {});
+    feats.insert(extra_feats.begin(), extra_feats.end());
     LOG_DEBUG("Running task with features: {1}", boost::algorithm::join(feats, ", "));
+
+    auto implementations = task_metadata.getWithDefault<std::vector<lth_jc::JsonContainer>>("implementations", {});
     auto implementation = selectImplementation(implementations, feats);
 
     if (implementation.input_method.empty() && task_metadata.includes("input_method")) {
