@@ -159,7 +159,11 @@ Task::Task(const fs::path& exec_prefix,
     master_uris_ { master_uris },
     task_download_connect_timeout_ { task_download_connect_timeout },
     task_download_timeout_ { task_download_timeout },
-    features_ { "puppet-agent" }
+#ifdef _WIN32
+    features_ { "puppet-agent", "powershell" }
+#else
+    features_ { "puppet-agent", "shell" }
+#endif
 {
     module_name = "task";
     actions.push_back(TASK_RUN_ACTION);
@@ -544,7 +548,9 @@ ActionResponse Task::callAction(const ActionRequest& request)
     auto task_metadata = task_execution_params.getWithDefault<lth_jc::JsonContainer>("metadata", task_execution_params);
 
     auto implementations = task_metadata.getWithDefault<std::vector<lth_jc::JsonContainer>>("implementations", {});
-    auto implementation = selectImplementation(implementations, features());
+    std::set<std::string> feats = features();
+    LOG_DEBUG("Running task with features: {1}", boost::algorithm::join(feats, ", "));
+    auto implementation = selectImplementation(implementations, feats);
 
     if (implementation.input_method.empty() && task_metadata.includes("input_method")) {
         implementation.input_method = task_metadata.get<std::string>("input_method");

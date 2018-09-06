@@ -713,6 +713,11 @@ msgstr ""
 msgid "'{1}' file requested by implementation not found"
 msgstr ""
 
+#. debug
+#: lib/src/modules/task.cc
+msgid "Running task with features: {1}"
+msgstr ""
+
 #: lib/src/modules/task.cc
 msgid "unsupported task input method: {1}"
 msgstr ""
