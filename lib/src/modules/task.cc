@@ -552,11 +552,12 @@ ActionResponse Task::callAction(const ActionRequest& request)
 {
     auto task_execution_params = request.params();
     auto task_metadata = task_execution_params.getWithDefault<lth_jc::JsonContainer>("metadata", task_execution_params);
+    auto task_name = task_execution_params.get<std::string>("task");
 
     std::set<std::string> feats = features();
     auto extra_feats = task_metadata.getWithDefault<std::vector<std::string>>("features", {});
     feats.insert(extra_feats.begin(), extra_feats.end());
-    LOG_DEBUG("Running task with features: {1}", boost::algorithm::join(feats, ", "));
+    LOG_DEBUG("Running task {1} with features: {2}", task_name, boost::algorithm::join(feats, ", "));
 
     auto implementations = task_metadata.getWithDefault<std::vector<lth_jc::JsonContainer>>("implementations", {});
     auto implementation = selectImplementation(implementations, feats);
@@ -587,7 +588,6 @@ ActionResponse Task::callAction(const ActionRequest& request)
         implementation.input_method = "powershell";
     }
 
-    auto task_name = task_execution_params.get<std::string>("task");
     auto task_params = task_execution_params.get<lth_jc::JsonContainer>("input");
 
     task_params.set<std::string>("_task", task_name);
