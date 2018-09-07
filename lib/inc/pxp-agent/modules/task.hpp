@@ -73,6 +73,13 @@ class Task : public PXPAgent::Module, public PXPAgent::Util::Purgeable {
 
     leatherman::curl::client client_;
 
+    boost::filesystem::path downloadMultiFile(std::vector<leatherman::json_container::JsonContainer> const& files,
+        std::set<std::string> const& download_set,
+        boost::filesystem::path const& spool_dir);
+
+    leatherman::json_container::JsonContainer selectLibFile(std::vector<leatherman::json_container::JsonContainer> const& files,
+        std::string const& file_name);
+
     void callBlockingAction(
         const ActionRequest& request,
         const TaskCommand &command,

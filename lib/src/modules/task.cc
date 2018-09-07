@@ -72,10 +72,22 @@ static const std::string TASK_RUN_ACTION_INPUT_SCHEMA { R"(
                   "type": "string"
                 }
               },
+              "files": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
               "input_method": {
                 "type": "string"
               }
             }
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
       }
@@ -373,7 +385,7 @@ static fs::path updateTaskFile(const std::vector<std::string>& master_uris,
                                lth_curl::client& client,
                                const fs::path& cache_dir,
                                const lth_jc::JsonContainer& file) {
-    auto filename = file.get<std::string>("filename");
+    auto filename = fs::path(file.get<std::string>("filename")).filename();
     auto sha256 = file.get<std::string>("sha256");
     auto filepath = cache_dir / filename;
 
@@ -426,9 +438,116 @@ static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
     }
 }
 
+// build a spool dir for the supporting library files requested by a multifile task
+static fs::path createInstallDir(const fs::path& spool_dir, const std::set<std::string>& download_set) {
+    auto install_dir = spool_dir / fs::unique_path("temp_task_%%%%-%%%%-%%%%-%%%%");
+    fs::create_directories(install_dir);
+    fs::permissions(install_dir, NIX_DIR_PERMS);
+
+    // this should generate a unique collection of directory paths to append to install_dir
+    // for example:
+    // if files had the paths: /one/two/three.txt, /one/two/one.txt, /one/two.txt
+    // dir_structure set would contain: /one/two /one
+    std::set<fs::path> dir_structure;
+    for (auto f_name : download_set) {
+        dir_structure.insert(fs::path(f_name).parent_path());
+    }
+
+    // now create the directories to copy the required files into
+    for (auto dir_path : dir_structure) {
+        fs::path tmp = install_dir;
+        for (const fs::path &dir : dir_path) {
+            tmp /= dir;
+            fs::create_directories(tmp);
+            fs::permissions(tmp, NIX_DIR_PERMS);
+        }
+    }
+
+    return install_dir;
+}
+
+// Get a unique list of "lib" files that the task has specified in metadata
+// this involves enumerating files when directories are requested
+std::set<std::string> getMultiFiles(std::vector<std::string> const& meta_files, std::vector<std::string>  const& impl_files, std::vector<lth_jc::JsonContainer> const& files) {
+    // build set of unique files to download and exclude the selected task executable
+    std::set<std::string> download_set(meta_files.begin(), meta_files.end());
+    download_set.insert(impl_files.begin(), impl_files.end());
+    std::vector<std::string> directories;
+
+    // expand files from directories specified by trailing '/'
+    // get list of directories
+    for (auto f_name : download_set) {
+        if (f_name.back() == '/') {
+            directories.push_back(f_name);
+        }
+    }
+    // replace directories with it's child files
+    for (auto f_name : directories) {
+      download_set.erase(f_name);
+      for (auto f : files) {
+          if (f.get<std::string>("filename").substr(0, f_name.size()) == f_name) {
+              download_set.insert(f.get<std::string>("filename"));
+          }
+      }
+    }
+
+    return download_set;
+}
+
+// iterate over unique set of filenames to support task
+// copy file from cache to install_dir
+fs::path Task::downloadMultiFile(std::vector<lth_jc::JsonContainer> const& files,
+                                 std::set<std::string> const& download_set,
+                                 fs::path const& spool_dir)
+{
+    fs::file_status s = fs::status(spool_dir);
+    fs::path spool;
+    if (fs::is_directory(s)) {
+      spool = spool_dir;
+    } else {
+      spool = task_cache_dir_;
+    }
+    auto install_dir =  createInstallDir(spool, download_set);
+    for (auto file_name : download_set) {
+        // get file object info based on name
+        auto file_object = selectLibFile(files, file_name);
+
+        // get file from cache, download if necessary
+        auto lib_file = getCachedTaskFile(task_cache_dir_,
+                                       task_cache_dir_mutex_,
+                                       master_uris_,
+                                       task_download_connect_timeout_,
+                                       task_download_timeout_,
+                                       client_,
+                                       file_object);
+
+        // copy to expected location in install_dir
+        fs::copy_file(lib_file, install_dir / fs::path(file_name));
+    }
+
+    return install_dir;
+}
+
+lth_jc::JsonContainer Task::selectLibFile(std::vector<lth_jc::JsonContainer> const& files,
+                                            std::string const& file_name)
+{
+    auto file = std::find_if(files.cbegin(), files.cend(),
+        [&](lth_jc::JsonContainer const& file) {
+            auto filename = file.get<std::string>("filename");
+            return filename == file_name;
+        });
+
+    if (file == files.cend()) {
+        throw Module::ProcessingError {
+            lth_loc::format("'{1}' file requested as additional task dependency not found", file_name) };
+    }
+    return *file;
+}
+
 struct Implementation {
     std::string name;
     std::string input_method;
+    std::vector<std::string> files;
 };
 
 static Implementation selectImplementation(std::vector<lth_jc::JsonContainer> const& implementations,
@@ -453,7 +572,8 @@ static Implementation selectImplementation(std::vector<lth_jc::JsonContainer> co
 
     if (impl != implementations.cend()) {
         auto input_method = impl->getWithDefault<std::string>("input_method", {});
-        return Implementation { impl->get<std::string>("name"), input_method };
+        auto files = impl->getWithDefault<std::vector<std::string>>("files", {});
+        return Implementation { impl->get<std::string>("name"), input_method, files };
     } else {
         auto feature_list = boost::algorithm::join(features, ", ");
         throw Module::ProcessingError {
@@ -591,6 +711,20 @@ ActionResponse Task::callAction(const ActionRequest& request)
     auto task_params = task_execution_params.get<lth_jc::JsonContainer>("input");
 
     task_params.set<std::string>("_task", task_name);
+
+    std::vector<std::string> meta_files;
+    // Only get files array from top level of metatdata instead of puppetserver supplied file data
+    try {
+         meta_files = task_metadata.getWithDefault<std::vector<std::string>>("files", {});
+    } catch (const leatherman::json_container::data_type_error& e) {}
+
+    auto lib_files = getMultiFiles(meta_files, implementation.files, files);
+
+    if (lib_files.size() > 0) {
+      auto install_dir = downloadMultiFile(files, lib_files, request.resultsDir());
+      LOG_DEBUG("Multi file task _installdir: '{1}'", install_dir.string());
+      task_params.set<std::string>("_installdir", install_dir.string());
+    }
 
     std::map<std::string, std::string> task_environment;
     std::string task_input;
