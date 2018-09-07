@@ -80,6 +80,12 @@ static const std::string TASK_RUN_ACTION_INPUT_SCHEMA { R"(
         }
       }
     },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "files": {
       "type": "array",
       "items": {
@@ -159,7 +165,11 @@ Task::Task(const fs::path& exec_prefix,
     master_uris_ { master_uris },
     task_download_connect_timeout_ { task_download_connect_timeout },
     task_download_timeout_ { task_download_timeout },
-    features_ { "puppet-agent" }
+#ifdef _WIN32
+    features_ { "puppet-agent", "powershell" }
+#else
+    features_ { "puppet-agent", "shell" }
+#endif
 {
     module_name = "task";
     actions.push_back(TASK_RUN_ACTION);
@@ -542,9 +552,15 @@ ActionResponse Task::callAction(const ActionRequest& request)
 {
     auto task_execution_params = request.params();
     auto task_metadata = task_execution_params.getWithDefault<lth_jc::JsonContainer>("metadata", task_execution_params);
+    auto task_name = task_execution_params.get<std::string>("task");
+
+    std::set<std::string> feats = features();
+    auto extra_feats = task_metadata.getWithDefault<std::vector<std::string>>("features", {});
+    feats.insert(extra_feats.begin(), extra_feats.end());
+    LOG_DEBUG("Running task {1} with features: {2}", task_name, boost::algorithm::join(feats, ", "));
 
     auto implementations = task_metadata.getWithDefault<std::vector<lth_jc::JsonContainer>>("implementations", {});
-    auto implementation = selectImplementation(implementations, features());
+    auto implementation = selectImplementation(implementations, feats);
 
     if (implementation.input_method.empty() && task_metadata.includes("input_method")) {
         implementation.input_method = task_metadata.get<std::string>("input_method");
@@ -572,7 +588,6 @@ ActionResponse Task::callAction(const ActionRequest& request)
         implementation.input_method = "powershell";
     }
 
-    auto task_name = task_execution_params.get<std::string>("task");
     auto task_params = task_execution_params.get<lth_jc::JsonContainer>("input");
 
     task_params.set<std::string>("_task", task_name);
