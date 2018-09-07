@@ -31,9 +31,9 @@ def pxp_agent_dir(host)
   if (windows?(host))
     # If 32bit Puppet on 64bit Windows then Puppet will be in Program Files (x86)
     if((host.is_x86_64?) && (host[:ruby_arch] == "x86"))
-      return "/cygdrive/c/Program\\ Files\\ \\(x86\\)/Puppet\\ Labs/Puppet/pxp-agent/bin"
+      return "/cygdrive/c/Program\\ Files\\ \\(x86\\)/Puppet\\ Labs/Puppet/puppet/bin"
     end
-    return "/cygdrive/c/Program\\ Files/Puppet\\ Labs/Puppet/pxp-agent/bin"
+    return "/cygdrive/c/Program\\ Files/Puppet\\ Labs/Puppet/puppet/bin"
   end
   "/opt/puppetlabs/puppet/bin"
 end
