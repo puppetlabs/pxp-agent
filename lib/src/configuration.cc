@@ -82,14 +82,16 @@ namespace lth_util = leatherman::util;
             throw Configuration::Error {
                 lth_loc::translate("failed to retrive pxp-agent binary path") };
         }
-        // Go up twice, assuming the subtree from Puppet Specs:
-        //      C:\Program Files\Puppet Labs\Puppet\pxp-agent
-        //          bin
-        //              pxp-agent.exe
-        //          modules
-        //              pxp-module-puppet
+        // Go up three times, assuming the subtree from Puppet Specs:
+        //      C:\Program Files\Puppet Labs\Puppet
+        //          puppet
+        //              bin
+        //                  pxp-agent.exe
+        //          pxp-agent
+        //              modules
+        //                  pxp-module-puppet
         try {
-            return (fs::path(szPath).parent_path().parent_path() / "modules").string();
+            return (fs::path(szPath).parent_path().parent_path().parent_path() / "pxp-agent" / "modules").string();
         } catch (const std::exception& e) {
             throw Configuration::Error {
                 lth_loc::format("failed to determine the modules directory path: {1}",

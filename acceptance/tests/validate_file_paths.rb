@@ -24,13 +24,15 @@ def config_options(host)
       ruby_arch = /-32/
     end
     if platform =~ ruby_arch
-      pupdir = 'C:/Program Files/Puppet Labs/Puppet'
+      install_root = 'C:/Program Files/Puppet Labs/Puppet'
     else
-      pupdir = 'C:/Program Files (x86)/Puppet Labs/Puppet'
+      install_root = 'C:/Program Files (x86)/Puppet Labs/Puppet'
     end
 
-    exdir = "#{pupdir}/pxp-agent"
-    binfile = "#{exdir}/bin/pxp-agent.exe"
+    exdir = "#{install_root}/pxp-agent"
+    pupdir = "#{install_root}/puppet"
+
+    binfile = "#{pupdir}/bin/pxp-agent.exe"
     moduledir = "#{exdir}/modules"
     puppetlabs_data = "#{common_app_data}/PuppetLabs"
     confdir = "#{puppetlabs_data}/pxp-agent/etc"
@@ -39,7 +41,7 @@ def config_options(host)
     logdir = "#{vardir}/log"
     spooldir = "#{vardir}/spool"
     rundir = "#{vardir}/run"
-    nssm =  "#{pupdir}/service/nssm.exe"
+    nssm =  "#{pupdir}/bin/nssm.exe"
 
   else
     bindir = '/opt/puppetlabs/puppet/bin'
