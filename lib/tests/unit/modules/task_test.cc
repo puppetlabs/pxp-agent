@@ -212,6 +212,47 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         REQUIRE(output == "{\"message\":\"hello\",\"_task\":\"test\"}");
     }
 
+    SECTION("builds installdir") {
+        auto echo_txt =
+#ifndef _WIN32
+            (DATA_FORMAT % "\"0632\""
+                         % "\"task\""
+                         % "\"run\""
+                         % "{\"task\": \"test\","
+                           "\"input_method\": \"environment\","
+                           "\"input\":{\"message\":\"hello\"},"
+                           "\"metadata\": {\"files\": [\"dir/\"],"
+                                          "\"implementations\": [{\"name\": \"init.sh\", \"requirements\": [\"shell\"], \"files\": [\"file1.txt\"]}]},"
+                           "\"files\" : [{\"sha256\": \"2e7a9e0f046b6e2b3ee30d906ee4c6403405ab56b83b9c73d8c9bc2540bfc8b0\", \"filename\": \"init.sh\"},"
+                                        "{\"sha256\": \"67ee5478eaadb034ba59944eb977797b49ca6aa8d3574587f36ebcbeeb65f70e\", \"filename\": \"dir/file2.txt\"},"
+                                        "{\"sha256\": \"94f6e58bd04a4513b8301e75f40527cf7610c66d1960b26f6ac2e743e108bdac\", \"filename\": \"dir/sub_dir/file3.txt\"},"
+                                        "{\"sha256\": \"ecdc5536f73bdae8816f0ea40726ef5e9b810d914493075903bb90623d97b1d8\", \"filename\": \"file1.txt\"}]}").str();
+#else
+            (DATA_FORMAT % "\"0632\""
+                         % "\"task\""
+                         % "\"run\""
+                         % "{\"task\": \"test\","
+                           "\"input_method\": \"environment\","
+                           "\"input\":{\"message\":\"hello\"},"
+                           "\"metadata\": {\"files\": [\"dir/\"],"
+                                          "\"implementations\": [{\"name\": \"init.bat\", \"requirements\": [], \"files\": [\"file1.txt\"]}]},"
+                           "\"files\" : [{\"sha256\": \"83bdf04b798a1c145a6a266eef5c80cf9cbe6a8baf6f61de41aea2bf63a3496c\", \"filename\": \"init.bat\"},"
+                                        "{\"sha256\": \"67ee5478eaadb034ba59944eb977797b49ca6aa8d3574587f36ebcbeeb65f70e\", \"filename\": \"dir/file2.txt\"},"
+                                        "{\"sha256\": \"94f6e58bd04a4513b8301e75f40527cf7610c66d1960b26f6ac2e743e108bdac\", \"filename\": \"dir/sub_dir/file3.txt\"},"
+                                        "{\"sha256\": \"ecdc5536f73bdae8816f0ea40726ef5e9b810d914493075903bb90623d97b1d8\", \"filename\": \"file1.txt\"}]}").str();
+#endif
+        PCPClient::ParsedChunks echo_content {
+            lth_jc::JsonContainer(ENVELOPE_TXT),
+            lth_jc::JsonContainer(echo_txt),
+            {},
+            0 };
+        ActionRequest request { RequestType::Blocking, echo_content };
+
+        auto output = e_m.executeAction(request).action_metadata.get<std::string>({"results", "stdout"});
+        boost::trim(output);
+        REQUIRE(output == "file1\nfile2\nfile3");
+    }
+
     SECTION("passes input only on stdin when input_method is stdin") {
         auto echo_txt =
 #ifndef _WIN32
