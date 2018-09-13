@@ -698,6 +698,10 @@ msgid "Verifying task file based on {1}"
 msgstr ""
 
 #: lib/src/modules/task.cc
+msgid "'{1}' file requested as additional task dependency not found"
+msgstr ""
+
+#: lib/src/modules/task.cc
 msgid "no implementations match supported features: {1}"
 msgstr ""
 
@@ -716,6 +720,11 @@ msgstr ""
 
 #: lib/src/modules/task.cc
 msgid "unsupported task input method: {1}"
+msgstr ""
+
+#. debug
+#: lib/src/modules/task.cc
+msgid "Multi file task _installdir: '{1}'"
 msgstr ""
 
 #. debug
