@@ -3,8 +3,6 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'Attempt to start pxp-agent with invalid SSL config'
 
-skip_test 'Reworking alternate CA generation, not worth blocking release'
-
 # On teardown, restore valid config file on each agent
 teardown do
   agents.each do |agent|
@@ -12,15 +10,6 @@ teardown do
     create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
     on agent, puppet('resource service pxp-agent ensure=running')
   end
-end
-
-master_temp_ca_dir = master.tmpdir('alternate_ssl')
-master_temp_conf = File.join(master_temp_ca_dir, 'puppet.conf')
-step 'Create alternate CA on the master' do
-  create_remote_file(master, master_temp_conf, "ssldir = #{master_temp_ca_dir}")
-  on master, "puppetserver ca setup --conf #{master_temp_conf}"
-  certnames = agents.map(&:to_s).join(',')
-  on master, "puppetserver ca generate --conf #{master_temp_conf} --certname #{certnames}"
 end
 
 agents.each do |agent|
@@ -36,11 +25,16 @@ agents.each do |agent|
     alternate_ca_cert = "#{temp_ca_dir}/certs/ca.pem"
   end
 
-  step 'Copy alternate certs to a temp folder' do
+  step 'Create alternate CA on the master and copy to agent temp folder' do
+    master_temp_ca_dir = master.tmpdir('alternate_ssl')
+    master_temp_conf = File.join(master_temp_ca_dir, 'puppet.conf')
+    create_remote_file(master, master_temp_conf, "ssldir = #{master_temp_ca_dir}")
+    on master, "puppetserver ca setup --conf #{master_temp_conf} --certname #{agent}"
+
     on agent, "mkdir -p #{temp_ca_dir}/certs #{temp_ca_dir}/private_keys"
     ["certs/#{agent}.pem", "private_keys/#{agent}.pem", 'certs/ca.pem'].each do |cert|
-      scp_from(master, File.join(master_temp_ca_dir, cert), 'tmp/alt_ssl.pem')
-      scp_to(agent, "tmp/alt_ssl.pem", File.join(temp_ca_dir, cert))
+      scp_from(master, File.join(master_temp_ca_dir, cert), 'tmp')
+      scp_to(agent, "tmp/#{File.basename(cert)}", File.join(temp_ca_dir, File.dirname(cert)))
     end
   end
 
