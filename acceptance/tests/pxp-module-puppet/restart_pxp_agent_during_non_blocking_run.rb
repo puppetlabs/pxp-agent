@@ -15,6 +15,7 @@ test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent serv
     unless applicable_agents.empty? then
       stop_sleep_process(applicable_agents, SECONDS_TO_SLEEP, true)
     end
+    sleep 3000
   end
 
   env_name = test_file_name = File.basename(__FILE__, '.*')
