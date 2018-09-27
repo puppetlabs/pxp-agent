@@ -15,7 +15,7 @@ teardown do
     # 'puppet resource service pxp-agent' will not work as expected
     # Workaround: stop/start it using net
     if(windows?(agent)) then
-      on(agent, 'net stop pxp-agent', :fail_on_fail => false) # Will error if already stopped, ignore
+      on(agent, 'net stop pxp-agent', :accept_all_exit_codes => true) # Will error if already stopped, ignore
       on(agent, 'net start pxp-agent')
     end
     on(agent, puppet('resource service pxp-agent ensure=running'))
