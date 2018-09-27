@@ -80,9 +80,21 @@ test_name 'C94705 - Run Puppet (non-blocking request) and restart pxp-agent serv
     end
 
     step 'Check response of puppet run' do
-      check_puppet_non_blocking_response(agent_identity, transaction_id,
-                                         STATUS_QUERY_MAX_RETRIES, STATUS_QUERY_INTERVAL_SECONDS,
-                                         'changed', environment_name)
+      begin
+        check_puppet_non_blocking_response(agent_identity, transaction_id,
+                                           STATUS_QUERY_MAX_RETRIES, STATUS_QUERY_INTERVAL_SECONDS,
+                                           'changed', environment_name)
+      rescue => e
+        step "Received error #{e}, retrying request" do
+          # Our operational model allows for lost requests, and expects retries by the caller.
+          # We've seen rare cases where pxp-agent stop/start happens without the pcp-broker getting
+          # a disconnect signal, causing messages to be lost and later pxp-agent to reconnect with
+          # a Superseded message in the broker's log. Under that scenario retry the request once.
+          check_puppet_non_blocking_response(agent_identity, transaction_id,
+                                             STATUS_QUERY_MAX_RETRIES, STATUS_QUERY_INTERVAL_SECONDS,
+                                             'changed', environment_name)
+        end
+      end
     end
   end
 end
