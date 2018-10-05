@@ -28,7 +28,7 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/format.hpp>
-#include <boost/math/common_factor_rt.hpp>
+#include <boost/integer/common_factor_rt.hpp>
 
 #include <vector>
 #include <atomic>
@@ -936,7 +936,7 @@ static unsigned int minutes_gcd(std::vector<std::shared_ptr<Util::Purgeable>> pu
     if (purgeables.size() > 1) {
         return std::accumulate(purgeables.begin()+1, purgeables.end(), init,
             [](unsigned int result, std::shared_ptr<Util::Purgeable> &p) {
-                return boost::math::gcd(result, Timestamp::getMinutes(p->get_ttl()));
+                return boost::integer::gcd(result, Timestamp::getMinutes(p->get_ttl()));
             });
     } else {
         return init;
