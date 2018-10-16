@@ -236,6 +236,11 @@ static Module::ProcessingError toModuleProcessingError(const fs::filesystem_erro
 // A define is used here because creating a local variable is subject to static initialization ordering.
 #define NIX_TASK_FILE_PERMS NIX_DIR_PERMS
 
+static void createDir(const fs::path& dir) {
+    fs::create_directories(dir);
+    fs::permissions(dir, NIX_DIR_PERMS);
+}
+
 // Creates the <task_cache_dir>/<sha256> directory (and parent dirs) for a single
 // task, ensuring that its permissions are readable by
 // the PXP agent owner/group (for unix OSes), writable for the PXP agent owner,
@@ -244,9 +249,8 @@ static Module::ProcessingError toModuleProcessingError(const fs::filesystem_erro
 // will not fail if the directory already exists.
 static fs::path createCacheDir(const fs::path& task_cache_dir, const std::string& sha256) {
     auto cache_dir = task_cache_dir / sha256;
-    fs::create_directories(cache_dir);
+    createDir(cache_dir);
     fs::last_write_time(cache_dir, time(nullptr));
-    fs::permissions(cache_dir, NIX_DIR_PERMS);
     return cache_dir;
 }
 
@@ -441,8 +445,7 @@ static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
 // build a spool dir for the supporting library files requested by a multifile task
 static fs::path createInstallDir(const fs::path& spool_dir, const std::set<std::string>& download_set) {
     auto install_dir = spool_dir / fs::unique_path("temp_task_%%%%-%%%%-%%%%-%%%%");
-    fs::create_directories(install_dir);
-    fs::permissions(install_dir, NIX_DIR_PERMS);
+    createDir(install_dir);
 
     // this should generate a unique collection of directory paths to append to install_dir
     // for example:
@@ -458,8 +461,7 @@ static fs::path createInstallDir(const fs::path& spool_dir, const std::set<std::
         fs::path tmp = install_dir;
         for (const fs::path &dir : dir_path) {
             tmp /= dir;
-            fs::create_directories(tmp);
-            fs::permissions(tmp, NIX_DIR_PERMS);
+            createDir(tmp);
         }
     }
 
@@ -507,7 +509,7 @@ fs::path Task::downloadMultiFile(std::vector<lth_jc::JsonContainer> const& files
     } else {
       spool = task_cache_dir_;
     }
-    auto install_dir =  createInstallDir(spool, download_set);
+    auto install_dir = createInstallDir(spool, download_set);
     for (auto file_name : download_set) {
         // get file object info based on name
         auto file_object = selectLibFile(files, file_name);
@@ -722,6 +724,13 @@ ActionResponse Task::callAction(const ActionRequest& request)
 
     if (lib_files.size() > 0) {
       auto install_dir = downloadMultiFile(files, lib_files, request.resultsDir());
+      auto module = task_name.substr(0, task_name.find(':'));
+      createDir(install_dir / module);
+      createDir(install_dir / module / "tasks");
+      auto task_dest = install_dir / module / "tasks" / task_file.filename();
+      fs::copy_file(task_file, task_dest);
+      task_file = task_dest;
+
       LOG_DEBUG("Multi file task _installdir: '{1}'", install_dir.string());
       task_params.set<std::string>("_installdir", install_dir.string());
     }

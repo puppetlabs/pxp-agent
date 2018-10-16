@@ -18,7 +18,7 @@ test_name 'run multi file ruby task' do
       task_body = <<-'TASK'
 #!/opt/puppetlabs/puppet/bin/ruby
 require 'json'
-file1 = File.read(File.join(ENV['PT__installdir'], 'file1.txt'))
+file1 = File.read(File.join(__dir__, '..', '..', 'file1.txt'))
 file2 =  File.read(File.join(ENV['PT__installdir'], 'dir', 'file2.txt'))
 file3 =  File.read(File.join(ENV['PT__installdir'], 'dir', 'sub_dir', 'file3.txt'))
 results = { "file1" => file1, "file2" => file2, "file3" => file3 }
