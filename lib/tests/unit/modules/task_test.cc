@@ -223,10 +223,11 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
                            "\"input\":{\"message\":\"hello\"},"
                            "\"metadata\": {\"files\": [\"dir/\"],"
                                           "\"implementations\": [{\"name\": \"init.sh\", \"requirements\": [\"shell\"], \"files\": [\"file1.txt\"]}]},"
-                           "\"files\" : [{\"sha256\": \"2e7a9e0f046b6e2b3ee30d906ee4c6403405ab56b83b9c73d8c9bc2540bfc8b0\", \"filename\": \"init.sh\"},"
+                           "\"files\" : [{\"sha256\": \"28dd63928f9e3837e11e36f5af35c09068e4d62b355cf169a873a0cdf30f7c95\", \"filename\": \"init.sh\"},"
                                         "{\"sha256\": \"67ee5478eaadb034ba59944eb977797b49ca6aa8d3574587f36ebcbeeb65f70e\", \"filename\": \"dir/file2.txt\"},"
                                         "{\"sha256\": \"94f6e58bd04a4513b8301e75f40527cf7610c66d1960b26f6ac2e743e108bdac\", \"filename\": \"dir/sub_dir/file3.txt\"},"
                                         "{\"sha256\": \"ecdc5536f73bdae8816f0ea40726ef5e9b810d914493075903bb90623d97b1d8\", \"filename\": \"file1.txt\"}]}").str();
+        auto task_path = fs::path(TASK_CACHE_DIR) / "28dd63928f9e3837e11e36f5af35c09068e4d62b355cf169a873a0cdf30f7c95" / "init.sh";
 #else
             (DATA_FORMAT % "\"0632\""
                          % "\"task\""
@@ -236,11 +237,14 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
                            "\"input\":{\"message\":\"hello\"},"
                            "\"metadata\": {\"files\": [\"dir/\"],"
                                           "\"implementations\": [{\"name\": \"init.bat\", \"requirements\": [], \"files\": [\"file1.txt\"]}]},"
-                           "\"files\" : [{\"sha256\": \"83bdf04b798a1c145a6a266eef5c80cf9cbe6a8baf6f61de41aea2bf63a3496c\", \"filename\": \"init.bat\"},"
+                           "\"files\" : [{\"sha256\": \"ea7d652bfe797121a7ac8e3654aacf7d50a9a4665e843669b873995b072d820b\", \"filename\": \"init.bat\"},"
                                         "{\"sha256\": \"67ee5478eaadb034ba59944eb977797b49ca6aa8d3574587f36ebcbeeb65f70e\", \"filename\": \"dir/file2.txt\"},"
                                         "{\"sha256\": \"94f6e58bd04a4513b8301e75f40527cf7610c66d1960b26f6ac2e743e108bdac\", \"filename\": \"dir/sub_dir/file3.txt\"},"
                                         "{\"sha256\": \"ecdc5536f73bdae8816f0ea40726ef5e9b810d914493075903bb90623d97b1d8\", \"filename\": \"file1.txt\"}]}").str();
+        auto task_path = fs::path(TASK_CACHE_DIR) / "ea7d652bfe797121a7ac8e3654aacf7d50a9a4665e843669b873995b072d820b" / "init.bat";
 #endif
+        std::ifstream task_file { task_path.string() };
+        std::string task_content { std::istreambuf_iterator<char>{task_file}, {} };
         PCPClient::ParsedChunks echo_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
             lth_jc::JsonContainer(echo_txt),
@@ -250,7 +254,8 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
 
         auto output = e_m.executeAction(request).action_metadata.get<std::string>({"results", "stdout"});
         boost::trim(output);
-        REQUIRE(output == "file1\nfile2\nfile3");
+        boost::trim(task_content);
+        REQUIRE(output == "file1\nfile2\nfile3\n"+task_content);
     }
 
     SECTION("passes input only on stdin when input_method is stdin") {
