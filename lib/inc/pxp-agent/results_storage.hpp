@@ -19,7 +19,7 @@ namespace PXPAgent {
 // NOTE(ale): possible execptions thrown while inspecting files are
 // propagated by ResultsStorage methods (more specifically, errors
 // raised by boost::filesystem::exists() are not filtered).
-class ResultsStorage : public PXPAgent::Util::Purgeable {
+class ResultsStorage final : public PXPAgent::Util::Purgeable {
   public:
     struct Error : public std::runtime_error {
         explicit Error(std::string const& msg) : std::runtime_error(msg) {}
