@@ -5,6 +5,9 @@ require 'fileutils'
 test_name 'Set up SSL certs for pcp-client to use'
 
 step 'On master create certs for the host running pcp-client' do
+  master_fqdn = on(master, 'facter fqdn').stdout.strip
+  on master, puppet("config set server #{master_fqdn} --section main")
+
   hostname = Socket.gethostname.downcase
   on master, "puppetserver ca generate --certname #{hostname}"
   on(master, puppet('config print ssldir')) do |result|
