@@ -29,7 +29,6 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for it to be
   end
 
   step 'Start long-running Puppet agent jobs' do
-
     agents.each do |agent|
       on agent, puppet('agent', '--test', '--environment', environment_name, '--server', "#{master}",
                        '</dev/null >/dev/null 2>&1 & echo $!')
