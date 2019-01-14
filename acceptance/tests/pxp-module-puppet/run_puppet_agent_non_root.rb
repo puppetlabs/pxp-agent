@@ -8,7 +8,7 @@ test_name  'Run puppet agent as non-root' do
     skip_test "Test is not compatible with #{platform}" if platform =~ /windows/
 
     step 'create non-root user on all nodes' do
-      @user_name = 'foo'
+      @user_name = platform =~ /osx-10.14/ ? 'osx' : 'foo'
       @group_name = 'foobar'
       if platform =~ /solaris/
         @user_home_dir = "/export/home/#{@user_name}"
