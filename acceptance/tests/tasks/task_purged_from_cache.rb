@@ -26,15 +26,21 @@ test_name 'remove old task from pxp-agent cache' do
     end
   end
 
-  step "Create #{task_name} task on agent hosts and run it to populate cache" do
-    win_agents, nix_agents = agents.partition { |agent| windows?(agent) }
-    [[win_agents, '@echo %PT_message%'], [nix_agents, "#!/bin/sh\necho $PT_message"]].each do |targets, task_body|
-      targets.each do |agent|
-        @sha256 = create_task_on(agent, task_name, 'init.bat', task_body)
+  step "Create #{task_name} task on agent hosts" do
+    agents.each do |agent|
+      if agent['platform'] =~ /win/
+        task_body = '@echo %PT_message%'
+      else
+        task_body = "#!/bin/sh\necho $PT_message"
       end
-      files = [file_entry('init.bat', @sha256)]
-      run_successful_task(master, targets, task_name, files, {:message => 'hello'}){}
+
+      @sha256 = create_task_on(agent, task_name, 'init.bat', task_body)
     end
+  end
+
+  step "Run #{task_name} task on agent hosts to populate cache" do
+    files = [file_entry('init.bat', @sha256)]
+    run_successful_task(master, agents, task_name, files, input: {:message => 'hello'}){}
   end
 
   step 'Update access time on file and restart pxp-agent to trigger cache purge' do
