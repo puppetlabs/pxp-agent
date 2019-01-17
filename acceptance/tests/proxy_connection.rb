@@ -87,7 +87,6 @@ test_name 'Connect via proxy' do
       assert(is_associated?(master, "pcp://#{agent}/agent"),
              "Agent #{agent} with PCP identity pcp://#{agent}/agent should be associated with pcp-broker")
     end
-    clear_squid_log(master)
   end
 
   step 'Download and run the task on agent hosts via proxy' do
@@ -117,9 +116,9 @@ test_name 'Connect via proxy' do
         # stop agent to ensure log is generated in proxy access log
         on(agent, puppet('resource service pxp-agent ensure=stopped'))
       end
-      # each agent should have an entry in squid proxy log
+      # each agent should have two entries in squid proxy log
       on(master, "cat #{squid_log}") do |result|
-        assert_equal(agents.length, result.stdout.split("\n").length)
+        assert_equal(result.stdout.split("\n").length, agents.length * 2)
         assert_match(/CONNECT #{master}/, result.stdout, 'Proxy logs did not indicate use of the proxy.' )
       end
       clear_squid_log(master)
