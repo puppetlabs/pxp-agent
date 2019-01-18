@@ -49,6 +49,18 @@ def assert_running
   end
 end
 
+def sysv?(platform)
+  if platform.variant =~ /redhat|centos/ && platform.version.to_i < 7
+    return true
+  elsif platform.variant =~ /sles/ && platform.version.to_i < 12
+    return true
+  elsif platform.variant =~ /ubuntu/ && platform.version.to_i < 15
+    return true
+  else
+    return false
+  end
+end
+
 agents.each_with_index do |agent, i|
   @agent = agent
 
@@ -64,6 +76,17 @@ agents.each_with_index do |agent, i|
   step 'C93069 - Service Stop (from running, with configuration)' do
     stop_service
     assert_stopped
+  end
+
+  if sysv?(@agent['platform'])
+    step '`service stop` stops all pxp-agent processes' do
+      start_service
+      assert_running
+      on(@agent, "rm -rf /var/run/puppetlabs/pxp-agent.pid")
+      on(@agent, "service pxp-agent restart")
+      pids = on(@agent, "pgrep -u `whoami` -f /opt/puppetlabs/puppet/bin/pxp-agent").stdout.split("\n")
+      assert_equal(1, pids.length, "Expected 1 pxp-agent process, got #{pids.length}")
+    end
   end
 
   # Solaris service administration will prevent the service from starting

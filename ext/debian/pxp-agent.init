@@ -32,7 +32,15 @@ start_pxp_agent() {
 }
 
 stop_pxp_agent() {
-    start-stop-daemon --stop --retry TERM/10/KILL/5 --quiet --oknodo --pidfile $pidfile --name $prog && rm -f "${pidfile}"
+    start-stop-daemon --stop --retry TERM/10/KILL/5 --quiet --oknodo --pidfile $pidfile --name $prog
+
+    pids=$(pgrep -u `whoami` -x $prog)
+    if [ -n "${pids}" ]; then
+        trap '' TERM
+        pkill -TERM  -u `whoami` -f $exec 2>/dev/null
+        trap TERM
+    fi
+    rm -f "${pidfile}"
 }
 
 restart_pxp_agent() {
