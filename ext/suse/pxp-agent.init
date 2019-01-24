@@ -103,9 +103,19 @@ case "$1" in
             fi
         fi
 
-        killproc -QUIT -p "${pidfile}" "${exec}" && rm -f "${lockfile}" "${pidfile}"
-        # Remember status and be verbose
-        rc_status -v
+        if [ ! $done ]; then
+          killproc -QUIT -p "${pidfile}" "${exec}" && rm -f "${lockfile}" "${pidfile}"
+          # Remember status and be verbose
+          rc_status -v
+        fi
+
+        pids=$(pgrep -u `whoami` -f $exec)
+        # Ensure we killed all pxp-agent processes owned by the current user
+        if [ -n "${pids}" ]; then
+          trap '' TERM
+          pkill -TERM  -u `whoami` -f $exec 2>/dev/null
+          trap TERM
+        fi
         ;;
     try-restart|condrestart)
         ## Stop the service and if this succeeds (i.e. the

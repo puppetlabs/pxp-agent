@@ -55,6 +55,15 @@ stop() {
             RETVAL=$?
         fi
     fi
+
+    pids=$(pgrep -u `whoami` -x $prog)
+    # Ensure we killed all pxp-agent processes owned by the current user
+    if [ -n "${pids}" ]; then
+        trap '' TERM
+        pkill -TERM  -u `whoami` -f $exec 2>/dev/null
+        trap TERM
+    fi
+
     echo
     [ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
     return $RETVAL
