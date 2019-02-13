@@ -18,6 +18,8 @@
         </array>
         <key>RunAtLoad</key>
         <true/>
+        <key>Disabled</key>
+        <true/>
         <key>StandardErrorPath</key>
         <string>/var/log/puppetlabs/pxp-agent/pxp-agent.log</string>
         <key>StandardOutPath</key>
