@@ -40,7 +40,11 @@ bool ResultsStorage::find(const std::string& transaction_id)
     return fs::exists(p) && fs::is_directory(p);
 }
 
-static void writeMetadata(const std::string& txt, const std::string& file_path) {
+static void writeMetadata(const lth_jc::JsonContainer& metadata, const std::string& file_path) {
+    // Redact "request_params" key in case parameters are sensitive.
+    lth_jc::JsonContainer metadata_ { metadata };
+    metadata_.set<std::string>("request_params", "{}");
+    std::string txt = metadata_.toString() + "\n";
     try {
         lth_file::atomic_write_to_file(txt, file_path, NIX_FILE_PERMS, std::ios::binary);
     } catch (const std::exception& e) {
@@ -68,7 +72,7 @@ void ResultsStorage::initializeMetadataFile(const std::string& transaction_id,
     }
 
     auto metadata_file = (results_path / METADATA).string();
-    writeMetadata(metadata.toString() + "\n", metadata_file);
+    writeMetadata(metadata, metadata_file);
 }
 
 void ResultsStorage::updateMetadataFile(const std::string& transaction_id,
@@ -80,7 +84,7 @@ void ResultsStorage::updateMetadataFile(const std::string& transaction_id,
                             transaction_id) };
 
     auto metadata_file = (spool_dir_path_ / transaction_id / METADATA).string();
-    writeMetadata(metadata.toString() + "\n", metadata_file);
+    writeMetadata(metadata, metadata_file);
 }
 
 lth_jc::JsonContainer
