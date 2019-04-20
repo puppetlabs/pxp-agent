@@ -99,7 +99,7 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
     dummy_metadata.set<std::string>("requester", "foo");
     dummy_metadata.set<std::string>("module", "reverse_valid");
     dummy_metadata.set<std::string>("action", "string");
-    dummy_metadata.set<std::string>("request_params", "{}");
+    dummy_metadata.set<std::string>("request_params", "abc");
     dummy_metadata.set<std::string>("transaction_id", "0");
     dummy_metadata.set<std::string>("request_id", "0");
     dummy_metadata.set<bool>("notify_outcome", false);
@@ -197,8 +197,10 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
             REQUIRE_NOTHROW(r_p.processRequest(RequestType::NonBlocking, p_c));
             REQUIRE(c_ptr->sent_provisional_response);
 
-            // Verify metadata file wasn't updated, i.e. no action was run.
-            REQUIRE(dummy_metadata.toString() == test_storage.getActionMetadata(t_id).toString());
+            // Verify metadata file wasn't updated, i.e. no action was run. "request_params" should be emptied to
+            // prevent writing sensitive metadata to disk.
+            dummy_metadata.set<std::string>("request_params", "{}");
+            REQUIRE(dummy_metadata.toString().compare(test_storage.getActionMetadata(t_id).toString()) == 0);
         }
 
         SECTION("send a provisional response when a duplicate request for a forgotten"
@@ -234,8 +236,10 @@ TEST_CASE("Process correctly requests for external modules", "[component]") {
             REQUIRE_NOTHROW(r_p2.processRequest(RequestType::NonBlocking, p_c));
             REQUIRE(c_ptr->sent_provisional_response);
 
-            // Verify metadata file wasn't updated, i.e. no action was run.
-            REQUIRE(dummy_metadata.toString() == test_storage.getActionMetadata(t_id).toString());
+            // Verify metadata file wasn't updated, i.e. no action was run. "request_params" should be emptied to
+            // prevent writing sensitive metadata to disk.
+            dummy_metadata.set<std::string>("request_params", "{}");
+            REQUIRE(dummy_metadata.toString().compare(test_storage.getActionMetadata(t_id).toString()) == 0);
         }
 
         SECTION("send a non-blocking response when the requested action succeeds") {

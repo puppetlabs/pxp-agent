@@ -217,8 +217,6 @@ RequestProcessor::~RequestProcessor()
 void RequestProcessor::processRequest(const RequestType& request_type,
                                       const PCPClient::ParsedChunks& parsed_chunks)
 {
-    LOG_TRACE("About to validate and process PXP request message: {1}",
-              parsed_chunks.toString());
     try {
         // Inspect and validate the request message format
         ActionRequest request { request_type, parsed_chunks };
