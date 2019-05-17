@@ -31,6 +31,7 @@ set(LIBRARY_COMMON_SOURCES
     src/modules/echo.cc
     src/modules/ping.cc
     src/modules/task.cc
+    src/modules/command.cc
 )
 
 if (UNIX)
