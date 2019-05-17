@@ -1,6 +1,7 @@
 #include <pxp-agent/modules/task.hpp>
 #include <pxp-agent/configuration.hpp>
 #include <pxp-agent/time.hpp>
+#include <pxp-agent/util/utf8.hpp>
 
 #include <cpp-pcp-client/util/chrono.hpp>
 
@@ -14,12 +15,6 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/nowide/cstdio.hpp>
 #include <boost/system/error_code.hpp>
-
-#include <rapidjson/rapidjson.h>
-#if RAPIDJSON_MAJOR_VERSION > 1 || RAPIDJSON_MAJOR_VERSION == 1 && RAPIDJSON_MINOR_VERSION >= 1
-// Header for StringStream was added in rapidjson 1.1 in a backwards incompatible way.
-#include <rapidjson/stream.h>
-#endif
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.modules.task"
 #include <leatherman/logging/logging.hpp>
@@ -770,20 +765,6 @@ ActionResponse Task::callAction(const ActionRequest& request)
     return response;
 }
 
-static bool isValidUTF8(std::string &s)
-{
-    rapidjson::StringStream source(s.data());
-    rapidjson::InsituStringStream target(&s[0]);
-
-    target.PutBegin();
-    while (source.Tell() < s.size()) {
-        if (!rapidjson::UTF8<char>::Validate(source, target)) {
-            return false;
-        }
-    }
-    return true;
-}
-
 void Task::processOutputAndUpdateMetadata(ActionResponse& response)
 {
     if (response.output.std_out.empty()) {
@@ -807,7 +788,7 @@ void Task::processOutputAndUpdateMetadata(ActionResponse& response)
 
     std::string &output = response.output.std_out;
 
-    if (isValidUTF8(output)) {
+    if (Util::isValidUTF8(output)) {
         // Return all relevant results: exitcode, stdout, stderr.
         lth_jc::JsonContainer result;
         result.set("exitcode", response.output.exitcode);
