@@ -140,19 +140,33 @@ static const std::string TASK_WRAPPER_EXECUTABLE { "task_wrapper" };
 #endif
 
 // Hard-code interpreters on Windows. On non-Windows, we still rely on permissions and #!
-static const std::map<std::string, std::function<TaskCommand(std::string)>> BUILTIN_TASK_INTERPRETERS {
+static const std::map<std::string, std::function<std::pair<std::string, std::vector<std::string>>(std::string)>> BUILTIN_TASK_INTERPRETERS {
 #ifdef _WIN32
-    {".rb",  [](std::string filename) { return TaskCommand {
+    {".rb",  [](std::string filename) { return std::pair<std::string, std::vector<std::string>> {
         "ruby", { filename }
     }; }},
-    {".pp",  [](std::string filename) { return TaskCommand {
+    {".pp",  [](std::string filename) { return std::pair<std::string, std::vector<std::string>> {
         "puppet", { "apply", filename }
     }; }},
-    {".ps1", [](std::string filename) { return TaskCommand {
-        "powershell", { "-NoProfile", "-NonInteractive", "-NoLogo", "-ExecutionPolicy", "Bypass", "-File", filename }
+    {".ps1", [](std::string filename) { return std::pair<std::string, std::vector<std::string>> {
+        "powershell",
+        { "-NoProfile", "-NonInteractive", "-NoLogo", "-ExecutionPolicy", "Bypass", "-File", filename }
     }; }}
 #endif
 };
+
+static void findExecutableAndArguments(const fs::path& task_file, Util::CommandObject& cmd)
+{
+    auto builtin = BUILTIN_TASK_INTERPRETERS.find(task_file.extension().string());
+
+    if (builtin != BUILTIN_TASK_INTERPRETERS.end()) {
+        auto details = builtin->second(task_file.string());
+        cmd.executable = details.first;
+        cmd.arguments = details.second;
+    } else {
+        cmd.executable = task_file.string();
+    }
+}
 
 Task::Task(const fs::path& exec_prefix,
            const std::string& task_cache_dir,
@@ -165,8 +179,8 @@ Task::Task(const fs::path& exec_prefix,
            uint32_t task_download_connect_timeout,
            uint32_t task_download_timeout,
            std::shared_ptr<ResultsStorage> storage) :
+    BoltModule { std::move(storage) },
     Purgeable { task_cache_dir_purge_ttl },
-    storage_ { std::move(storage) },
     task_cache_dir_ { task_cache_dir },
     exec_prefix_ { exec_prefix },
     master_uris_ { master_uris },
@@ -204,16 +218,6 @@ static void addParametersToEnvironment(const lth_jc::JsonContainer &input, std::
         auto val = input.type(k) == lth_jc::String ? input.get<std::string>(k) : input.toString(k);
         environment.emplace("PT_"+k, move(val));
     }
-}
-
-static TaskCommand getTaskCommand(const fs::path &task_executable)
-{
-    auto builtin = BUILTIN_TASK_INTERPRETERS.find(task_executable.extension().string());
-    if (builtin != BUILTIN_TASK_INTERPRETERS.end()) {
-        return builtin->second(task_executable.string());
-    }
-
-    return TaskCommand { task_executable.string(), { } };
 }
 
 // Converts boost filesystem errors to a task_error object.
@@ -604,68 +608,7 @@ static lth_jc::JsonContainer selectTaskFile(std::vector<lth_jc::JsonContainer> c
     return *file;
 }
 
-void Task::callBlockingAction(
-    const ActionRequest& request,
-    const TaskCommand &command,
-    const std::map<std::string, std::string> &environment,
-    const std::string &input,
-    ActionResponse &response
-) {
-    auto exec = lth_exec::execute(
-        command.executable,
-        command.arguments,
-        input,
-        environment,
-        0,  // timeout
-        leatherman::util::option_set<lth_exec::execution_options> {
-            lth_exec::execution_options::thread_safe,
-            lth_exec::execution_options::merge_environment,
-            lth_exec::execution_options::inherit_locale });  // options
-
-    response.output = ActionOutput { exec.exit_code, exec.output, exec.error };
-    processOutputAndUpdateMetadata(response);
-}
-
-void Task::callNonBlockingAction(
-    const ActionRequest& request,
-    const TaskCommand &command,
-    const std::map<std::string, std::string> &environment,
-    const std::string &input,
-    ActionResponse &response
-) {
-    const fs::path &results_dir = request.resultsDir();
-    lth_jc::JsonContainer wrapper_input;
-
-    wrapper_input.set<std::string>("executable", command.executable);
-    wrapper_input.set<std::vector<std::string>>("arguments", command.arguments);
-    wrapper_input.set<std::string>("input", input);
-    wrapper_input.set<std::string>("stdout", (results_dir / "stdout").string());
-    wrapper_input.set<std::string>("stderr", (results_dir / "stderr").string());
-    wrapper_input.set<std::string>("exitcode", (results_dir / "exitcode").string());
-
-    auto exec = lth_exec::execute(
-        (exec_prefix_ / TASK_WRAPPER_EXECUTABLE).string(),
-        {},
-        wrapper_input.toString(),
-        environment,
-        [results_dir](size_t pid) {
-            auto pid_file = (results_dir / "pid").string();
-            lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file,
-                                           NIX_FILE_PERMS, std::ios::binary);
-        },  // pid callback
-        0,  // timeout
-        leatherman::util::option_set<lth_exec::execution_options> {
-            lth_exec::execution_options::thread_safe,
-            lth_exec::execution_options::create_detached_process,
-            lth_exec::execution_options::merge_environment,
-            lth_exec::execution_options::inherit_locale });  // options
-
-    // Stdout / stderr output should be on file; read it
-    response.output = storage_->getOutput(request.transactionId(), exec.exit_code);
-    processOutputAndUpdateMetadata(response);
-}
-
-ActionResponse Task::callAction(const ActionRequest& request)
+Util::CommandObject Task::buildCommandObject(const ActionRequest& request)
 {
     auto task_execution_params = request.params();
     auto task_metadata = task_execution_params.getWithDefault<lth_jc::JsonContainer>("metadata", task_execution_params);
@@ -686,7 +629,7 @@ ActionResponse Task::callAction(const ActionRequest& request)
     static std::set<std::string> input_methods{{"stdin", "environment", "powershell"}};
     if (!implementation.input_method.empty() && input_methods.count(implementation.input_method) == 0) {
         throw Module::ProcessingError {
-            lth_loc::format("unsupported task input method: {1}", implementation.input_method) };
+                lth_loc::format("unsupported task input method: {1}", implementation.input_method) };
     }
 
     auto files = task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files");
@@ -712,106 +655,76 @@ ActionResponse Task::callAction(const ActionRequest& request)
     std::vector<std::string> meta_files;
     // Only get files array from top level of metatdata instead of puppetserver supplied file data
     try {
-         meta_files = task_metadata.getWithDefault<std::vector<std::string>>("files", {});
+        meta_files = task_metadata.getWithDefault<std::vector<std::string>>("files", {});
     } catch (const leatherman::json_container::data_type_error& e) {}
 
     auto lib_files = getMultiFiles(meta_files, implementation.files, files);
 
     if (lib_files.size() > 0) {
-      auto install_dir = downloadMultiFile(files, lib_files, request.resultsDir());
-      auto module = task_name.substr(0, task_name.find(':'));
-      createDir(install_dir / module);
-      createDir(install_dir / module / "tasks");
-      auto task_dest = install_dir / module / "tasks" / task_file.filename();
-      fs::copy_file(task_file, task_dest);
-      task_file = task_dest;
+        auto install_dir = downloadMultiFile(files, lib_files, request.resultsDir());
+        auto module = task_name.substr(0, task_name.find(':'));
+        createDir(install_dir / module);
+        createDir(install_dir / module / "tasks");
+        auto task_dest = install_dir / module / "tasks" / task_file.filename();
+        fs::copy_file(task_file, task_dest);
+        task_file = task_dest;
 
-      LOG_DEBUG("Multi file task _installdir: '{1}'", install_dir.string());
-      task_params.set<std::string>("_installdir", install_dir.string());
+        LOG_DEBUG("Multi file task _installdir: '{1}'", install_dir.string());
+        task_params.set<std::string>("_installdir", install_dir.string());
     }
 
-    std::map<std::string, std::string> task_environment;
-    std::string task_input;
-    TaskCommand task_command;
+    // Build a command to run
+    Util::CommandObject task_command { "", {}, {}, "", nullptr };
+
+    auto task_file_path = fs::path { task_file };
 
     if (implementation.input_method == "powershell") {
-        // Run using the powershell shim
-        task_command = getTaskCommand(exec_prefix_ / "PowershellShim.ps1");
+        // Use the powershell shim as the "task file":
+        findExecutableAndArguments(exec_prefix_ / "PowershellShim.ps1", task_command);
+        // Pass the original task file to the shim:
         task_command.arguments.push_back(task_file.string());
-        // Pass input on stdin ($input)
-        task_input = task_params.toString();
     } else {
-        if (implementation.input_method.empty() || implementation.input_method == "stdin") {
-            task_input = task_params.toString();
-        }
-
-        if (implementation.input_method.empty() || implementation.input_method == "environment") {
-            addParametersToEnvironment(task_params, task_environment);
-        }
-
-        task_command = getTaskCommand(task_file);
+        findExecutableAndArguments(task_file, task_command);
     }
 
-    ActionResponse response { ModuleType::Internal, request };
+    if (implementation.input_method == "powershell" ||
+        (implementation.input_method.empty() || implementation.input_method == "stdin")) {
+        task_command.input = task_params.toString();
+    }
+
+    // Set the environment variables ($PT_*) for the task parameters
+    if (implementation.input_method.empty() || implementation.input_method == "environment") {
+        addParametersToEnvironment(task_params, task_command.environment);
+    }
 
     if (request.type() == RequestType::Blocking) {
-        callBlockingAction(request, task_command, task_environment, task_input, response);
-    } else {
-        // Guaranteed by Configuration
-        assert(!request.resultsDir().empty());
-        callNonBlockingAction(request, task_command, task_environment, task_input, response);
+        return task_command;
     }
 
-    return response;
-}
+    // Guaranteed by Configuration
+    assert(!request.resultsDir().empty());
 
-void Task::processOutputAndUpdateMetadata(ActionResponse& response)
-{
-    if (response.output.std_out.empty()) {
-        LOG_TRACE("Obtained no results on stdout for the {1}",
-                  response.prettyRequestLabel());
-    } else {
-        LOG_TRACE("Results on stdout for the {1}: {2}",
-                  response.prettyRequestLabel(), response.output.std_out);
-    }
+    const fs::path &results_dir = request.resultsDir();
+    lth_jc::JsonContainer wrapper_input;
 
-    if (response.output.exitcode != EXIT_SUCCESS) {
-        LOG_TRACE("Execution failure (exit code {1}) for the {2}{3}",
-                  response.output.exitcode, response.prettyRequestLabel(),
-                  (response.output.std_err.empty()
-                        ? ""
-                        : "; stderr:\n" + response.output.std_err));
-    } else if (!response.output.std_err.empty()) {
-        LOG_TRACE("Output on stderr for the {1}:\n{2}",
-                  response.prettyRequestLabel(), response.output.std_err);
-    }
+    wrapper_input.set<std::string>("executable", task_command.executable);
+    wrapper_input.set<std::vector<std::string>>("arguments", task_command.arguments);
+    wrapper_input.set<std::string>("input", task_command.input);
+    wrapper_input.set<std::string>("stdout", (results_dir / "stdout").string());
+    wrapper_input.set<std::string>("stderr", (results_dir / "stderr").string());
+    wrapper_input.set<std::string>("exitcode", (results_dir / "exitcode").string());
 
-    std::string &output = response.output.std_out;
-
-    if (Util::isValidUTF8(output)) {
-        // Return all relevant results: exitcode, stdout, stderr.
-        lth_jc::JsonContainer result;
-        result.set("exitcode", response.output.exitcode);
-        if (!output.empty()) {
-            result.set("stdout", output);
-        }
-        if (!response.output.std_err.empty()) {
-            result.set("stderr", response.output.std_err);
-        }
-
-        response.setValidResultsAndEnd(std::move(result));
-    } else {
-        LOG_DEBUG("Obtained invalid UTF-8 on stdout for the {1}; stdout:\n{2}",
-                  response.prettyRequestLabel(), output);
-        std::string execution_error {
-            lth_loc::format("The task executed for the {1} returned invalid "
-                            "UTF-8 on stdout - stderr:{2}",
-                            response.prettyRequestLabel(),
-                            (response.output.std_err.empty()
-                                ? lth_loc::translate(" (empty)")
-                                : "\n" + response.output.std_err)) };
-        response.setBadResultsAndEnd(execution_error);
-    }
+    return Util::CommandObject {
+            (exec_prefix_ / TASK_WRAPPER_EXECUTABLE).string(),
+            {},
+            task_command.environment,
+            wrapper_input.toString(),
+            [results_dir](size_t pid) {
+                auto pid_file = (results_dir / "pid").string();
+                lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file,
+                                               NIX_FILE_PERMS, std::ios::binary);
+            }
+    };
 }
 
 unsigned int Task::purge(
