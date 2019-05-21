@@ -349,6 +349,10 @@ Specifies whether to use PCP version 1 or 2. Only accepts '1' or '2'. Defaults t
 Maximum amount of time that may elapse when trying to establish a connection to
 the broker in seconds. Defaults to 5 seconds.
 
+**max-message-size (optional)**
+
+The maximum message size, specified in bytes. The current default is 64 MB as defined within pcp-broker. This value can be overriden and reduced to something smaller as desired.
+
 **ssl-ca-cert (required to connect)**
 
 The location of your SSL Certificate Authority certificate, example
