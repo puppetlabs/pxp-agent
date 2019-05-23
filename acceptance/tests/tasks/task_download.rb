@@ -89,7 +89,7 @@ test_name 'task download' do
     test_cases.each do |agents, (filename, sha256, expected_file)|
       files = [file_entry(filename, sha256, "/task-files/#{filename}")]
       run_pxp_errored_task(master, agents, 'echo', files, input: {:message => 'hello'}) do |description|
-        assert_match(/The downloaded \"#{filename}\"'s sha differs from the provided sha/, description, 'Expected SHA version conflict was not detected')
+        assert_match(/The downloaded file \"#{filename}\" has a SHA that differs from the provided SHA/, description, 'Expected SHA version conflict was not detected')
       end
 
       # Ensure things were properly cleaned up. Note that
