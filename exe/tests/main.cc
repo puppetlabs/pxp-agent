@@ -18,7 +18,8 @@ namespace lth_util = leatherman::util;
 
 // Creates a unique temporary directory.
 struct temp_directory {
-    temp_directory() : dir{fs::absolute(fs::unique_path("task_fixture_%%%%-%%%%-%%%%-%%%%"))} {
+    temp_directory() {
+        dir = fs::absolute(fs::unique_path("task_fixture_%%%%-%%%%-%%%%-%%%%"));
         fs::create_directory(dir);
     }
 

@@ -17,7 +17,7 @@ class ExternalModule : public Module {
   public:
     /// Time interval to wait after the external module completes,
     /// before retrieving its output
-    static constexpr int OUTPUT_DELAY_MS = 100;
+    static const int OUTPUT_DELAY_MS;
 
     /// Run the specified executable; its output must define the
     /// module by providing the metadata in JSON format.

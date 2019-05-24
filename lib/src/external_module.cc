@@ -140,6 +140,8 @@ void ExternalModule::validateConfiguration()
 // Static class members
 //
 
+const int ExternalModule::OUTPUT_DELAY_MS { 100 };
+
 void ExternalModule::processOutputAndUpdateMetadata(ActionResponse& response)
 {
     if (response.output.std_out.empty()) {
