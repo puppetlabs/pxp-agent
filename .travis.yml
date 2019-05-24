@@ -7,7 +7,7 @@ before_install:
 
 script:
   - >
-    docker run -v `pwd`:/pxp-agent gcr.io/cpp-projects/cpp-ci:1 /bin/bash -c "
+    docker run -v `pwd`:/pxp-agent gcr.io/cpp-projects/cpp-ci:3 /bin/bash -c "
     wget https://github.com/puppetlabs/leatherman/releases/download/${LEATHERMAN_VERSION}/leatherman.tar.gz &&
     tar xzvf leatherman.tar.gz --strip 1 -C / &&
     wget https://github.com/puppetlabs/cpp-pcp-client/releases/download/${CPP_PCP_CLIENT_VERSION}/cpp-pcp-client.tar.gz &&

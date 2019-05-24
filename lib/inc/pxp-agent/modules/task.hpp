@@ -5,6 +5,7 @@
 #include <pxp-agent/action_response.hpp>
 #include <pxp-agent/results_storage.hpp>
 #include <pxp-agent/util/purgeable.hpp>
+#include <pxp-agent/util/bolt_module.hpp>
 
 #include <cpp-pcp-client/util/thread.hpp>
 
@@ -14,12 +15,7 @@
 namespace PXPAgent {
 namespace Modules {
 
-struct TaskCommand {
-    std::string executable;
-    std::vector<std::string> arguments;
-};
-
-class Task : public PXPAgent::Module, public PXPAgent::Util::Purgeable {
+class Task : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable {
   public:
     Task(const boost::filesystem::path& exec_prefix,
          const std::string& task_cache_dir,
@@ -33,19 +29,6 @@ class Task : public PXPAgent::Module, public PXPAgent::Util::Purgeable {
          uint32_t task_download_timeout_s,
          std::shared_ptr<ResultsStorage> storage);
 
-    /// Whether or not the module supports non-blocking / asynchronous requests.
-    bool supportsAsync() override { return true; }
-
-    /// Log information about the output of the performed action
-    /// while validating the output is valid UTF-8.
-    /// Update the metadata of the ActionResponse instance (the
-    /// 'results_are_valid', 'status', and 'execution_error' entries
-    /// will be set appropriately; 'end' will be set to the current
-    /// time).
-    /// This function does not throw a ProcessingError in case of
-    /// invalid output on stdout; such failure is instead reported
-    /// in the response object's metadata.
-    void processOutputAndUpdateMetadata(ActionResponse& response) override;
 
     /// Utility to purge tasks from the task_cache_dir that have surpassed the ttl.
     /// If a purge_callback is not specified, the boost filesystem's remove_all() will be used.
@@ -58,8 +41,6 @@ class Task : public PXPAgent::Module, public PXPAgent::Util::Purgeable {
     std::set<std::string> const& features() const;
 
   private:
-    std::shared_ptr<ResultsStorage> storage_;
-
     std::string task_cache_dir_;
     PCPClient::Util::mutex task_cache_dir_mutex_;
 
@@ -80,21 +61,7 @@ class Task : public PXPAgent::Module, public PXPAgent::Util::Purgeable {
     leatherman::json_container::JsonContainer selectLibFile(std::vector<leatherman::json_container::JsonContainer> const& files,
         std::string const& file_name);
 
-    void callBlockingAction(
-        const ActionRequest& request,
-        const TaskCommand &command,
-        const std::map<std::string, std::string> &environment,
-        const std::string &input,
-        ActionResponse &response);
-
-    void callNonBlockingAction(
-        const ActionRequest& request,
-        const TaskCommand &command,
-        const std::map<std::string, std::string> &environment,
-        const std::string &input,
-        ActionResponse &response);
-
-    ActionResponse callAction(const ActionRequest& request) override;
+    Util::CommandObject buildCommandObject(const ActionRequest& request) override;
 };
 
 }  // namespace Modules
