@@ -1,4 +1,4 @@
-require 'pxp-agent/task_helper.rb'
+require 'pxp-agent/bolt_pxp_module_helper.rb'
 require 'pxp-agent/config_helper.rb'
 require 'puppet/acceptance/environment_utils.rb'
 

@@ -1,4 +1,4 @@
-require 'pxp-agent/task_helper.rb'
+require 'pxp-agent/bolt_pxp_module_helper.rb'
 require 'pxp-agent/config_helper.rb'
 require 'puppet/acceptance/environment_utils.rb'
 
@@ -76,6 +76,7 @@ test_name 'task download' do
       agents.each do |agent|
         tasks_cache = get_tasks_cache(agent)
         [sha256, "#{sha256}/#{filename}"].each do |file|
+          next if agent['roles'].include?('master')
           mode = get_mode(agent, "#{tasks_cache}/#{file}")
           assert_equal(expected_mode, mode, "Expected permissions to be #{expected_mode}")
         end
@@ -88,7 +89,7 @@ test_name 'task download' do
 
     test_cases.each do |agents, (filename, sha256, expected_file)|
       files = [file_entry(filename, sha256, "/task-files/#{filename}")]
-      run_pxp_errored_task(master, agents, 'echo', files, input: {:message => 'hello'}) do |description|
+      run_errored_task(master, agents, 'echo', files, input: {:message => 'hello'}) do |description|
         assert_match(/The downloaded file \"#{filename}\" has a SHA that differs from the provided SHA/, description, 'Expected SHA version conflict was not detected')
       end
 
@@ -97,6 +98,7 @@ test_name 'task download' do
       # because of the previous successful download test,
       # but this should be the only file.
       agents.each do |agent|
+        next if agent['roles'].include?('master')
         tasks_cache = get_tasks_cache(agents.first)
         assert_equal(expected_file, on(agent, "ls #{tasks_cache}/#{sha256}").stdout.chomp, 'tasks-cache/<sha> directory was not properly cleaned up')
       end
@@ -109,12 +111,13 @@ test_name 'task download' do
     assert_match(/Error 404 Not Found/, on(master, "curl -k https://#{master}:8140/task-files/non_existent_task").stdout.chomp)
 
     files = [file_entry('some_file', '1234', "/task-files/non_existent_task")]
-    run_pxp_errored_task(master, agents, 'echo', files) do |description|
+    run_errored_task(master, agents, 'echo', files) do |description|
       assert_match(/Error:?\s+404/i, description, 'Expected 404 HTTP status was not detected')
     end
 
     # Ensure things were properly cleaned up
     agents.each do |agent|
+      next if agent['roles'].include?('master')
       tasks_cache = get_tasks_cache(agent)
       assert_equal("", on(agent, "ls #{tasks_cache}/1234").stdout.chomp, 'tasks-cache/<sha> directory was not properly cleaned up')
     end
