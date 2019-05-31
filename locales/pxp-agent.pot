@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: pxp-agent 1.10.0\n"
+"Project-Id-Version: pxp-agent 1.11.1\n"
 "Report-Msgid-Bugs-To: docs@puppet.com\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -498,7 +498,7 @@ msgid ""
 "The task executed for the {1} returned invalid JSON on stdout - stderr:{2}"
 msgstr ""
 
-#: lib/src/external_module.cc lib/src/modules/task.cc
+#: lib/src/external_module.cc lib/src/util/bolt_module.cc
 msgid " (empty)"
 msgstr ""
 
@@ -661,37 +661,6 @@ msgstr ""
 msgid "A file matching the name of the provided sha already exists"
 msgstr ""
 
-#: lib/src/modules/task.cc
-msgid "Error while reading {1}"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid "{1} returned a response with HTTP status {2}. Response body: {3}"
-msgstr ""
-
-#. warning
-#: lib/src/modules/task.cc
-msgid "Downloading the task file from the master-uri '{1}' failed. Reason: {2}"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid "Downloading the task file failed. Reason: {1}"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid "Cannot download task. No master-uris were provided"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid ""
-"Downloading the task file {1} failed after trying all the available master-"
-"uris. Most recent error message: {2}"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid "The downloaded {1}'s sha differs from the provided sha"
-msgstr ""
-
 #. debug
 #: lib/src/modules/task.cc
 msgid "Verifying task file based on {1}"
@@ -725,18 +694,6 @@ msgstr ""
 #. debug
 #: lib/src/modules/task.cc
 msgid "Multi file task _installdir: '{1}'"
-msgstr ""
-
-#. debug
-#: lib/src/modules/task.cc
-msgid ""
-"Obtained invalid UTF-8 on stdout for the {1}; stdout:\n"
-"{2}"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid ""
-"The task executed for the {1} returned invalid UTF-8 on stdout - stderr:{2}"
 msgstr ""
 
 #. info
@@ -1318,6 +1275,49 @@ msgstr ""
 
 #: lib/src/time.cc
 msgid "failed to create a timepoint for {1}{2}"
+msgstr ""
+
+#: lib/src/util/bolt_helpers.cc
+msgid "Cannot download task. No master-uris were provided"
+msgstr ""
+
+#: lib/src/util/bolt_helpers.cc
+msgid ""
+"Downloading the task file {1} failed after trying all the available master-"
+"uris. Most recent error message: {2}"
+msgstr ""
+
+#: lib/src/util/bolt_helpers.cc
+msgid "The downloaded file {1} has a SHA that differs from the provided SHA"
+msgstr ""
+
+#: lib/src/util/bolt_helpers.cc
+msgid "{1} returned a response with HTTP status {2}. Response body: {3}"
+msgstr ""
+
+#. warning
+#: lib/src/util/bolt_helpers.cc
+msgid "Downloading the task file from the master-uri '{1}' failed. Reason: {2}"
+msgstr ""
+
+#: lib/src/util/bolt_helpers.cc
+msgid "Downloading the task file failed. Reason: {1}"
+msgstr ""
+
+#: lib/src/util/bolt_helpers.cc
+msgid "Error while reading {1}"
+msgstr ""
+
+#. debug
+#: lib/src/util/bolt_module.cc
+msgid ""
+"Obtained invalid UTF-8 on stdout for the {1}; stdout:\n"
+"{2}"
+msgstr ""
+
+#: lib/src/util/bolt_module.cc
+msgid ""
+"The task executed for the {1} returned invalid UTF-8 on stdout - stderr:{2}"
 msgstr ""
 
 #. info
