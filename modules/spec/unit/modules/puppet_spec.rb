@@ -158,7 +158,7 @@ describe Pxp::ModulePuppet do
            "version"          => 1}
     end
 
-    it "doesn't process the last_run_report if it hasn't been updated after the run was kicked" do
+    it "reports an unexpected error if the report wasn't updated after the run" do
       start_time = Time.now
       run_time = Time.now - 10
       last_run_report = {
@@ -179,7 +179,7 @@ describe Pxp::ModulePuppet do
            "status"           => "unknown",
            "metrics"          => {},
            "error_type"       => "no_last_run_report",
-           "error"            => "#{last_run_report_path} was not written",
+           "error"            => "The Puppet run failed in an unexpected way",
            "exitcode"         => -1,
            "version"          => 1}
     end
@@ -317,6 +317,18 @@ describe Pxp::ModulePuppet do
       expect(Puppet::Util::Execution).to receive(:execute).and_return(success_outcome).ordered
 
       expect(subject).to receive(:get_result_from_report).with(last_run_report, 0, anything)
+      subject.run
+    end
+
+    it "reports a failure if an agent run was in progress when it retried the run" do
+      allow(subject).to receive(:disabled?).and_return(false)
+      allow(subject).to receive(:running?).and_return(true)
+      allow(subject).to receive(:wait_for_lockfile)
+
+      expect(Puppet::Util::Execution).to receive(:execute).and_return(running_outcome).ordered
+      expect(Puppet::Util::Execution).to receive(:execute).and_return(running_outcome).ordered
+
+      expect(described_class).to receive(:make_error_result).with(1, Pxp::ModulePuppet::Errors::Locked, anything)
       subject.run
     end
 
