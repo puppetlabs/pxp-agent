@@ -62,7 +62,7 @@ SITEPP
         on agent, 'echo umask 222 > /etc/sysconfig/pxp-agent'
       end
 
-      on(agent, 'service pxp-agent status', :accept_all_exit_codes => true)
+      on(agent, 'ls -l /proc/1/exe | grep \'systemd\'', :accept_all_exit_codes => true)
       if stdout =~ /systemd/
         on agent, 'mkdir /etc/systemd/system/pxp-agent.service.d'
         create_remote_file(agent, '/etc/systemd/system/pxp-agent.service.d/override.conf', "[Service]\nUMask=0222")
