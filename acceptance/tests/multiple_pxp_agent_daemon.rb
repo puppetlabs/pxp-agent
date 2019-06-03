@@ -9,7 +9,7 @@ test_name 'Start pxp-agent daemon with pidfile present' do
 
   applicable_agents = applicable_agents.reject do |agent|
     on(agent, 'service pxp-agent status', :accept_all_exit_codes => true)
-    stdout =~ /systemd/ || stderr =~ /not found/
+    stdout =~ /systemd/
   end
   unless applicable_agents.length > 0 then
     skip_test('systemd hosts use --foreground')
