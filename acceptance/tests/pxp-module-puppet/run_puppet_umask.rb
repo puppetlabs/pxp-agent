@@ -63,7 +63,7 @@ SITEPP
       end
 
       on(agent, 'service pxp-agent status', :accept_all_exit_codes => true)
-      if stdout =~ /systemd/ || stderr =~ /not found/
+      if stdout =~ /systemd/
         on agent, 'mkdir /etc/systemd/system/pxp-agent.service.d'
         create_remote_file(agent, '/etc/systemd/system/pxp-agent.service.d/override.conf', "[Service]\nUMask=0222")
       end
