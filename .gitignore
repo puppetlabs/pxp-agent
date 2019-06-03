@@ -5,3 +5,6 @@
 /lib/tests/resources/tmp/
 .idea/
 .DS_Store
+/acceptance/junit
+/acceptance/.beaker
+/acceptance/sut-files.tgz
