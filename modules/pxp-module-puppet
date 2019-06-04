@@ -13,6 +13,7 @@ module Pxp
       NoLastRunReport = "no_last_run_report"
       InvalidLastRunReport = "invalid_last_run_report"
       Disabled = "agent_disabled"
+      Locked = "agent_locked"
       FailedToStart = "agent_failed_to_start"
       NonZeroExit = "agent_exit_non_zero"
     end
@@ -181,7 +182,7 @@ module Pxp
 
       if start_time && File.mtime(last_run_report) == start_time
         return make_error_result(exitcode, Errors::NoLastRunReport,
-                                 "#{last_run_report} was not written")
+                                 "The Puppet run failed in an unexpected way")
       end
 
       last_run_report_yaml = {}
@@ -277,10 +278,21 @@ module Pxp
           wait_for_lockfile(lockfile)
 
           start_time, exitcode = try_run(last_run_report)
-
           if exitcode.nil?
             return make_error_result(DEFAULT_EXITCODE, Errors::FailedToStart,
                                      "Failed to start Puppet agent")
+          end
+
+          if exitcode != 0
+            if disabled?(puppet_config['agent_disabled_lockfile'] || '')
+              return make_error_result(exitcode, Errors::Disabled,
+                                       "Puppet agent is disabled")
+            end
+
+            if running?(lockfile)
+              return make_error_result(exitcode, Errors::Locked,
+                                       "Puppet agent run is already in progress")
+            end
           end
         end
       end
