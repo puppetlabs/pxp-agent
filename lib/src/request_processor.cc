@@ -10,6 +10,7 @@
 #include <pxp-agent/modules/echo.hpp>
 #include <pxp-agent/modules/ping.hpp>
 #include <pxp-agent/modules/task.hpp>
+#include <pxp-agent/modules/download_file.hpp>
 #include <pxp-agent/util/process.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
@@ -840,6 +841,18 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
         storage_ptr_);
     registerModule(task);
     registerPurgeable(task);
+    auto dl_file = std::make_shared<Modules::DownloadFile>(
+        agent_configuration.task_cache_dir,
+        agent_configuration.task_cache_dir_purge_ttl,
+        agent_configuration.master_uris,
+        agent_configuration.ca,
+        agent_configuration.crt,
+        agent_configuration.key,
+        agent_configuration.master_proxy,
+        agent_configuration.task_download_connect_timeout_s,
+        agent_configuration.task_download_timeout_s,
+        storage_ptr_);
+    registerModule(dl_file);
 }
 
 void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)

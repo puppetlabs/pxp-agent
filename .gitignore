@@ -3,6 +3,7 @@
 /dev-resources/
 /lib/tests/resources/test_spool/
 /lib/tests/resources/tmp/
+/lib/tests/resources/cache_dir/
 .idea/
 .DS_Store
 /acceptance/junit

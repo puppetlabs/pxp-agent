@@ -40,8 +40,8 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   SPOOL,
                                                   "0d",  // don't purge spool!
                                                   "",    // modules config dir
-                                                  "",    // task cache dir
-                                                  "0d",  // don't purge task cache!
+                                                  "",    // file cache dir
+                                                  "0d",  // don't purge file cache!
                                                   "test_agent",
                                                   "",    // don't set broker proxy
                                                   "",    // don't set master proxy
@@ -51,8 +51,8 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   5,     // general PCP ttl
                                                   2,     // keepalive timeouts
                                                   15,    // ping interval
-                                                  30,    // task download connection timeout
-                                                  120};  // task download timeout
+                                                  30,    // file download connection timeout
+                                                  120};  // file download timeout
 
 static const std::string VALID_ENVELOPE_TXT {
     " { \"id\" : \"123456\","

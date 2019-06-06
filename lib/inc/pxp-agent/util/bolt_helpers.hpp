@@ -25,6 +25,8 @@ namespace Util {
                                                     const leatherman::json_container::JsonContainer& uri);
   std::string createUrlEndpoint(const leatherman::json_container::JsonContainer& uri);
   std::string calculateSha256(const std::string& path);
+  void createDir(const boost::filesystem::path& dir);
+  boost::filesystem::path createCacheDir(const boost::filesystem::path& cache_dir, const std::string& sha256);
 }  // namespace Util
 }  // namespace PXPAgent
 

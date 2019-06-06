@@ -232,27 +232,6 @@ static Module::ProcessingError toModuleProcessingError(const fs::filesystem_erro
     }
 }
 
-// A define is used here because creating a local variable is subject to static initialization ordering.
-#define NIX_TASK_FILE_PERMS NIX_DIR_PERMS
-
-static void createDir(const fs::path& dir) {
-    fs::create_directories(dir);
-    fs::permissions(dir, NIX_DIR_PERMS);
-}
-
-// Creates the <task_cache_dir>/<sha256> directory (and parent dirs) for a single
-// task, ensuring that its permissions are readable by
-// the PXP agent owner/group (for unix OSes), writable for the PXP agent owner,
-// and executable by both PXP agent owner and group. Returns the path to this directory.
-// Note that the last modified time of the directory is updated, and that this routine
-// will not fail if the directory already exists.
-static fs::path createCacheDir(const fs::path& task_cache_dir, const std::string& sha256) {
-    auto cache_dir = task_cache_dir / sha256;
-    createDir(cache_dir);
-    fs::last_write_time(cache_dir, time(nullptr));
-    return cache_dir;
-}
-
 // Verify (this includes checking the SHA256 checksums) that task file is present
 // in the task cache downloading it if necessary.
 // Return the full path of the cached version of the file.
@@ -268,7 +247,7 @@ static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
     try {
         auto cache_dir = [&]() {
             pcp_util::lock_guard<pcp_util::mutex> the_lock { task_cache_dir_mutex };
-            return createCacheDir(task_cache_dir, file.get<std::string>("sha256"));
+            return Util::createCacheDir(task_cache_dir, file.get<std::string>("sha256"));
         }();
         // Task files remain in the cache_dir rather than being written out to a destination
         // elsewhere on the filesystem.
@@ -282,7 +261,7 @@ static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
 // build a spool dir for the supporting library files requested by a multifile task
 static fs::path createInstallDir(const fs::path& spool_dir, const std::set<std::string>& download_set) {
     auto install_dir = spool_dir / fs::unique_path("temp_task_%%%%-%%%%-%%%%-%%%%");
-    createDir(install_dir);
+    Util::createDir(install_dir);
 
     // this should generate a unique collection of directory paths to append to install_dir
     // for example:
@@ -298,7 +277,7 @@ static fs::path createInstallDir(const fs::path& spool_dir, const std::set<std::
         fs::path tmp = install_dir;
         for (const fs::path &dir : dir_path) {
             tmp /= dir;
-            createDir(tmp);
+            Util::createDir(tmp);
         }
     }
 
@@ -501,8 +480,8 @@ Util::CommandObject Task::buildCommandObject(const ActionRequest& request)
     if (lib_files.size() > 0) {
         auto install_dir = downloadMultiFile(files, lib_files, request.resultsDir());
         auto module = task_name.substr(0, task_name.find(':'));
-        createDir(install_dir / module);
-        createDir(install_dir / module / "tasks");
+        Util::createDir(install_dir / module);
+        Util::createDir(install_dir / module / "tasks");
         auto task_dest = install_dir / module / "tasks" / task_file.filename();
         fs::copy_file(task_file, task_dest);
         task_file = task_dest;

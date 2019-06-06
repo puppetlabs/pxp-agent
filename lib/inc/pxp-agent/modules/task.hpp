@@ -41,8 +41,9 @@ class Task : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable
     std::set<std::string> const& features() const;
 
   private:
-    std::string task_cache_dir_;
     PCPClient::Util::mutex task_cache_dir_mutex_;
+
+    std::string task_cache_dir_;
 
     boost::filesystem::path exec_prefix_;
 

@@ -3,6 +3,7 @@
 #include <pxp-agent/module.hpp>
 
 #include <boost/algorithm/hex.hpp>
+#include <boost/algorithm/string.hpp>
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.util.bolt_helpers"
 #include <leatherman/logging/logging.hpp>
@@ -20,7 +21,7 @@ namespace Util {
 
 
     // NIX_DIR_PERMS is defined in pxp-agent/configuration
-    #define NIX_TASK_FILE_PERMS NIX_DIR_PERMS
+    #define NIX_DOWNLOADED_FILE_PERMS NIX_DIR_PERMS
 
     // Downloads a file if it does not already exist on the filesystem. A check is made
     // on the filesystem to determine if the file at destination already exists and if
@@ -40,8 +41,8 @@ namespace Util {
         auto filename = fs::path(file.get<std::string>("filename")).filename();
         auto sha256 = file.get<std::string>("sha256");
 
-        if (fs::exists(destination) && sha256 == calculateSha256(destination.string())) {
-            fs::permissions(destination, NIX_TASK_FILE_PERMS);
+        if (fs::exists(destination) && boost::to_upper_copy<std::string>(sha256) == boost::to_upper_copy<std::string>(calculateSha256(destination.string()))) {
+            fs::permissions(destination, NIX_DOWNLOADED_FILE_PERMS);
             return destination;
         }
 
@@ -101,7 +102,7 @@ namespace Util {
 
             try {
                 lth_curl::response resp;
-                client.download_file(req, file_path.string(), resp, NIX_TASK_FILE_PERMS);
+                client.download_file(req, file_path.string(), resp, NIX_DOWNLOADED_FILE_PERMS);
                 if (resp.status_code() >= 400) {
                     throw lth_curl::http_file_download_exception(
                         req,
@@ -180,6 +181,25 @@ namespace Util {
 
         return md_value_hex;
     }
+
+
+    void createDir(const fs::path& dir) {
+        fs::create_directories(dir);
+        fs::permissions(dir, NIX_DIR_PERMS);
+    }
+
+    // Creates the <cache_dir>/<sha256> directory (and parent dirs), ensuring that its permissions are readable by
+    // the PXP agent owner/group (for unix OSes), writable for the PXP agent owner,
+    // and executable by both PXP agent owner and group. Returns the path to this directory.
+    // Note that the last modified time of the directory is updated, and that this routine
+    // will not fail if the directory already exists.
+    fs::path createCacheDir(const fs::path& cache_dir, const std::string& sha256) {
+        auto file_cache_dir = cache_dir / sha256;
+        createDir(file_cache_dir);
+        fs::last_write_time(file_cache_dir, time(nullptr));
+        return file_cache_dir;
+    }
+
 
 }  // namespace Util
 }  // namespace PXPAgent
