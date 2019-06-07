@@ -372,14 +372,14 @@ ActionResponse ExternalModule::callNonBlockingAction(const ActionRequest& reques
           lth_exec::execution_options::merge_environment,
           lth_exec::execution_options::inherit_locale });  // options
 
-    LOG_INFO("The task for the {1} has completed", request.prettyLabel());
+    LOG_INFO("The execution of the {1} has completed", request.prettyLabel());
 
     if (exec.exit_code == EXTERNAL_MODULE_FILE_ERROR_EC) {
         // This is unexpected. The output of the task will not be
         // available for future transaction status requests; we cannot
         // provide a reliable ActionResponse.
         std::string empty_label { lth_loc::translate("(empty)") };
-        LOG_WARNING("The task process failed to write output on file for the {1}; "
+        LOG_WARNING("The execution process failed to write output on file for the {1}; "
                     "stdout: {2}; stderr: {3}",
                     request.prettyLabel(),
                     (exec.output.empty() ? empty_label : exec.output),

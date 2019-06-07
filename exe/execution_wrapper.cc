@@ -19,15 +19,24 @@ static const fs::perms FILE_PERMS { fs::owner_read | fs::owner_write | fs::group
 
 int main(int argc, char *argv[])
 {
+    // Read JSON input from stdin. Input should take the following format:
+    // {
+    //    "executable": "(path to the executable to run)",
+    //    "arguments": [...],
+    //    "input": "(string to pass to the executable on stdin)",
+    //    "stdout": "(filepath to write stdout to)",
+    //    "stderr": "(filepath to write stderr to)",
+    //    "exitcode": "(filepath to write exitcode to)"
+    // }
     boost::nowide::cin >> std::noskipws;
     std::istream_iterator<char> i_s_i(boost::nowide::cin), end;
     auto params = lth_jc::JsonContainer(std::string { i_s_i, end });
-    auto task_executable = params.get<std::string>("executable");
+    auto executable = params.get<std::string>("executable");
     int exitcode;
 
     try {
         auto exec = lth_exec::execute(
-            task_executable,
+            executable,
             params.get<std::vector<std::string>>("arguments"),
             params.get<std::string>("input"),
             params.get<std::string>("stdout"),
@@ -52,10 +61,11 @@ int main(int argc, char *argv[])
 #ifndef _WIN32
         fs::permissions(params.get<std::string>("stderr"), FILE_PERMS);
 #endif
-        ofs << lth_loc::format("Task '{1}' failed to run: {2}", task_executable, e.what());
+        ofs << lth_loc::format("Executable '{1}' failed to run: {2}", executable, e.what());
         exitcode = 127;
     }
 
+    // Write the exit code; at this point, stdout and stderr are already written
 #ifdef _WIN32
     lth_file::atomic_write_to_file(std::to_string(exitcode), params.get<std::string>("exitcode"));
 #else

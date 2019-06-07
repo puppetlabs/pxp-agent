@@ -18,7 +18,7 @@ namespace lth_util = leatherman::util;
 
 // Creates a unique temporary directory.
 struct temp_directory {
-    temp_directory() : dir{fs::absolute(fs::unique_path("task_fixture_%%%%-%%%%-%%%%-%%%%"))} {
+    temp_directory() : dir{fs::absolute(fs::unique_path("execution_fixture_%%%%-%%%%-%%%%-%%%%"))} {
         fs::create_directory(dir);
     }
 
@@ -49,9 +49,9 @@ static lth_exec::result execute(string const& input)
     return lth_exec::execute(
 #ifdef _WIN32
         "cmd.exe",
-        { "/c", (exec_prefix/"task_wrapper").string() },
+        { "/c", (exec_prefix/"execution_wrapper").string() },
 #else
-        (exec_prefix/"task_wrapper").string(),
+        (exec_prefix/"execution_wrapper").string(),
         {},  // args
 #endif
         input,
@@ -98,7 +98,7 @@ TEST_CASE("runs an executable") {
         REQUIRE(read(dir+"/exit") == "0");
     }
 
-    SECTION("errors if task not found") {
+    SECTION("errors if executable not found") {
         auto exec = execute(input);
         REQUIRE(exec.output == "");
         REQUIRE(exec.error == "");
@@ -109,7 +109,7 @@ TEST_CASE("runs an executable") {
         REQUIRE(read(dir+"/exit") == "127");
     }
 
-    SECTION("task not executable") {
+    SECTION("executable is not executable") {
         auto executable = dir+"/init";
         auto input = "{\"executable\": \""+executable+"\", \"arguments\": [], \"input\": \"\", "
             "\"stdout\": \""+dir+"/out\", \"stderr\": \""+dir+"/err\", \"exitcode\": \""+dir+"/exit\"}";
