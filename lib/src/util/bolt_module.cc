@@ -37,11 +37,19 @@ void BoltModule::processOutputAndUpdateMetadata(PXPAgent::ActionResponse &respon
     }
 
     if (response.output.exitcode != EXIT_SUCCESS) {
+        std::stringstream ss_detail;
+
+        if (!response.output.std_err.empty()) {
+            ss_detail << "; stderr:\n" << response.output.std_err;
+        } else if (response.output.std_out.empty() && response.output.exitcode == 127) {
+            // When leatherman::execution attempts to execute a nonexistent command, the exit code
+            // is 127 and both stdout and stderr are empty. We'll leave this result untouched,
+            // but log a message explaining what happened:
+            ss_detail << "; command not found";
+        }
+
         LOG_TRACE("Execution failure (exit code {1}) for the {2}{3}",
-                  response.output.exitcode, response.prettyRequestLabel(),
-                  (response.output.std_err.empty()
-                   ? ""
-                   : "; stderr:\n" + response.output.std_err));
+                  response.output.exitcode, response.prettyRequestLabel(), ss_detail.str());
     } else if (!response.output.std_err.empty()) {
         LOG_TRACE("Output on stderr for the {1}:\n{2}",
                   response.prettyRequestLabel(), response.output.std_err);

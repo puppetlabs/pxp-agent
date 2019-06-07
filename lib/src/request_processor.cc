@@ -7,6 +7,7 @@
 #include <pxp-agent/module_type.hpp>
 #include <pxp-agent/request_type.hpp>
 #include <pxp-agent/time.hpp>
+#include <pxp-agent/modules/command.hpp>
 #include <pxp-agent/modules/echo.hpp>
 #include <pxp-agent/modules/ping.hpp>
 #include <pxp-agent/modules/task.hpp>
@@ -828,6 +829,10 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
 {
     registerModule(std::make_shared<Modules::Echo>());
     registerModule(std::make_shared<Modules::Ping>());
+    auto command = std::make_shared<Modules::Command>(
+        Configuration::Instance().getExecPrefix(),
+        storage_ptr_);
+    registerModule(command);
     auto task = std::make_shared<Modules::Task>(
         Configuration::Instance().getExecPrefix(),
         agent_configuration.master_uris,

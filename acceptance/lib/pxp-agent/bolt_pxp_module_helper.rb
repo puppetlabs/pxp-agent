@@ -31,23 +31,23 @@ end
 # @yield [Array<Hash<String,String>>] Yields an array of response hashes:
 # For a successful response:
 #   ["<agent-pcp-identity-string>" => {
-#       "transaction_id" => "<uuid>"
+#        "transaction_id" => "<uuid>"
 #   }]
 # When there's been an RPC error, the result is different:
-#  ["<agent-pcp-identity-string>" =>  {
-#       "data" => {
-#           "description" => "<error-message>",
-#           "id" => "<uuid>",
-#           "transaction_id" => "<uuid>"
-#        },
-#       "envelope" => {
-#           "expires" => "<date-string>",
-#           "id" => "<uuid>",
-#           "message_type" => "http://puppetlabs.com/<message-type>",
-#           "sender" => "<broker-pcp-identity-string>",
-#           "targets" => ["<agent-pcp-identity-string", ...]
-#        }
-#  }]
+#   ["<agent-pcp-identity-string>" =>  {
+#        "data" => {
+#            "description" => "<error-message>",
+#            "id" => "<uuid>",
+#            "transaction_id" => "<uuid>"
+#         },
+#        "envelope" => {
+#            "expires" => "<date-string>",
+#            "id" => "<uuid>",
+#            "message_type" => "http://puppetlabs.com/<message-type>",
+#            "sender" => "<broker-pcp-identity-string>",
+#            "targets" => ["<agent-pcp-identity-string", ...]
+#         }
+#   }]
 def do_module_action(broker, target_identities, module_name, action_name, params,
                      blocking_request: false,
                      expected_response_type: 'http://puppetlabs.com/rpc_provisional_response')
@@ -69,12 +69,19 @@ def do_module_action(broker, target_identities, module_name, action_name, params
   yield(response_dataset) if block_given?
 end
 
-# Starts a task.
+# Makes a non-blocking request to start a task.
 # Block is executed on the "response_dataset" object from do_module_action.
-def run_task(broker, targets, task, files, input = {}, metadata = nil, **kwargs, &block)
+def run_task(broker, targets, task, files, input: {}, metadata: nil, **kwargs, &block)
   params = { task: task, input: input, files: files }
   params[:metadata] = metadata if metadata
   do_module_action(broker, agent_identities(targets), 'task', 'run', params, **kwargs, &block)
+end
+
+# Makes a non-blocking request to start a command.
+# Block is executed on the "response_dataset" object from do_module_action.
+def run_command(broker, targets, command, **kwargs, &block)
+  params = { command: command }
+  do_module_action(broker, agent_identities(targets), 'command', 'run', params, **kwargs, &block)
 end
 
 # Checks that a non-blocking request finished successfully.
@@ -108,25 +115,51 @@ end
 # Runs a non-blocking task action on targets, and confirms that it was successful.
 # Block is executed on the stdout string.
 def run_successful_task(broker, targets, task, files, input: {}, metadata: nil, **kwargs, &block)
-  run_task(broker, targets, task, files, input, metadata, **kwargs) do |datas|
-    ensure_successful(broker, targets, datas, **kwargs, &block)
+  run_task(broker, targets, task, files, input: input, metadata: metadata) do |response_dataset|
+    ensure_successful(broker, targets, response_dataset, **kwargs, &block)
   end
 end
 
 # Runs a non-blocking task action on targets, and confirms that it failed but did not error.
 # Block is executed on the stderr string.
 def run_failed_task(broker, targets, task, files, input: {}, metadata: nil, **kwargs, &block)
-  run_task(broker, targets, task, files, input, metadata) do |datas|
-    ensure_failed(broker, targets, datas, **kwargs, &block)
+  run_task(broker, targets, task, files, input: input, metadata: metadata) do |response_dataset|
+    ensure_failed(broker, targets, response_dataset, **kwargs, &block)
   end
 end
 
 # Starts a blocking task on targets, and confirms that it produced an RPC error
 # Block is executed on the RPC error message string.
 def run_errored_task(broker, targets, task, files, input: {}, metadata: nil)
-  run_task(broker, targets, task, files, input, metadata,
+  run_task(broker, targets, task, files, input: input, metadata: metadata,
            blocking_request: true,
            expected_response_type: "http://puppetlabs.com/rpc_error_message") do |response_dataset|
+    response_dataset.each { |data| yield data['description'] } if block_given?
+  end
+end
+
+# Runs a non-blocking command action on targets, and confirms that it was successful.
+# Block is executed on the stdout string.
+def run_successful_command(broker, targets, command, **kwargs, &block)
+  run_command(broker, targets, command) do |response_dataset|
+    ensure_successful(broker, targets, response_dataset, **kwargs, &block)
+  end
+end
+
+# Runs a non-blocking command action on targets, and confirms that it unsuccessful, but did not error.
+# Block is executed on the stderr string.
+def run_failed_command(broker, targets, command, **kwargs, &block)
+  run_command(broker, targets, command) do |response_dataset|
+    ensure_failed(broker, targets, response_dataset, **kwargs, &block)
+  end
+end
+
+# Runs a blocking command action on targets, and confirms that it unsuccessful, but did not error.
+# Block is executed on the stderr string.
+def run_errored_command(broker, targets, command)
+  run_command(broker, targets, command,
+              blocking_request: true,
+              expected_response_type: "http://puppetlabs.com/rpc_error_message") do |response_dataset|
     response_dataset.each { |data| yield data['description'] } if block_given?
   end
 end
