@@ -8,7 +8,7 @@ test_name 'Start pxp-agent daemon with pidfile present' do
   end
 
   applicable_agents = applicable_agents.reject do |agent|
-    on(agent, 'service pxp-agent status', :accept_all_exit_codes => true)
+    on(agent, 'ls -l /proc/1/exe | grep \'systemd\'', :accept_all_exit_codes => true)
     stdout =~ /systemd/
   end
   unless applicable_agents.length > 0 then
