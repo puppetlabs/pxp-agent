@@ -2,6 +2,7 @@
 /build/
 /dev-resources/
 /lib/tests/resources/test_spool/
+/lib/tests/resources/cache_dir/
 /lib/tests/resources/tmp/
 .idea/
 .DS_Store

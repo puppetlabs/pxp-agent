@@ -48,6 +48,8 @@ static const std::string TASK_CACHE_DIR { std::string { PXP_AGENT_ROOT_PATH }
 // Disable cache ttl so we don't delete fixtures.
 static const std::string TASK_CACHE_TTL { "0d" };
 
+static const auto MODULE_CACHE_DIR = std::make_shared<ModuleCacheDir>(TASK_CACHE_DIR, TASK_CACHE_TTL);
+
 static const std::string TEMP_TASK_CACHE_DIR { TASK_CACHE_DIR + "/temp" };
 
 static const std::vector<std::string> MASTER_URIS { { "https://_master1", "https://_master2", "https://_master3" } };
@@ -78,12 +80,12 @@ static const PCPClient::ParsedChunks NON_BLOCKING_CONTENT {
 
 TEST_CASE("Modules::Task", "[modules]") {
     SECTION("can successfully instantiate") {
-        REQUIRE_NOTHROW(Modules::Task(PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE));
+        REQUIRE_NOTHROW(Modules::Task(PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE));
     }
 }
 
 TEST_CASE("Modules::Task::features", "[modules]") {
-    Modules::Task mod { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+    Modules::Task mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
 
     SECTION("reports available features") {
         REQUIRE(mod.features().size() > 1);
@@ -97,7 +99,7 @@ TEST_CASE("Modules::Task::features", "[modules]") {
 }
 
 TEST_CASE("Modules::Task::hasAction", "[modules]") {
-    Modules::Task mod { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+    Modules::Task mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
 
     SECTION("correctly reports false") {
         REQUIRE(!mod.hasAction("foo"));
@@ -133,7 +135,8 @@ static void resetTest() {
 TEST_CASE("Modules::Task::callAction", "[modules]") {
     configureTest();
     lth_util::scope_exit config_cleaner { resetTest };
-    Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+    static const auto temp_module_cache_dir = std::make_shared<ModuleCacheDir>(TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL);
+    Modules::Task e_m { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, temp_module_cache_dir, STORAGE };
 
     SECTION("throws module processing error when a file system error is thrown") {
         auto existent_sha = "existent";
@@ -153,14 +156,14 @@ TEST_CASE("Modules::Task::callAction", "[modules]") {
         REQUIRE_FALSE(response.action_metadata.includes("results"));
         REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
         REQUIRE(response.action_metadata.includes("execution_error"));
-        REQUIRE_THAT(response.action_metadata.get<std::string>("execution_error"), Catch::EndsWith("A file matching the name of the provided sha already exists"));
+        REQUIRE(response.action_metadata.get<std::string>("execution_error").find("Failed to create cache dir to download file to"));
     }
 }
 
 TEST_CASE("Modules::Task::callAction - non blocking", "[modules]") {
     configureTest();
     lth_util::scope_exit config_cleaner { resetTest };
-    Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+    Modules::Task e_m { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
 
     SECTION("the pid is written to file") {
         ActionRequest request { RequestType::NonBlocking, NON_BLOCKING_CONTENT };
@@ -185,7 +188,7 @@ TEST_CASE("Modules::Task::callAction - non blocking", "[modules]") {
 TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     configureTest();
     lth_util::scope_exit config_cleaner { resetTest };
-    Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+    Modules::Task e_m { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
 
     SECTION("passes input as json") {
         auto echo_txt =
@@ -404,7 +407,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("errors on download when no master-uri is provided") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, {}, CA, CRT, KEY, "", 10, 20, STORAGE };
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, {}, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
         auto task_txt = (DATA_FORMAT % "\"0632\""
                                      % "\"task\""
                                      % "\"run\""
@@ -425,7 +428,8 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("if a master-uri has a server-side error, then it proceeds to try the next master-uri. if they all fail, it errors on download and removes all temporary files") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+        static const auto temp_module_cache_dir = std::make_shared<ModuleCacheDir>(TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL);
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, temp_module_cache_dir, STORAGE };
         auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_sha";
         auto task_txt = (DATA_FORMAT % "\"0632\""
                                      % "\"task\""
@@ -451,13 +455,14 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("creates the tasks-cache/<sha> directory with ower/group read and write permissions") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+        static const auto temp_module_cache_dir = std::make_shared<ModuleCacheDir>(TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL);
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, temp_module_cache_dir, STORAGE };
         auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_other_sha";
         auto task_txt = (DATA_FORMAT % "\"0632\""
                                      % "\"task\""
                                      % "\"run\""
                                      % "{\"task\": \"unparseable\", \"input\":{\"message\":\"hello\"}, "
-                                       "\"files\" : [{\"sha256\": \"some_other_sha\"}]}").str();
+                                       "\"files\" : [{\"sha256\": \"some_other_sha\",  \"filename\": \"some_file\"}]}").str();
         PCPClient::ParsedChunks task_content {
             lth_jc::JsonContainer(ENVELOPE_TXT),
             lth_jc::JsonContainer(task_txt),
@@ -476,7 +481,8 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
     }
 
     SECTION("succeeds even if tasks-cache was deleted") {
-        Modules::Task e_m { PXP_AGENT_BIN_PATH, TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+        static const auto temp_module_cache_dir = std::make_shared<ModuleCacheDir>(TEMP_TASK_CACHE_DIR, TASK_CACHE_TTL);
+        Modules::Task e_m { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, temp_module_cache_dir, STORAGE };
         fs::remove_all(TEMP_TASK_CACHE_DIR);
 
         auto cache = fs::path(TEMP_TASK_CACHE_DIR) / "some_other_sha";
@@ -518,7 +524,7 @@ static ActionRequest getEchoRequest(T& metadata)
 TEST_CASE("Modules::Task::executeAction implementations", "[modules][output]") {
     configureTest();
     lth_util::scope_exit config_cleaner { resetTest };
-    Modules::Task e_m { PXP_AGENT_BIN_PATH, TASK_CACHE_DIR, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+    Modules::Task e_m { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
 
     SECTION("uses a matching implementation") {
         auto impls = "["
@@ -617,8 +623,10 @@ TEST_CASE("purge old tasks", "[modules]") {
     const std::string OLD_TRANSACTION { "valid_old" };
     const std::string RECENT_TRANSACTION { "valid_recent" };
 
+    static const auto PURGE_MODULE_CACHE_DIR = std::make_shared<ModuleCacheDir>(PURGE_TASK_CACHE, TASK_CACHE_TTL);
+
     // Start with 0 TTL to prevent initial cleanup
-    Modules::Task e_m { PXP_AGENT_BIN_PATH, PURGE_TASK_CACHE, TASK_CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+    Modules::Task e_m { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, PURGE_MODULE_CACHE_DIR, STORAGE };
 
     unsigned int num_purged_results { 0 };
     auto purgeCallback =
