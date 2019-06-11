@@ -3,6 +3,7 @@
 
 #include <pxp-agent/action_response.hpp>
 #include <pxp-agent/module.hpp>
+#include <pxp-agent/module_cache_dir.hpp>
 #include <pxp-agent/results_storage.hpp>
 
 #include <leatherman/execution/execution.hpp>
@@ -24,8 +25,9 @@ struct CommandObject {
 // This module is a basis for PXP modules supporting bolt functionality
 class BoltModule : public PXPAgent::Module {
     public:
-        explicit BoltModule(std::shared_ptr<ResultsStorage> storage)
-           : storage_(std::move(storage)) {}
+        explicit BoltModule(std::shared_ptr<ResultsStorage> storage, std::shared_ptr<ModuleCacheDir> module_cache_dir)
+           : storage_(std::move(storage)),
+             module_cache_dir_(std::move(module_cache_dir)) {}
 
         /// Whether the module supports non-blocking / asynchronous requests.
         bool supportsAsync() override { return true; }
@@ -43,6 +45,7 @@ class BoltModule : public PXPAgent::Module {
 
     protected:
         std::shared_ptr<ResultsStorage> storage_;
+        std::shared_ptr<ModuleCacheDir> module_cache_dir_;
 
         // Construct a CommandObject based on an ActionRequest - all inheriting classes must implement this method.
         virtual CommandObject buildCommandObject(const ActionRequest& request) = 0;

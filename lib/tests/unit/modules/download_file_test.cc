@@ -46,6 +46,8 @@ static const std::string TEST_FILE_DIR { std::string { PXP_AGENT_ROOT_PATH }
 // Disable cache ttl so we don't delete fixtures.
 static const std::string CACHE_TTL { "0d" };
 
+static const auto MODULE_CACHE_DIR = std::make_shared<ModuleCacheDir>(CACHE_DIR, CACHE_TTL);
+
 static const std::string TEMP_CACHE_DIR { CACHE_DIR + "/temp" };
 
 static const std::vector<std::string> MASTER_URIS { { "https://_master1", "https://_master2", "https://_master3" } };
@@ -107,12 +109,12 @@ static const PCPClient::ParsedChunks FAILURE_NON_BLOCKING_CONTENT {
 
 TEST_CASE("Modules::DownloadFile", "[modules]") {
     SECTION("can successfully instantiate") {
-        REQUIRE_NOTHROW(Modules::DownloadFile(CACHE_DIR, CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE));
+        REQUIRE_NOTHROW(Modules::DownloadFile(MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE));
     }
 }
 
 TEST_CASE("Modules::DownloadFile::hasAction", "[modules]") {
-    Modules::DownloadFile mod { CACHE_DIR, CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+    Modules::DownloadFile mod { MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
     SECTION("correctly reports false") {
         REQUIRE(!mod.hasAction("foo"));
     }
@@ -123,7 +125,7 @@ TEST_CASE("Modules::DownloadFile::hasAction", "[modules]") {
 }
 
 TEST_CASE("Modules::DownloadFile::callAction", "[modules]") {
-    Modules::DownloadFile mod { CACHE_DIR, CACHE_TTL, MASTER_URIS, CA, CRT, KEY, "", 10, 20, STORAGE };
+    Modules::DownloadFile mod { MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
     SECTION("Correctly returns exitcode 0 with a successful call to downloadFileFromMaster") {
         ActionRequest request { RequestType::NonBlocking, SUCCESS_NON_BLOCKING_CONTENT };
         auto response = mod.executeAction(request);

@@ -2,12 +2,11 @@
 #define SRC_MODULES_TASK_H_
 
 #include <pxp-agent/module.hpp>
+#include <pxp-agent/module_cache_dir.hpp>
 #include <pxp-agent/action_response.hpp>
 #include <pxp-agent/results_storage.hpp>
 #include <pxp-agent/util/purgeable.hpp>
 #include <pxp-agent/util/bolt_module.hpp>
-
-#include <cpp-pcp-client/util/thread.hpp>
 
 #include <leatherman/curl/client.hpp>
 #include <set>
@@ -18,8 +17,6 @@ namespace Modules {
 class Task : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable {
   public:
     Task(const boost::filesystem::path& exec_prefix,
-         const std::string& task_cache_dir,
-         const std::string& task_cache_dir_purge_ttl,
          const std::vector<std::string>& master_uris,
          const std::string& ca,
          const std::string& crt,
@@ -27,6 +24,7 @@ class Task : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable
          const std::string& proxy,
          uint32_t task_download_connect_timeout_s,
          uint32_t task_download_timeout_s,
+         std::shared_ptr<ModuleCacheDir> module_cache_dir,
          std::shared_ptr<ResultsStorage> storage);
 
 
@@ -41,10 +39,6 @@ class Task : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable
     std::set<std::string> const& features() const;
 
   private:
-    PCPClient::Util::mutex task_cache_dir_mutex_;
-
-    std::string task_cache_dir_;
-
     boost::filesystem::path exec_prefix_;
 
     std::vector<std::string> master_uris_;
@@ -54,6 +48,12 @@ class Task : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable
     std::set<std::string> features_;
 
     leatherman::curl::client client_;
+
+    boost::filesystem::path getCachedTaskFile(const std::vector<std::string>& master_uris,
+                               uint32_t connect_timeout,
+                               uint32_t timeout,
+                               leatherman::curl::client& client,
+                               leatherman::json_container::JsonContainer& file);
 
     boost::filesystem::path downloadMultiFile(std::vector<leatherman::json_container::JsonContainer> const& files,
         std::set<std::string> const& download_set,

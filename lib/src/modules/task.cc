@@ -169,8 +169,6 @@ static void findExecutableAndArguments(const fs::path& task_file, Util::CommandO
 }
 
 Task::Task(const fs::path& exec_prefix,
-           const std::string& task_cache_dir,
-           const std::string& task_cache_dir_purge_ttl,
            const std::vector<std::string>& master_uris,
            const std::string& ca,
            const std::string& crt,
@@ -178,10 +176,10 @@ Task::Task(const fs::path& exec_prefix,
            const std::string& proxy,
            uint32_t task_download_connect_timeout,
            uint32_t task_download_timeout,
+           std::shared_ptr<ModuleCacheDir> module_cache_dir,
            std::shared_ptr<ResultsStorage> storage) :
-    BoltModule { std::move(storage) },
-    Purgeable { task_cache_dir_purge_ttl },
-    task_cache_dir_ { task_cache_dir },
+    BoltModule { std::move(storage), std::move(module_cache_dir) },
+    Purgeable { module_cache_dir_->purge_ttl_ },
     exec_prefix_ { exec_prefix },
     master_uris_ { master_uris },
     task_download_connect_timeout_ { task_download_connect_timeout },
@@ -220,41 +218,24 @@ static void addParametersToEnvironment(const lth_jc::JsonContainer &input, std::
     }
 }
 
-// Converts boost filesystem errors to a task_error object.
-static Module::ProcessingError toModuleProcessingError(const fs::filesystem_error& e) {
-    auto err_code = e.code();
-    if (err_code == boost_error::no_such_file_or_directory) {
-        return Module::ProcessingError(lth_loc::format("No such file or directory: {1}", e.path1()));
-    } else if (err_code ==  boost_error::file_exists) {
-        return Module::ProcessingError(lth_loc::format("A file matching the name of the provided sha already exists"));
-    } else {
-        return Module::ProcessingError(e.what());
-    }
-}
-
 // Verify (this includes checking the SHA256 checksums) that task file is present
 // in the task cache downloading it if necessary.
 // Return the full path of the cached version of the file.
-static fs::path getCachedTaskFile(const fs::path& task_cache_dir,
-                                  PCPClient::Util::mutex& task_cache_dir_mutex,
-                                  const std::vector<std::string>& master_uris,
-                                  uint32_t connect_timeout,
-                                  uint32_t timeout,
-                                  lth_curl::client& client,
-                                  lth_jc::JsonContainer& file) {
+fs::path Task::getCachedTaskFile(const std::vector<std::string>& master_uris,
+                                 uint32_t connect_timeout,
+                                 uint32_t timeout,
+                                 lth_curl::client& client,
+                                 lth_jc::JsonContainer& file) {
     LOG_DEBUG("Verifying task file based on {1}", file.toString());
 
     try {
-        auto cache_dir = [&]() {
-            pcp_util::lock_guard<pcp_util::mutex> the_lock { task_cache_dir_mutex };
-            return Util::createCacheDir(task_cache_dir, file.get<std::string>("sha256"));
-        }();
+        auto cache_dir = module_cache_dir_->createCacheDir(file.get<std::string>("sha256"));
         // Task files remain in the cache_dir rather than being written out to a destination
         // elsewhere on the filesystem.
         auto destination = cache_dir / fs::path(file.get<std::string>("filename")).filename();
         return Util::downloadFileFromMaster(master_uris, connect_timeout, timeout, client, cache_dir, destination, file);
-    } catch (fs::filesystem_error& e) {
-        throw toModuleProcessingError(e);
+    } catch (Module::ProcessingError& e) {
+        throw Module::ProcessingError { lth_loc::format("Failed to download task file with: {1}", e.what()) };
     }
 }
 
@@ -323,7 +304,7 @@ fs::path Task::downloadMultiFile(std::vector<lth_jc::JsonContainer> const& files
     if (fs::is_directory(s)) {
       spool = spool_dir;
     } else {
-      spool = task_cache_dir_;
+      spool = module_cache_dir_->cache_dir_;
     }
     auto install_dir = createInstallDir(spool, download_set);
     for (auto file_name : download_set) {
@@ -331,13 +312,11 @@ fs::path Task::downloadMultiFile(std::vector<lth_jc::JsonContainer> const& files
         auto file_object = selectLibFile(files, file_name);
 
         // get file from cache, download if necessary
-        auto lib_file = getCachedTaskFile(task_cache_dir_,
-                                       task_cache_dir_mutex_,
-                                       master_uris_,
-                                       task_download_connect_timeout_,
-                                       task_download_timeout_,
-                                       client_,
-                                       file_object);
+        auto lib_file = getCachedTaskFile(master_uris_,
+                                          task_download_connect_timeout_,
+                                          task_download_timeout_,
+                                          client_,
+                                          file_object);
 
         // copy to expected location in install_dir
         fs::copy_file(lib_file, install_dir / fs::path(file_name));
@@ -452,9 +431,7 @@ Util::CommandObject Task::buildCommandObject(const ActionRequest& request)
     auto files = task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files");
     auto file = selectTaskFile(files, implementation);
 
-    auto task_file = getCachedTaskFile(task_cache_dir_,
-                                       task_cache_dir_mutex_,
-                                       master_uris_,
+    auto task_file = getCachedTaskFile(master_uris_,
                                        task_download_connect_timeout_,
                                        task_download_timeout_,
                                        client_,
@@ -549,45 +526,9 @@ unsigned int Task::purge(
     std::vector<std::string> ongoing_transactions,
     std::function<void(const std::string& dir_path)> purge_callback)
 {
-    unsigned int num_purged_dirs { 0 };
-    Timestamp ts { ttl };
     if (purge_callback == nullptr)
-        purge_callback = &Purgeable::defaultDirPurgeCallback;
-
-    LOG_INFO("About to purge cached tasks from '{1}'; TTL = {2}",
-             task_cache_dir_, ttl);
-
-    lth_file::each_subdirectory(
-        task_cache_dir_,
-        [&](std::string const& s) -> bool {
-            fs::path dir_path { s };
-            LOG_TRACE("Inspecting '{1}' for purging", s);
-
-            boost::system::error_code ec;
-            pcp_util::lock_guard<pcp_util::mutex> the_lock { task_cache_dir_mutex_ };
-            auto last_update = fs::last_write_time(dir_path, ec);
-            if (ec) {
-                LOG_ERROR("Failed to remove '{1}': {2}", s, ec.message());
-            } else if (ts.isNewerThan(last_update)) {
-                LOG_TRACE("Removing '{1}'", s);
-
-                try {
-                    purge_callback(dir_path.string());
-                    num_purged_dirs++;
-                } catch (const std::exception& e) {
-                    LOG_ERROR("Failed to remove '{1}': {2}", s, e.what());
-                }
-            }
-
-            return true;
-        });
-
-    LOG_INFO(lth_loc::format_n(
-        // LOCALE: info
-        "Removed {1} directory from '{2}'",
-        "Removed {1} directories from '{2}'",
-        num_purged_dirs, num_purged_dirs, task_cache_dir_));
-    return num_purged_dirs;
+      purge_callback = &Purgeable::defaultDirPurgeCallback;
+    return module_cache_dir_->purgeCache(ttl, ongoing_transactions, purge_callback);
 }
 
 }  // namespace Modules
