@@ -2,6 +2,7 @@
 #define SRC_AGENT_REQUEST_PROCESSOR_HPP_
 
 #include <pxp-agent/module.hpp>
+#include <pxp-agent/module_cache_dir.hpp>
 #include <pxp-agent/thread_container.hpp>
 #include <pxp-agent/action_request.hpp>
 #include <pxp-agent/pxp_connector.hpp>
@@ -72,6 +73,8 @@ class RequestProcessor {
     ThreadContainer thread_container_;
 
     PCPClient::Util::mutex thread_container_mutex_;
+
+    std::shared_ptr<ModuleCacheDir> module_cache_dir_;
 
     /// PXP Connector pointer
     std::shared_ptr<PXPConnector> connector_ptr_;

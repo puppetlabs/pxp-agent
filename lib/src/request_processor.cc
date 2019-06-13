@@ -170,6 +170,8 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
                                    const Configuration::Agent& agent_configuration)
         : thread_container_ { "Action Executer" },
           thread_container_mutex_ {},
+          module_cache_dir_ { new ModuleCacheDir(agent_configuration.task_cache_dir,
+                                                 agent_configuration.task_cache_dir_purge_ttl) },
           connector_ptr_ { connector_ptr },
           storage_ptr_ { new ResultsStorage(agent_configuration.spool_dir,
                                             agent_configuration.spool_dir_purge_ttl) },
@@ -828,8 +830,6 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
     registerModule(std::make_shared<Modules::Ping>());
     auto task = std::make_shared<Modules::Task>(
         Configuration::Instance().getExecPrefix(),
-        agent_configuration.task_cache_dir,
-        agent_configuration.task_cache_dir_purge_ttl,
         agent_configuration.master_uris,
         agent_configuration.ca,
         agent_configuration.crt,
@@ -837,6 +837,7 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
         agent_configuration.master_proxy,
         agent_configuration.task_download_connect_timeout_s,
         agent_configuration.task_download_timeout_s,
+        module_cache_dir_,
         storage_ptr_);
     registerModule(task);
     registerPurgeable(task);

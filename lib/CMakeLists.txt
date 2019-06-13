@@ -20,6 +20,7 @@ set(LIBRARY_COMMON_SOURCES
     src/configuration.cc
     src/external_module.cc
     src/module.cc
+    src/module_cache_dir.cc
     src/pxp_connector_v1.cc
     src/pxp_connector_v2.cc
     src/pxp_schemas.cc
