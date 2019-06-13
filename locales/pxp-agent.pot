@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: pxp-agent 1.11.1\n"
+"Project-Id-Version: pxp-agent 1.12.1\n"
 "Report-Msgid-Bugs-To: docs@puppet.com\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -634,6 +634,31 @@ msgstr ""
 msgid "Failed to execute the task for the {1}. {2}"
 msgstr ""
 
+#: lib/src/module_cache_dir.cc
+msgid "No such file or directory: {1}"
+msgstr ""
+
+#: lib/src/module_cache_dir.cc
+msgid "Failed to create cache dir {1} to download file to: {2}"
+msgstr ""
+
+#. info
+#: lib/src/module_cache_dir.cc
+msgid "About to purge cached files from '{1}'; TTL = {2}"
+msgstr ""
+
+#. error
+#: lib/src/module_cache_dir.cc lib/src/results_storage.cc
+msgid "Failed to remove '{1}': {2}"
+msgstr ""
+
+#. LOCALE: info
+#: lib/src/module_cache_dir.cc lib/src/results_storage.cc
+msgid "Removed {1} directory from '{2}'"
+msgid_plural "Removed {1} directories from '{2}'"
+msgstr[0] ""
+msgstr[1] ""
+
 #. debug
 #: lib/src/modules/ping.cc
 msgid "Found no debug entry in the request message"
@@ -653,17 +678,13 @@ msgstr ""
 msgid "debug entry is not valid JSON"
 msgstr ""
 
-#: lib/src/modules/task.cc
-msgid "No such file or directory: {1}"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid "A file matching the name of the provided sha already exists"
-msgstr ""
-
 #. debug
 #: lib/src/modules/task.cc
 msgid "Verifying task file based on {1}"
+msgstr ""
+
+#: lib/src/modules/task.cc
+msgid "Failed to download task file with: {1}"
 msgstr ""
 
 #: lib/src/modules/task.cc
@@ -695,23 +716,6 @@ msgstr ""
 #: lib/src/modules/task.cc
 msgid "Multi file task _installdir: '{1}'"
 msgstr ""
-
-#. info
-#: lib/src/modules/task.cc
-msgid "About to purge cached tasks from '{1}'; TTL = {2}"
-msgstr ""
-
-#. error
-#: lib/src/modules/task.cc lib/src/results_storage.cc
-msgid "Failed to remove '{1}': {2}"
-msgstr ""
-
-#. LOCALE: info
-#: lib/src/modules/task.cc lib/src/results_storage.cc
-msgid "Removed {1} directory from '{2}'"
-msgid_plural "Removed {1} directories from '{2}'"
-msgstr[0] ""
-msgstr[1] ""
 
 #. LOCALE: warning
 #: lib/src/pxp_connector_v1.cc
