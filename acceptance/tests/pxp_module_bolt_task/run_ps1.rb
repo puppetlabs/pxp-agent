@@ -1,4 +1,4 @@
-require 'pxp-agent/task_helper.rb'
+require 'pxp-agent/bolt_pxp_module_helper.rb'
 require 'json'
 
 test_name 'run powershell task' do

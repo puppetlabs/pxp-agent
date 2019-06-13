@@ -1,5 +1,5 @@
 require 'pxp-agent/test_helper.rb'
-require 'pxp-agent/task_helper.rb'
+require 'pxp-agent/bolt_pxp_module_helper.rb'
 require 'puppet/acceptance/environment_utils.rb'
 
 test_name 'Connect via proxy' do
