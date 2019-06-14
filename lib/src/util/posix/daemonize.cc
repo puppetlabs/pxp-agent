@@ -88,6 +88,7 @@ std::unique_ptr<PIDFile> daemonize() {
             LOG_ERROR("Failed to perform the first fork; {1} ({2})",
                       strerror(errno), errno);
             removeLockAndExit();
+            break;
         case 0:
             // CHILD - will fork and exit soon
             LOG_DEBUG("First child spawned, with PID={1}",
