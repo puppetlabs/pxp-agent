@@ -31,7 +31,7 @@ test_name 'run powershell task' do
   step 'Run powershell task on Windows agent hosts' do
     task_input = JSON.parse(File.read(File.join(fixtures, 'complex-args.json')))
     task_output = File.read(File.join(fixtures, 'complex-output'))
-    files = [file_entry('init.ps1', @sha256)]
+    files = [task_file_entry('init.ps1', @sha256)]
     run_successful_task(master, windows_hosts, 'echo', files, input: task_input) do |stdout|
       # Handle some known variations
       stdout.gsub!(/System\.Guid/, 'guid')
@@ -47,7 +47,7 @@ test_name 'run powershell task' do
       @sha256 = create_task_on(agent, 'echo', 'init.ps1', task_body)
     end
 
-    files = [file_entry('init.ps1', @sha256)]
+    files = [task_file_entry('init.ps1', @sha256)]
     run_failed_task(master, windows_hosts, 'echo', files) do |stderr|
       assert_match(/Error trying to do a task/, stderr.delete("\n"), 'stderr did not contain error text')
     end
@@ -60,7 +60,7 @@ test_name 'run powershell task' do
       @sha256 = create_task_on(agent, 'echo', 'init.ps1', task_body)
     end
 
-    files = [file_entry('init.ps1', @sha256)]
+    files = [task_file_entry('init.ps1', @sha256)]
     run_failed_task(master, windows_hosts, 'echo', files) do |stderr|
       assert_equal(nil, stderr)
     end

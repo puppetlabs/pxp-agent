@@ -39,7 +39,7 @@ test_name 'remove old task from pxp-agent cache' do
   end
 
   step "Run #{task_name} task on agent hosts to populate cache" do
-    files = [file_entry('init.bat', @sha256)]
+    files = [task_file_entry('init.bat', @sha256)]
     run_successful_task(master, agents, task_name, files, input: {:message => 'hello'}){}
   end
 

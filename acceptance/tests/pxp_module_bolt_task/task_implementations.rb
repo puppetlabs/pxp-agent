@@ -53,7 +53,7 @@ test_name 'task downloads correct implementation' do
       assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{@sha256}")).stdout)
     end
 
-    files = [file_entry(filename, @sha256, "/task-files/#{filename}"), file_entry('invalid', 'wrong')]
+    files = [task_file_entry(filename, @sha256, "/task-files/#{filename}"), task_file_entry('invalid', 'wrong')]
     metadata = { implementations: [
       { name: filename, requirements: ['puppet-agent'] },
       { name: 'invalid' }

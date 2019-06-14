@@ -1,8 +1,12 @@
 require 'pxp-agent/test_helper.rb'
 require 'digest'
 
-def file_entry(filename, sha256, path = 'foo')
+def task_file_entry(filename, sha256, path = 'foo')
   {:uri => {:path => path, :params => {}}, :filename => filename, :sha256 => sha256}
+end
+
+def download_file_entry(filename, sha256, path = 'foo', destination)
+  {:uri => {:path => path, :params => {}}, :filename => filename, :sha256 => sha256, :destination => destination}
 end
 
 # Selects only the agents (not masters) from a set of beaker hosts and produces an array of PCP
@@ -95,6 +99,30 @@ def ensure_successful(broker, targets, response_dataset, max_retries: 30, query_
       assert_equal(0, result['exitcode'], 'Successful action expected to have exit code 0')
       yield result['stdout'] if block_given?
     end
+  end
+end
+
+# Starts a download file execution.
+# Block is executed on the "response_dataset" object from do_module_action.
+def run_download_file(broker, agent, files, **kwargs, &block)
+  params = { files: files }
+  target = ["pcp://#{agent}/agent"]
+  do_module_action(broker, target, 'download_file', 'download', params, **kwargs, &block)
+end
+
+# Runs a non-blocking task action on targets, and confirms that it was successful.
+# Block is executed on the stdout string.
+def run_successful_download(broker, agent, files, **kwargs, &block)
+  run_download_file(broker, agent, files, **kwargs) do |datas|
+    ensure_successful(broker, [agent], datas, **kwargs, &block)
+  end
+end
+
+# Runs a non-blocking task action on targets, and confirms that it was successful.
+# Block is executed on the stdout string.
+def run_failed_download(broker, agent, files, **kwargs, &block)
+  run_download_file(broker, agent, files, **kwargs) do |datas|
+    ensure_failed(broker, [agent], datas, **kwargs, &block)
   end
 end
 
