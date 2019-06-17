@@ -18,6 +18,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
+#: exe/execution_wrapper.cc
+msgid "Executable '{1}' failed to run: {2}"
+msgstr ""
+
 #. error
 #: exe/main.cc
 msgid "Failed to daemonize: {1}"
@@ -88,10 +92,6 @@ msgstr ""
 #. error
 #: exe/main.cc
 msgid "Fatal configuration error: {1}; cannot start pxp-agent"
-msgstr ""
-
-#: exe/task_wrapper.cc
-msgid "Task '{1}' failed to run: {2}"
 msgstr ""
 
 #: lib/src/action_request.cc lib/src/action_response.cc
@@ -583,7 +583,7 @@ msgstr ""
 
 #. info
 #: lib/src/external_module.cc
-msgid "The task for the {1} has completed"
+msgid "The execution of the {1} has completed"
 msgstr ""
 
 #: lib/src/external_module.cc lib/src/module.cc
@@ -593,8 +593,8 @@ msgstr ""
 #. warning
 #: lib/src/external_module.cc
 msgid ""
-"The task process failed to write output on file for the {1}; stdout: {2}; "
-"stderr: {3}"
+"The execution process failed to write output on file for the {1}; stdout: "
+"{2}; stderr: {3}"
 msgstr ""
 
 #: lib/src/external_module.cc
