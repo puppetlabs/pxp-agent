@@ -9,19 +9,19 @@ add_executable(pxp-agent main.cc)
 target_link_libraries(pxp-agent libpxp-agent)
 install(TARGETS pxp-agent DESTINATION bin)
 
-set(TASK_WRAPPER_LIBS ${Boost_LIBRARIES} ${LEATHERMAN_LIBRARIES})
+set(EXECUTION_WRAPPER_LIBS ${Boost_LIBRARIES} ${LEATHERMAN_LIBRARIES})
 if (CMAKE_SYSTEM_NAME MATCHES "AIX")
     find_package(Threads)
-    list(APPEND TASK_WRAPPER_LIBS ${CMAKE_THREAD_LIBS_INIT})
+    list(APPEND EXECUTION_WRAPPER_LIBS ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
-add_executable(task_wrapper task_wrapper.cc)
-target_link_libraries(task_wrapper ${TASK_WRAPPER_LIBS})
-install(TARGETS task_wrapper DESTINATION bin)
+add_executable(execution_wrapper execution_wrapper.cc)
+target_link_libraries(execution_wrapper ${EXECUTION_WRAPPER_LIBS})
+install(TARGETS execution_wrapper DESTINATION bin)
 
 include_directories(${LEATHERMAN_CATCH_INCLUDE})
-add_executable(task_wrapper-tests tests/main.cc)
-target_link_libraries(task_wrapper-tests ${TASK_WRAPPER_LIBS})
+add_executable(execution_wrapper-tests tests/main.cc)
+target_link_libraries(execution_wrapper-tests ${EXECUTION_WRAPPER_LIBS})
 
 # Copy powershell shim to bin so we can use with local testing.
 foreach(shim PowershellShim.ps1 PowershellShim-Helper.ps1)
@@ -37,5 +37,5 @@ endforeach(shim)
 
 add_test(
     NAME "task\\ wrapper\\ tests"
-    COMMAND "${EXECUTABLE_OUTPUT_PATH}/task_wrapper-tests"
+    COMMAND "${EXECUTABLE_OUTPUT_PATH}/execution_wrapper-tests"
 )

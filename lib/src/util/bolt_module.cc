@@ -7,6 +7,7 @@
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.modules.bolt"
 #include <leatherman/logging/logging.hpp>
+#include <pxp-agent/configuration.hpp>
 
 namespace PXPAgent {
 namespace Util {
@@ -18,6 +19,14 @@ namespace lth_file = leatherman::file_util;
 namespace lth_jc   = leatherman::json_container;
 namespace lth_loc  = leatherman::locale;
 
+#ifdef _WIN32
+// The extension is required with lth_exec::execute when using a full path.
+static const std::string EXECUTION_WRAPPER_EXECUTABLE { "execution_wrapper.exe" };
+#else
+static const std::string EXECUTION_WRAPPER_EXECUTABLE { "execution_wrapper" };
+#endif
+
+
 void BoltModule::processOutputAndUpdateMetadata(PXPAgent::ActionResponse &response) {
     if (response.output.std_out.empty()) {
         LOG_TRACE("Obtained no results on stdout for the {1}",
@@ -28,11 +37,19 @@ void BoltModule::processOutputAndUpdateMetadata(PXPAgent::ActionResponse &respon
     }
 
     if (response.output.exitcode != EXIT_SUCCESS) {
+        std::stringstream ss_detail;
+
+        if (!response.output.std_err.empty()) {
+            ss_detail << "; stderr:\n" << response.output.std_err;
+        } else if (response.output.std_out.empty() && response.output.exitcode == 127) {
+            // When leatherman::execution attempts to execute a nonexistent command, the exit code
+            // is 127 and both stdout and stderr are empty. We'll leave this result untouched,
+            // but log a message explaining what happened:
+            ss_detail << "; command not found";
+        }
+
         LOG_TRACE("Execution failure (exit code {1}) for the {2}{3}",
-                  response.output.exitcode, response.prettyRequestLabel(),
-                  (response.output.std_err.empty()
-                   ? ""
-                   : "; stderr:\n" + response.output.std_err));
+                  response.output.exitcode, response.prettyRequestLabel(), ss_detail.str());
     } else if (!response.output.std_err.empty()) {
         LOG_TRACE("Output on stderr for the {1}:\n{2}",
                   response.prettyRequestLabel(), response.output.std_err);
@@ -112,22 +129,48 @@ void BoltModule::callNonBlockingAction(
         const Util::CommandObject &command,
         ActionResponse &response
 ) {
-    // TODO: throw if storage_ isn't available
-    auto exec = run(command);
-    // Stdout / stderr output should be on file; read it
+    // Guaranteed by Configuration
+    assert(!request.resultsDir().empty());
+
+    // Wrap the execution
+    const fs::path &results_dir = request.resultsDir();
+    lth_jc::JsonContainer wrapper_input;
+
+    wrapper_input.set<std::string>("executable", command.executable);
+    wrapper_input.set<std::vector<std::string>>("arguments", command.arguments);
+    wrapper_input.set<std::string>("input", command.input);
+    wrapper_input.set<std::string>("stdout", (results_dir / "stdout").string());
+    wrapper_input.set<std::string>("stderr", (results_dir / "stderr").string());
+    wrapper_input.set<std::string>("exitcode", (results_dir / "exitcode").string());
+
+    CommandObject wrapped_command {
+        (exec_prefix_ / EXECUTION_WRAPPER_EXECUTABLE).string(),
+        {},
+        command.environment,
+        wrapper_input.toString(),
+        [results_dir](size_t pid) {
+            auto pid_file = (results_dir / "pid").string();
+            lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file,
+                                           NIX_FILE_PERMS, std::ios::binary);
+        }
+    };
+
+    auto exec = run(wrapped_command);
+
+    // Stdout / stderr output should be on file, written by the execution wrapper:
     response.output = storage_->getOutput(request.transactionId(), exec.exit_code);
     processOutputAndUpdateMetadata(response);
 }
 
 ActionResponse BoltModule::callAction(const ActionRequest& request)
 {
-    auto task_command = buildCommandObject(request);
+    auto cmd = buildCommandObject(request);
     ActionResponse response { ModuleType::Internal, request };
 
     if (request.type() == RequestType::Blocking) {
-        callBlockingAction(request, task_command, response);
+        callBlockingAction(request, cmd, response);
     } else {
-        callNonBlockingAction(request, task_command, response);
+        callNonBlockingAction(request, cmd, response);
     }
 
     return response;

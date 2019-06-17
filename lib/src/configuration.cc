@@ -237,7 +237,7 @@ HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
     // which are installed alongside the pxp-agent executable.
     exec_prefix_ = fs::path(argv[0]).parent_path();
     // If a relative or absolute path was specified, convert to absolute.
-    // Otherwise, we'll depend on using PATH to find the task_wrapper.
+    // Otherwise, we'll depend on using PATH to find the execution_wrapper.
     if (!exec_prefix_.empty()) {
         exec_prefix_ = fs::absolute(exec_prefix_);
     }

@@ -132,13 +132,6 @@ static const std::string TASK_RUN_ACTION_INPUT_SCHEMA { R"(
 }
 )" };
 
-#ifdef _WIN32
-// The extension is required with lth_exec::execute when using a full path.
-static const std::string TASK_WRAPPER_EXECUTABLE { "task_wrapper.exe" };
-#else
-static const std::string TASK_WRAPPER_EXECUTABLE { "task_wrapper" };
-#endif
-
 // Hard-code interpreters on Windows. On non-Windows, we still rely on permissions and #!
 static const std::map<std::string, std::function<std::pair<std::string, std::vector<std::string>>(std::string)>> BUILTIN_TASK_INTERPRETERS {
 #ifdef _WIN32
@@ -178,7 +171,7 @@ Task::Task(const fs::path& exec_prefix,
            uint32_t task_download_timeout,
            std::shared_ptr<ModuleCacheDir> module_cache_dir,
            std::shared_ptr<ResultsStorage> storage) :
-    BoltModule { std::move(storage), std::move(module_cache_dir) },
+    BoltModule { exec_prefix, std::move(storage), std::move(module_cache_dir) },
     Purgeable { module_cache_dir_->purge_ttl_ },
     exec_prefix_ { exec_prefix },
     master_uris_ { master_uris },
@@ -491,34 +484,7 @@ Util::CommandObject Task::buildCommandObject(const ActionRequest& request)
         addParametersToEnvironment(task_params, task_command.environment);
     }
 
-    if (request.type() == RequestType::Blocking) {
-        return task_command;
-    }
-
-    // Guaranteed by Configuration
-    assert(!request.resultsDir().empty());
-
-    const fs::path &results_dir = request.resultsDir();
-    lth_jc::JsonContainer wrapper_input;
-
-    wrapper_input.set<std::string>("executable", task_command.executable);
-    wrapper_input.set<std::vector<std::string>>("arguments", task_command.arguments);
-    wrapper_input.set<std::string>("input", task_command.input);
-    wrapper_input.set<std::string>("stdout", (results_dir / "stdout").string());
-    wrapper_input.set<std::string>("stderr", (results_dir / "stderr").string());
-    wrapper_input.set<std::string>("exitcode", (results_dir / "exitcode").string());
-
-    return Util::CommandObject {
-            (exec_prefix_ / TASK_WRAPPER_EXECUTABLE).string(),
-            {},
-            task_command.environment,
-            wrapper_input.toString(),
-            [results_dir](size_t pid) {
-                auto pid_file = (results_dir / "pid").string();
-                lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file,
-                                               NIX_FILE_PERMS, std::ios::binary);
-            }
-    };
+    return task_command;
 }
 
 unsigned int Task::purge(

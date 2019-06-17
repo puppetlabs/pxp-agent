@@ -25,9 +25,12 @@ struct CommandObject {
 // This module is a basis for PXP modules supporting bolt functionality
 class BoltModule : public PXPAgent::Module {
     public:
-        explicit BoltModule(std::shared_ptr<ResultsStorage> storage, std::shared_ptr<ModuleCacheDir> module_cache_dir)
-           : storage_(std::move(storage)),
-             module_cache_dir_(std::move(module_cache_dir)) {}
+        BoltModule(const boost::filesystem::path &exec_prefix,
+                   std::shared_ptr<ResultsStorage> storage,
+                   std::shared_ptr<ModuleCacheDir> module_cache_dir)
+            : exec_prefix_(exec_prefix),
+              storage_(std::move(storage)),
+              module_cache_dir_(std::move(module_cache_dir)) {}
 
         /// Whether the module supports non-blocking / asynchronous requests.
         bool supportsAsync() override { return true; }
@@ -43,12 +46,13 @@ class BoltModule : public PXPAgent::Module {
         /// in the response object's metadata.
         void processOutputAndUpdateMetadata(ActionResponse& response) override;
 
-    protected:
-        std::shared_ptr<ResultsStorage> storage_;
-        std::shared_ptr<ModuleCacheDir> module_cache_dir_;
-
         // Construct a CommandObject based on an ActionRequest - all inheriting classes must implement this method.
         virtual CommandObject buildCommandObject(const ActionRequest& request) = 0;
+
+    protected:
+        boost::filesystem::path exec_prefix_;
+        std::shared_ptr<ResultsStorage> storage_;
+        std::shared_ptr<ModuleCacheDir> module_cache_dir_;
 
         // Execute a CommandObject synchronously
         virtual leatherman::execution::result run_sync(const CommandObject &cmd);
