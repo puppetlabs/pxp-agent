@@ -36,7 +36,7 @@ puts results.to_json
 
   step 'Run ruby task on agent hosts' do
 
-    files = [file_entry('multi_file.rb', @sha256_task), file_entry('file1.txt', @sha256_file1), file_entry('dir/file2.txt', @sha256_file2), file_entry('dir/sub_dir/file3.txt', @sha256_file3)]
+    files = [task_file_entry('multi_file.rb', @sha256_task), task_file_entry('file1.txt', @sha256_file1), task_file_entry('dir/file2.txt', @sha256_file2), task_file_entry('dir/sub_dir/file3.txt', @sha256_file3)]
     metadata = { implementations: [
       { name: 'multi_file.rb', requirements: ['puppet-agent'], files: ['file1.txt']}], files: ['dir/']}
     run_successful_task(master, agents, 'multi_file', files, metadata: metadata ) do |stdout|
