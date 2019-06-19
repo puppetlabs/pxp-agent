@@ -94,6 +94,10 @@ msgstr ""
 msgid "Fatal configuration error: {1}; cannot start pxp-agent"
 msgstr ""
 
+#: lib/inc/pxp-agent/modules/download_file.hpp
+msgid "DownloadFile module does not implement buildCommandObject!"
+msgstr ""
+
 #: lib/src/action_request.cc lib/src/action_response.cc
 msgid "{1} '{2} {3}' request (transaction {4})"
 msgstr ""
@@ -658,6 +662,11 @@ msgid "Removed {1} directory from '{2}'"
 msgid_plural "Removed {1} directories from '{2}'"
 msgstr[0] ""
 msgstr[1] ""
+
+#. error
+#: lib/src/modules/download_file.cc
+msgid "Failed to download {1}; {2}"
+msgstr ""
 
 #. debug
 #: lib/src/modules/ping.cc
