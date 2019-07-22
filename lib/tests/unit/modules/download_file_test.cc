@@ -66,7 +66,8 @@ static auto success_params = boost::format("{\"files\": [{"
                                                         "}"
                                                 "},"
                                                 "\"sha256\":\"94CBA5396781C06EFB4237730751532CBEFEA4C637D17A61B2E78598F08732C2\","
-                                                "\"destination\":\"%1%/file.txt\""
+                                                "\"destination\":\"%1%/file.txt\","
+                                                "\"file_type\":\"file\""
                                              "}]"
                                     "}") % TEST_FILE_DIR;
 
@@ -81,7 +82,8 @@ static auto failure_params = boost::format("{\"files\": [{"
                                                         "}"
                                                 "},"
                                                 "\"sha256\":\"FAKESHA256\","
-                                                "\"destination\":\"%1%/does_not_exist.txt\""
+                                                "\"destination\":\"%1%/does_not_exist.txt\","
+                                                "\"file_type\":\"file\""
                                              "}]"
                                     "}") % TEST_FILE_DIR;
 

@@ -50,9 +50,12 @@ namespace Modules {
             },
             "sha256": {
               "type": "string"
+            },
+            "file_type": {
+              "type": "string"
             }
           },
-          "required": ["destination", "uri", "sha256"]
+          "required": ["destination", "uri", "sha256", "file_type"]
         }
       }
     }
@@ -113,6 +116,17 @@ namespace Modules {
     return ActionOutput { exit_code, std_out, std_err };
   }
 
+  ActionResponse DownloadFile::failure_response(const ActionRequest& request,
+                                      const fs::path& results_dir,
+                                      const std::string& message)
+  {
+    LOG_ERROR(message);
+    ActionResponse fail_response { ModuleType::Internal, request };
+    processOutputAndUpdateMetadata(fail_response);
+    fail_response.output = write_download_results(results_dir, EXIT_FAILURE, "", message);
+    return fail_response;
+  }
+
   // DownloadFile overrides callAction from the base BoltModule class since there's no need to run
   // any commands with DownloadFile. CallAction will simply download the file and return a result
   // based on if the download succeeded or failed.
@@ -120,24 +134,30 @@ namespace Modules {
   {
     auto file_params = request.params();
     auto files = file_params.get<std::vector<lth_jc::JsonContainer>>("files");
-    auto destination = fs::path(files[0].get<std::string>("destination"));
     const fs::path& results_dir = request.resultsDir();
 
     ActionResponse response { ModuleType::Internal, request };
     lth_jc::JsonContainer result;
-    try {
-      Util::downloadFileFromMaster(master_uris_,
-                    file_download_connect_timeout_,
-                    file_download_timeout_,
-                    client_,
-                    module_cache_dir_->createCacheDir(files[0].get<std::string>("sha256")),
-                    destination,
-                    files[0]);
-      response.output = write_download_results(results_dir, EXIT_SUCCESS, "downloaded", "");
-    } catch (Module::ProcessingError& e) {
-      LOG_ERROR("Failed to download {1}; {2}", destination, e.what());
-      response.output = write_download_results(results_dir, EXIT_FAILURE, "", lth_loc::format("Failed to download {1}; {2}", destination, e.what()));
+    for (auto this_file : files) {
+      auto destination = fs::path(this_file.get<std::string>("destination"));
+      auto file_type = this_file.get<std::string>("file_type");
+      if (file_type == "file") {
+        try {
+          Util::downloadFileFromMaster(master_uris_,
+                        file_download_connect_timeout_,
+                        file_download_timeout_,
+                        client_,
+                        module_cache_dir_->createCacheDir(this_file.get<std::string>("sha256")),
+                        destination,
+                        this_file);
+        } catch (Module::ProcessingError& e) {
+          return failure_response(request, results_dir, lth_loc::format("Failed to download {1}; {2}", destination, e.what()));
+        }
+      } else {
+          return failure_response(request, results_dir, lth_loc::format("Not a valid file type! {1}", file_type));
+      }
     }
+    response.output = write_download_results(results_dir, EXIT_SUCCESS, "downloaded", "");
     processOutputAndUpdateMetadata(response);
     return response;
   }
