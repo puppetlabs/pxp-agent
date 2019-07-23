@@ -153,6 +153,18 @@ namespace Modules {
         } catch (Module::ProcessingError& e) {
           return failure_response(request, results_dir, lth_loc::format("Failed to download {1}; {2}", destination, e.what()));
         }
+      } else if (file_type == "directory"){
+        if (fs::exists(destination)) {
+          if (!fs::is_directory(destination)) {
+            return failure_response(request, results_dir, lth_loc::format("Destination {1} already exists and is not a directory!", destination));
+          }
+        } else {
+          try {
+            Util::createDir(destination);
+          } catch (fs::filesystem_error& e) {
+            return failure_response(request, results_dir, lth_loc::format("Failed to create directory {1}; {2}", destination, e.what()));
+          }
+        }
       } else {
           return failure_response(request, results_dir, lth_loc::format("Not a valid file type! {1}", file_type));
       }

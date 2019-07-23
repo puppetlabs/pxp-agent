@@ -73,6 +73,9 @@ namespace Util {
       fs::remove(tempname);
       throw Module::ProcessingError(lth_loc::format("The downloaded file {1} has a SHA that differs from the provided SHA", filename));
     }
+    if (!fs::exists(destination.parent_path())) {
+      Util::createDir(destination.parent_path());
+    }
     fs::rename(tempname, destination);
     return destination;
   }

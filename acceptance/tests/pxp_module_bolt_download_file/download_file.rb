@@ -22,6 +22,10 @@ def test_file_exists(agent, file)
   assert_match(/ensure\s*=>\s*'file',/, on(agent, puppet("resource file #{file}")).stdout)
 end
 
+def test_dir_exists(agent, dir)
+  assert_match(/ensure\s*=>\s*'directory',/, on(agent, puppet("resource file #{dir}")).stdout)
+end
+
 def test_file_does_not_exist(agent, file)
   assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{file}")).stdout)
 end
@@ -63,8 +67,9 @@ test_name 'download file tests' do
     on master, puppet('resource service puppetserver ensure=running')
   end
 
-  step 'execute successful download_file' do
+  step 'execute successful download_file with files and directories' do
     suts.each do |agent|
+      test_dir = windows?(agent) ? "C:/Windows/Temp/test_dir#{rand(10000000)}" : "/opt/test_dir#{rand(10000000)}"
       test_files = [
         test_file_destination(agent),
         test_file_destination(agent),
@@ -74,14 +79,32 @@ test_name 'download file tests' do
       test_files.each do |file|
         request << download_file_entry(@sha256, "/download-test-files/#{@filename}", file, 'file')
       end
+      request << download_file_entry('', '', '', test_dir, 'directory')
       run_successful_download(master,
                               agent,
                               request)
       test_files.each do |file|
         test_file_exists(agent, file)
       end
+      test_dir_exists(agent, test_dir)
       teardown {
         clean_files(agent, test_files)
+      }
+    end
+  end
+
+  step 'execute download_file for a file with a destination directory that doesnt exist yet' do
+    suts.each do |agent|
+      test_dir = windows?(agent) ? "C:/Windows/Temp/test_dir#{rand(10000000)}" : "/opt/test_dir#{rand(10000000)}"
+      test_file = test_dir + "/testing_file#{rand(10000000)}.txt"
+      run_successful_download(master,
+                              agent,
+                              [download_file_entry(@filename, @sha256, "/download-test-files/#{@filename}", test_file, 'file')])
+      test_file_exists(agent, test_file)
+      teardown {
+        clean_files(agent, [test_file])
+        # Remove the test directory too.
+        assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{test_dir} ensure=absent force=true")).stdout)
       }
     end
   end

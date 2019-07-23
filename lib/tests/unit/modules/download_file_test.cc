@@ -42,6 +42,8 @@ static const std::string CACHE_DIR { std::string { PXP_AGENT_ROOT_PATH }
 static const std::string TEST_FILE_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                           + "/lib/tests/resources/download_files" };
 
+static const std::string TEST_NEW_DIR { std::string { PXP_AGENT_ROOT_PATH }
+                                          + "/lib/tests/resources/download_files/testing_dir" };
 
 // Disable cache ttl so we don't delete fixtures.
 static const std::string CACHE_TTL { "0d" };
@@ -58,18 +60,48 @@ static const std::string CRT { "mock_crt" };
 
 static const std::string KEY { "mock_key" };
 
-static auto success_params = boost::format("{\"files\": [{"
-                                                "\"uri\":{"
-                                                        "\"path\":\"/dl_files/file.txt\","
-                                                        "\"params\":{"
-                                                            "\"environment\":\"production\""
-                                                        "}"
-                                                "},"
-                                                "\"sha256\":\"94CBA5396781C06EFB4237730751532CBEFEA4C637D17A61B2E78598F08732C2\","
-                                                "\"destination\":\"%1%/file.txt\","
-                                                "\"file_type\":\"file\""
-                                             "}]"
-                                    "}") % TEST_FILE_DIR;
+// Success for files is produced by calling download_file for a file that already exists.
+// This way during the test no actual downloads will be attempted, and downloadFileFromMaster
+// will return success without needing to download anything. Creating directories doesn't
+// require any downloads, so that entry does not need to already exist.
+static auto success_params = boost::format("{\"files\": ["
+                                                                "{"
+                                                                    "\"uri\":{"
+                                                                            "\"path\":\"/dl_files/file.txt\","
+                                                                            "\"params\":{"
+                                                                                "\"environment\":\"production\""
+                                                                            "}"
+                                                                    "},"
+                                                                    "\"sha256\":\"94CBA5396781C06EFB4237730751532CBEFEA4C637D17A61B2E78598F08732C2\","
+                                                                    "\"destination\":\"%1%/file.txt\","
+                                                                    "\"file_type\":\"file\""
+                                                                "},"
+                                                                "{"
+                                                                    "\"uri\":{"
+                                                                            "\"path\":\"\","
+                                                                            "\"params\":{}"
+                                                                    "},"
+                                                                    "\"sha256\":\"\","
+                                                                    "\"destination\":\"%2%\","
+                                                                    "\"file_type\":\"directory\""
+                                                                "}"
+                                                            "]"
+                                                "}") % TEST_FILE_DIR % TEST_NEW_DIR;
+
+// Create a failure scenario by using a request with a "directory" file type where
+// the destination already exists as a file
+static auto dir_already_exists_params = boost::format("{\"files\": ["
+                                                                "{"
+                                                                    "\"uri\":{"
+                                                                            "\"path\":\"\","
+                                                                            "\"params\":{}"
+                                                                    "},"
+                                                                    "\"sha256\":\"\","
+                                                                    "\"destination\":\"%1%/file.txt\","
+                                                                    "\"file_type\":\"directory\""
+                                                                "}"
+                                                            "]"
+                                                "}") % TEST_FILE_DIR;
 
 // Failures are produced by providing a file that does not exist on the filesystem yet,
 // which would force a download that will fail since none of the mock master uris are
@@ -93,6 +125,16 @@ static const PCPClient::ParsedChunks SUCCESS_NON_BLOCKING_CONTENT {
                                                                                   % "\"downloadfile\""
                                                                                   % "\"download\""
                                                                                   % success_params
+                                                                                  % "false").str() }),  // data
+                    {},   // debug
+                    0 };  // num invalid debug chunks
+
+static const PCPClient::ParsedChunks FAILURE_DIR_EXISTS_AS_FILE_CONTENT {
+                    lth_jc::JsonContainer(ENVELOPE_TXT),           // envelope
+                    lth_jc::JsonContainer(std::string { (NON_BLOCKING_DATA_FORMAT % "\"1988\""
+                                                                                  % "\"downloadfile\""
+                                                                                  % "\"download\""
+                                                                                  % dir_already_exists_params
                                                                                   % "false").str() }),  // data
                     {},   // debug
                     0 };  // num invalid debug chunks
@@ -126,10 +168,27 @@ TEST_CASE("Modules::DownloadFile::hasAction", "[modules]") {
 
 TEST_CASE("Modules::DownloadFile::callAction", "[modules]") {
     Modules::DownloadFile mod { MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
-    SECTION("Correctly returns exitcode 0 with a successful call to downloadFileFromMaster") {
+    SECTION("Correctly returns exitcode 0 when call succeeds") {
+        // Remove the directory to be created in case it was here from a previous test
+        fs::remove(fs::path(TEST_NEW_DIR));
         ActionRequest request { RequestType::NonBlocking, SUCCESS_NON_BLOCKING_CONTENT };
         auto response = mod.executeAction(request);
         REQUIRE(response.output.exitcode == 0);
+        SECTION("Correctly created new directory") {
+            REQUIRE(fs::exists(fs::path(TEST_NEW_DIR)));
+            // Remove the newly created directory after testing
+            fs::remove(fs::path(TEST_NEW_DIR));
+        }
+    }
+
+    SECTION("Correctly returns exitcode 1 if the new directory requested is already a file") {
+        // FAILURE_DIR_EXISTS_AS_FILE_CONTENT will fail because it will make a request to make a
+        // directory in a location where there's already a file of that name.
+        ActionRequest request { RequestType::NonBlocking, FAILURE_DIR_EXISTS_AS_FILE_CONTENT };
+        auto response = mod.executeAction(request);
+        REQUIRE(response.output.exitcode == 1);
+        // check that the file did not change to a directory
+        REQUIRE(fs::is_regular_file(fs::path(TEST_FILE_DIR + "/file.txt")));
     }
 
     SECTION("Correctly returns exitcode 1 with a failed download") {
