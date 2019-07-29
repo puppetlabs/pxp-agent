@@ -36,6 +36,9 @@ namespace Modules {
             "destination": {
               "type": "string"
             },
+            "link_source": {
+              "type":"string"
+            },
             "uri": {
               "type": "object",
               "properties": {
@@ -55,7 +58,7 @@ namespace Modules {
               "type": "string"
             }
           },
-          "required": ["destination", "uri", "sha256", "file_type"]
+          "required": ["link_source", "destination", "uri", "sha256", "file_type"]
         }
       }
     }
@@ -164,6 +167,14 @@ namespace Modules {
           } catch (fs::filesystem_error& e) {
             return failure_response(request, results_dir, lth_loc::format("Failed to create directory {1}; {2}", destination, e.what()));
           }
+        }
+      } else if (file_type == "symlink") {
+        if (fs::exists(destination)) {
+          if (!fs::is_symlink(destination)) {
+            return failure_response(request, results_dir, lth_loc::format("Destination {1} already exists and is not a symlink!", destination));
+          }
+        } else {
+          Util::createSymLink(fs::path(this_file.get<std::string>("link_source")), destination);
         }
       } else {
           return failure_response(request, results_dir, lth_loc::format("Not a valid file type! {1}", file_type));

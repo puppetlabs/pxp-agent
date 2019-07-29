@@ -74,6 +74,7 @@ static auto success_params = boost::format("{\"files\": ["
                                                                     "},"
                                                                     "\"sha256\":\"94CBA5396781C06EFB4237730751532CBEFEA4C637D17A61B2E78598F08732C2\","
                                                                     "\"destination\":\"%1%/file.txt\","
+                                                                    "\"link_source\":\"\","
                                                                     "\"file_type\":\"file\""
                                                                 "},"
                                                                 "{"
@@ -83,6 +84,7 @@ static auto success_params = boost::format("{\"files\": ["
                                                                     "},"
                                                                     "\"sha256\":\"\","
                                                                     "\"destination\":\"%2%\","
+                                                                    "\"link_source\":\"\","
                                                                     "\"file_type\":\"directory\""
                                                                 "}"
                                                             "]"
@@ -98,10 +100,28 @@ static auto dir_already_exists_params = boost::format("{\"files\": ["
                                                                     "},"
                                                                     "\"sha256\":\"\","
                                                                     "\"destination\":\"%1%/file.txt\","
+                                                                    "\"link_source\":\"\","
                                                                     "\"file_type\":\"directory\""
                                                                 "}"
                                                             "]"
-                                                "}") % TEST_FILE_DIR;
+                                                       "}") % TEST_FILE_DIR;
+
+// Create a failure scenario by using a request with a "directory" file type where
+// the destination already exists as a file
+static auto symlink_already_exists_params = boost::format("{\"files\": ["
+                                                                          "{"
+                                                                              "\"uri\":{"
+                                                                                      "\"path\":\"\","
+                                                                                      "\"params\":{}"
+                                                                              "},"
+                                                                              "\"sha256\":\"\","
+                                                                              "\"filename\":\"\","
+                                                                              "\"destination\":\"%1%/file.txt\","
+                                                                              "\"link_source\":\"\","
+                                                                              "\"file_type\":\"directory\""
+                                                                          "}"
+                                                                      "]"
+                                                           "}") % TEST_FILE_DIR;
 
 // Failures are produced by providing a file that does not exist on the filesystem yet,
 // which would force a download that will fail since none of the mock master uris are
@@ -115,6 +135,7 @@ static auto failure_params = boost::format("{\"files\": [{"
                                                 "},"
                                                 "\"sha256\":\"FAKESHA256\","
                                                 "\"destination\":\"%1%/does_not_exist.txt\","
+                                                "\"link_source\":\"\","
                                                 "\"file_type\":\"file\""
                                              "}]"
                                     "}") % TEST_FILE_DIR;
@@ -135,6 +156,16 @@ static const PCPClient::ParsedChunks FAILURE_DIR_EXISTS_AS_FILE_CONTENT {
                                                                                   % "\"downloadfile\""
                                                                                   % "\"download\""
                                                                                   % dir_already_exists_params
+                                                                                  % "false").str() }),  // data
+                    {},   // debug
+                    0 };  // num invalid debug chunks
+
+static const PCPClient::ParsedChunks FAILURE_SYMLINK_EXISTS_AS_FILE_CONTENT {
+                    lth_jc::JsonContainer(ENVELOPE_TXT),           // envelope
+                    lth_jc::JsonContainer(std::string { (NON_BLOCKING_DATA_FORMAT % "\"1988\""
+                                                                                  % "\"downloadfile\""
+                                                                                  % "\"download\""
+                                                                                  % symlink_already_exists_params
                                                                                   % "false").str() }),  // data
                     {},   // debug
                     0 };  // num invalid debug chunks
@@ -185,6 +216,16 @@ TEST_CASE("Modules::DownloadFile::callAction", "[modules]") {
         // FAILURE_DIR_EXISTS_AS_FILE_CONTENT will fail because it will make a request to make a
         // directory in a location where there's already a file of that name.
         ActionRequest request { RequestType::NonBlocking, FAILURE_DIR_EXISTS_AS_FILE_CONTENT };
+        auto response = mod.executeAction(request);
+        REQUIRE(response.output.exitcode == 1);
+        // check that the file did not change to a directory
+        REQUIRE(fs::is_regular_file(fs::path(TEST_FILE_DIR + "/file.txt")));
+    }
+
+    SECTION("Correctly returns exitcode 1 if the new symlink requested is already a file") {
+        // FAILURE_SYMLINK_EXISTS_AS_FILE_CONTENT will fail because it will make a request to make a
+        // symlink in a location where there's already a file of that name.
+        ActionRequest request { RequestType::NonBlocking, FAILURE_SYMLINK_EXISTS_AS_FILE_CONTENT };
         auto response = mod.executeAction(request);
         REQUIRE(response.output.exitcode == 1);
         // check that the file did not change to a directory

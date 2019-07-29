@@ -191,6 +191,11 @@ namespace Util {
     fs::permissions(dir, NIX_DIR_PERMS);
   }
 
+  void createSymLink(const fs::path& destination, const fs::path& source) {
+    fs::create_symlink(destination, source);
+    fs::permissions(destination, NIX_DIR_PERMS);
+  }
+
 
 }  // namespace Util
 }  // namespace PXPAgent
