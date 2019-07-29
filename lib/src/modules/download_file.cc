@@ -33,9 +33,6 @@ namespace Modules {
         "items": {
           "type": "object",
           "properties": {
-            "filename": {
-              "type": "string"
-            },
             "destination": {
               "type": "string"
             },
@@ -55,7 +52,7 @@ namespace Modules {
               "type": "string"
             }
           },
-          "required": ["filename", "destination", "uri", "sha256"]
+          "required": ["destination", "uri", "sha256"]
         }
       }
     }
