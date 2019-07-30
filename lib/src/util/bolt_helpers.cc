@@ -38,7 +38,7 @@ namespace Util {
                 const fs::path& cache_dir,
                 const fs::path& destination,
                 const lth_jc::JsonContainer& file) {
-    auto filename = fs::path(file.get<std::string>("filename")).filename();
+    auto filename = destination.filename();
     auto sha256 = file.get<std::string>("sha256");
 
     if (fs::exists(destination) && boost::to_upper_copy<std::string>(sha256) == boost::to_upper_copy<std::string>(calculateSha256(destination.string()))) {
@@ -65,7 +65,7 @@ namespace Util {
     if (!std::get<0>(download_result)) {
       throw Module::ProcessingError(lth_loc::format(
         "Downloading the task file {1} failed after trying all the available master-uris. Most recent error message: {2}",
-        file.get<std::string>("filename"),
+        filename,
         std::get<1>(download_result)));
     }
 

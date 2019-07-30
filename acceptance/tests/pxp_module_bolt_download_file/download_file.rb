@@ -68,7 +68,7 @@ test_name 'download file tests' do
     suts.each do |agent|
       run_successful_download(master,
                               agent,
-                              [download_file_entry(@filename, @sha256, "/download-test-files/#{@filename}", test_file_destination(agent))])
+                              [download_file_entry(@sha256, "/download-test-files/#{@filename}", test_file_destination(agent))])
       test_file_exists(agent)
     end
   end
@@ -78,7 +78,7 @@ test_name 'download file tests' do
     suts.each do |agent|
       run_failed_download(master,
                           agent,
-                          [download_file_entry('not-real-file', 'NOTREALSHA256', "/download-test-files/not-real-file", test_file_destination(agent))])
+                          [download_file_entry('NOTREALSHA256', "/download-test-files/not-real-file", test_file_destination(agent))])
       test_file_does_not_exist(agent)
     end
   end
@@ -88,7 +88,7 @@ test_name 'download file tests' do
     suts.each do |agent|
       run_failed_download(master,
                           agent,
-                          [download_file_entry(@filename, 'NOTREALSHA256', "/download-test-files/#{@filename}", test_file_destination(agent))])
+                          [download_file_entry('NOTREALSHA256', "/download-test-files/#{@filename}", test_file_destination(agent))])
       test_file_does_not_exist(agent)
     end
   end
