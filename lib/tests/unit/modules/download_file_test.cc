@@ -75,7 +75,7 @@ static auto success_params = boost::format("{\"files\": ["
                                                                     "\"sha256\":\"94CBA5396781C06EFB4237730751532CBEFEA4C637D17A61B2E78598F08732C2\","
                                                                     "\"destination\":\"%1%/file.txt\","
                                                                     "\"link_source\":\"\","
-                                                                    "\"file_type\":\"file\""
+                                                                    "\"kind\":\"file\""
                                                                 "},"
                                                                 "{"
                                                                     "\"uri\":{"
@@ -85,12 +85,12 @@ static auto success_params = boost::format("{\"files\": ["
                                                                     "\"sha256\":\"\","
                                                                     "\"destination\":\"%2%\","
                                                                     "\"link_source\":\"\","
-                                                                    "\"file_type\":\"directory\""
+                                                                    "\"kind\":\"directory\""
                                                                 "}"
                                                             "]"
                                                 "}") % TEST_FILE_DIR % TEST_NEW_DIR;
 
-// Create a failure scenario by using a request with a "directory" file type where
+// Create a failure scenario by using a request with a "directory" content type where
 // the destination already exists as a file
 static auto dir_already_exists_params = boost::format("{\"files\": ["
                                                                 "{"
@@ -101,12 +101,12 @@ static auto dir_already_exists_params = boost::format("{\"files\": ["
                                                                     "\"sha256\":\"\","
                                                                     "\"destination\":\"%1%/file.txt\","
                                                                     "\"link_source\":\"\","
-                                                                    "\"file_type\":\"directory\""
+                                                                    "\"kind\":\"directory\""
                                                                 "}"
                                                             "]"
                                                        "}") % TEST_FILE_DIR;
 
-// Create a failure scenario by using a request with a "directory" file type where
+// Create a failure scenario by using a request with a "directory" content type where
 // the destination already exists as a file
 static auto symlink_already_exists_params = boost::format("{\"files\": ["
                                                                           "{"
@@ -118,7 +118,7 @@ static auto symlink_already_exists_params = boost::format("{\"files\": ["
                                                                               "\"filename\":\"\","
                                                                               "\"destination\":\"%1%/file.txt\","
                                                                               "\"link_source\":\"\","
-                                                                              "\"file_type\":\"directory\""
+                                                                              "\"kind\":\"symlink\""
                                                                           "}"
                                                                       "]"
                                                            "}") % TEST_FILE_DIR;
@@ -136,7 +136,7 @@ static auto failure_params = boost::format("{\"files\": [{"
                                                 "\"sha256\":\"FAKESHA256\","
                                                 "\"destination\":\"%1%/does_not_exist.txt\","
                                                 "\"link_source\":\"\","
-                                                "\"file_type\":\"file\""
+                                                "\"kind\":\"file\""
                                              "}]"
                                     "}") % TEST_FILE_DIR;
 

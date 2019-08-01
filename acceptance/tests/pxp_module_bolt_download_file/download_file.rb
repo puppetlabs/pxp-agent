@@ -68,7 +68,7 @@ test_name 'download file tests' do
     on master, puppet('resource service puppetserver ensure=running')
   end
 
-  step 'execute successful download_file with files and directories' do
+  step 'execute successful download_file with files,symlinks,directories' do
     suts.each do |agent|
       test_dir = test_dir_destination(agent)
       test_symlink = test_file_destination(agent)
@@ -93,6 +93,8 @@ test_name 'download file tests' do
       test_file_resource_exists(agent, test_symlink, 'link')
       teardown {
         clean_files(agent, test_files)
+        assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{test_dir} ensure=absent force=true")).stdout)
+        assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{test_symlink} ensure=absent force=true")).stdout)
       }
     end
   end

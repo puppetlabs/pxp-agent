@@ -191,6 +191,14 @@ namespace Util {
     fs::permissions(dir, NIX_DIR_PERMS);
   }
 
+  // It looks like there are ways for POSIX nodes to specify umask of the pxp-agent service, which means any file/symlink/dir
+  // created with boost should match the umask of the service process. That means between the file being created and the call
+  // to fs::permissions it looks like the user can still control the security of the files/symlinks/dirs.
+
+  // For windows: all permissions are inherited by the containing directory, meaning there is no scenario where files/symlinks
+  // will have perms more open than the containing directories.
+
+  // The above info should mean the links are safe between symlink creation and permissions setting.
   void createSymLink(const fs::path& destination, const fs::path& source) {
     fs::create_symlink(destination, source);
     fs::permissions(destination, NIX_DIR_PERMS);

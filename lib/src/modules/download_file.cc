@@ -54,11 +54,11 @@ namespace Modules {
             "sha256": {
               "type": "string"
             },
-            "file_type": {
+            "kind": {
               "type": "string"
             }
           },
-          "required": ["link_source", "destination", "uri", "sha256", "file_type"]
+          "required": ["link_source", "destination", "uri", "sha256", "kind"]
         }
       }
     }
@@ -143,8 +143,8 @@ namespace Modules {
     lth_jc::JsonContainer result;
     for (auto this_file : files) {
       auto destination = fs::path(this_file.get<std::string>("destination"));
-      auto file_type = this_file.get<std::string>("file_type");
-      if (file_type == "file") {
+      auto kind = this_file.get<std::string>("kind");
+      if (kind == "file") {
         try {
           Util::downloadFileFromMaster(master_uris_,
                         file_download_connect_timeout_,
@@ -156,7 +156,7 @@ namespace Modules {
         } catch (Module::ProcessingError& e) {
           return failure_response(request, results_dir, lth_loc::format("Failed to download {1}; {2}", destination, e.what()));
         }
-      } else if (file_type == "directory"){
+      } else if (kind == "directory"){
         if (fs::exists(destination)) {
           if (!fs::is_directory(destination)) {
             return failure_response(request, results_dir, lth_loc::format("Destination {1} already exists and is not a directory!", destination));
@@ -168,7 +168,7 @@ namespace Modules {
             return failure_response(request, results_dir, lth_loc::format("Failed to create directory {1}; {2}", destination, e.what()));
           }
         }
-      } else if (file_type == "symlink") {
+      } else if (kind == "symlink") {
         if (fs::exists(destination)) {
           if (!fs::is_symlink(destination)) {
             return failure_response(request, results_dir, lth_loc::format("Destination {1} already exists and is not a symlink!", destination));
@@ -177,7 +177,7 @@ namespace Modules {
           Util::createSymLink(fs::path(this_file.get<std::string>("link_source")), destination);
         }
       } else {
-          return failure_response(request, results_dir, lth_loc::format("Not a valid file type! {1}", file_type));
+          return failure_response(request, results_dir, lth_loc::format("Not a valid file type! {1}", kind));
       }
     }
     response.output = write_download_results(results_dir, EXIT_SUCCESS, "downloaded", "");
