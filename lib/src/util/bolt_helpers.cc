@@ -19,6 +19,19 @@ namespace lth_loc  = leatherman::locale;
 namespace PXPAgent {
 namespace Util {
 
+  void findExecutableAndArguments(const fs::path& file, Util::CommandObject& cmd)
+  {
+      auto builtin = BUILTIN_INTERPRETERS.find(file.extension().string());
+
+      if (builtin != BUILTIN_INTERPRETERS.end()) {
+          auto details = builtin->second(file.string());
+          cmd.executable = details.first;
+          cmd.arguments = details.second;
+      } else {
+          cmd.executable = file.string();
+      }
+  }
+
 
   // NIX_DIR_PERMS is defined in pxp-agent/configuration
   #define NIX_DOWNLOADED_FILE_PERMS NIX_DIR_PERMS

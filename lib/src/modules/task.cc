@@ -132,35 +132,6 @@ static const std::string TASK_RUN_ACTION_INPUT_SCHEMA { R"(
 }
 )" };
 
-// Hard-code interpreters on Windows. On non-Windows, we still rely on permissions and #!
-static const std::map<std::string, std::function<std::pair<std::string, std::vector<std::string>>(std::string)>> BUILTIN_TASK_INTERPRETERS {
-#ifdef _WIN32
-    {".rb",  [](std::string filename) { return std::pair<std::string, std::vector<std::string>> {
-        "ruby", { filename }
-    }; }},
-    {".pp",  [](std::string filename) { return std::pair<std::string, std::vector<std::string>> {
-        "puppet", { "apply", filename }
-    }; }},
-    {".ps1", [](std::string filename) { return std::pair<std::string, std::vector<std::string>> {
-        "powershell",
-        { "-NoProfile", "-NonInteractive", "-NoLogo", "-ExecutionPolicy", "Bypass", "-File", filename }
-    }; }}
-#endif
-};
-
-static void findExecutableAndArguments(const fs::path& task_file, Util::CommandObject& cmd)
-{
-    auto builtin = BUILTIN_TASK_INTERPRETERS.find(task_file.extension().string());
-
-    if (builtin != BUILTIN_TASK_INTERPRETERS.end()) {
-        auto details = builtin->second(task_file.string());
-        cmd.executable = details.first;
-        cmd.arguments = details.second;
-    } else {
-        cmd.executable = task_file.string();
-    }
-}
-
 Task::Task(const fs::path& exec_prefix,
            const std::vector<std::string>& master_uris,
            const std::string& ca,
@@ -467,11 +438,11 @@ Util::CommandObject Task::buildCommandObject(const ActionRequest& request)
 
     if (implementation.input_method == "powershell") {
         // Use the powershell shim as the "task file":
-        findExecutableAndArguments(exec_prefix_ / "PowershellShim.ps1", task_command);
+        Util::findExecutableAndArguments(exec_prefix_ / "PowershellShim.ps1", task_command);
         // Pass the original task file to the shim:
         task_command.arguments.push_back(task_file.string());
     } else {
-        findExecutableAndArguments(task_file, task_command);
+        Util::findExecutableAndArguments(task_file, task_command);
     }
 
     if (implementation.input_method == "powershell" ||
