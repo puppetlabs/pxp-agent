@@ -36,6 +36,28 @@ namespace Util {
   // NIX_DIR_PERMS is defined in pxp-agent/configuration
   #define NIX_DOWNLOADED_FILE_PERMS NIX_DIR_PERMS
 
+  // Verify (this includes checking the SHA256 checksums) that a file is present
+  // in the cache, downloading it if necessary.
+  // Return the full path of the cached version of the file.
+  fs::path getCachedFile(const std::vector<std::string>& master_uris,
+                                  uint32_t connect_timeout,
+                                  uint32_t timeout,
+                                  lth_curl::client& client,
+                                  const fs::path&   cache_dir,
+                                  lth_jc::JsonContainer& file) {
+      LOG_DEBUG("Verifying file based on {1}", file.toString());
+
+      try {
+          // files remain in the cache_dir rather than being written out to a destination
+          // elsewhere on the filesystem.
+          auto destination = cache_dir / fs::path(file.get<std::string>("filename")).filename();
+          return Util::downloadFileFromMaster(master_uris, connect_timeout, timeout, client, cache_dir, destination, file);
+      } catch (Module::ProcessingError& e) {
+          throw Module::ProcessingError { lth_loc::format("Failed to download file with: {1}", e.what()) };
+      }
+  }
+
+
   // Downloads a file if it does not already exist on the filesystem. A check is made
   // on the filesystem to determine if the file at destination already exists and if
   // it already matches the sha256 provided with the file. If the file already exists
@@ -60,16 +82,16 @@ namespace Util {
     }
 
     if (master_uris.empty()) {
-      throw Module::ProcessingError(lth_loc::format("Cannot download task. No master-uris were provided"));
+      throw Module::ProcessingError(lth_loc::format("Cannot download file. No master-uris were provided"));
     }
 
-    auto tempname = cache_dir / fs::unique_path("temp_task_%%%%-%%%%-%%%%-%%%%");
+    auto tempname = cache_dir / fs::unique_path("temp_file_%%%%-%%%%-%%%%-%%%%");
     // Note that the provided tempname argument is a temporary file, call it "tempA".
     // Leatherman.curl during the download method will create another temporary file,
     // call it "tempB", to save the downloaded file's contents in chunks before
     // renaming it to "tempA." The rationale behind this solution is that:
     //    (1) After download, we still need to check "tempA" to ensure that its sha matches
-    //    the provided sha. So the downloaded task is not quite a "valid" file after this
+    //    the provided sha. So the downloaded file is not quite a "valid" file after this
     //    method is called; it's still temporary.
     //
     //    (2) It somewhat simplifies error handling if multiple threads try to download
@@ -77,7 +99,7 @@ namespace Util {
     auto download_result = downloadFileWithCurl(master_uris, connect_timeout, timeout, client, tempname, file.get<lth_jc::JsonContainer>("uri"));
     if (!std::get<0>(download_result)) {
       throw Module::ProcessingError(lth_loc::format(
-        "Downloading the task file {1} failed after trying all the available master-uris. Most recent error message: {2}",
+        "Downloading file {1} failed after trying all the available master-uris. Most recent error message: {2}",
         filename,
         std::get<1>(download_result)));
     }
@@ -94,7 +116,7 @@ namespace Util {
   }
 
   // Downloads the file at the specified url into the provided path.
-  // The downloaded task file's permissions will be set to rwx for user and rx for
+  // The downloaded file's permissions will be set to rwx for user and rx for
   // group for non-Windows OSes.
   //
   // The method returns a tuple (success, err_msg). success is true if the file was downloaded;
@@ -127,11 +149,11 @@ namespace Util {
         }
       } catch (lth_curl::http_file_download_exception& e) {
         // Server-side error, do nothing here -- we want to try the next master-uri.
-        LOG_WARNING("Downloading the task file from the master-uri '{1}' failed. Reason: {2}", master_uri, e.what());
+        LOG_WARNING("Downloading the file from the master-uri '{1}' failed. Reason: {2}", master_uri, e.what());
         std::get<1>(result) = e.what();
       } catch (lth_curl::http_request_exception& e) {
         // For http_curl_setup and http_file_operation exceptions
-        throw Module::ProcessingError(lth_loc::format("Downloading the task file failed. Reason: {1}", e.what()));
+        throw Module::ProcessingError(lth_loc::format("Downloading the file failed. Reason: {1}", e.what()));
       }
 
       if (fs::exists(file_path)) {

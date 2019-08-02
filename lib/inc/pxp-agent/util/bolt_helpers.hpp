@@ -29,6 +29,13 @@ namespace Util {
 
   void findExecutableAndArguments(const boost::filesystem::path& file, Util::CommandObject& cmd);
 
+  boost::filesystem::path getCachedFile(const std::vector<std::string>& master_uris,
+                                  uint32_t connect_timeout,
+                                  uint32_t timeout,
+                                  leatherman::curl::client& client,
+                                  const boost::filesystem::path& cache_dir,
+                                  leatherman::json_container::JsonContainer& file);
+
   boost::filesystem::path downloadFileFromMaster(const std::vector<std::string>& master_uris,
                                                 uint32_t connect_timeout,
                                                 uint32_t timeout,

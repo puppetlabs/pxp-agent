@@ -182,27 +182,6 @@ static void addParametersToEnvironment(const lth_jc::JsonContainer &input, std::
     }
 }
 
-// Verify (this includes checking the SHA256 checksums) that task file is present
-// in the task cache downloading it if necessary.
-// Return the full path of the cached version of the file.
-fs::path Task::getCachedTaskFile(const std::vector<std::string>& master_uris,
-                                 uint32_t connect_timeout,
-                                 uint32_t timeout,
-                                 lth_curl::client& client,
-                                 lth_jc::JsonContainer& file) {
-    LOG_DEBUG("Verifying task file based on {1}", file.toString());
-
-    try {
-        auto cache_dir = module_cache_dir_->createCacheDir(file.get<std::string>("sha256"));
-        // Task files remain in the cache_dir rather than being written out to a destination
-        // elsewhere on the filesystem.
-        auto destination = cache_dir / fs::path(file.get<std::string>("filename")).filename();
-        return Util::downloadFileFromMaster(master_uris, connect_timeout, timeout, client, cache_dir, destination, file);
-    } catch (Module::ProcessingError& e) {
-        throw Module::ProcessingError { lth_loc::format("Failed to download task file with: {1}", e.what()) };
-    }
-}
-
 // build a spool dir for the supporting library files requested by a multifile task
 static fs::path createInstallDir(const fs::path& spool_dir, const std::set<std::string>& download_set) {
     auto install_dir = spool_dir / fs::unique_path("temp_task_%%%%-%%%%-%%%%-%%%%");
@@ -276,10 +255,11 @@ fs::path Task::downloadMultiFile(std::vector<lth_jc::JsonContainer> const& files
         auto file_object = selectLibFile(files, file_name);
 
         // get file from cache, download if necessary
-        auto lib_file = getCachedTaskFile(master_uris_,
+        auto lib_file = Util::getCachedFile(master_uris_,
                                           task_download_connect_timeout_,
                                           task_download_timeout_,
                                           client_,
+                                          module_cache_dir_->createCacheDir(file_object.get<std::string>("sha256")),
                                           file_object);
 
         // copy to expected location in install_dir
@@ -395,10 +375,11 @@ Util::CommandObject Task::buildCommandObject(const ActionRequest& request)
     auto files = task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files");
     auto file = selectTaskFile(files, implementation);
 
-    auto task_file = getCachedTaskFile(master_uris_,
+    auto task_file = Util::getCachedFile(master_uris_,
                                        task_download_connect_timeout_,
                                        task_download_timeout_,
                                        client_,
+                                       module_cache_dir_->createCacheDir(file.get<std::string>("sha256")),
                                        file);
 
     // Use powershell input method by default if task uses .ps1 extension.

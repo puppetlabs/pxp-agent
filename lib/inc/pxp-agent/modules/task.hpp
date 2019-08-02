@@ -49,12 +49,6 @@ class Task : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable
 
     leatherman::curl::client client_;
 
-    boost::filesystem::path getCachedTaskFile(const std::vector<std::string>& master_uris,
-                               uint32_t connect_timeout,
-                               uint32_t timeout,
-                               leatherman::curl::client& client,
-                               leatherman::json_container::JsonContainer& file);
-
     boost::filesystem::path downloadMultiFile(std::vector<leatherman::json_container::JsonContainer> const& files,
         std::set<std::string> const& download_set,
         boost::filesystem::path const& spool_dir);

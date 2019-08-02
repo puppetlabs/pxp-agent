@@ -424,7 +424,7 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         REQUIRE_FALSE(response.action_metadata.includes("results"));
         REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
         REQUIRE(response.action_metadata.includes("execution_error"));
-        REQUIRE(boost::contains(response.action_metadata.get<std::string>("execution_error"), "Cannot download task. No master-uris were provided"));
+        REQUIRE(boost::contains(response.action_metadata.get<std::string>("execution_error"), "Cannot download file. No master-uris were provided"));
     }
 
     SECTION("if a master-uri has a server-side error, then it proceeds to try the next master-uri. if they all fail, it errors on download and removes all temporary files") {
