@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: pxp-agent 1.12.1\n"
+"Project-Id-Version: pxp-agent 1.12.3\n"
 "Report-Msgid-Bugs-To: docs@puppet.com\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -663,9 +663,24 @@ msgid_plural "Removed {1} directories from '{2}'"
 msgstr[0] ""
 msgstr[1] ""
 
-#. error
 #: lib/src/modules/download_file.cc
 msgid "Failed to download {1}; {2}"
+msgstr ""
+
+#: lib/src/modules/download_file.cc
+msgid "Destination {1} already exists and is not a directory!"
+msgstr ""
+
+#: lib/src/modules/download_file.cc
+msgid "Failed to create directory {1}; {2}"
+msgstr ""
+
+#: lib/src/modules/download_file.cc
+msgid "Destination {1} already exists and is not a symlink!"
+msgstr ""
+
+#: lib/src/modules/download_file.cc
+msgid "Not a valid file type! {1}"
 msgstr ""
 
 #. debug
