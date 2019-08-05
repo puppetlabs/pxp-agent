@@ -5,8 +5,8 @@ def task_file_entry(filename, sha256, path = 'foo')
   {:uri => {:path => path, :params => {}}, :filename => filename, :sha256 => sha256}
 end
 
-def download_file_entry(sha256, path, destination)
-  {:uri => {:path => path, :params => {}}, :sha256 => sha256, :destination => destination}
+def download_file_entry(sha256, path, link_source, destination, kind)
+  {:uri => {:path => path, :params => {}}, :sha256 => sha256, :link_source => link_source, :destination => destination, :kind => kind}
 end
 
 # Selects only the agents (not masters) from a set of beaker hosts and produces an array of PCP

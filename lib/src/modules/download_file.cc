@@ -36,6 +36,9 @@ namespace Modules {
             "destination": {
               "type": "string"
             },
+            "link_source": {
+              "type":"string"
+            },
             "uri": {
               "type": "object",
               "properties": {
@@ -50,9 +53,12 @@ namespace Modules {
             },
             "sha256": {
               "type": "string"
+            },
+            "kind": {
+              "type": "string"
             }
           },
-          "required": ["destination", "uri", "sha256"]
+          "required": ["link_source", "destination", "uri", "sha256", "kind"]
         }
       }
     }
@@ -113,6 +119,17 @@ namespace Modules {
     return ActionOutput { exit_code, std_out, std_err };
   }
 
+  ActionResponse DownloadFile::failure_response(const ActionRequest& request,
+                                      const fs::path& results_dir,
+                                      const std::string& message)
+  {
+    LOG_ERROR(message);
+    ActionResponse fail_response { ModuleType::Internal, request };
+    processOutputAndUpdateMetadata(fail_response);
+    fail_response.output = write_download_results(results_dir, EXIT_FAILURE, "", message);
+    return fail_response;
+  }
+
   // DownloadFile overrides callAction from the base BoltModule class since there's no need to run
   // any commands with DownloadFile. CallAction will simply download the file and return a result
   // based on if the download succeeded or failed.
@@ -120,24 +137,50 @@ namespace Modules {
   {
     auto file_params = request.params();
     auto files = file_params.get<std::vector<lth_jc::JsonContainer>>("files");
-    auto destination = fs::path(files[0].get<std::string>("destination"));
     const fs::path& results_dir = request.resultsDir();
 
     ActionResponse response { ModuleType::Internal, request };
     lth_jc::JsonContainer result;
-    try {
-      Util::downloadFileFromMaster(master_uris_,
-                    file_download_connect_timeout_,
-                    file_download_timeout_,
-                    client_,
-                    module_cache_dir_->createCacheDir(files[0].get<std::string>("sha256")),
-                    destination,
-                    files[0]);
-      response.output = write_download_results(results_dir, EXIT_SUCCESS, "downloaded", "");
-    } catch (Module::ProcessingError& e) {
-      LOG_ERROR("Failed to download {1}; {2}", destination, e.what());
-      response.output = write_download_results(results_dir, EXIT_FAILURE, "", lth_loc::format("Failed to download {1}; {2}", destination, e.what()));
+    for (auto this_file : files) {
+      auto destination = fs::path(this_file.get<std::string>("destination"));
+      auto kind = this_file.get<std::string>("kind");
+      if (kind == "file") {
+        try {
+          Util::downloadFileFromMaster(master_uris_,
+                        file_download_connect_timeout_,
+                        file_download_timeout_,
+                        client_,
+                        module_cache_dir_->createCacheDir(this_file.get<std::string>("sha256")),
+                        destination,
+                        this_file);
+        } catch (Module::ProcessingError& e) {
+          return failure_response(request, results_dir, lth_loc::format("Failed to download {1}; {2}", destination, e.what()));
+        }
+      } else if (kind == "directory"){
+        if (fs::exists(destination)) {
+          if (!fs::is_directory(destination)) {
+            return failure_response(request, results_dir, lth_loc::format("Destination {1} already exists and is not a directory!", destination));
+          }
+        } else {
+          try {
+            Util::createDir(destination);
+          } catch (fs::filesystem_error& e) {
+            return failure_response(request, results_dir, lth_loc::format("Failed to create directory {1}; {2}", destination, e.what()));
+          }
+        }
+      } else if (kind == "symlink") {
+        if (fs::exists(destination)) {
+          if (!fs::is_symlink(destination)) {
+            return failure_response(request, results_dir, lth_loc::format("Destination {1} already exists and is not a symlink!", destination));
+          }
+        } else {
+          Util::createSymLink(fs::path(this_file.get<std::string>("link_source")), destination);
+        }
+      } else {
+          return failure_response(request, results_dir, lth_loc::format("Not a valid file type! {1}", kind));
+      }
     }
+    response.output = write_download_results(results_dir, EXIT_SUCCESS, "downloaded", "");
     processOutputAndUpdateMetadata(response);
     return response;
   }

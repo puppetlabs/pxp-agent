@@ -55,6 +55,11 @@ namespace Modules {
       // files.
       ActionResponse callAction(const ActionRequest& request) override;
 
+      // Creates an ActionResponse representing a failure.
+      ActionResponse failure_response(const ActionRequest& request,
+                                      const boost::filesystem::path& results_dir,
+                                      const std::string& message);
+
       // Since DownloadFile overrides callAction there's no reason to define
       // buildCommandObject (since it will never be called)
       Util::CommandObject buildCommandObject(const ActionRequest& request) override {
