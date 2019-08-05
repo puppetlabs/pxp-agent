@@ -9,6 +9,10 @@ def download_file_entry(sha256, path, link_source, destination, kind)
   {:uri => {:path => path, :params => {}}, :sha256 => sha256, :link_source => link_source, :destination => destination, :kind => kind}
 end
 
+def script_file_entry(filename, sha256, path)
+  {:uri => {:path => path, :params => {}}, :filename => filename, :sha256 => sha256}
+end
+
 # Selects only the agents (not masters) from a set of beaker hosts and produces an array of PCP
 # identity strings for them.
 #
@@ -81,11 +85,25 @@ def run_task(broker, targets, task, files, input: {}, metadata: nil, **kwargs, &
   do_module_action(broker, agent_identities(targets), 'task', 'run', params, **kwargs, &block)
 end
 
+def script_request(broker, agent, script, arguments, **kwargs, &block)
+  params = { arguments: arguments, script: script }
+  target = ["pcp://#{agent}/agent"]
+  do_module_action(broker, target, 'script', 'run', params, **kwargs, &block)
+end
+
 # Makes a non-blocking request to start a command.
 # Block is executed on the "response_dataset" object from do_module_action.
 def run_command(broker, targets, command, **kwargs, &block)
   params = { command: command }
   do_module_action(broker, agent_identities(targets), 'command', 'run', params, **kwargs, &block)
+end
+
+# Starts a download file execution.
+# Block is executed on the "response_dataset" object from do_module_action.
+def download_file(broker, agent, files, **kwargs, &block)
+  params = { files: files }
+  target = ["pcp://#{agent}/agent"]
+  do_module_action(broker, target, 'download_file', 'download', params, **kwargs, &block)
 end
 
 # Checks that a non-blocking request finished successfully.
@@ -95,34 +113,10 @@ def ensure_successful(broker, targets, response_dataset, max_retries: 30, query_
   agent_identities(targets).zip(transaction_ids).map do |identity, transaction_id|
     check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval) do |result|
       assert_equal('success', result['status'], 'Action was expected to succeed')
-      assert_equal(nil, result['stderr'], 'Successful action expected to have no output on stderr')
+      assert_nil(result['stderr'], 'Successful action expected to have no output on stderr')
       assert_equal(0, result['exitcode'], 'Successful action expected to have exit code 0')
       yield result['stdout'] if block_given?
     end
-  end
-end
-
-# Starts a download file execution.
-# Block is executed on the "response_dataset" object from do_module_action.
-def run_download_file(broker, agent, files, **kwargs, &block)
-  params = { files: files }
-  target = ["pcp://#{agent}/agent"]
-  do_module_action(broker, target, 'download_file', 'download', params, **kwargs, &block)
-end
-
-# Runs a non-blocking task action on targets, and confirms that it was successful.
-# Block is executed on the stdout string.
-def run_successful_download(broker, agent, files, **kwargs, &block)
-  run_download_file(broker, agent, files, **kwargs) do |datas|
-    ensure_successful(broker, [agent], datas, **kwargs, &block)
-  end
-end
-
-# Runs a non-blocking task action on targets, and confirms that it was successful.
-# Block is executed on the stdout string.
-def run_failed_download(broker, agent, files, **kwargs, &block)
-  run_download_file(broker, agent, files, **kwargs) do |datas|
-    ensure_failed(broker, [agent], datas, **kwargs, &block)
   end
 end
 
@@ -134,9 +128,33 @@ def ensure_failed(broker, targets, response_dataset, max_retries: 30, query_inte
     check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval) do |result|
       assert_equal('failure', result['status'], 'Action was expected to fail')
       assert_equal(nil, result['stdout'], 'Successful action expected to have no output on stdout')
-      assert_equal(1, result['exitcode'], 'Successful action expected to have exit code 1')
+      assert_equal(1, result['exitcode'], "Successful action expected to have exit code #{exit_code}")
       yield result['stderr'] if block_given?
     end
+  end
+end
+
+# Runs a non-blocking script action on targets, and confirms that it succeeded.
+# Block is executed on the stdout string.
+def run_successful_script(broker, agent, script, arguments, **kwargs, &block)
+  script_request(broker, agent, script, arguments, **kwargs) do |datas|
+    ensure_successful(broker, [agent], datas, **kwargs, &block)
+  end
+end
+
+# Runs a non-blocking download action on targets, and confirms that it was successful.
+# Block is executed on the stdout string.
+def run_successful_download(broker, agent, files, **kwargs, &block)
+  download_file(broker, agent, files, **kwargs) do |datas|
+    ensure_successful(broker, [agent], datas, **kwargs, &block)
+  end
+end
+
+# Runs a non-blocking download action on targets, and confirms that it failed.
+# Block is executed on the stdout string.
+def run_failed_download(broker, agent, files, **kwargs, &block)
+  download_file(broker, agent, files, **kwargs) do |datas|
+    ensure_failed(broker, [agent], datas, **kwargs, &block)
   end
 end
 
