@@ -31,6 +31,7 @@ set(COMMON_TEST_SOURCES
     unit/modules/ping_test.cc
     unit/modules/task_test.cc
     unit/modules/download_file_test.cc
+    unit/modules/script_test.cc
     unit/util/process_test.cc
 )
 

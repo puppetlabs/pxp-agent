@@ -28,7 +28,15 @@ namespace Util {
       if (builtin != BUILTIN_INTERPRETERS.end()) {
           auto details = builtin->second(file.string());
           cmd.executable = details.first;
-          cmd.arguments = details.second;
+          // cmd.arguments may already have values, so instead of setting
+          // cmd.arguments directly: fetch the prefix arguments (that should
+          // go before the user provided ones), then insert the user provided
+          // ones in to prefix_args to create a flattened vector that will be:
+          // { prefix_args, cmd.arguments }
+          std::vector<std::string> prefix_args = details.second;
+          std::vector<std::string> provided_args = cmd.arguments;
+          prefix_args.insert(prefix_args.end(), provided_args.begin(), provided_args.end());
+          cmd.arguments = prefix_args;
       } else {
           cmd.executable = file.string();
       }

@@ -143,7 +143,7 @@ static auto failure_params = boost::format("{\"files\": [{"
 static const PCPClient::ParsedChunks SUCCESS_NON_BLOCKING_CONTENT {
                     lth_jc::JsonContainer(ENVELOPE_TXT),           // envelope
                     lth_jc::JsonContainer(std::string { (NON_BLOCKING_DATA_FORMAT % "\"1988\""
-                                                                                  % "\"downloadfile\""
+                                                                                  % "\"download_file\""
                                                                                   % "\"download\""
                                                                                   % success_params
                                                                                   % "false").str() }),  // data
@@ -173,7 +173,7 @@ static const PCPClient::ParsedChunks FAILURE_SYMLINK_EXISTS_AS_FILE_CONTENT {
 static const PCPClient::ParsedChunks FAILURE_NON_BLOCKING_CONTENT {
                     lth_jc::JsonContainer(ENVELOPE_TXT),           // envelope
                     lth_jc::JsonContainer(std::string { (NON_BLOCKING_DATA_FORMAT % "\"1988\""
-                                                                                  % "\"downloadfile\""
+                                                                                  % "\"download_file\""
                                                                                   % "\"download\""
                                                                                   % failure_params
                                                                                   % "false").str() }),  // data
