@@ -1,5 +1,6 @@
 #include <pxp-agent/modules/command.hpp>
 #include <pxp-agent/configuration.hpp>
+#include <pxp-agent/util/bolt_helpers.hpp>
 #include <leatherman/file_util/file.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/algorithm/string.hpp>
@@ -36,18 +37,8 @@ Util::CommandObject Command::buildCommandObject(const ActionRequest& request)
     assert(params.includes("command") &&
            params.type("command") == lth_jc::DataType::String);
 
-    // Try to split the raw command text into executable and arguments, as leatherman::execution
-    // expects, taking care to retain spaces within quoted executables or argument names.
-    // This approach is borrowed from boost's `program_options::split_unix`.
     auto raw_command = params.get<std::string>("command");
-    boost::escaped_list_separator<char> e_l_s {
-        "",     // don't parse any escaped characters here,
-                //   just get quote-aware space-separated chunks
-        " ",    // split fields on spaces
-        "\"\'"  // double or single quotes will group multiple fields as one
-    };
-    boost::tokenizer<boost::escaped_list_separator<char>> tok(raw_command, e_l_s);
-    std::vector<std::string> chunks { tok.begin(), tok.end() };
+    auto chunks = Util::splitArguments(raw_command);
     auto command = *chunks.begin();
     std::vector<std::string> arguments { chunks.begin() + 1, chunks.end() };
     const fs::path& results_dir { request.resultsDir() };

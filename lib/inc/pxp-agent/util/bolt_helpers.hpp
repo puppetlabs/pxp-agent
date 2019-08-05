@@ -54,7 +54,7 @@ namespace Util {
   std::string calculateSha256(const std::string& path);
   void createDir(const boost::filesystem::path& dir);
   void createSymLink(const boost::filesystem::path& destination, const boost::filesystem::path& source);
-
+  std::vector<std::string> splitArguments(const std::string& raw_arg_list);
 }  // namespace Util
 }  // namespace PXPAgent
 

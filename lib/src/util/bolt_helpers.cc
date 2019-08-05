@@ -4,6 +4,8 @@
 
 #include <boost/algorithm/hex.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/tokenizer.hpp>
+
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.util.bolt_helpers"
 #include <leatherman/logging/logging.hpp>
@@ -239,6 +241,19 @@ namespace Util {
     fs::permissions(destination, NIX_DIR_PERMS);
   }
 
+  // Try to split the raw command text into executable and arguments, as leatherman::execution
+  // expects, taking care to retain spaces within quoted executables or argument names.
+  // This approach is borrowed from boost's `program_options::split_unix`.
+  std::vector<std::string> splitArguments(const std::string& raw_arg_list) {
+    boost::escaped_list_separator<char> e_l_s {
+        "",     // don't parse any escaped characters here,
+                //   just get quote-aware space-separated chunks
+        " ",    // split fields on spaces
+        "\"\'"  // double or single quotes will group multiple fields as one
+    };
+    boost::tokenizer<boost::escaped_list_separator<char>> tok(raw_arg_list, e_l_s);
+    return { tok.begin(), tok.end() };
+  }
 
 }  // namespace Util
 }  // namespace PXPAgent
