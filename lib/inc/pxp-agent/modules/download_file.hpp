@@ -46,32 +46,12 @@ namespace Modules {
 
       leatherman::curl::client client_;
 
-      // callAction is normally implemented in the BoltModule base class. However:
-      // DownloadFile will not execute any external processes, so it does not need the
-      // overhead from callAction to parse blocking/non-blocking and call extrenal
-      // processes.
-      //
-      // DownloadFile re-implements callAction to provide the functionality to download
-      // files.
       ActionResponse callAction(const ActionRequest& request) override;
 
       // Creates an ActionResponse representing a failure.
       ActionResponse failure_response(const ActionRequest& request,
                                       const boost::filesystem::path& results_dir,
                                       const std::string& message);
-
-      // Since DownloadFile overrides callAction there's no reason to define
-      // buildCommandObject (since it will never be called)
-      Util::CommandObject buildCommandObject(const ActionRequest& request) override {
-        throw Module::ProcessingError(leatherman::locale::format("DownloadFile module does not implement buildCommandObject!"));
-        return Util::CommandObject {
-          "",
-          {},
-          {},
-          "",
-          nullptr
-        };
-      }
   };
 
 }  // namespace Modules

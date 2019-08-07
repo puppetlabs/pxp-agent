@@ -56,7 +56,7 @@ class Task : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable
     leatherman::json_container::JsonContainer selectLibFile(std::vector<leatherman::json_container::JsonContainer> const& files,
         std::string const& file_name);
 
-    Util::CommandObject buildCommandObject(const ActionRequest& request) override;
+    ActionResponse callAction(const ActionRequest& request) override;
 };
 
 }  // namespace Modules

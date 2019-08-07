@@ -83,7 +83,7 @@ namespace Modules {
         client_.set_proxy(proxy);
     }
 
-    Util::CommandObject Script::buildCommandObject(const ActionRequest& request)
+    ActionResponse Script::callAction(const ActionRequest& request)
     {
         const auto params = request.params();
         auto script = params.get<lth_jc::JsonContainer>("script");
@@ -99,7 +99,7 @@ namespace Modules {
                                                client_,
                                                module_cache_dir_->createCacheDir(script.get<std::string>("sha256")),
                                                script);
-        Util::CommandObject cmd {
+        Util::CommandObject script_command {
             "",         // Executable will be detremined by findExecutableAndArguments
             arguments,  // Arguments
             {},         // Environment
@@ -110,9 +110,9 @@ namespace Modules {
                                             NIX_FILE_PERMS, std::ios::binary);
             }  // PID Callback
         };
-        Util::findExecutableAndArguments(script_file, cmd);
+        Util::findExecutableAndArguments(script_file, script_command);
 
-        return cmd;
+        return invokeCommand(request, script_command);
     }
 
     unsigned int Script::purge(

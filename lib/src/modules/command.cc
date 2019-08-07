@@ -30,7 +30,7 @@ Command::Command(const fs::path& exec_prefix, std::shared_ptr<ResultsStorage> st
     results_validator_.registerSchema(output_schema);
 }
 
-Util::CommandObject Command::buildCommandObject(const ActionRequest& request)
+ActionResponse Command::callAction(const ActionRequest& request)
 {
     const auto params = request.params();
 
@@ -55,7 +55,7 @@ Util::CommandObject Command::buildCommandObject(const ActionRequest& request)
         }  // PID Callback
     };
 
-    return cmd;
+    return invokeCommand(request, cmd);
 }
 
 }  // namespace Modules

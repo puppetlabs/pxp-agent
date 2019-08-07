@@ -26,8 +26,6 @@ class Script : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeab
                std::shared_ptr<ModuleCacheDir> module_cache_dir,
                std::shared_ptr<ResultsStorage> storage);
 
-        Util::CommandObject buildCommandObject(const ActionRequest& request) override;
-
         /// Utility to purge files from the cache_dir that have surpassed the ttl.
         /// If a purge_callback is not specified, the boost filesystem's remove_all() will be used.
         /// Returns number of directories purged.
@@ -44,6 +42,8 @@ class Script : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeab
       uint32_t download_connect_timeout_, download_timeout_;
 
       leatherman::curl::client client_;
+
+      ActionResponse callAction(const ActionRequest& request) override;
 };
 
 }  // namespace Modules

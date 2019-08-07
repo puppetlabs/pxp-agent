@@ -46,9 +46,8 @@ class BoltModule : public PXPAgent::Module {
         /// in the response object's metadata.
         void processOutputAndUpdateMetadata(ActionResponse& response) override;
 
-        // Construct a CommandObject based on an ActionRequest - all inheriting classes must implement this method.
-        virtual CommandObject buildCommandObject(const ActionRequest& request) = 0;
-
+        // Invoke the command supplied as a CommandObject using leatherman::execute
+        ActionResponse invokeCommand(const ActionRequest& request, const CommandObject& cmd);
     protected:
         boost::filesystem::path exec_prefix_;
         std::shared_ptr<ResultsStorage> storage_;
@@ -69,8 +68,6 @@ class BoltModule : public PXPAgent::Module {
                 const ActionRequest& request,
                 const CommandObject &command,
                 ActionResponse &response);
-
-        ActionResponse callAction(const ActionRequest& request) override;
 };
 
 }  // namespace Util

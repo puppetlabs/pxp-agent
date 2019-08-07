@@ -162,9 +162,8 @@ void BoltModule::callNonBlockingAction(
     processOutputAndUpdateMetadata(response);
 }
 
-ActionResponse BoltModule::callAction(const ActionRequest& request)
+ActionResponse BoltModule::invokeCommand(const ActionRequest& request, const CommandObject& cmd)
 {
-    auto cmd = buildCommandObject(request);
     ActionResponse response { ModuleType::Internal, request };
 
     if (request.type() == RequestType::Blocking) {

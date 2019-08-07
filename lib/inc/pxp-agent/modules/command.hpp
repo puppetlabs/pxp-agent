@@ -11,7 +11,9 @@ namespace Modules {
 class Command : public PXPAgent::Util::BoltModule {
     public:
         Command(const boost::filesystem::path& exec_prefix, std::shared_ptr<ResultsStorage> storage);
-        Util::CommandObject buildCommandObject(const ActionRequest& request) override;
+
+    private:
+        ActionResponse callAction(const ActionRequest& request) override;
 };
 
 }  // namespace Modules

@@ -348,7 +348,7 @@ static lth_jc::JsonContainer selectTaskFile(std::vector<lth_jc::JsonContainer> c
     return *file;
 }
 
-Util::CommandObject Task::buildCommandObject(const ActionRequest& request)
+ActionResponse Task::callAction(const ActionRequest& request)
 {
     auto task_execution_params = request.params();
     auto task_metadata = task_execution_params.getWithDefault<lth_jc::JsonContainer>("metadata", task_execution_params);
@@ -436,7 +436,7 @@ Util::CommandObject Task::buildCommandObject(const ActionRequest& request)
         addParametersToEnvironment(task_params, task_command.environment);
     }
 
-    return task_command;
+    return invokeCommand(request, task_command);
 }
 
 unsigned int Task::purge(
