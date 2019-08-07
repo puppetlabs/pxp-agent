@@ -47,11 +47,6 @@ namespace Modules {
       leatherman::curl::client client_;
 
       ActionResponse callAction(const ActionRequest& request) override;
-
-      // Creates an ActionResponse representing a failure.
-      ActionResponse failure_response(const ActionRequest& request,
-                                      const boost::filesystem::path& results_dir,
-                                      const std::string& message);
   };
 
 }  // namespace Modules

@@ -68,6 +68,15 @@ class BoltModule : public PXPAgent::Module {
                 const ActionRequest& request,
                 const CommandObject &command,
                 ActionResponse &response);
+
+        ActionOutput write_results_to_files(const boost::filesystem::path& results_dir,
+                                            const int exit_code,
+                                            const std::string& std_out,
+                                            const std::string& std_err);
+
+        ActionResponse failure_response(const ActionRequest& request,
+                                        const boost::filesystem::path& results_dir,
+                                        const std::string& message);
 };
 
 }  // namespace Util

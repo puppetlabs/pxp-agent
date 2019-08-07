@@ -26,7 +26,6 @@ static const std::string EXECUTION_WRAPPER_EXECUTABLE { "execution_wrapper.exe" 
 static const std::string EXECUTION_WRAPPER_EXECUTABLE { "execution_wrapper" };
 #endif
 
-
 void BoltModule::processOutputAndUpdateMetadata(PXPAgent::ActionResponse &response) {
     if (response.output.std_out.empty()) {
         LOG_TRACE("Obtained no results on stdout for the {1}",
@@ -82,6 +81,40 @@ void BoltModule::processOutputAndUpdateMetadata(PXPAgent::ActionResponse &respon
         response.setBadResultsAndEnd(execution_error);
     }
 }
+
+// Write results to results_dir and return them as
+// an ActionOutput struct
+ActionOutput BoltModule::write_results_to_files(const fs::path& results_dir,
+                                            const int exit_code,
+                                            const std::string& std_out,
+                                            const std::string& std_err)
+{
+    lth_file::atomic_write_to_file(std::to_string(exit_code) + "\n",
+                                (results_dir / "exitcode").string(),
+                                NIX_FILE_PERMS,
+                                std::ios::binary);
+    lth_file::atomic_write_to_file(std_out,
+                                (results_dir / "stdout").string(),
+                                NIX_FILE_PERMS,
+                                std::ios::binary);
+    lth_file::atomic_write_to_file(std_err,
+                                (results_dir / "stderr").string(),
+                                NIX_FILE_PERMS,
+                                std::ios::binary);
+    return ActionOutput { exit_code, std_out, std_err };
+}
+
+ActionResponse BoltModule::failure_response(const ActionRequest& request,
+                                    const fs::path& results_dir,
+                                    const std::string& message)
+{
+    LOG_ERROR(message);
+    ActionResponse fail_response { ModuleType::Internal, request };
+    processOutputAndUpdateMetadata(fail_response);
+    fail_response.output = write_results_to_files(results_dir, EXIT_FAILURE, "", message);
+    return fail_response;
+}
+
 
 leatherman::execution::result BoltModule::run_sync(const CommandObject &cmd) {
     return lth_exec::execute(

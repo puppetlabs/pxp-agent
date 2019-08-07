@@ -96,40 +96,6 @@ namespace Modules {
     client_.set_proxy(proxy);
   }
 
-
-  // Write results to results_dir and return them as
-  // an ActionOutput struct
-  static ActionOutput write_download_results(const fs::path& results_dir,
-                                             const int exit_code,
-                                             const std::string& std_out,
-                                             const std::string& std_err)
-  {
-    lth_file::atomic_write_to_file(std::to_string(exit_code) + "\n",
-                                   (results_dir / "exitcode").string(),
-                                   NIX_FILE_PERMS,
-                                   std::ios::binary);
-    lth_file::atomic_write_to_file(std_out,
-                                   (results_dir / "stdout").string(),
-                                   NIX_FILE_PERMS,
-                                   std::ios::binary);
-    lth_file::atomic_write_to_file(std_err,
-                                   (results_dir / "stderr").string(),
-                                   NIX_FILE_PERMS,
-                                   std::ios::binary);
-    return ActionOutput { exit_code, std_out, std_err };
-  }
-
-  ActionResponse DownloadFile::failure_response(const ActionRequest& request,
-                                      const fs::path& results_dir,
-                                      const std::string& message)
-  {
-    LOG_ERROR(message);
-    ActionResponse fail_response { ModuleType::Internal, request };
-    processOutputAndUpdateMetadata(fail_response);
-    fail_response.output = write_download_results(results_dir, EXIT_FAILURE, "", message);
-    return fail_response;
-  }
-
   // DownloadFile overrides callAction from the base BoltModule class since there's no need to run
   // any commands with DownloadFile. CallAction will simply download the file and return a result
   // based on if the download succeeded or failed.
@@ -180,7 +146,7 @@ namespace Modules {
           return failure_response(request, results_dir, lth_loc::format("Not a valid file type! {1}", kind));
       }
     }
-    response.output = write_download_results(results_dir, EXIT_SUCCESS, "downloaded", "");
+    response.output = write_results_to_files(results_dir, EXIT_SUCCESS, "downloaded", "");
     processOutputAndUpdateMetadata(response);
     return response;
   }
