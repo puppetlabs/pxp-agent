@@ -33,6 +33,7 @@ set(COMMON_TEST_SOURCES
     unit/modules/download_file_test.cc
     unit/modules/script_test.cc
     unit/util/process_test.cc
+    unit/util/bolt_helpers_test.cc
 )
 
 if (UNIX)

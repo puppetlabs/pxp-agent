@@ -7,7 +7,7 @@ elif [ "$1" = "FAIL" ]; then
   exit 5
 else
   str=""
-  for VAR in $@
+  for VAR in "$@"
   do
     str="$str | $VAR"
   done

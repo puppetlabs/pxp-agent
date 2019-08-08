@@ -36,7 +36,7 @@ namespace lth_file = leatherman::file_util;
     static const std::string TESTING_SCRIPT_SHA265 = "3D57FCC5FBDC53E667D16493D38621F36B2CF7DB244986B07A4FBCFECE9E19BD";
 #else
     static const std::string TESTING_SCRIPT = "test_script.sh";
-    static const std::string TESTING_SCRIPT_SHA265 = "618C8AB515E454E1D865BD78968D73064EDE5503DD29A53F0DFA5E27EAE92657";
+    static const std::string TESTING_SCRIPT_SHA265 = "71A2725F36221AAE75AF076D01D18744DA461A02DD2AB746447BC41C71248562";
 #endif
 
 static const std::string SPOOL_DIR { std::string { PXP_AGENT_ROOT_PATH }
@@ -126,6 +126,22 @@ TEST_CASE("Modules::Script can execute a script", "[modules]") {
         REQUIRE(response.output.std_err == "");
         REQUIRE(response.output.exitcode == 0);
     }
+    SECTION("script executes with parameters with spaces") {
+        auto response = mod.executeAction(script_request(TESTING_SCRIPT, TESTING_SCRIPT_SHA265, "TWO \\\"TEST ARGS\\\""));
+        boost::trim(response.output.std_out);
+        REQUIRE(response.output.std_out == "| TWO | TEST ARGS");
+        REQUIRE(response.output.std_err == "");
+        REQUIRE(response.output.exitcode == 0);
+    }
+#ifdef _WIN32
+    SECTION("script executes with executable that has spaces") {
+        auto response = mod.executeAction(script_request("test script.ps1", TESTING_SCRIPT_SHA265, "TWO \\\"TEST ARGS\\\""));
+        boost::trim(response.output.std_out);
+        REQUIRE(response.output.std_out == "| TWO | TEST ARGS");
+        REQUIRE(response.output.std_err == "");
+        REQUIRE(response.output.exitcode == 0);
+    }
+#endif
 }
 
 TEST_CASE("Modules::Script correctly reports failures", "[modules]") {

@@ -48,6 +48,7 @@ class BoltModule : public PXPAgent::Module {
 
         // Invoke the command supplied as a CommandObject using leatherman::execute
         ActionResponse invokeCommand(const ActionRequest& request, const CommandObject& cmd);
+
     protected:
         boost::filesystem::path exec_prefix_;
         std::shared_ptr<ResultsStorage> storage_;
