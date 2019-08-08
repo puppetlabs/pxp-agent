@@ -1,5 +1,5 @@
-#ifndef SRC_MODULES_DOWNLOAD_FILE_H_
-#define SRC_MODULES_DOWNLOAD_FILE_H_
+#ifndef SRC_MODULES_FILE_H_
+#define SRC_MODULES_FILE_H_
 
 #include <pxp-agent/module.hpp>
 #include <pxp-agent/module_cache_dir.hpp>
@@ -17,9 +17,9 @@
 namespace PXPAgent {
 namespace Modules {
 
-  class DownloadFile : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable {
+  class File : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable {
     public:
-      DownloadFile(const std::vector<std::string>& master_uris,
+      File(const std::vector<std::string>& master_uris,
                   const std::string& ca,
                   const std::string& crt,
                   const std::string& key,
@@ -72,4 +72,4 @@ namespace Modules {
 }  // namespace Modules
 }  // namespace PXPAgent
 
- #endif  // SRC_MODULES_DOWNLOAD_FILE_H_
+ #endif  // SRC_MODULES_FILE_H_

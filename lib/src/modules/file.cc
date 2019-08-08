@@ -1,11 +1,11 @@
-#include <pxp-agent/modules/download_file.hpp>
+#include <pxp-agent/modules/file.hpp>
 #include <pxp-agent/util/bolt_helpers.hpp>
 #include <pxp-agent/util/bolt_module.hpp>
 #include <pxp-agent/configuration.hpp>
 #include <pxp-agent/module.hpp>
 #include <boost/algorithm/hex.hpp>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.module.download_file"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.module.file"
 #include <leatherman/logging/logging.hpp>
 #include <leatherman/file_util/file.hpp>
 #include <leatherman/file_util/directory.hpp>
@@ -22,9 +22,9 @@ namespace fs       = boost::filesystem;
 namespace PXPAgent {
 namespace Modules {
 
-  static const std::string DOWNLOAD_FILE_ACTION { "download" };
+  static const std::string FILE_ACTION { "download" };
 
-  static const std::string DOWNLOAD_FILE_ACTION_INPUT_SCHEMA { R"(
+  static const std::string FILE_ACTION_INPUT_SCHEMA { R"(
   {
     "type": "object",
     "properties": {
@@ -66,7 +66,7 @@ namespace Modules {
   )" };
 
 
-  DownloadFile::DownloadFile(const std::vector<std::string>& master_uris,
+  File::File(const std::vector<std::string>& master_uris,
                              const std::string& ca,
                              const std::string& crt,
                              const std::string& key,
@@ -81,11 +81,11 @@ namespace Modules {
     file_download_connect_timeout_ { download_connect_timeout },
     file_download_timeout_ { download_timeout }
   {
-    module_name = "download_file";
-    actions.push_back(DOWNLOAD_FILE_ACTION);
+    module_name = "file";
+    actions.push_back(FILE_ACTION);
 
-    PCPClient::Schema input_schema { DOWNLOAD_FILE_ACTION, lth_jc::JsonContainer { DOWNLOAD_FILE_ACTION_INPUT_SCHEMA } };
-    PCPClient::Schema output_schema { DOWNLOAD_FILE_ACTION };
+    PCPClient::Schema input_schema { FILE_ACTION, lth_jc::JsonContainer { FILE_ACTION_INPUT_SCHEMA } };
+    PCPClient::Schema output_schema { FILE_ACTION };
 
     input_validator_.registerSchema(input_schema);
     results_validator_.registerSchema(output_schema);
@@ -120,10 +120,10 @@ namespace Modules {
   }
 
 
-  // DownloadFile overrides callAction from the base BoltModule class since there's no need to run
-  // any commands with DownloadFile. CallAction will simply download the file and return a result
+  // File overrides callAction from the base BoltModule class since there's no need to run
+  // any commands with File. CallAction will simply download the file and return a result
   // based on if the download succeeded or failed.
-  ActionResponse DownloadFile::callAction(const ActionRequest& request)
+  ActionResponse File::callAction(const ActionRequest& request)
   {
     auto file_params = request.params();
     auto files = file_params.get<std::vector<lth_jc::JsonContainer>>("files");
@@ -168,7 +168,7 @@ namespace Modules {
   }
 
 
-  unsigned int DownloadFile::purge(
+  unsigned int File::purge(
       const std::string& ttl,
       std::vector<std::string> ongoing_transactions,
       std::function<void(const std::string& dir_path)> purge_callback)

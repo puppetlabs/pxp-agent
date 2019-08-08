@@ -69,7 +69,7 @@ test_name 'download file tests' do
     on master, puppet('resource service puppetserver ensure=running')
   end
 
-  step 'execute successful download_file with files,symlinks,directories' do
+  step 'execute successful download file with files,symlinks,directories' do
     suts.each do |agent|
       test_dir = test_dir_destination(agent)
       test_symlink = test_file_destination(agent)
@@ -100,7 +100,7 @@ test_name 'download file tests' do
     end
   end
 
-  step 'execute download_file for a file with a destination directory that doesnt exist yet' do
+  step 'execute download file for a file with a destination directory that doesnt exist yet' do
     suts.each do |agent|
       test_dir = test_dir_destination(agent)
       test_file = test_dir + "/testing_file#{rand(10000000)}.txt"
@@ -116,7 +116,7 @@ test_name 'download file tests' do
     end
   end
 
-  step 'correctly report failed download_file' do
+  step 'correctly report failed download file' do
     suts.each do |agent|
       test_file = test_file_destination(agent)
       run_errored_download(

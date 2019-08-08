@@ -103,7 +103,7 @@ end
 def download_file(broker, agent, files, **kwargs, &block)
   params = { files: files }
   target = ["pcp://#{agent}/agent"]
-  do_module_action(broker, target, 'download_file', 'download', params, **kwargs, &block)
+  do_module_action(broker, target, 'file', 'download', params, **kwargs, &block)
 end
 
 # Checks that a non-blocking request finished successfully.

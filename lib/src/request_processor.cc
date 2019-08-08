@@ -11,7 +11,7 @@
 #include <pxp-agent/modules/echo.hpp>
 #include <pxp-agent/modules/ping.hpp>
 #include <pxp-agent/modules/task.hpp>
-#include <pxp-agent/modules/download_file.hpp>
+#include <pxp-agent/modules/file.hpp>
 #include <pxp-agent/modules/script.hpp>
 #include <pxp-agent/util/process.hpp>
 
@@ -848,7 +848,7 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
         storage_ptr_);
     registerModule(task);
     registerPurgeable(task);
-    auto dl_file = std::make_shared<Modules::DownloadFile>(
+    auto dl_file = std::make_shared<Modules::File>(
         agent_configuration.master_uris,
         agent_configuration.ca,
         agent_configuration.crt,
