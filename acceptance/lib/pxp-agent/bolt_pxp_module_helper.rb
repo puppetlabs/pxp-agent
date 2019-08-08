@@ -134,6 +134,16 @@ def ensure_failed(broker, targets, response_dataset, max_retries: 30, query_inte
   end
 end
 
+def ensure_errored(broker, targets, response_dataset, max_retries: 30, query_interval: 1)
+  transaction_ids = response_dataset.map { |data| data['transaction_id'] }
+  agent_identities(targets).zip(transaction_ids).map do |identity, transaction_id|
+    check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval) do |result|
+      assert_equal('failure', result['status'], 'Action was expected to fail')
+      yield result['stdout'] if block_given?
+    end
+  end
+end
+
 # Runs a non-blocking script action on targets, and confirms that it succeeded.
 # Block is executed on the stdout string.
 def run_successful_script(broker, agent, script, arguments, **kwargs, &block)
@@ -155,6 +165,14 @@ end
 def run_failed_download(broker, agent, files, **kwargs, &block)
   download_file(broker, agent, files, **kwargs) do |datas|
     ensure_failed(broker, [agent], datas, **kwargs, &block)
+  end
+end
+
+# Runs a non-blocking download action on targets, and confirms that it failed.
+# Block is executed on the stdout string.
+def run_errored_download(broker, agent, files, **kwargs, &block)
+  download_file(broker, agent, files, **kwargs) do |datas|
+    ensure_errored(broker, [agent], datas, **kwargs, &block)
   end
 end
 

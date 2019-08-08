@@ -212,32 +212,38 @@ TEST_CASE("Modules::DownloadFile::callAction", "[modules]") {
         }
     }
 
-    SECTION("Correctly returns exitcode 1 if the new directory requested is already a file") {
+    SECTION("Correctly fails if the new directory requested is already a file") {
         // FAILURE_DIR_EXISTS_AS_FILE_CONTENT will fail because it will make a request to make a
         // directory in a location where there's already a file of that name.
         ActionRequest request { RequestType::NonBlocking, FAILURE_DIR_EXISTS_AS_FILE_CONTENT };
         auto response = mod.executeAction(request);
-        REQUIRE(response.output.exitcode == 1);
+        REQUIRE_FALSE(response.action_metadata.includes("results"));
+        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
+        REQUIRE(response.action_metadata.includes("execution_error"));
         // check that the file did not change to a directory
         REQUIRE(fs::is_regular_file(fs::path(TEST_FILE_DIR + "/file.txt")));
     }
 
-    SECTION("Correctly returns exitcode 1 if the new symlink requested is already a file") {
+    SECTION("Correctly fails if the new symlink requested is already a file") {
         // FAILURE_SYMLINK_EXISTS_AS_FILE_CONTENT will fail because it will make a request to make a
         // symlink in a location where there's already a file of that name.
         ActionRequest request { RequestType::NonBlocking, FAILURE_SYMLINK_EXISTS_AS_FILE_CONTENT };
         auto response = mod.executeAction(request);
-        REQUIRE(response.output.exitcode == 1);
+        REQUIRE_FALSE(response.action_metadata.includes("results"));
+        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
+        REQUIRE(response.action_metadata.includes("execution_error"));
         // check that the file did not change to a directory
         REQUIRE(fs::is_regular_file(fs::path(TEST_FILE_DIR + "/file.txt")));
     }
 
-    SECTION("Correctly returns exitcode 1 with a failed download") {
+    SECTION("Correctly fails with a failed download") {
         // FAILURE_NON_BLOCKING_CONTENT will fail because it will actually force an attempted download
         // from the master URIs, which aren't real.
         ActionRequest request { RequestType::NonBlocking, FAILURE_NON_BLOCKING_CONTENT };
         auto response = mod.executeAction(request);
-        REQUIRE(response.output.exitcode == 1);
+        REQUIRE_FALSE(response.action_metadata.includes("results"));
+        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
+        REQUIRE(response.action_metadata.includes("execution_error"));
     }
 }
 

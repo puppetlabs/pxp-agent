@@ -1,6 +1,7 @@
 require 'pxp-agent/bolt_pxp_module_helper.rb'
 require 'pxp-agent/config_helper.rb'
 require 'puppet/acceptance/environment_utils.rb'
+require 'json'
 
 PUPPETSERVER_CONFIG_FILE = '/etc/puppetlabs/puppetserver/conf.d/webserver.conf'
 
@@ -118,9 +119,18 @@ test_name 'download file tests' do
   step 'correctly report failed download_file' do
     suts.each do |agent|
       test_file = test_file_destination(agent)
-      run_failed_download(master,
-                          agent,
-                          [download_file_entry('NOTREALSHA256', "/download-test-files/not-real-file", '', test_file, 'file')])
+      run_errored_download(
+        master,
+        agent,
+        [download_file_entry('NOTREALSHA256',
+                            "/download-test-files/not-real-file",
+                            '',
+                            test_file,
+                            'file')]
+      ) do |stdout|
+        assert_match('puppetlabs.pxp-agent/execution-error', JSON.parse(stdout)['_error']['kind'])
+      end
+
       test_file_resource_does_not_exist(agent, test_file)
       teardown {
         clean_files(agent, [test_file])
@@ -131,9 +141,13 @@ test_name 'download file tests' do
   step 'Correctly fail if download succeeds but SHA256 does not match after download' do
     suts.each do |agent|
       test_file = test_file_destination(agent)
-      run_failed_download(master,
-                          agent,
-                          [download_file_entry('NOTREALSHA256', @source_file, '', test_file, 'file')])
+      run_errored_download(
+        master,
+        agent,
+        [download_file_entry('NOTREALSHA256', @source_file, '', test_file, 'file')]
+      ) do |stdout|
+        assert_match('puppetlabs.pxp-agent/execution-error', JSON.parse(stdout)['_error']['kind'])
+      end
       test_file_resource_does_not_exist(agent, test_file)
       teardown {
         clean_files(agent, [test_file])
