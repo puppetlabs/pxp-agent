@@ -4,6 +4,8 @@
 
 #include <boost/algorithm/hex.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/tokenizer.hpp>
+
 
 #define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.util.bolt_helpers"
 #include <leatherman/logging/logging.hpp>
@@ -19,9 +21,52 @@ namespace lth_loc  = leatherman::locale;
 namespace PXPAgent {
 namespace Util {
 
+  void findExecutableAndArguments(const fs::path& file, Util::CommandObject& cmd)
+  {
+      auto builtin = BUILTIN_INTERPRETERS.find(file.extension().string());
+
+      if (builtin != BUILTIN_INTERPRETERS.end()) {
+          auto details = builtin->second(file.string());
+          cmd.executable = details.first;
+          // cmd.arguments may already have values, so instead of setting
+          // cmd.arguments directly: fetch the prefix arguments (that should
+          // go before the user provided ones), then insert the user provided
+          // ones in to prefix_args to create a flattened vector that will be:
+          // { prefix_args, cmd.arguments }
+          std::vector<std::string> prefix_args = details.second;
+          std::vector<std::string> provided_args = cmd.arguments;
+          prefix_args.insert(prefix_args.end(), provided_args.begin(), provided_args.end());
+          cmd.arguments = prefix_args;
+      } else {
+          cmd.executable = file.string();
+      }
+  }
+
 
   // NIX_DIR_PERMS is defined in pxp-agent/configuration
   #define NIX_DOWNLOADED_FILE_PERMS NIX_DIR_PERMS
+
+  // Verify (this includes checking the SHA256 checksums) that a file is present
+  // in the cache, downloading it if necessary.
+  // Return the full path of the cached version of the file.
+  fs::path getCachedFile(const std::vector<std::string>& master_uris,
+                                  uint32_t connect_timeout,
+                                  uint32_t timeout,
+                                  lth_curl::client& client,
+                                  const fs::path&   cache_dir,
+                                  lth_jc::JsonContainer& file) {
+      LOG_DEBUG("Verifying file based on {1}", file.toString());
+
+      try {
+          // files remain in the cache_dir rather than being written out to a destination
+          // elsewhere on the filesystem.
+          auto destination = cache_dir / fs::path(file.get<std::string>("filename")).filename();
+          return Util::downloadFileFromMaster(master_uris, connect_timeout, timeout, client, cache_dir, destination, file);
+      } catch (Module::ProcessingError& e) {
+          throw Module::ProcessingError { lth_loc::format("Failed to download file with: {1}", e.what()) };
+      }
+  }
+
 
   // Downloads a file if it does not already exist on the filesystem. A check is made
   // on the filesystem to determine if the file at destination already exists and if
@@ -47,16 +92,16 @@ namespace Util {
     }
 
     if (master_uris.empty()) {
-      throw Module::ProcessingError(lth_loc::format("Cannot download task. No master-uris were provided"));
+      throw Module::ProcessingError(lth_loc::format("Cannot download file. No master-uris were provided"));
     }
 
-    auto tempname = cache_dir / fs::unique_path("temp_task_%%%%-%%%%-%%%%-%%%%");
+    auto tempname = cache_dir / fs::unique_path("temp_file_%%%%-%%%%-%%%%-%%%%");
     // Note that the provided tempname argument is a temporary file, call it "tempA".
     // Leatherman.curl during the download method will create another temporary file,
     // call it "tempB", to save the downloaded file's contents in chunks before
     // renaming it to "tempA." The rationale behind this solution is that:
     //    (1) After download, we still need to check "tempA" to ensure that its sha matches
-    //    the provided sha. So the downloaded task is not quite a "valid" file after this
+    //    the provided sha. So the downloaded file is not quite a "valid" file after this
     //    method is called; it's still temporary.
     //
     //    (2) It somewhat simplifies error handling if multiple threads try to download
@@ -64,7 +109,7 @@ namespace Util {
     auto download_result = downloadFileWithCurl(master_uris, connect_timeout, timeout, client, tempname, file.get<lth_jc::JsonContainer>("uri"));
     if (!std::get<0>(download_result)) {
       throw Module::ProcessingError(lth_loc::format(
-        "Downloading the task file {1} failed after trying all the available master-uris. Most recent error message: {2}",
+        "Downloading file {1} failed after trying all the available master-uris. Most recent error message: {2}",
         filename,
         std::get<1>(download_result)));
     }
@@ -81,7 +126,7 @@ namespace Util {
   }
 
   // Downloads the file at the specified url into the provided path.
-  // The downloaded task file's permissions will be set to rwx for user and rx for
+  // The downloaded file's permissions will be set to rwx for user and rx for
   // group for non-Windows OSes.
   //
   // The method returns a tuple (success, err_msg). success is true if the file was downloaded;
@@ -114,11 +159,11 @@ namespace Util {
         }
       } catch (lth_curl::http_file_download_exception& e) {
         // Server-side error, do nothing here -- we want to try the next master-uri.
-        LOG_WARNING("Downloading the task file from the master-uri '{1}' failed. Reason: {2}", master_uri, e.what());
+        LOG_WARNING("Downloading the file from the master-uri '{1}' failed. Reason: {2}", master_uri, e.what());
         std::get<1>(result) = e.what();
       } catch (lth_curl::http_request_exception& e) {
         // For http_curl_setup and http_file_operation exceptions
-        throw Module::ProcessingError(lth_loc::format("Downloading the task file failed. Reason: {1}", e.what()));
+        throw Module::ProcessingError(lth_loc::format("Downloading the file failed. Reason: {1}", e.what()));
       }
 
       if (fs::exists(file_path)) {
@@ -204,6 +249,19 @@ namespace Util {
     fs::permissions(destination, NIX_DIR_PERMS);
   }
 
+  // Try to split the raw command text into executable and arguments, as leatherman::execution
+  // expects, taking care to retain spaces within quoted executables or argument names.
+  // This approach is borrowed from boost's `program_options::split_unix`.
+  std::vector<std::string> splitArguments(const std::string& raw_arg_list) {
+    boost::escaped_list_separator<char> e_l_s {
+        "",     // don't parse any escaped characters here,
+                //   just get quote-aware space-separated chunks
+        " ",    // split fields on spaces
+        "\"\'"  // double or single quotes will group multiple fields as one
+    };
+    boost::tokenizer<boost::escaped_list_separator<char>> tok(raw_arg_list, e_l_s);
+    return { tok.begin(), tok.end() };
+  }
 
 }  // namespace Util
 }  // namespace PXPAgent

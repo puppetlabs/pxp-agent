@@ -4,11 +4,38 @@
 #include <leatherman/locale/locale.hpp>
 #include <leatherman/curl/client.hpp>
 #include <leatherman/json_container/json_container.hpp>
+#include <pxp-agent/util/bolt_module.hpp>
 
 #include <tuple>
 
 namespace PXPAgent {
 namespace Util {
+
+  // Hard-code interpreters on Windows. On non-Windows, we still rely on permissions and #!
+  const std::map<std::string, std::function<std::pair<std::string, std::vector<std::string>>(std::string)>> BUILTIN_INTERPRETERS {
+  #ifdef _WIN32
+      {".rb",  [](std::string filename) { return std::pair<std::string, std::vector<std::string>> {
+          "ruby", { filename }
+      }; }},
+      {".pp",  [](std::string filename) { return std::pair<std::string, std::vector<std::string>> {
+          "puppet", { "apply", filename }
+      }; }},
+      {".ps1", [](std::string filename) { return std::pair<std::string, std::vector<std::string>> {
+          "powershell",
+          { "-NoProfile", "-NonInteractive", "-NoLogo", "-ExecutionPolicy", "Bypass", "-File", filename }
+      }; }}
+  #endif
+  };
+
+  void findExecutableAndArguments(const boost::filesystem::path& file, Util::CommandObject& cmd);
+
+  boost::filesystem::path getCachedFile(const std::vector<std::string>& master_uris,
+                                  uint32_t connect_timeout,
+                                  uint32_t timeout,
+                                  leatherman::curl::client& client,
+                                  const boost::filesystem::path& cache_dir,
+                                  leatherman::json_container::JsonContainer& file);
+
   boost::filesystem::path downloadFileFromMaster(const std::vector<std::string>& master_uris,
                                                 uint32_t connect_timeout,
                                                 uint32_t timeout,
@@ -27,7 +54,7 @@ namespace Util {
   std::string calculateSha256(const std::string& path);
   void createDir(const boost::filesystem::path& dir);
   void createSymLink(const boost::filesystem::path& destination, const boost::filesystem::path& source);
-
+  std::vector<std::string> splitArguments(const std::string& raw_arg_list);
 }  // namespace Util
 }  // namespace PXPAgent
 

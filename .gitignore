@@ -3,6 +3,8 @@
 /dev-resources/
 /lib/tests/resources/test_spool/
 /lib/tests/resources/cache_dir/
+/lib/tests/resources/scripts_cache/FAILINGSHA256
+/lib/tests/resources/scripts_cache/SCRIPT_FAILING_SHA
 /lib/tests/resources/tmp/
 /lib/tests/resources/cache_dir/
 .idea/
