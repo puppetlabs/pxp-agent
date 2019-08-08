@@ -702,15 +702,6 @@ msgstr ""
 msgid "debug entry is not valid JSON"
 msgstr ""
 
-#. debug
-#: lib/src/modules/task.cc
-msgid "Verifying task file based on {1}"
-msgstr ""
-
-#: lib/src/modules/task.cc
-msgid "Failed to download task file with: {1}"
-msgstr ""
-
 #: lib/src/modules/task.cc
 msgid "'{1}' file requested as additional task dependency not found"
 msgstr ""
@@ -1305,14 +1296,23 @@ msgstr ""
 msgid "failed to create a timepoint for {1}{2}"
 msgstr ""
 
+#. debug
 #: lib/src/util/bolt_helpers.cc
-msgid "Cannot download task. No master-uris were provided"
+msgid "Verifying file based on {1}"
+msgstr ""
+
+#: lib/src/util/bolt_helpers.cc
+msgid "Failed to download file with: {1}"
+msgstr ""
+
+#: lib/src/util/bolt_helpers.cc
+msgid "Cannot download file. No master-uris were provided"
 msgstr ""
 
 #: lib/src/util/bolt_helpers.cc
 msgid ""
-"Downloading the task file {1} failed after trying all the available master-"
-"uris. Most recent error message: {2}"
+"Downloading file {1} failed after trying all the available master-uris. Most "
+"recent error message: {2}"
 msgstr ""
 
 #: lib/src/util/bolt_helpers.cc
@@ -1325,11 +1325,11 @@ msgstr ""
 
 #. warning
 #: lib/src/util/bolt_helpers.cc
-msgid "Downloading the task file from the master-uri '{1}' failed. Reason: {2}"
+msgid "Downloading the file from the master-uri '{1}' failed. Reason: {2}"
 msgstr ""
 
 #: lib/src/util/bolt_helpers.cc
-msgid "Downloading the task file failed. Reason: {1}"
+msgid "Downloading the file failed. Reason: {1}"
 msgstr ""
 
 #: lib/src/util/bolt_helpers.cc
