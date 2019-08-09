@@ -1,7 +1,7 @@
 #include "root_path.hpp"
 #include "../../common/content_format.hpp"
 
-#include <pxp-agent/modules/download_file.hpp>
+#include <pxp-agent/modules/file.hpp>
 #include <pxp-agent/configuration.hpp>
 #include <pxp-agent/util/process.hpp>
 
@@ -60,7 +60,7 @@ static const std::string CRT { "mock_crt" };
 
 static const std::string KEY { "mock_key" };
 
-// Success for files is produced by calling download_file for a file that already exists.
+// Success for files is produced by calling download file for a file that already exists.
 // This way during the test no actual downloads will be attempted, and downloadFileFromMaster
 // will return success without needing to download anything. Creating directories doesn't
 // require any downloads, so that entry does not need to already exist.
@@ -180,14 +180,14 @@ static const PCPClient::ParsedChunks FAILURE_NON_BLOCKING_CONTENT {
                     {},   // debug
                     0 };  // num invalid debug chunks
 
-TEST_CASE("Modules::DownloadFile", "[modules]") {
+TEST_CASE("Modules::File", "[modules]") {
     SECTION("can successfully instantiate") {
-        REQUIRE_NOTHROW(Modules::DownloadFile(MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE));
+        REQUIRE_NOTHROW(Modules::File(MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE));
     }
 }
 
-TEST_CASE("Modules::DownloadFile::hasAction", "[modules]") {
-    Modules::DownloadFile mod { MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
+TEST_CASE("Modules::File::hasAction", "[modules]") {
+    Modules::File mod { MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
     SECTION("correctly reports false") {
         REQUIRE(!mod.hasAction("foo"));
     }
@@ -197,8 +197,8 @@ TEST_CASE("Modules::DownloadFile::hasAction", "[modules]") {
     }
 }
 
-TEST_CASE("Modules::DownloadFile::callAction", "[modules]") {
-    Modules::DownloadFile mod { MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
+TEST_CASE("Modules::File::callAction", "[modules]") {
+    Modules::File mod { MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
     SECTION("Correctly returns exitcode 0 when call succeeds") {
         // Remove the directory to be created in case it was here from a previous test
         fs::remove(fs::path(TEST_NEW_DIR));
@@ -212,32 +212,38 @@ TEST_CASE("Modules::DownloadFile::callAction", "[modules]") {
         }
     }
 
-    SECTION("Correctly returns exitcode 1 if the new directory requested is already a file") {
+    SECTION("Correctly fails if the new directory requested is already a file") {
         // FAILURE_DIR_EXISTS_AS_FILE_CONTENT will fail because it will make a request to make a
         // directory in a location where there's already a file of that name.
         ActionRequest request { RequestType::NonBlocking, FAILURE_DIR_EXISTS_AS_FILE_CONTENT };
         auto response = mod.executeAction(request);
-        REQUIRE(response.output.exitcode == 1);
+        REQUIRE_FALSE(response.action_metadata.includes("results"));
+        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
+        REQUIRE(response.action_metadata.includes("execution_error"));
         // check that the file did not change to a directory
         REQUIRE(fs::is_regular_file(fs::path(TEST_FILE_DIR + "/file.txt")));
     }
 
-    SECTION("Correctly returns exitcode 1 if the new symlink requested is already a file") {
+    SECTION("Correctly fails if the new symlink requested is already a file") {
         // FAILURE_SYMLINK_EXISTS_AS_FILE_CONTENT will fail because it will make a request to make a
         // symlink in a location where there's already a file of that name.
         ActionRequest request { RequestType::NonBlocking, FAILURE_SYMLINK_EXISTS_AS_FILE_CONTENT };
         auto response = mod.executeAction(request);
-        REQUIRE(response.output.exitcode == 1);
+        REQUIRE_FALSE(response.action_metadata.includes("results"));
+        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
+        REQUIRE(response.action_metadata.includes("execution_error"));
         // check that the file did not change to a directory
         REQUIRE(fs::is_regular_file(fs::path(TEST_FILE_DIR + "/file.txt")));
     }
 
-    SECTION("Correctly returns exitcode 1 with a failed download") {
+    SECTION("Correctly fails with a failed download") {
         // FAILURE_NON_BLOCKING_CONTENT will fail because it will actually force an attempted download
         // from the master URIs, which aren't real.
         ActionRequest request { RequestType::NonBlocking, FAILURE_NON_BLOCKING_CONTENT };
         auto response = mod.executeAction(request);
-        REQUIRE(response.output.exitcode == 1);
+        REQUIRE_FALSE(response.action_metadata.includes("results"));
+        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
+        REQUIRE(response.action_metadata.includes("execution_error"));
     }
 }
 
@@ -247,7 +253,7 @@ static std::time_t my_to_time_t(pt::ptime t)
     return (t - pt::ptime(boost::gregorian::date(1970, 1, 1))).total_seconds();
 }
 
-TEST_CASE("Modules::DownloadFile::purge purges old downloaded files", "[modules]") {
+TEST_CASE("Modules::File::purge purges old downloaded files", "[modules]") {
     const std::string PURGE_CACHE { std::string { PXP_AGENT_ROOT_PATH }
         + "/lib/tests/resources/purge_test" };
 
@@ -257,7 +263,7 @@ TEST_CASE("Modules::DownloadFile::purge purges old downloaded files", "[modules]
     static const auto PURGE_MODULE_CACHE_DIR = std::make_shared<ModuleCacheDir>(PURGE_CACHE, CACHE_TTL);
 
     // Start with 0 TTL to prevent initial cleanup
-    Modules::DownloadFile mod { MASTER_URIS, CA, CRT, KEY, "", 10, 20, PURGE_MODULE_CACHE_DIR, STORAGE };
+    Modules::File mod { MASTER_URIS, CA, CRT, KEY, "", 10, 20, PURGE_MODULE_CACHE_DIR, STORAGE };
 
     unsigned int num_purged_results { 0 };
     auto purgeCallback =

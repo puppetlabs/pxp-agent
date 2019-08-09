@@ -1,11 +1,11 @@
-#include <pxp-agent/modules/download_file.hpp>
+#include <pxp-agent/modules/file.hpp>
 #include <pxp-agent/util/bolt_helpers.hpp>
 #include <pxp-agent/util/bolt_module.hpp>
 #include <pxp-agent/configuration.hpp>
 #include <pxp-agent/module.hpp>
 #include <boost/algorithm/hex.hpp>
 
-#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.module.download_file"
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.module.file"
 #include <leatherman/logging/logging.hpp>
 #include <leatherman/file_util/file.hpp>
 #include <leatherman/file_util/directory.hpp>
@@ -22,9 +22,9 @@ namespace fs       = boost::filesystem;
 namespace PXPAgent {
 namespace Modules {
 
-  static const std::string DOWNLOAD_FILE_ACTION { "download" };
+  static const std::string FILE_ACTION { "download" };
 
-  static const std::string DOWNLOAD_FILE_ACTION_INPUT_SCHEMA { R"(
+  static const std::string FILE_ACTION_INPUT_SCHEMA { R"(
   {
     "type": "object",
     "properties": {
@@ -66,7 +66,7 @@ namespace Modules {
   )" };
 
 
-  DownloadFile::DownloadFile(const std::vector<std::string>& master_uris,
+  File::File(const std::vector<std::string>& master_uris,
                              const std::string& ca,
                              const std::string& crt,
                              const std::string& key,
@@ -81,11 +81,11 @@ namespace Modules {
     file_download_connect_timeout_ { download_connect_timeout },
     file_download_timeout_ { download_timeout }
   {
-    module_name = "download_file";
-    actions.push_back(DOWNLOAD_FILE_ACTION);
+    module_name = "file";
+    actions.push_back(FILE_ACTION);
 
-    PCPClient::Schema input_schema { DOWNLOAD_FILE_ACTION, lth_jc::JsonContainer { DOWNLOAD_FILE_ACTION_INPUT_SCHEMA } };
-    PCPClient::Schema output_schema { DOWNLOAD_FILE_ACTION };
+    PCPClient::Schema input_schema { FILE_ACTION, lth_jc::JsonContainer { FILE_ACTION_INPUT_SCHEMA } };
+    PCPClient::Schema output_schema { FILE_ACTION };
 
     input_validator_.registerSchema(input_schema);
     results_validator_.registerSchema(output_schema);
@@ -119,21 +119,11 @@ namespace Modules {
     return ActionOutput { exit_code, std_out, std_err };
   }
 
-  ActionResponse DownloadFile::failure_response(const ActionRequest& request,
-                                      const fs::path& results_dir,
-                                      const std::string& message)
-  {
-    LOG_ERROR(message);
-    ActionResponse fail_response { ModuleType::Internal, request };
-    processOutputAndUpdateMetadata(fail_response);
-    fail_response.output = write_download_results(results_dir, EXIT_FAILURE, "", message);
-    return fail_response;
-  }
 
-  // DownloadFile overrides callAction from the base BoltModule class since there's no need to run
-  // any commands with DownloadFile. CallAction will simply download the file and return a result
+  // File overrides callAction from the base BoltModule class since there's no need to run
+  // any commands with File. CallAction will simply download the file and return a result
   // based on if the download succeeded or failed.
-  ActionResponse DownloadFile::callAction(const ActionRequest& request)
+  ActionResponse File::callAction(const ActionRequest& request)
   {
     auto file_params = request.params();
     auto files = file_params.get<std::vector<lth_jc::JsonContainer>>("files");
@@ -145,39 +135,31 @@ namespace Modules {
       auto destination = fs::path(this_file.get<std::string>("destination"));
       auto kind = this_file.get<std::string>("kind");
       if (kind == "file") {
-        try {
-          Util::downloadFileFromMaster(master_uris_,
-                        file_download_connect_timeout_,
-                        file_download_timeout_,
-                        client_,
-                        module_cache_dir_->createCacheDir(this_file.get<std::string>("sha256")),
-                        destination,
-                        this_file);
-        } catch (Module::ProcessingError& e) {
-          return failure_response(request, results_dir, lth_loc::format("Failed to download {1}; {2}", destination, e.what()));
-        }
+        Util::downloadFileFromMaster(master_uris_,
+                                     file_download_connect_timeout_,
+                                     file_download_timeout_,
+                                     client_,
+                                     module_cache_dir_->createCacheDir(this_file.get<std::string>("sha256")),
+                                     destination,
+                                     this_file);
       } else if (kind == "directory"){
         if (fs::exists(destination)) {
           if (!fs::is_directory(destination)) {
-            return failure_response(request, results_dir, lth_loc::format("Destination {1} already exists and is not a directory!", destination));
+            throw Module::ProcessingError { lth_loc::format("Destination {1} already exists and is not a directory!", destination) };
           }
         } else {
-          try {
-            Util::createDir(destination);
-          } catch (fs::filesystem_error& e) {
-            return failure_response(request, results_dir, lth_loc::format("Failed to create directory {1}; {2}", destination, e.what()));
-          }
+          Util::createDir(destination);
         }
       } else if (kind == "symlink") {
         if (fs::exists(destination)) {
           if (!fs::is_symlink(destination)) {
-            return failure_response(request, results_dir, lth_loc::format("Destination {1} already exists and is not a symlink!", destination));
+            throw Module::ProcessingError { lth_loc::format("Destination {1} already exists and is not a symlink!", destination) };
           }
         } else {
           Util::createSymLink(fs::path(this_file.get<std::string>("link_source")), destination);
         }
       } else {
-          return failure_response(request, results_dir, lth_loc::format("Not a valid file type! {1}", kind));
+        throw Module::ProcessingError { lth_loc::format("Not a valid file type! {1}", kind) };
       }
     }
     response.output = write_download_results(results_dir, EXIT_SUCCESS, "downloaded", "");
@@ -186,7 +168,7 @@ namespace Modules {
   }
 
 
-  unsigned int DownloadFile::purge(
+  unsigned int File::purge(
       const std::string& ttl,
       std::vector<std::string> ongoing_transactions,
       std::function<void(const std::string& dir_path)> purge_callback)
