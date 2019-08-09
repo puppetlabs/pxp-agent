@@ -94,7 +94,7 @@ msgstr ""
 msgid "Fatal configuration error: {1}; cannot start pxp-agent"
 msgstr ""
 
-#: lib/inc/pxp-agent/modules/download_file.hpp
+#: lib/inc/pxp-agent/modules/file.hpp
 msgid "DownloadFile module does not implement buildCommandObject!"
 msgstr ""
 
@@ -663,23 +663,15 @@ msgid_plural "Removed {1} directories from '{2}'"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/src/modules/download_file.cc
-msgid "Failed to download {1}; {2}"
-msgstr ""
-
-#: lib/src/modules/download_file.cc
+#: lib/src/modules/file.cc
 msgid "Destination {1} already exists and is not a directory!"
 msgstr ""
 
-#: lib/src/modules/download_file.cc
-msgid "Failed to create directory {1}; {2}"
-msgstr ""
-
-#: lib/src/modules/download_file.cc
+#: lib/src/modules/file.cc
 msgid "Destination {1} already exists and is not a symlink!"
 msgstr ""
 
-#: lib/src/modules/download_file.cc
+#: lib/src/modules/file.cc
 msgid "Not a valid file type! {1}"
 msgstr ""
 
