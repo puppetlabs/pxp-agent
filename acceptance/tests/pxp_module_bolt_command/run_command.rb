@@ -14,7 +14,7 @@ test_name 'run_command task' do
 
   step 'Run a command (`echo`) on agent hosts' do
     agents.each do |agent|
-      cmd = agent.platform =~ /windows/ ? 'cmd /c echo hello' : 'echo hello'
+      cmd = agent.platform =~ /windows/ ? 'write-host hello' : 'echo hello'
       run_successful_command(master, [agent], cmd) do |stdout|
         assert_equal('hello', stdout.chomp)
       end
