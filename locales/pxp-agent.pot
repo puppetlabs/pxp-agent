@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: pxp-agent 1.12.3\n"
+"Project-Id-Version: pxp-agent 1.12.5\n"
 "Report-Msgid-Bugs-To: docs@puppet.com\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -662,6 +662,12 @@ msgid "Removed {1} directory from '{2}'"
 msgid_plural "Removed {1} directories from '{2}'"
 msgstr[0] ""
 msgstr[1] ""
+
+#: lib/src/modules/command.cc
+msgid ""
+"run_command thread failed to fetch user's passwd entry! cannot find a shell "
+"to run in, exiting..."
+msgstr ""
 
 #: lib/src/modules/file.cc
 msgid "Destination {1} already exists and is not a directory!"
