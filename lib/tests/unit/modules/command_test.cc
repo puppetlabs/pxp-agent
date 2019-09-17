@@ -87,7 +87,7 @@ TEST_CASE("Modules::Command::callAction successfully", "[modules]") {
     Modules::Command mod { PXP_AGENT_BIN_PATH, STORAGE };
 
 #ifdef _WIN32
-    static const std::string echo_params { "{ \"command\": \"cmd.exe /c echo hello\" }" };
+    static const std::string echo_params { "{ \"command\": \"write-host hello\" }" };
 #else
     static const std::string echo_params { "{ \"command\": \"echo hello\" }" };
 #endif
@@ -139,17 +139,26 @@ TEST_CASE("Modules::Command::callAction where the command is not found", "[modul
         REQUIRE(response.output.std_out == "");
     }
 
-    // NOTE: the exit code is the only information we get from leatherman::execution when the
-    // command is not found, so stderr is empty here. pxp-agent should be logging a message
-    // indicating that the command wasn't found when the exit code is 127 and both stdout and
-    // stderr are empty (see BoltModule's output processing).
+    // The error message doesn't really matter, really we are just testing that
+    // stderr isn't empty. For posterity: all shells, regardless of platform,
+    // will likely output something about not-a-real-command not existing. Thus
+    // we will just check that stderr contains the command name for the thing
+    // that didn't exist
+    static const std::string expected_stderr { "not-a-real-command" };
 
     SECTION("stderr is written to a file and is empty") {
-        REQUIRE(response.output.std_err == "");
+        REQUIRE(response.output.std_err.find(expected_stderr) != std::string::npos);
     }
 
+#ifdef _WIN32
+    // Powershell always exits 1 on an uncaught error.
+    int expected_exit_code = 1;
+#else
+    int expected_exit_code = 127;
+#endif
+
     SECTION("exit code is written to a file and read into the result object") {
-        REQUIRE(response.output.exitcode == 127);
+        REQUIRE(response.output.exitcode == expected_exit_code);
     }
 
     SECTION("PID is written to a file") {
@@ -207,47 +216,5 @@ TEST_CASE("Modules::Command::callAction where the command fails", "[modules]") {
         } catch (std::exception&) {
             FAIL("Failed to read PID");
         }
-    }
-}
-
-TEST_CASE("Modules::Command::buildCommandObject where the executable contains spaces", "[modules]") {
-    Modules::Command mod { PXP_AGENT_BIN_PATH, STORAGE };
-
-    SECTION("double-quoted executable is separated from the arguments") {
-        auto request = command_request("{ \"command\": \"\\\"C:\\\\Program Files (x86)\\\\Executable with Spaces.exe\\\" <arg1> <arg2>\"}");
-        auto cmd = mod.buildCommandObject(request);
-        REQUIRE(cmd.executable == "C:\\Program Files (x86)\\Executable with Spaces.exe");
-        REQUIRE(cmd.arguments.at(0) == "<arg1>");
-        REQUIRE(cmd.arguments.at(1) == "<arg2>");
-    }
-
-    SECTION("single-quoted executable is separated from the arguments") {
-        auto request = command_request("{ \"command\": \"'C:\\\\Program Files (x86)\\\\Executable with Spaces.exe' <arg1> <arg2>\"}");
-        auto cmd = mod.buildCommandObject(request);
-        REQUIRE(cmd.executable == "C:\\Program Files (x86)\\Executable with Spaces.exe");
-        REQUIRE(cmd.arguments.at(0) == "<arg1>");
-        REQUIRE(cmd.arguments.at(1) == "<arg2>");
-    }
-}
-
-TEST_CASE("Module::Command::buildCommandObject where the arguments contain spaces", "[modules]") {
-    Modules::Command mod { PXP_AGENT_BIN_PATH, STORAGE };
-
-    SECTION("double-quoted arguments are correctly parsed") {
-        auto request = command_request("{ \"command\": \"rm -f \\\"Untitled 1.rtf\\\" \\\"Untitled 2.rtf\\\"\" }");
-        auto cmd = mod.buildCommandObject(request);
-        REQUIRE(cmd.executable == "rm");
-        REQUIRE(cmd.arguments.at(0) == "-f");
-        REQUIRE(cmd.arguments.at(1) == "Untitled 1.rtf");
-        REQUIRE(cmd.arguments.at(2) == "Untitled 2.rtf");
-    }
-
-    SECTION("single-quoted arguments are correctly parsed") {
-        auto request = command_request("{ \"command\": \"rm -f 'Untitled 1.rtf' 'Untitled 2.rtf'\" }");
-        auto cmd = mod.buildCommandObject(request);
-        REQUIRE(cmd.executable == "rm");
-        REQUIRE(cmd.arguments.at(0) == "-f");
-        REQUIRE(cmd.arguments.at(1) == "Untitled 1.rtf");
-        REQUIRE(cmd.arguments.at(2) == "Untitled 2.rtf");
     }
 }

@@ -5,7 +5,11 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/tokenizer.hpp>
-
+#ifndef _WIN32
+    #include <unistd.h>
+    #include <sys/types.h>
+    #include <pwd.h>
+#endif
 namespace PXPAgent {
 namespace Modules {
 
@@ -38,13 +42,46 @@ Util::CommandObject Command::buildCommandObject(const ActionRequest& request)
            params.type("command") == lth_jc::DataType::String);
 
     auto raw_command = params.get<std::string>("command");
-    auto chunks = Util::splitArguments(raw_command);
-    auto command = *chunks.begin();
-    std::vector<std::string> arguments { chunks.begin() + 1, chunks.end() };
+    #ifdef _WIN32
+        // We use powershell for windows because this will match bolt's behavior:
+        // bolt uses WinRM as a transport for windows, and WinRM uses powershell.exe
+        // (and this behavior isn't believed to be configurable for WinRM)
+        std::string shell_program = "powershell.exe";
+        auto arguments = Util::splitArguments(raw_command);
+        arguments.insert(arguments.begin(), { "-NoProfile", "-NonInteractive", "-NoLogo", "-ExecutionPolicy", "Bypass", "-Command" });
+    #else
+        // The data structures required here are all for getpwuid_r:
+        // pwd <- The structure returned by getpwuid is stored here
+        // buf <- The actual password entries that pwd points to are stored here
+        // pw_entry_result <- This will either: 1. point to pwd if the call to getpwuid was successful,
+        //                    or 2. point to NULL if the call wasn't successful.
+        struct passwd pwd;
+        struct passwd* pw_entry_result;
+        auto buf = std::vector<char>(1024);
+        // We fetch the shell interpreter using https://linux.die.net/man/3/getpwuid_r
+        while (getpwuid_r(getuid(), &pwd, buf.data(), buf.size(), &pw_entry_result) == ERANGE) {
+            buf.resize(buf.size() * 2);
+        }
+        if (!pw_entry_result) {
+            // We should never get here, because the UID we are using is fetched from
+            // the calling process which should always have an associated user. If we
+            // do happen to get here, just fail hard.
+            throw Module::ProcessingError(leatherman::locale::format("run_command thread failed to fetch user's passwd entry! cannot find a shell to run in, exiting..."));
+        }
+        std::string shell_program = pw_entry_result->pw_shell;
+        std::vector<std::string> arguments;
+        arguments.push_back("-c");
+        arguments.push_back(raw_command);
+    #endif
     const fs::path& results_dir { request.resultsDir() };
 
     Util::CommandObject cmd {
-        command,    // Executable
+        // We move the shell_program var because technically it's
+        // value points to a piece of memory that might get destroyed
+        // after leaving the scope of the buildCommandObject function.
+        // so we just move it's value in to the CommandObject to be
+        // extra careful
+        move(shell_program),    // Executable
         arguments,  // Arguments
         {},         // Environment
         "",         // Input
