@@ -62,8 +62,8 @@ static const std::string CRT { "mock_crt" };
 
 static const std::string KEY { "mock_key" };
 
-static const ActionRequest script_request(const std::string& destination, const std::string& sha, const std::string& args) {
-    auto params = boost::format("{\"script\": {"
+static const ActionRequest script_request(const std::string& destination, const std::string& sha, const std::vector<std::string>& args) {
+    std::string paramsStr = (boost::format("{\"script\": {"
                                                         "\"uri\":{"
                                                                 "\"path\":\"/dl_files/fake-request-file.txt\","
                                                                 "\"params\":{"
@@ -72,15 +72,17 @@ static const ActionRequest script_request(const std::string& destination, const 
                                                         "},"
                                                         "\"sha256\":\"%1%\","
                                                         "\"filename\":\"%2%\""
-                                                    "},"
-                                        "\"arguments\":\"%3%\""
-                                        "}") % sha % destination % args;
+                                                    "}"
+                                        "}") % sha % destination).str();
+    auto paramsJson = lth_jc::JsonContainer(paramsStr);
+    paramsJson.set("arguments", args);
+
     const PCPClient::ParsedChunks non_blocking_content {
         lth_jc::JsonContainer(ENVELOPE_TXT),           // envelope
         lth_jc::JsonContainer(std::string { (NON_BLOCKING_DATA_FORMAT % "\"1988\""
                                                                         % "\"script\""
                                                                         % "\"run\""
-                                                                        % params
+                                                                        % paramsJson.toString()
                                                                         % "false").str() }),  // data
         {},   // debug
         0 };
@@ -113,29 +115,25 @@ TEST_CASE("Modules::Script::hasAction", "[modules]") {
 TEST_CASE("Modules::Script can execute a script", "[modules]") {
     Modules::Script mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
     SECTION("script executes and writes to stdout") {
-        auto response = mod.executeAction(script_request(TESTING_SCRIPT, TESTING_SCRIPT_SHA265, ""));
+        auto args = std::vector<std::string>();
+        auto response = mod.executeAction(script_request(TESTING_SCRIPT, TESTING_SCRIPT_SHA265, args));
         boost::trim(response.output.std_out);
         REQUIRE(response.output.std_out == "TESTING");
         REQUIRE(response.output.std_err == "");
         REQUIRE(response.output.exitcode == 0);
     }
     SECTION("script executes with multiple parameters") {
-        auto response = mod.executeAction(script_request(TESTING_SCRIPT, TESTING_SCRIPT_SHA265, "THREE TEST ARGS"));
+        auto args = std::vector<std::string>({"THREE", "TEST", "ARGS"});
+        auto response = mod.executeAction(script_request(TESTING_SCRIPT, TESTING_SCRIPT_SHA265, args));
         boost::trim(response.output.std_out);
         REQUIRE(response.output.std_out == "| THREE | TEST | ARGS");
         REQUIRE(response.output.std_err == "");
         REQUIRE(response.output.exitcode == 0);
     }
-    SECTION("script executes with params with quotes and spaces") {
-        auto response = mod.executeAction(script_request(TESTING_SCRIPT, TESTING_SCRIPT_SHA265, "TWO \\\"TEST ARGS\\\""));
-        boost::trim(response.output.std_out);
-        REQUIRE(response.output.std_out == "| TWO | TEST ARGS");
-        REQUIRE(response.output.std_err == "");
-        REQUIRE(response.output.exitcode == 0);
-    }
 #ifdef _WIN32
     SECTION("script executes with a filename that has spaces") {
-        auto response = mod.executeAction(script_request("test script.ps1", TESTING_SCRIPT_SHA265, ""));
+        auto args = std::vector<std::string>();
+        auto response = mod.executeAction(script_request("test script.ps1", TESTING_SCRIPT_SHA265, args));
         boost::trim(response.output.std_out);
         REQUIRE(response.output.std_out == "TESTING");
         REQUIRE(response.output.std_err == "");
@@ -147,7 +145,8 @@ TEST_CASE("Modules::Script can execute a script", "[modules]") {
 TEST_CASE("Modules::Script correctly reports failures", "[modules]") {
     Modules::Script mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
     SECTION("Reports exit code 1 when the script fails") {
-        auto response = mod.executeAction(script_request(TESTING_SCRIPT, TESTING_SCRIPT_SHA265, "FAIL"));
+        auto args = std::vector<std::string>({"FAIL"});
+        auto response = mod.executeAction(script_request(TESTING_SCRIPT, TESTING_SCRIPT_SHA265, args));
         boost::trim(response.output.std_err);
         REQUIRE(response.output.std_out == "");
         REQUIRE(response.output.std_err.find("FAIL TESTING") != std::string::npos);
@@ -157,7 +156,8 @@ TEST_CASE("Modules::Script correctly reports failures", "[modules]") {
     // This will produce a failure because the file does not exist yet, so the module
     // will attempt the download from master URIs that aren't real.
     SECTION("Reports invalid results on failed file download") {
-        auto response = mod.executeAction(script_request("script_failure.rb", "SCRIPT_FAILING_SHA", "FAIL"));
+        auto args = std::vector<std::string>({"FAIL"});
+        auto response = mod.executeAction(script_request("script_failure.rb", "SCRIPT_FAILING_SHA", args));
         REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
         REQUIRE(response.action_metadata.includes("execution_error"));
     }
