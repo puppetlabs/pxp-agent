@@ -45,7 +45,10 @@ namespace Modules {
                 "required": ["filename", "uri", "sha256"]
             },
             "arguments": {
-                "type": "string"
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
             }
         },
         "required": ["script", "arguments"]
@@ -87,9 +90,7 @@ namespace Modules {
     {
         const auto params = request.params();
         auto script = params.get<lth_jc::JsonContainer>("script");
-         // Arguments needs to be split for leatherman::execute to work
-        auto raw_arguments = params.get<std::string>("arguments");
-        auto arguments = Util::splitArguments(raw_arguments);
+        auto arguments = params.get<std::vector<std::string>>("arguments");
         const fs::path& results_dir { request.resultsDir() };
 
         // get script from cache, download if necessary

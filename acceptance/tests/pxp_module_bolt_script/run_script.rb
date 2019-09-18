@@ -71,7 +71,7 @@ test_name 'run script tests' do
         test_sha = @unix_sha256
       end
 
-      run_successful_script(master, agent, script_file_entry(test_file, test_sha, test_source), 'ARGS_TEST') do |std_out|
+      run_successful_script(master, agent, script_file_entry(test_file, test_sha, test_source), ['ARGS_TEST']) do |std_out|
         assert(std_out.include?("TEST SCRIPT: ARGS_TEST"))
       end
 
