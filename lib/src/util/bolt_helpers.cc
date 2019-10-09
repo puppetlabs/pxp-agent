@@ -121,7 +121,19 @@ namespace Util {
     if (!fs::exists(destination.parent_path())) {
       Util::createDir(destination.parent_path());
     }
-    fs::rename(tempname, destination);
+    try {
+      fs::rename(tempname, destination);
+    } catch (boost::filesystem::filesystem_error& fs_error) {
+      // Catch EXDEV (tempname and destination on different filesystems) and attempt to retry the file
+      // move with `copy` then `remove`
+      // Note that EXDEV should be available on windows too: https://docs.microsoft.com/en-us/cpp/c-runtime-library/errno-constants?view=vs-2019
+      if (fs_error.code().value() == EXDEV) {
+        fs::copy(tempname, destination);
+        fs::remove(tempname);
+      } else {
+        throw fs_error;
+      }
+    }
     return destination;
   }
 
