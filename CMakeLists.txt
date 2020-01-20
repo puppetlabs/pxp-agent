@@ -81,8 +81,12 @@ leatherman_logging_line_numbers()
 set(CMAKE_CXX_FLAGS "${LEATHERMAN_CXX_FLAGS}")
 add_definitions(${LEATHERMAN_DEFINITIONS})
 
+option(DYNAMICBASE "Add dynamicbase linker option" ON)
 if (WIN32)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--nxcompat -Wl,--dynamicbase")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--nxcompat")
+      if (DYNAMICBASE)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--dynamicbase")
+      endif()
 endif()
 
 # TODO(ale): enable translation with set(LEATHERMAN_LOCALES "...;...") and
