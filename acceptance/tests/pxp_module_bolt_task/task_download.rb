@@ -59,7 +59,7 @@ test_name 'task download' do
       agents.each do |agent|
         tasks_cache = get_tasks_cache(agents.first)
         on agent, "rm -rf #{tasks_cache}/#{sha256}"
-        assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{sha256}")).stdout)
+        assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{sha256}")).stdout)
       end
 
       files = [task_file_entry(filename, sha256, "/task-files/#{filename}")]
