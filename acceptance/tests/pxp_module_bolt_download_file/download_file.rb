@@ -17,18 +17,18 @@ suts = agents.reject { |host| host['roles'].include?('master') }
 
 def clean_files(agent, files)
   tasks_cache = get_tasks_cache(agent)
-  assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{@sha256} ensure=absent force=true")).stdout)
+  assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{@sha256} ensure=absent force=true")).stdout)
   files.each do |file|
-    assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{file} ensure=absent force=true")).stdout)
+    assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{file} ensure=absent force=true")).stdout)
   end
 end
 
 def test_file_resource_exists(agent, file, type)
-  assert_match(/ensure\s*=>\s*'#{type}',/, on(agent, puppet("resource file #{file}")).stdout)
+  assert_match(/ensure\s+=> '#{type}',/, on(agent, puppet("resource file #{file}")).stdout)
 end
 
 def test_file_resource_does_not_exist(agent, file)
-  assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{file}")).stdout)
+  assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{file}")).stdout)
 end
 
 test_name 'download file tests' do
@@ -94,8 +94,8 @@ test_name 'download file tests' do
       test_file_resource_exists(agent, test_symlink, 'link')
       teardown {
         clean_files(agent, test_files)
-        assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{test_dir} ensure=absent force=true")).stdout)
-        assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{test_symlink} ensure=absent force=true")).stdout)
+        assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{test_dir} ensure=absent force=true")).stdout)
+        assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{test_symlink} ensure=absent force=true")).stdout)
       }
     end
   end
@@ -111,7 +111,7 @@ test_name 'download file tests' do
       teardown {
         clean_files(agent, [test_file])
         # Remove the test directory too.
-        assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{test_dir} ensure=absent force=true")).stdout)
+        assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{test_dir} ensure=absent force=true")).stdout)
       }
     end
   end

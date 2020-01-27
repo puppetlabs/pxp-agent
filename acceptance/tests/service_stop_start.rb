@@ -37,14 +37,14 @@ end
 
 def assert_stopped
   on(@agent, puppet('resource service pxp-agent ')) do |result|
-    assert_match(/ensure => .stopped.,/, result.stdout,
+    assert_match(/ensure\s+=> .stopped.,/, result.stdout,
                  "pxp-agent not in expected stopped state")
   end
 end
 
 def assert_running
   on(@agent, puppet('resource service pxp-agent ')) do |result|
-    assert_match(/ensure => .running.,/, result.stdout,
+    assert_match(/ensure\s+=> .running.,/, result.stdout,
                  "pxp-agent not in expected running state")
   end
 end

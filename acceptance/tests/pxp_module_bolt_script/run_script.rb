@@ -8,7 +8,7 @@ suts = agents.reject { |host| host['roles'].include?('master') }
 
 def clean_files(agent)
   tasks_cache = get_tasks_cache(agent)
-  assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{@sha256} ensure=absent force=true")).stdout)
+  assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{@sha256} ensure=absent force=true")).stdout)
 end
 
 test_name 'run script tests' do
