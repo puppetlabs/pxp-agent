@@ -71,10 +71,15 @@ case "$1" in
         ## force a process start
         if [ -f "${pidfile}" ]; then
             PID=$(cat "$pidfile")
-            if [ "$PID" -eq $(pgrep -f "$exec") ] ; then
-                rc_status -v
-                rc_exit
-            fi
+            procs=$(pgrep -f "$exec")
+            for running_pid in $procs; do
+                if [ "$PID" -eq "$running_pid" ] ; then
+                    rc_status -v
+                    rc_exit
+                else
+                    kill $running_pid
+                fi
+            done
         fi
         mkdir -p $piddir $logdir
         startproc -f -w -p "${pidfile}" "${exec}" ${PXP_AGENT_OPTIONS} && touch "${lockfile}"
@@ -96,11 +101,16 @@ case "$1" in
         ## killproc may succeed or manual intervention is required.
         if [ -f "${pidfile}" ]; then
             PID=$(cat "$pidfile")
-            if [ "$PID" -eq $(pgrep -f "$exec") ] ; then
-                kill -QUIT "${PID}" && rm -f "${lockfile}" "${pidfile}"
-                rc_status -v
-                rc_exit
-            fi
+            procs=$(pgrep -f "$exec")
+            for running_pid in $procs; do
+                if [ "$PID" -eq "$running_pid" ] ; then
+                    kill -QUIT "${PID}" && rm -f "${lockfile}" "${pidfile}"
+                    rc_status -v
+                    rc_exit
+                else
+                    kill $running_pid
+                fi
+            done
         fi
 
         if [ ! $done ]; then
@@ -176,11 +186,16 @@ case "$1" in
         ## checkproc may succeed or manual intervention is required.
         if [ -f "${pidfile}" ]; then
             PID=$(cat "$pidfile")
-            if [ "$PID" -eq $(pgrep -f "$exec") ] ; then
-                rc_reset
-                rc_status -v
-                rc_exit
-            fi
+            procs=$(pgrep -f "$exec")
+            for running_pid in $procs; do
+                if [ "$PID" -eq "$running_pid" ] ; then
+                    rc_reset
+                    rc_status -v
+                    rc_exit
+                else
+                    kill $running_pid
+                fi
+            done
         fi
 
         if [ -f "${pidfile}" ]; then
