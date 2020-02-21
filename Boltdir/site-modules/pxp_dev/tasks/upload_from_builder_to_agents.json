@@ -1,0 +1,10 @@
+
+{
+  "description": "Build pxp-agent on a new pooler VM",
+  "parameters": {
+    "agents": {
+      "description": "An array of agents to upload the new pxp-agent to",
+      "type": "Array[String]"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+
+{
+  "description": "re-build pxp-agent on a an existing build host",
+  "parameters": {
+    "run_cmake": {
+      "description": "set to true to run the cmake command before make",
+      "type": "Boolean"
+    }
+  }
+}

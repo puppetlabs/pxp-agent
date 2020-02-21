@@ -12,3 +12,4 @@
 /acceptance/junit
 /acceptance/.beaker
 /acceptance/sut-files.tgz
+/Boltdir/inventory.yaml

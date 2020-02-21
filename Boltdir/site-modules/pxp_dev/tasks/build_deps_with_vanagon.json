@@ -1,0 +1,14 @@
+
+{
+  "description": "Build pxp-agent on a new pooler VM",
+  "parameters": {
+    "agent_ref": {
+      "description": "Git reference for the puppet-agent repo that will build the pxp-agent, can be a branch, SHA, or tag",
+      "type": "String"
+    },
+    "os_type": {
+      "description": "The type of operating system to build for, i.e. redhat-7-x86_64 or ubuntu-18.04-amd64",
+      "type": "String"
+    }
+  }
+}
