@@ -60,6 +60,7 @@ namespace Modules {
                          const std::string& ca,
                          const std::string& crt,
                          const std::string& key,
+                         const std::string& crl,
                          const std::string& proxy,
                          uint32_t download_connect_timeout,
                          uint32_t download_timeout,
@@ -82,6 +83,7 @@ namespace Modules {
 
         client_.set_ca_cert(ca);
         client_.set_client_cert(crt, key);
+        client_.set_client_crl(crl);
         client_.set_supported_protocols(CURLPROTO_HTTPS);
         client_.set_proxy(proxy);
     }

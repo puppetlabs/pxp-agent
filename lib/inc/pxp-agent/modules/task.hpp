@@ -21,6 +21,7 @@ class Task : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable
          const std::string& ca,
          const std::string& crt,
          const std::string& key,
+         const std::string& crl,
          const std::string& proxy,
          uint32_t task_download_connect_timeout_s,
          uint32_t task_download_timeout_s,
