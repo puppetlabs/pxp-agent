@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: pxp-agent 1.12.5\n"
+"Project-Id-Version: pxp-agent 1.15.3\n"
 "Report-Msgid-Bugs-To: docs@puppet.com\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -275,6 +275,10 @@ msgstr ""
 
 #: lib/src/configuration.cc
 msgid "pxp-agent private SSL key"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "pxp-agent SSL certificate revocation list"
 msgstr ""
 
 #: lib/src/configuration.cc
