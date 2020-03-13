@@ -32,9 +32,11 @@ namespace Modules {
     }
     )" };
 
+    static const std::string prep_ACTION { "prep" };
+
     // TODO: Actually manage this file in packaging (or perhaps fetch it from puppetserver).
     // For now just copy it to the cache dir each time unless there is already a copy
-    static const std::string RUBY_SHIM {
+    static const std::string APPLY_RUBY_SHIM {
 R"(#! /opt/puppetlabs/puppet/bin/ruby
 # frozen_string_literal: true
 
@@ -62,18 +64,19 @@ setting_keys = Puppet::Settings::REQUIRED_APP_SETTINGS.append(:rundir)
 cli_base = (setting_keys).flat_map do |setting|
   ["--#{setting}", File.join(puppet_root, setting.to_s.chomp('dir'))]
 end
-
-# There will always be at least a single master URI
-# TODO: make sure comma separated is what --server_list expects
-server_list = args['master_uris'].map { |uri| URI.parse(uri).host }.join(',')
-
-cli_settings_pluginsync = [
+cli_base.concat([
   '--modulepath',
   moduledir,
   '--plugindest',
   plugin_dest,
   '--pluginfactdest',
-  pluginfact_dest,
+  pluginfact_dest
+])
+# There will always be at least a single master URI
+# TODO: make sure comma separated is what --server_list expects
+server_list = args['master_uris'].map { |uri| URI.parse(uri).host }.join(',')
+
+cli_settings_pluginsync = [
   '--localcacert',
   args['ca'],
   '--hostcert',
@@ -105,7 +108,7 @@ begin
 
   Puppet.initialize_settings(cli_base + cli_settings_pluginsync)
 
-  remote_env_for_plugins = Puppet::Node::Environment.remote(args['catalog']['environment'])
+  remote_env_for_plugins = Puppet::Node::Environment.remote(args['environment'])
   downloader = Puppet::Configurer::Downloader.new(
     "plugin",
     Puppet[:plugindest],
@@ -131,15 +134,14 @@ begin
 
   # Now fully isolate again
   Puppet.settings.send(:clear_everything_for_tests)
-  Puppet.initialize_settings(cli_base + cli_settings_pluginsync)
+  Puppet.initialize_settings(cli_base)
   # Avoid extraneous output
   Puppet[:report] = false
 
   # apply_settings will always be a hash (even if it empty) who's keys are puppet settings
-  # For example: `noop` or `show_diff`.
-  args['apply_options'].each do |setting, value|
-    Puppet[setting.to_sym] = value
-  end
+  # For example: `noop` or `show_diff`. (only applies to apply action)
+  # CODEREVIEW: is it safe to just add this under the rest of the 'apply' action?
+  args['apply_options'].each { |setting, value| Puppet[setting.to_sym] = value } if args['action'] == 'apply'
 
   Puppet[:default_file_terminus] = :file_server
   # This happens implicitly when running the Configurer, but we make it explicit here. It creates the
@@ -153,26 +155,30 @@ begin
   # Ensure custom facts are available for provider suitability tests
   facts = Puppet::Node::Facts.indirection.find(SecureRandom.uuid, environment: env)
 
-  # CODEREVIEW: this is correct right? puppet 5 would need Puppet::Transaction::Report.new.('apply')
-  report = Puppet::Transaction::Report.new
+  if args['action'] == 'apply'
 
-  overrides = { current_environment: env,
-                loaders: Puppet::Pops::Loaders.new(env) }
+    report = Puppet::Transaction::Report.new
 
-  Puppet.override(overrides) do
-    catalog = Puppet::Resource::Catalog.from_data_hash(args['catalog'])
-    catalog.environment = env.name.to_s
-    catalog.environment_instance = env
-    Puppet::Pops::Evaluator::DeferredResolver.resolve_and_replace(facts, catalog)
+    overrides = { current_environment: env,
+                  loaders: Puppet::Pops::Loaders.new(env) }
 
-    catalog = catalog.to_ral
+    Puppet.override(overrides) do
+      catalog = Puppet::Resource::Catalog.from_data_hash(args['catalog'])
+      catalog.environment = env.name.to_s
+      catalog.environment_instance = env
+      Puppet::Pops::Evaluator::DeferredResolver.resolve_and_replace(facts, catalog)
 
-    configurer = Puppet::Configurer.new
-    configurer.run(catalog: catalog, report: report, pluginsync: false)
+      catalog = catalog.to_ral
+
+      configurer = Puppet::Configurer.new
+      configurer.run(catalog: catalog, report: report, pluginsync: false)
+    end
+
+    puts JSON.pretty_generate(report.to_data_hash)
+    exit_code = report.exit_status != 1
+  else
+    puts JSON.pretty_generate(facts.values)
   end
-
-  puts JSON.pretty_generate(report.to_data_hash)
-  exit_code = report.exit_status != 1
 ensure
   begin
     FileUtils.remove_dir(puppet_root)
@@ -208,17 +214,20 @@ exit exit_code
     {
         module_name = "apply";
         actions.push_back(apply_ACTION);
+        actions.push_back(prep_ACTION);
+        PCPClient::Schema apply_input_schema { apply_ACTION, lth_jc::JsonContainer { apply_ACTION_INPUT_SCHEMA } };
+        input_validator_.registerSchema(apply_input_schema);
 
-        PCPClient::Schema input_schema { apply_ACTION, lth_jc::JsonContainer { apply_ACTION_INPUT_SCHEMA } };
-        input_validator_.registerSchema(input_schema);
+        PCPClient::Schema prep_input_schema { prep_ACTION };
+        prep_input_schema.addConstraint("environment", PCPClient::TypeConstraint::String, true);
+        input_validator_.registerSchema(prep_input_schema);
 
-        PCPClient::Schema output_schema { apply_ACTION };
-        results_validator_.registerSchema(output_schema);
+        PCPClient::Schema apply_output_schema { apply_ACTION };
+        results_validator_.registerSchema(apply_output_schema);
 
-        client_.set_ca_cert(ca);
-        client_.set_client_cert(crt, key);
-        client_.set_supported_protocols(CURLPROTO_HTTPS);
-        client_.set_proxy(proxy);
+
+        PCPClient::Schema prep_output_schema { prep_ACTION };
+        results_validator_.registerSchema(prep_output_schema);
     }
 
     // This is copied here for now until we decide how to manage the ruby shim
@@ -230,43 +239,53 @@ exit exit_code
         if (crl_ == "") {
           throw Configuration::Error { lth_loc::format("ssl-crl setting is requried for apply") };
         }
-
+        // Shared
+        auto action = request.action();
         auto params = request.params();
-        const fs::path& results_dir { request.resultsDir() };
-        // Ensure the ruby shim is in the cache dir.
-        // TODO: remove this when we figure out how to manage ruby shim
-        const std::string ruby_shim_cache_dir = "apply_ruby_shim";
-        const std::string ruby_shim_script_name = "apply_ruby_shim.rb";
-        const fs::path& cache_dir = module_cache_dir_->createCacheDir(ruby_shim_cache_dir);
-        auto ruby_shim_path = cache_dir / ruby_shim_script_name;
-        if (!fs::exists(ruby_shim_path)) {
-          lth_file::atomic_write_to_file(RUBY_SHIM, ruby_shim_path.string(), NIX_DOWNLOADED_FILE_PERMS, std::ios::binary);
-        }
-
-        // Setup the environment cache and pass the path as an arg to the shim
-        // Cache identity is [environment name]
-        // TODO: once we have code version we should make cache identity [environment_name]-[version]
-        const std::string plugin_cache_name = params.get<std::string>({"catalog", "environment"});
-        const auto plugin_cache = module_cache_dir_->createCacheDir(plugin_cache_name);
-        params.set<std::string>("plugin_cache", plugin_cache.string());
         params.set<std::string>("ca", ca_);
         params.set<std::string>("crt", crt_);
         params.set<std::string>("key", key_);
         params.set<std::string>("crl", crl_);
         params.set<std::string>("proxy", proxy_);
+
+        const fs::path& results_dir { request.resultsDir() };
+
+        const std::string ruby_shim_cache_dir = "apply_ruby_shim";
+        const fs::path& cache_dir = module_cache_dir_->createCacheDir(ruby_shim_cache_dir);
+
+        std::string plugin_cache_name;
+
+        const std::string ruby_shim_script_name = "apply_ruby_shim.rb";
+        auto apply_ruby_shim_path = cache_dir / ruby_shim_script_name;
+
+        if (!fs::exists(apply_ruby_shim_path)) {
+          lth_file::atomic_write_to_file(APPLY_RUBY_SHIM, apply_ruby_shim_path.string(), NIX_DOWNLOADED_FILE_PERMS, std::ios::binary);
+        }
+
+        if (action == "apply") {
+            plugin_cache_name = params.get<std::string>({"catalog", "environment"});
+            params.set<std::string>("environment", params.get<std::string>({"catalog", "environment"}));
+            params.set<std::string>("action", "apply");
+        } else {
+            plugin_cache_name = params.get<std::string>("environment");
+            params.set<std::string>("action", "prep");
+        }
+
+        const auto plugin_cache = module_cache_dir_->createCacheDir(plugin_cache_name);
+        params.set<std::string>("plugin_cache", plugin_cache.string());
         params.set<std::vector<std::string>>("master_uris", master_uris_);
         Util::CommandObject cmd {
             "",  // Executable will be detremined by findExecutableAndArguments
             {},  // No args for invoking shim
             {},  // Shim expects catalog on stdin
-            params.toString(),  // JSON encoded string to be passed to shim on stdin, this includes `catalog`, `environment`, and `version` for now
+            params.toString(),  // JSON encoded string to be passed to shim on stdin
             [results_dir](size_t pid) {
                 auto pid_file = (results_dir / "pid").string();
                 lth_file::atomic_write_to_file(std::to_string(pid) + "\n", pid_file,
                                             NIX_FILE_PERMS, std::ios::binary);
             }  // PID Callback
         };
-        Util::findExecutableAndArguments(ruby_shim_path, cmd);
+        Util::findExecutableAndArguments(apply_ruby_shim_path, cmd);
 
         return cmd;
     }
