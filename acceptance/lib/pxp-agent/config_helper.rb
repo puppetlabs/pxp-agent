@@ -48,7 +48,7 @@ end
 # @return a string contianing the pxp-agent config in the HOCON syntax
 # @raise ArgumentError if one of the mandatory config keys is not passed into the method
 def pxp_config_hocon(broker, agent, ssl_config = {})
-  mandatory_config_keys = [:ssl_key, :ssl_ca_cert, :ssl_cert, :ssl_crl]
+  mandatory_config_keys = [:ssl_key, :ssl_ca_cert, :ssl_cert]
   missing_config = mandatory_config_keys - ssl_config.keys
   if (missing_config != [])
     raise ArgumentError.new("Mandatory SSL config values are missing from ssl_config passsed into method: #{missing_config.to_s}")
@@ -61,7 +61,6 @@ def pxp_config_hocon(broker, agent, ssl_config = {})
     "pcp-version" => PCP_VERSION,
     "loglevel" => logger.is_debug? ? "debug" : "info",
     "ssl-key" => ssl_config[:ssl_key],
-    "ssl-crl" => ssl_config[:ssl_crl],
     "ssl-ca-cert" => ssl_config[:ssl_ca_cert],
     "ssl-cert" => ssl_config[:ssl_cert]
   })
@@ -84,7 +83,6 @@ def pxp_config_hash_using_puppet_certs(broker, agent, num_brokers: 1, master_pro
       "pcp-version" => PCP_VERSION,
       "loglevel" => logger.is_debug? ? "debug" : "info",
       "ssl-key" => "#{puppet_ssldir}/private_keys/#{agent}.pem",
-      "ssl-crl" => "#{puppet_ssldir}/crl.pem",
       "ssl-ca-cert" => "#{puppet_ssldir}/certs/ca.pem",
       "ssl-cert" => "#{puppet_ssldir}/certs/#{agent}.pem",
       "master-uris" => ["#{master}"],

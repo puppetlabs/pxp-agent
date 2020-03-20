@@ -139,7 +139,6 @@ class Configuration
         std::string ca;
         std::string crt;
         std::string key;
-        std::string crl;
         std::string spool_dir;
         std::string spool_dir_purge_ttl;
         std::string modules_config_dir;

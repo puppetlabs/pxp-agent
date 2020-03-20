@@ -13,7 +13,6 @@
 #include <pxp-agent/modules/task.hpp>
 #include <pxp-agent/modules/file.hpp>
 #include <pxp-agent/modules/script.hpp>
-#include <pxp-agent/modules/apply.hpp>
 #include <pxp-agent/util/process.hpp>
 
 #include <leatherman/json_container/json_container.hpp>
@@ -874,20 +873,6 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
         storage_ptr_);
     registerModule(script);
     registerPurgeable(script);
-    auto apply = std::make_shared<Modules::Apply>(
-        Configuration::Instance().getExecPrefix(),
-        agent_configuration.master_uris,
-        agent_configuration.ca,
-        agent_configuration.crt,
-        agent_configuration.key,
-        agent_configuration.crl,
-        agent_configuration.master_proxy,
-        agent_configuration.task_download_connect_timeout_s,
-        agent_configuration.task_download_timeout_s,
-        module_cache_dir_,
-        storage_ptr_);
-    registerModule(apply);
-    registerPurgeable(apply);
 }
 
 void RequestProcessor::loadExternalModulesFrom(fs::path dir_path)
