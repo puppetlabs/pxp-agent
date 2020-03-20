@@ -278,10 +278,6 @@ msgid "pxp-agent private SSL key"
 msgstr ""
 
 #: lib/src/configuration.cc
-msgid "pxp-agent SSL certificate revocation list"
-msgstr ""
-
-#: lib/src/configuration.cc
 msgid "Log file, default: {1}"
 msgstr ""
 
