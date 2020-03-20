@@ -91,12 +91,6 @@ def script_request(broker, agent, script, arguments, **kwargs, &block)
   do_module_action(broker, target, 'script', 'run', params, **kwargs, &block)
 end
 
-def apply_request(broker, agent, catalog_request, **kwargs, &block)
-  target = ["pcp://#{agent}/agent"]
-  do_module_action(broker, target, 'apply', 'apply', catalog_request, **kwargs, &block)
-end
-
-
 # Makes a non-blocking request to start a command.
 # Block is executed on the "response_dataset" object from do_module_action.
 def run_command(broker, targets, command, **kwargs, &block)
@@ -154,14 +148,6 @@ end
 # Block is executed on the stdout string.
 def run_successful_script(broker, agent, script, arguments, **kwargs, &block)
   script_request(broker, agent, script, arguments, **kwargs) do |datas|
-    ensure_successful(broker, [agent], datas, **kwargs, &block)
-  end
-end
-
-# Runs a non-blocking apply action on targets, and confirms that it succeeded.
-# Block is executed on the stdout string.
-def run_successful_apply(broker, targets, catalog_request, **kwargs, &block)
-  apply_request(broker, targets, catalog_request, **kwargs) do |datas|
     ensure_successful(broker, [agent], datas, **kwargs, &block)
   end
 end

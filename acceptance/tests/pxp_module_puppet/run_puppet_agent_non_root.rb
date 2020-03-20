@@ -46,7 +46,7 @@ test_name  'Run puppet agent as non-root' do
 
     step 'Copy certs and keys to new users home directory' do
       puppet_ssldir = on(agent, puppet('config print ssldir')).stdout.chomp
-      #ssl-key ssl-ca-cert ssl-cert ssl-crl
+      #ssl-key ssl-ca-cert ssl-cert
       on(agent, "cp -R #{puppet_ssldir} #{@user_puppet_dir}")
     end
 
@@ -54,8 +54,7 @@ test_name  'Run puppet agent as non-root' do
       ssl_config = {
           :ssl_key        => "#{@user_puppet_dir}/ssl/private_keys/#{agent}.pem",
           :ssl_ca_cert    => "#{@user_puppet_dir}/ssl/certs/ca.pem",
-          :ssl_cert       => "#{@user_puppet_dir}/ssl/certs/#{agent}.pem",
-          :ssl_crl        => "#{@user_puppet_dir}/ssl/crl.pem"
+          :ssl_cert       => "#{@user_puppet_dir}/ssl/certs/#{agent}.pem"
       }
 
       create_remote_file(agent, "#{@user_pxp_dir}/pxp-agent.conf", pxp_config_hocon(master, agent, ssl_config).to_s)
