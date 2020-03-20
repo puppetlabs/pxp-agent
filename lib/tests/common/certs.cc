@@ -20,6 +20,12 @@ std::string getKeyPath() {
     return key;
 }
 
+std::string getCrlPath() {
+    static const std::string crl { std::string { PXP_AGENT_ROOT_PATH }
+                                   + "/lib/tests/resources/config/test_crl.pem" };
+    return crl;
+}
+
 std::string getNotExistentFilePath() {
     static const std::string tmp { std::string { PXP_AGENT_ROOT_PATH }
                                    + "/lib/tests/resources/config/nothing.here" };

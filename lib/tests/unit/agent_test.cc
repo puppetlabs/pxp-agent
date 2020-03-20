@@ -26,6 +26,7 @@ TEST_CASE("Agent::Agent", "[agent]") {
                                                getCaPath(),
                                                getCertPath(),
                                                getKeyPath(),
+                                               getCrlPath(),
                                                SPOOL,
                                                "0d",  // don't purge spool!
                                                "",    // modules config dir

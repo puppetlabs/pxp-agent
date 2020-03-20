@@ -19,6 +19,7 @@ static const std::string PCP_VERSION { "1" };
 static const std::string CA { getCaPath() };
 static const std::string CERT { getCertPath() };
 static const std::string KEY { getKeyPath() };
+static const std::string CRL { getCrlPath() };
 static const std::string MODULES { PXP_AGENT_ROOT_PATH
             + std::string { "/lib/tests/resources/modules" } };
 static const std::string VALID_MODULES_CONFIG { PXP_AGENT_ROOT_PATH
@@ -37,6 +38,7 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   CA,
                                                   CERT,
                                                   KEY,
+                                                  CRL,
                                                   SPOOL,
                                                   "0d",  // don't purge spool!
                                                   "",    // modules config dir

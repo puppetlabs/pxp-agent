@@ -384,6 +384,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         HW::GetFlag<std::string>("ssl-ca-cert"),
         HW::GetFlag<std::string>("ssl-cert"),
         HW::GetFlag<std::string>("ssl-key"),
+        HW::GetFlag<std::string>("ssl-crl"),
         HW::GetFlag<std::string>("spool-dir"),
         HW::GetFlag<std::string>("spool-dir-purge-ttl"),
         HW::GetFlag<std::string>("modules-config-dir"),
@@ -597,6 +598,15 @@ void Configuration::defineDefaultValues()
                     "ssl-key",
                     "",
                     lth_loc::translate("pxp-agent private SSL key"),
+                    Types::String,
+                    "") } });
+
+    defaults_.insert(
+        Option { "ssl-crl",
+                 Base_ptr { new Entry<std::string>(
+                    "ssl-crl",
+                    "",
+                    lth_loc::translate("pxp-agent SSL certificate revocation list"),
                     Types::String,
                     "") } });
 
@@ -995,6 +1005,7 @@ void Configuration::validateAndNormalizeWebsocketSettings()
     auto ca   = check_and_expand_ssl_cert("ssl-ca-cert");
     auto cert = check_and_expand_ssl_cert("ssl-cert");
     auto key  = check_and_expand_ssl_cert("ssl-key");
+    auto crl  = check_and_expand_ssl_cert("ssl-crl");
 
     // Ensure client certs are good
     try {
@@ -1008,6 +1019,7 @@ void Configuration::validateAndNormalizeWebsocketSettings()
     HW::SetFlag<std::string>("ssl-ca-cert", ca);
     HW::SetFlag<std::string>("ssl-cert", cert);
     HW::SetFlag<std::string>("ssl-key", key);
+    HW::SetFlag<std::string>("ssl-crl", crl);
 }
 
 void Configuration::validateAndNormalizeOtherSettings()
