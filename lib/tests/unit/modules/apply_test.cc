@@ -56,6 +56,12 @@ static const std::string KEY { "mock_key" };
 
 static const std::string CRL { "mock_crl" };
 
+static const std::string DATA_TXT {
+    (DATA_FORMAT % "\"04352987\""
+                 % "\"module name\""
+                 % "\"action name\""
+                 % "{ \"some key\" : \"some value\" }").str() };
+
 TEST_CASE("Modules::Apply", "[modules]") {
     SECTION("can successfully instantiate") {
         REQUIRE_NOTHROW(Modules::Apply(PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, MODULE_CACHE_DIR, STORAGE));
@@ -106,5 +112,21 @@ TEST_CASE("Modules::Apply::purge purges old cached files", "[modules]") {
         auto results = mod.purge("1h", {}, purgeCallback);
         REQUIRE(results == 1);
         REQUIRE(num_purged_results == 1);
+    }
+}
+
+TEST_CASE("Modules::buildCommandObject", "[modules]") {
+    SECTION("fails when CRL is empty") {
+        // the actual ActionRequest used here isn't important - the goal
+        // is to test that this function now throws an exception when the
+        // CRL is empty
+        lth_jc::JsonContainer envelope { ENVELOPE_TXT };
+        lth_jc::JsonContainer data { DATA_TXT };
+        std::vector<lth_jc::JsonContainer> debug {};
+        const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
+
+        Modules::Apply mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", "", 10, 20, MODULE_CACHE_DIR, STORAGE };
+
+        REQUIRE_THROWS_AS(mod.buildCommandObject(ActionRequest(RequestType::Blocking, p_c)), Configuration::Error);
     }
 }

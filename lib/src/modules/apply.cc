@@ -6,10 +6,12 @@
 #include <boost/tokenizer.hpp>
 #include <leatherman/json_container/json_container.hpp>
 #include <leatherman/file_util/file.hpp>
+#include <leatherman/locale/locale.hpp>
 
 namespace fs = boost::filesystem;
 namespace lth_file = leatherman::file_util;
-namespace lth_jc = leatherman::json_container;
+namespace lth_jc   = leatherman::json_container;
+namespace lth_loc  = leatherman::locale;
 
 namespace PXPAgent {
 namespace Modules {
@@ -225,6 +227,10 @@ exit exit_code
 
     Util::CommandObject Apply::buildCommandObject(const ActionRequest& request)
     {
+        if (crl_ == "") {
+          throw Configuration::Error { lth_loc::format("ssl-crl setting is requried for apply") };
+        }
+
         auto params = request.params();
         const fs::path& results_dir { request.resultsDir() };
         // Ensure the ruby shim is in the cache dir.

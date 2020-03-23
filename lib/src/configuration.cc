@@ -952,6 +952,24 @@ std::string check_and_expand_ssl_cert(const std::string& cert_name)
     return c;
 }
 
+std::string check_and_expand_ssl_cert_if_not_empty(const std::string& cert_name)
+{
+    auto c = HW::GetFlag<std::string>(cert_name);
+    if (c.empty())
+        return c;
+
+    c = lth_file::tilde_expand(c);
+    if (!fs::exists(c))
+        throw Configuration::Error {
+            lth_loc::format("{1} file '{2}' not found", cert_name, c) };
+
+    if (!lth_file::file_readable(c))
+        throw Configuration::Error {
+            lth_loc::format("{1} file '{2}' not readable", cert_name, c) };
+
+    return c;
+}
+
 static void validate_wss(std::string const& uri, std::string const& name)
 {
     if (uri.compare(0, 6, "wss://") != 0)
@@ -1005,7 +1023,7 @@ void Configuration::validateAndNormalizeWebsocketSettings()
     auto ca   = check_and_expand_ssl_cert("ssl-ca-cert");
     auto cert = check_and_expand_ssl_cert("ssl-cert");
     auto key  = check_and_expand_ssl_cert("ssl-key");
-    auto crl  = check_and_expand_ssl_cert("ssl-crl");
+    auto crl  = check_and_expand_ssl_cert_if_not_empty("ssl-crl");
 
     // Ensure client certs are good
     try {

@@ -593,3 +593,26 @@ TEST_CASE("Configuration::setupLogging", "[configuration]") {
     }
 #endif
 }
+
+TEST_CASE("Configuration::validate without ssl-crl (is optional)", "[configuration]") {
+    const char* altArgv[] = {
+    "test-command",
+    "--config-file", UNKNOWN_CONFIG.c_str(),
+    "--ssl-ca-cert", CA.c_str(),
+    "--ssl-cert", CERT.c_str(),
+    "--ssl-key", KEY.c_str(),
+    "--modules-dir", MODULES_DIR.c_str(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
+    "--spool-dir", SPOOL_DIR.c_str(),
+    "--task-cache-dir", TASK_CACHE_DIR.c_str(),
+    "--foreground=true",
+    nullptr };
+
+    lth_util::scope_exit config_cleaner { resetTest };
+    configureTest();
+    Configuration::Instance().parseOptions(ARGUMENT_COUNT(altArgv), const_cast<char**>(altArgv));
+
+    SECTION("it validates") {
+        REQUIRE_NOTHROW(Configuration::Instance().validate());
+    }
+}
