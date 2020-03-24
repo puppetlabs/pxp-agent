@@ -278,6 +278,10 @@ msgid "pxp-agent private SSL key"
 msgstr ""
 
 #: lib/src/configuration.cc
+msgid "pxp-agent SSL certificate revocation list"
+msgstr ""
+
+#: lib/src/configuration.cc
 msgid "Log file, default: {1}"
 msgstr ""
 
@@ -662,6 +666,10 @@ msgid "Removed {1} directory from '{2}'"
 msgid_plural "Removed {1} directories from '{2}'"
 msgstr[0] ""
 msgstr[1] ""
+
+#: lib/src/modules/apply.cc
+msgid "ssl-crl setting is requried for apply"
+msgstr ""
 
 #: lib/src/modules/command.cc
 msgid ""
