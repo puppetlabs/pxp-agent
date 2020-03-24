@@ -45,6 +45,7 @@ static const std::string TEST_BROKER_WS_URI { "wss:///test_c_t_h_u_n_broker" };
 static const std::string CA { getCaPath() };
 static const std::string CERT { getCertPath() };
 static const std::string KEY { getKeyPath() };
+static const std::string CRL { getCrlPath() };
 static const std::string MODULES_DIR { std::string { PXP_AGENT_ROOT_PATH }
                                        + "/lib/tests/resources/modules/" };
 static const std::string MODULES_CONFIG_DIR { std::string { PXP_AGENT_ROOT_PATH }
@@ -63,6 +64,7 @@ static const char* ARGV[] = {
     "--ssl-ca-cert", CA.c_str(),
     "--ssl-cert", CERT.c_str(),
     "--ssl-key", KEY.c_str(),
+    "--ssl-crl", CRL.c_str(),
     "--modules-dir", MODULES_DIR.c_str(),
     "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
     "--spool-dir", SPOOL_DIR.c_str(),
@@ -412,6 +414,7 @@ TEST_CASE("Configuration::validate with unknown config options", "[configuration
     "--ssl-ca-cert", CA.c_str(),
     "--ssl-cert", CERT.c_str(),
     "--ssl-key", KEY.c_str(),
+    "--ssl-crl", CRL.c_str(),
     "--modules-dir", MODULES_DIR.c_str(),
     "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
     "--spool-dir", SPOOL_DIR.c_str(),
@@ -435,6 +438,7 @@ TEST_CASE("Configuration::validate multiple brokers", "[configuration]") {
     "--ssl-ca-cert", CA.c_str(),
     "--ssl-cert", CERT.c_str(),
     "--ssl-key", KEY.c_str(),
+    "--ssl-crl", CRL.c_str(),
     "--modules-dir", MODULES_DIR.c_str(),
     "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
     "--spool-dir", SPOOL_DIR.c_str(),
@@ -473,6 +477,7 @@ TEST_CASE("Configuration::parseOptions duplicate broker-ws-uris", "[configuratio
     "--ssl-ca-cert", CA.c_str(),
     "--ssl-cert", CERT.c_str(),
     "--ssl-key", KEY.c_str(),
+    "--ssl-crl", CRL.c_str(),
     "--modules-dir", MODULES_DIR.c_str(),
     "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
     "--spool-dir", SPOOL_DIR.c_str(),
@@ -496,6 +501,7 @@ TEST_CASE("Configuration::parseOptions invalid config-file name", "[configuratio
     "--ssl-ca-cert", CA.c_str(),
     "--ssl-cert", CERT.c_str(),
     "--ssl-key", KEY.c_str(),
+    "--ssl-crl", CRL.c_str(),
     "--modules-dir", MODULES_DIR.c_str(),
     "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
     "--spool-dir", SPOOL_DIR.c_str(),
@@ -519,6 +525,7 @@ TEST_CASE("Configuration::validate bad broker-ws-uris", "[configuration]") {
     "--ssl-ca-cert", CA.c_str(),
     "--ssl-cert", CERT.c_str(),
     "--ssl-key", KEY.c_str(),
+    "--ssl-crl", CRL.c_str(),
     "--modules-dir", MODULES_DIR.c_str(),
     "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
     "--spool-dir", SPOOL_DIR.c_str(),
@@ -543,6 +550,7 @@ TEST_CASE("Configuration::validate bad master-uris", "[configuration]") {
     "--ssl-ca-cert", CA.c_str(),
     "--ssl-cert", CERT.c_str(),
     "--ssl-key", KEY.c_str(),
+    "--ssl-crl", CRL.c_str(),
     "--modules-dir", MODULES_DIR.c_str(),
     "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
     "--spool-dir", SPOOL_DIR.c_str(),
@@ -584,4 +592,27 @@ TEST_CASE("Configuration::setupLogging", "[configuration]") {
         REQUIRE(lth_log::get_level() == lth_log::log_level::none);
     }
 #endif
+}
+
+TEST_CASE("Configuration::validate without ssl-crl (is optional)", "[configuration]") {
+    const char* altArgv[] = {
+    "test-command",
+    "--config-file", UNKNOWN_CONFIG.c_str(),
+    "--ssl-ca-cert", CA.c_str(),
+    "--ssl-cert", CERT.c_str(),
+    "--ssl-key", KEY.c_str(),
+    "--modules-dir", MODULES_DIR.c_str(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
+    "--spool-dir", SPOOL_DIR.c_str(),
+    "--task-cache-dir", TASK_CACHE_DIR.c_str(),
+    "--foreground=true",
+    nullptr };
+
+    lth_util::scope_exit config_cleaner { resetTest };
+    configureTest();
+    Configuration::Instance().parseOptions(ARGUMENT_COUNT(altArgv), const_cast<char**>(altArgv));
+
+    SECTION("it validates") {
+        REQUIRE_NOTHROW(Configuration::Instance().validate());
+    }
 }

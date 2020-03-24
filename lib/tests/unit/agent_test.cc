@@ -26,6 +26,45 @@ TEST_CASE("Agent::Agent", "[agent]") {
                                                getCaPath(),
                                                getCertPath(),
                                                getKeyPath(),
+                                               getCrlPath(),
+                                               SPOOL,
+                                               "0d",  // don't purge spool!
+                                               "",    // modules config dir
+                                               "",    // task cache dir
+                                               "0d",  // don't purge task cache!
+                                               "test_agent",
+                                               "",    // don't set broker proxy
+                                               "",    // don't set master proxy
+                                               5000, 10, 5, 5, 2, 15, 30, 120 };
+
+    SECTION("does not throw if it fails to find the external modules directory") {
+        agent_configuration.modules_dir = MODULES + "/fake_dir";
+
+        REQUIRE_NOTHROW(Agent { agent_configuration });
+    }
+
+    SECTION("should throw an Agent::Error if client cert path is invalid") {
+        agent_configuration.crt = "spam";
+
+        REQUIRE_THROWS_AS(Agent { agent_configuration }, Agent::Error&);
+    }
+
+    SECTION("successfully instantiates with valid arguments") {
+        REQUIRE_NOTHROW(Agent { agent_configuration });
+    }
+
+    boost::filesystem::remove_all(SPOOL);
+}
+
+TEST_CASE("Agent::Agent without CRL", "[agent]") {
+    Configuration::Agent agent_configuration { MODULES,
+                                               TEST_BROKER_WS_URIS,
+                                               std::vector<std::string> {},  // master uris
+                                               "1",   // PCPv1
+                                               getCaPath(),
+                                               getCertPath(),
+                                               getKeyPath(),
+                                               "",
                                                SPOOL,
                                                "0d",  // don't purge spool!
                                                "",    // modules config dir

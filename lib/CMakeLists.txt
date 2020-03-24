@@ -35,6 +35,7 @@ set(LIBRARY_COMMON_SOURCES
     src/modules/task.cc
     src/modules/file.cc
     src/modules/script.cc
+    src/modules/apply.cc
     src/util/bolt_helpers.cc
     src/util/bolt_module.cc
     src/util/utf8.cc

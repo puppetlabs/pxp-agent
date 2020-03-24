@@ -384,6 +384,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         HW::GetFlag<std::string>("ssl-ca-cert"),
         HW::GetFlag<std::string>("ssl-cert"),
         HW::GetFlag<std::string>("ssl-key"),
+        HW::GetFlag<std::string>("ssl-crl"),
         HW::GetFlag<std::string>("spool-dir"),
         HW::GetFlag<std::string>("spool-dir-purge-ttl"),
         HW::GetFlag<std::string>("modules-config-dir"),
@@ -597,6 +598,15 @@ void Configuration::defineDefaultValues()
                     "ssl-key",
                     "",
                     lth_loc::translate("pxp-agent private SSL key"),
+                    Types::String,
+                    "") } });
+
+    defaults_.insert(
+        Option { "ssl-crl",
+                 Base_ptr { new Entry<std::string>(
+                    "ssl-crl",
+                    "",
+                    lth_loc::translate("pxp-agent SSL certificate revocation list"),
                     Types::String,
                     "") } });
 
@@ -942,6 +952,24 @@ std::string check_and_expand_ssl_cert(const std::string& cert_name)
     return c;
 }
 
+std::string check_and_expand_ssl_cert_if_not_empty(const std::string& cert_name)
+{
+    auto c = HW::GetFlag<std::string>(cert_name);
+    if (c.empty())
+        return c;
+
+    c = lth_file::tilde_expand(c);
+    if (!fs::exists(c))
+        throw Configuration::Error {
+            lth_loc::format("{1} file '{2}' not found", cert_name, c) };
+
+    if (!lth_file::file_readable(c))
+        throw Configuration::Error {
+            lth_loc::format("{1} file '{2}' not readable", cert_name, c) };
+
+    return c;
+}
+
 static void validate_wss(std::string const& uri, std::string const& name)
 {
     if (uri.compare(0, 6, "wss://") != 0)
@@ -995,6 +1023,7 @@ void Configuration::validateAndNormalizeWebsocketSettings()
     auto ca   = check_and_expand_ssl_cert("ssl-ca-cert");
     auto cert = check_and_expand_ssl_cert("ssl-cert");
     auto key  = check_and_expand_ssl_cert("ssl-key");
+    auto crl  = check_and_expand_ssl_cert_if_not_empty("ssl-crl");
 
     // Ensure client certs are good
     try {
@@ -1008,6 +1037,7 @@ void Configuration::validateAndNormalizeWebsocketSettings()
     HW::SetFlag<std::string>("ssl-ca-cert", ca);
     HW::SetFlag<std::string>("ssl-cert", cert);
     HW::SetFlag<std::string>("ssl-key", key);
+    HW::SetFlag<std::string>("ssl-crl", crl);
 }
 
 void Configuration::validateAndNormalizeOtherSettings()
