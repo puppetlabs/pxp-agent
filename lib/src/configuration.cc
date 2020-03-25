@@ -103,6 +103,7 @@ namespace lth_util = leatherman::util;
     static fs::path log_dir() { return sys_dir() / "var" / "log"; }
     static std::string spool_dir() { return (sys_dir() / "var" / "spool").string(); }
     static std::string cache_dir() { return (sys_dir() / "tasks-cache").string(); }
+    static std::string libexec_dir() { return (sys_dir() / "libexec").string(); }
 #else
     static const fs::path DATA_DIR = []() {
         if (getuid()) {
@@ -120,10 +121,11 @@ namespace lth_util = leatherman::util;
         std::string("/var/run/puppetlabs/pxp-agent.pid") : (DATA_DIR / "var" / "run" / "pxp-agent.pid").string() };
     static const std::string DEFAULT_MODULES_DIR { "/opt/puppetlabs/pxp-agent/modules" };
 
-    static fs::path conf_dir()     { return "/etc/puppetlabs/pxp-agent"; }
-    static fs::path log_dir()      { return "/var/log/puppetlabs/pxp-agent"; }
-    static std::string spool_dir() { return "/opt/puppetlabs/pxp-agent/spool"; }
-    static std::string cache_dir() { return "/opt/puppetlabs/pxp-agent/tasks-cache"; }
+    static fs::path conf_dir()       { return "/etc/puppetlabs/pxp-agent"; }
+    static fs::path log_dir()        { return "/var/log/puppetlabs/pxp-agent"; }
+    static std::string spool_dir()   { return "/opt/puppetlabs/pxp-agent/spool"; }
+    static std::string cache_dir()   { return "/opt/puppetlabs/pxp-agent/tasks-cache"; }
+    static std::string libexec_dir() { return "/opt/puppetlabs/pxp-agent/libexec"; }
 #endif
 
 // DATA_DIR defines the non-root data directory. Functions define the system default.
@@ -400,7 +402,8 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         static_cast<uint32_t >(HW::GetFlag<int>("allowed-keepalive-timeouts")),
         static_cast<uint32_t >(HW::GetFlag<int>("ping-interval")),
         static_cast<uint32_t >(HW::GetFlag<int>("task-download-connect-timeout")),
-        static_cast<uint32_t >(HW::GetFlag<int>("task-download-timeout")) };
+        static_cast<uint32_t >(HW::GetFlag<int>("task-download-timeout")),
+        libexec_dir()};
     return agent_configuration_;
 }
 

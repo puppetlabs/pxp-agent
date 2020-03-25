@@ -86,6 +86,9 @@ class RequestProcessor {
     /// non-blocking actions will be created
     const boost::filesystem::path spool_dir_path_;
 
+    /// Where the PXP Agent's libexec path is
+    const boost::filesystem::path libexec_path_;
+
     /// Modules
     std::map<std::string, std::shared_ptr<Module>> modules_;
 

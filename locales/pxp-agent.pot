@@ -48,7 +48,8 @@ msgid "Fatal error: {1}"
 msgstr ""
 
 #. error
-#: exe/main.cc lib/src/module.cc
+#: exe/main.cc
+#: lib/src/module.cc
 msgid "Unexpected error: {1}"
 msgstr ""
 
@@ -98,7 +99,8 @@ msgstr ""
 msgid "DownloadFile module does not implement buildCommandObject!"
 msgstr ""
 
-#: lib/src/action_request.cc lib/src/action_response.cc
+#: lib/src/action_request.cc
+#: lib/src/action_response.cc
 msgid "{1} '{2} {3}' request (transaction {4})"
 msgstr ""
 
@@ -506,7 +508,8 @@ msgid ""
 "The task executed for the {1} returned invalid JSON on stdout - stderr:{2}"
 msgstr ""
 
-#: lib/src/external_module.cc lib/src/util/bolt_module.cc
+#: lib/src/external_module.cc
+#: lib/src/util/bolt_module.cc
 msgid " (empty)"
 msgstr ""
 
@@ -594,7 +597,8 @@ msgstr ""
 msgid "The execution of the {1} has completed"
 msgstr ""
 
-#: lib/src/external_module.cc lib/src/module.cc
+#: lib/src/external_module.cc
+#: lib/src/module.cc
 msgid "(empty)"
 msgstr ""
 
@@ -656,12 +660,14 @@ msgid "About to purge cached files from '{1}'; TTL = {2}"
 msgstr ""
 
 #. error
-#: lib/src/module_cache_dir.cc lib/src/results_storage.cc
+#: lib/src/module_cache_dir.cc
+#: lib/src/results_storage.cc
 msgid "Failed to remove '{1}': {2}"
 msgstr ""
 
 #. LOCALE: info
-#: lib/src/module_cache_dir.cc lib/src/results_storage.cc
+#: lib/src/module_cache_dir.cc
+#: lib/src/results_storage.cc
 msgid "Removed {1} directory from '{2}'"
 msgid_plural "Removed {1} directories from '{2}'"
 msgstr[0] ""
@@ -746,51 +752,60 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. info
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Replied to request {1} with a PCP error message"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Failed to send PCP error message for request {1}: {2}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Sent provisional response for the {1} by {2}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid ""
 "Failed to send provisional response for the {1} by {2} (no further attempts "
 "will be made): {3}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Replied to {1} by {2}, request ID {3}, with a PXP error message"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid ""
 "Failed to send a PXP error message for the {1} by {2} (no further sending "
 "attempts will be made): {3}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Sent response for the {1} by {2}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Failed to reply to {1} by {2}, (no further attempts will be made): {3}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
 msgid "Failed to reply to the {1} by {2}: {3}"
 msgstr ""
 

@@ -25,7 +25,8 @@ class Apply : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeabl
               uint32_t download_connect_timeout,
               uint32_t download_timeout,
               std::shared_ptr<ModuleCacheDir> module_cache_dir,
-              std::shared_ptr<ResultsStorage> storage);
+              std::shared_ptr<ResultsStorage> storage,
+              const boost::filesystem::path& libexec_path);
 
         Util::CommandObject buildCommandObject(const ActionRequest& request) override;
 
@@ -50,6 +51,8 @@ class Apply : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeabl
       uint32_t download_connect_timeout_, download_timeout_;
 
       leatherman::curl::client client_;
+
+      boost::filesystem::path libexec_path_;
 };
 
 }  // namespace Modules

@@ -180,6 +180,7 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
           storage_ptr_ { new ResultsStorage(agent_configuration.spool_dir,
                                             agent_configuration.spool_dir_purge_ttl) },
           spool_dir_path_ { agent_configuration.spool_dir },
+          libexec_path_ { agent_configuration.libexec_path },
           modules_ {},
           modules_config_dir_ { agent_configuration.modules_config_dir },
           modules_config_ {},
@@ -885,7 +886,8 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
         agent_configuration.task_download_connect_timeout_s,
         agent_configuration.task_download_timeout_s,
         module_cache_dir_,
-        storage_ptr_);
+        storage_ptr_,
+        libexec_path_);
     registerModule(apply);
     registerPurgeable(apply);
 }

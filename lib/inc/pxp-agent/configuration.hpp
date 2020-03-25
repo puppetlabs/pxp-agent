@@ -156,6 +156,7 @@ class Configuration
         uint32_t ping_interval_s;
         uint32_t task_download_connect_timeout_s;
         uint32_t task_download_timeout_s;
+        std::string libexec_path;
     };
 
     /// Reset the HorseWhisperer singleton.
