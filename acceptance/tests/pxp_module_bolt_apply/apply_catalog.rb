@@ -199,7 +199,7 @@ test_name 'run script tests' do
 
   step 'Execute an apply action with no plugin dependencies' do
     suts.each do |agent|
-      catalog_request = apply_catalog_entry(cross_platform_catalog(agent, 'apply'))
+      catalog_request = apply_catalog_entry(cross_platform_catalog(agent.hostname, 'apply'))
       run_successful_apply(master, agent, catalog_request) do |std_out|
         apply_result = JSON.parse(std_out)
         assert(apply_result['resource_statuses'].include?('Notify[hello world]'), "Agent #{agent} failed to apply catalog")
@@ -211,14 +211,27 @@ test_name 'run script tests' do
     end
   end
 
+  step 'Execute an apply prep' do
+    suts.each do |agent|
+      apply_prep = { environment: 'apply' }
+      run_successful_apply_prep(master, agent, apply_prep) do |std_out|
+        prep_result = JSON.parse(std_out)
+        assert(prep_result.include?('os'), "Agent #{agent} failed to gather facts")
+        assert(prep_result['another'] == "I'm", "Agent #{agent} failed to gather plugin facts")
+      end
+
+      teardown {
+        clean_files(agent)
+      }
+    end
+  end
+
   step 'Execute an apply action with plugin dependencies' do
     suts.each do |agent|
-      catalog = plugin_dependend_catalog(agent, 'apply')
+      catalog = plugin_dependend_catalog(agent.hostname, 'apply')
       catalog_request = apply_catalog_entry(catalog)
-
       run_successful_apply(master, agent, catalog_request) do |std_out|
         apply_result = JSON.parse(std_out)
-
         assert(apply_result['resource_statuses'].include?("Warn[Hello\\!]"), "Agent #{agent} failed to apply catalog")
         assert(apply_result['resource_statuses']["Warn[Hello\\!]"]['failed'] == false, "Agent #{agent} failed to apply catalog")
         assert(apply_result['resource_statuses']["Warn[Hello\\!]"]['failed'] == false, "Agent #{agent} failed to apply catalog")
