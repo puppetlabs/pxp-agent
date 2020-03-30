@@ -177,7 +177,8 @@ begin
     puts JSON.pretty_generate(report.to_data_hash)
     exit_code = report.exit_status != 1
   else
-    puts JSON.pretty_generate(facts.values)
+    facts.name = facts.values['clientcert']
+    puts facts.values.to_json
   end
 ensure
   begin
