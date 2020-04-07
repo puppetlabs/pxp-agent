@@ -50,6 +50,7 @@ require 'uri'
 
 ## TODO: Option to read from a file is for debugging. Only read from stdin in production.
 args = JSON.parse(ARGV[0] ? File.read(ARGV[0]) : STDIN.read)
+
 # Create temporary directories for all core Puppet settings so we don't clobber
 # existing state or read from puppet.conf. Also create a temporary modulepath.
 # Additionally include rundir, which gets its own initialization.
@@ -140,7 +141,6 @@ begin
 
   # apply_settings will always be a hash (even if it empty) who's keys are puppet settings
   # For example: `noop` or `show_diff`. (only applies to apply action)
-  # CODEREVIEW: is it safe to just add this under the rest of the 'apply' action?
   args['apply_options'].each { |setting, value| Puppet[setting.to_sym] = value } if args['action'] == 'apply'
 
   Puppet[:default_file_terminus] = :file_server
@@ -148,24 +148,20 @@ begin
   # directories we configured earlier.
   Puppet.settings.use(:main)
 
-  # Given we set up an empty env, it will be 'production' in this case
-  # Note we *do not* want to set this to the environment we are applying the catalog for
-  env = Puppet.lookup(:environments).get('production')
-
   # Ensure custom facts are available for provider suitability tests
-  facts = Puppet::Node::Facts.indirection.find(SecureRandom.uuid, environment: env)
+  facts = Puppet::Node::Facts.indirection.find(SecureRandom.uuid, environment: remote_env_for_plugins)
 
   if args['action'] == 'apply'
 
     report = Puppet::Transaction::Report.new
 
-    overrides = { current_environment: env,
-                  loaders: Puppet::Pops::Loaders.new(env) }
+    overrides = { current_environment: remote_env_for_plugins,
+                  loaders: Puppet::Pops::Loaders.new(remote_env_for_plugins) }
 
     Puppet.override(overrides) do
       catalog = Puppet::Resource::Catalog.from_data_hash(args['catalog'])
-      catalog.environment = env.name.to_s
-      catalog.environment_instance = env
+      catalog.environment = remote_env_for_plugins.name.to_s
+      catalog.environment_instance = remote_env_for_plugins
       Puppet::Pops::Evaluator::DeferredResolver.resolve_and_replace(facts, catalog)
 
       catalog = catalog.to_ral
