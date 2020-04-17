@@ -4,7 +4,7 @@ require 'puppet/acceptance/environment_utils.rb'
 
 test_name 'Connect via proxy' do
 
-  tag 'audit:high',      #
+  tag 'audit:medium',   # proxy validation not user critical
       'audit:acceptance'
 
   extend Puppet::Acceptance::EnvironmentUtils
