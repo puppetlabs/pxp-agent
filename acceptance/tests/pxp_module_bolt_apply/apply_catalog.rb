@@ -13,7 +13,7 @@ def apply_catalog_entry(catalog, apply_options: { noop: false })
   catalog.merge({ apply_options: apply_options})
 end
 
-# Apply a notify resource. Even though this does not affect any change on the target, it is platform independent 
+# Apply a notify resource. Even though this does not affect any change on the target, it is platform independent
 # and does not rely on any plugin libs which makes it a good smoke test across any target.
 def cross_platform_catalog(certname, environment = 'production')
   {
@@ -170,6 +170,10 @@ def plugin_dependend_catalog(certname, environment = 'production')
 end
 
 test_name 'run script tests' do
+
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   extend Puppet::Acceptance::EnvironmentUtils
   step 'add module with required plugins to apply environment' do
     test_module = 'basic'

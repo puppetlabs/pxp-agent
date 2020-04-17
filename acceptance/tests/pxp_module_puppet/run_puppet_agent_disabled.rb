@@ -2,6 +2,9 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'C93065 - Run puppet and expect puppet agent disabled' do
 
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   teardown do
     on agents, puppet('agent --enable')
   end

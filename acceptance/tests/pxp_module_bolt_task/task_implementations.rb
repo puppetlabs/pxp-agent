@@ -4,6 +4,9 @@ require 'puppet/acceptance/environment_utils.rb'
 
 test_name 'task downloads correct implementation' do
 
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   extend Puppet::Acceptance::EnvironmentUtils
 
   PUPPETSERVER_CONFIG_FILE = windows?(master) ?

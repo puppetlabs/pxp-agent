@@ -2,6 +2,9 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'pxp-module-puppet run with PCP v1' do
 
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   skip_test('Already using PCP version 1') if ENV['PCP_VERSION'] == '1'
 
   # On teardown, restore v2 config file on each agent

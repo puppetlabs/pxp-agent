@@ -2,6 +2,9 @@ require 'pxp-agent/bolt_pxp_module_helper.rb'
 
 test_name 'run ruby task' do
 
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   step 'Ensure each agent host has pxp-agent running and associated' do
     agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')

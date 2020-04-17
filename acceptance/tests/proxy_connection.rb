@@ -3,6 +3,10 @@ require 'pxp-agent/bolt_pxp_module_helper.rb'
 require 'puppet/acceptance/environment_utils.rb'
 
 test_name 'Connect via proxy' do
+
+  tag 'audit:medium',   # proxy validation not user critical
+      'audit:acceptance'
+
   extend Puppet::Acceptance::EnvironmentUtils
 
   # skip amazon6/7 tests

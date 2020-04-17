@@ -3,6 +3,9 @@ require 'puppet/acceptance/environment_utils'
 
 test_name 'C98107 - Run puppet with an exec' do
 
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   extend Puppet::Acceptance::EnvironmentUtils
 
   env_name = test_file_name = File.basename(__FILE__, '.*')
