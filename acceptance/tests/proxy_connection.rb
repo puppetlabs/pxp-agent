@@ -3,6 +3,10 @@ require 'pxp-agent/task_helper.rb'
 require 'puppet/acceptance/environment_utils.rb'
 
 test_name 'Connect via proxy' do
+
+  tag 'audit:high',      #
+      'audit:acceptance'
+
   extend Puppet::Acceptance::EnvironmentUtils
 
   # skip amazon6/7 tests

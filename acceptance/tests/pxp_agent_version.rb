@@ -2,6 +2,9 @@ require 'pxp-agent/config_helper.rb'
 
 test_name 'C93805 - pxp-agent - Versioning test'
 
+tag 'audit:low',       # low user impact
+    'audit:acceptance'
+
 agents.each do |agent|
   step 'cd into pxp-agent bin folder and check the version' do
     version_command = "#{pxp_agent_dir(agent)}/pxp-agent --version"

@@ -3,6 +3,9 @@ require 'puppet/acceptance/environment_utils'
 
 test_name 'C98107 - Run puppet with non-ASCII characters in Puppet code' do
 
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   applicable_agents = agents.reject do |agent|
     agent['platform'] =~ /win/ && on(agent, 'wmic os get locale').stdout =~ /411/
   end
