@@ -7,6 +7,9 @@ STATUS_QUERY_INTERVAL_SECONDS = 1
 
 test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completion' do
 
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   extend Puppet::Acceptance::EnvironmentUtils
 
   env_name = test_file_name = File.basename(__FILE__, '.*')
@@ -63,7 +66,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
   #
   # If the test continued without waiting for the 2nd instance to exit, the 1st agent instance might exit before the
   # 2nd agent instance was fully started; causing a false positive test result.
-  # 
+  #
   # Because beaker's sampling of the puppet agent PIDs might begin before the 2nd puppet agent appears, OR
   # it might begin after the 2nd puppet agent has already shut down; this step needs to use a heuristic approach.
   # It succeeds if either:

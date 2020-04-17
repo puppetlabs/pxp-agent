@@ -6,6 +6,9 @@ STATUS_QUERY_INTERVAL_SECONDS = 1
 
 test_name 'C99777 - two runs with same transaction_id' do
 
+  tag 'audit:high',
+      'audit:acceptance'
+
   step 'Ensure each agent host has pxp-agent running and associated' do
     agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')

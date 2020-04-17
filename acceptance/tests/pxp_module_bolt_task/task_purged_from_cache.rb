@@ -2,6 +2,9 @@ require 'pxp-agent/bolt_pxp_module_helper.rb'
 
 test_name 'remove old task from pxp-agent cache' do
 
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   task_name = 'foo'
   nix_cache_path = '/opt/puppetlabs/pxp-agent/tasks-cache/'
   win_cache_path = '/cygdrive/c/ProgramData/PuppetLabs/pxp-agent/tasks-cache/'

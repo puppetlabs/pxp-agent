@@ -2,6 +2,9 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'C93807 - Associate pxp-agent with a PCP broker'
 
+  tag 'audit:low',        # this behavior is covered by necessity in other tests
+      'audit:acceptance'
+
 agents.each do |agent|
 
   create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))

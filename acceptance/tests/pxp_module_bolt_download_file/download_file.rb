@@ -32,6 +32,10 @@ def test_file_resource_does_not_exist(agent, file)
 end
 
 test_name 'download file tests' do
+
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   extend Puppet::Acceptance::EnvironmentUtils
   step 'Ensure each agent host has pxp-agent running and associated' do
     agents.each do |agent|
