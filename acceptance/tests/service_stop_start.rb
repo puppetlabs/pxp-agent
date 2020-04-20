@@ -2,9 +2,6 @@ require 'pxp-agent/config_helper.rb'
 
 test_name 'Service Start stop/start, with configuration)'
 
-tag 'audit:low',       # this behavior is covered in other tests
-    'audit:acceptance'
-
 @pxp_temp_file = '~/pxp-agent.conf'
 
 # On teardown, restore configuration file on each agent
@@ -99,7 +96,7 @@ agents.each_with_index do |agent, i|
   # Therefore, the un-configured test steps need to be skipped on Solaris
   #
   # Also needs skipped on OSX, as the pxp-agent executable will exit but the service will
-  # continue running and will re-execute pxp-agent every 10 seconds. Ref: PCP-305
+  # continue running and will re-execute pxp-agent every 10 seconds. Ref: PCP-305 
   #
   unless (@agent['platform'] =~ /solaris|osx/) then
     step 'Remove configuration' do
