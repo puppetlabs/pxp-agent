@@ -1,8 +1,5 @@
 test_name 'C93828 - pxp-agent - File paths from spec'
 
-tag 'audit:high',      # core spec
-    'audit:acceptance'
-
 # verify that the installed file paths match those of the
 # puppet specification.
 # https://github.com/puppetlabs/puppet-specifications/blob/master/file_paths.md

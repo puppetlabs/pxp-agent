@@ -3,9 +3,6 @@ require 'puppet/acceptance/environment_utils'
 
 test_name 'C93063 - pxp-module-puppet run expect puppet failure' do
 
-  tag 'audit:high',      # module validation: no other venue exists to test
-      'audit:acceptance'
-
   extend Puppet::Acceptance::EnvironmentUtils
 
   app_type = test_file_name = File.basename(__FILE__, '.*')

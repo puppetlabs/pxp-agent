@@ -3,9 +3,6 @@ require 'yaml'
 
 test_name  'Run puppet agent as non-root' do
 
-  tag 'audit:high',      # module validation: no other venue exists to test
-      'audit:acceptance'
-
   agents.each do |agent|
     platform = agent.platform
     skip_test "Test is not compatible with #{platform}" if platform =~ /windows/

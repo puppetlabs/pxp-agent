@@ -3,9 +3,6 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'C97934 - agent should use next broker if primary is intentionally shutdown' do
 
-  tag 'audit:high',      # broker failover connection behavior is critical
-      'audit:acceptance'
-
   PRIMARY_BROKER_INSTANCE = 0
   REPLICA_BROKER_INSTANCE = 1
   teardown do
