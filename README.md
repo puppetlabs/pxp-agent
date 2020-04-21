@@ -362,6 +362,10 @@ The location of the pxp-agent SSL certificate, example /etc/puppet/ssl/certs/bob
 
 The location of the pxp-agent's SSL private key, example /etc/puppet/ssl/certs/bob_key.pem
 
+**ssl-crl (optional)**
+
+The location of the pxp-agent's SSL certificate revocation list, example /etc/puppetlabs/puppet/ssl/crl.pem
+
 **logfile (optional)**
 
 The path of the log file.

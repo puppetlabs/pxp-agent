@@ -834,6 +834,7 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
         agent_configuration.ca,
         agent_configuration.crt,
         agent_configuration.key,
+        agent_configuration.crl,
         agent_configuration.master_proxy,
         agent_configuration.task_download_connect_timeout_s,
         agent_configuration.task_download_timeout_s,
