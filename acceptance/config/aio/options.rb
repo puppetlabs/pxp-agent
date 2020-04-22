@@ -8,6 +8,7 @@
     "setup/common/045_SetPuppetServerOnAgents.rb",
     "setup/common/050_Setup_Broker.rb",
     "setup/common/060_Setup_PCP_Client.rb",
+    "setup/common/070_Setup_Server_fixtures.rb",
   ],
   :post_suite => [
     'teardown/common/099_Archive_Logs.rb',
