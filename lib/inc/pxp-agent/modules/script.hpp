@@ -20,6 +20,7 @@ class Script : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeab
                const std::string& ca,
                const std::string& crt,
                const std::string& key,
+               const std::string& crl,
                const std::string& proxy,
                uint32_t download_connect_timeout,
                uint32_t download_timeout,

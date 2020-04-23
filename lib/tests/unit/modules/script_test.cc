@@ -62,6 +62,8 @@ static const std::string CRT { "mock_crt" };
 
 static const std::string KEY { "mock_key" };
 
+static const std::string CRL { "mock_crl" };
+
 static const ActionRequest script_request(const std::string& destination, const std::string& sha, const std::vector<std::string>& args) {
     std::string paramsStr = (boost::format("{\"script\": {"
                                                         "\"uri\":{"
@@ -97,12 +99,12 @@ static const ActionRequest script_request(const std::string& destination, const 
 
 TEST_CASE("Modules::Script", "[modules]") {
     SECTION("can successfully instantiate") {
-        REQUIRE_NOTHROW(Modules::Script(PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE));
+        REQUIRE_NOTHROW(Modules::Script(PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, MODULE_CACHE_DIR, STORAGE));
     }
 }
 
 TEST_CASE("Modules::Script::hasAction", "[modules]") {
-    Modules::Script mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
+    Modules::Script mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
     SECTION("correctly reports false") {
         REQUIRE(!mod.hasAction("foo"));
     }
@@ -113,7 +115,7 @@ TEST_CASE("Modules::Script::hasAction", "[modules]") {
 }
 
 TEST_CASE("Modules::Script can execute a script", "[modules]") {
-    Modules::Script mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
+    Modules::Script mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
     SECTION("script executes and writes to stdout") {
         auto args = std::vector<std::string>();
         auto response = mod.executeAction(script_request(TESTING_SCRIPT, TESTING_SCRIPT_SHA265, args));
@@ -143,7 +145,7 @@ TEST_CASE("Modules::Script can execute a script", "[modules]") {
 }
 
 TEST_CASE("Modules::Script correctly reports failures", "[modules]") {
-    Modules::Script mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
+    Modules::Script mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
     SECTION("Reports exit code 1 when the script fails") {
         auto args = std::vector<std::string>({"FAIL"});
         auto response = mod.executeAction(script_request(TESTING_SCRIPT, TESTING_SCRIPT_SHA265, args));
@@ -179,7 +181,7 @@ TEST_CASE("Modules::Script::purge purges old cached files", "[modules]") {
     static const auto PURGE_MODULE_CACHE_DIR = std::make_shared<ModuleCacheDir>(PURGE_CACHE, CACHE_TTL);
 
     // Start with 0 TTL to prevent initial cleanup
-    Modules::Script mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", 10, 20, PURGE_MODULE_CACHE_DIR, STORAGE };
+    Modules::Script mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, PURGE_MODULE_CACHE_DIR, STORAGE };
 
     unsigned int num_purged_results { 0 };
     auto purgeCallback =

@@ -41,6 +41,7 @@ PXPConnectorV1::PXPConnectorV1(const Configuration::Agent& agent_configuration)
                                    agent_configuration.ca,
                                    agent_configuration.crt,
                                    agent_configuration.key,
+                                   agent_configuration.crl,
                                    agent_configuration.broker_ws_proxy,
                                    agent_configuration.ws_connection_timeout_ms,
                                    agent_configuration.association_timeout_s,

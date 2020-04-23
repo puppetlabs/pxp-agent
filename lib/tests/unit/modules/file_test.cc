@@ -60,6 +60,8 @@ static const std::string CRT { "mock_crt" };
 
 static const std::string KEY { "mock_key" };
 
+static const std::string CRL { "mock_crl" };
+
 // Success for files is produced by calling download file for a file that already exists.
 // This way during the test no actual downloads will be attempted, and downloadFileFromMaster
 // will return success without needing to download anything. Creating directories doesn't
@@ -182,12 +184,12 @@ static const PCPClient::ParsedChunks FAILURE_NON_BLOCKING_CONTENT {
 
 TEST_CASE("Modules::File", "[modules]") {
     SECTION("can successfully instantiate") {
-        REQUIRE_NOTHROW(Modules::File(MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE));
+        REQUIRE_NOTHROW(Modules::File(MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, MODULE_CACHE_DIR, STORAGE));
     }
 }
 
 TEST_CASE("Modules::File::hasAction", "[modules]") {
-    Modules::File mod { MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
+    Modules::File mod { MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
     SECTION("correctly reports false") {
         REQUIRE(!mod.hasAction("foo"));
     }
@@ -198,7 +200,7 @@ TEST_CASE("Modules::File::hasAction", "[modules]") {
 }
 
 TEST_CASE("Modules::File::callAction", "[modules]") {
-    Modules::File mod { MASTER_URIS, CA, CRT, KEY, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
+    Modules::File mod { MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
     SECTION("Correctly returns exitcode 0 when call succeeds") {
         // Remove the directory to be created in case it was here from a previous test
         fs::remove(fs::path(TEST_NEW_DIR));
@@ -263,7 +265,7 @@ TEST_CASE("Modules::File::purge purges old downloaded files", "[modules]") {
     static const auto PURGE_MODULE_CACHE_DIR = std::make_shared<ModuleCacheDir>(PURGE_CACHE, CACHE_TTL);
 
     // Start with 0 TTL to prevent initial cleanup
-    Modules::File mod { MASTER_URIS, CA, CRT, KEY, "", 10, 20, PURGE_MODULE_CACHE_DIR, STORAGE };
+    Modules::File mod { MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, PURGE_MODULE_CACHE_DIR, STORAGE };
 
     unsigned int num_purged_results { 0 };
     auto purgeCallback =

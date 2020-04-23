@@ -364,9 +364,7 @@ The location of the pxp-agent's SSL private key, example /etc/puppet/ssl/certs/b
 
 **ssl-crl (required for apply module)**
 
-The location of the pxp-agent's SSL certificate revocation list, example /etc/puppetlabs/puppet/ssl/crl.pem.
-NOTE: This is only required/respected when applying catalogs with the apply module. Plumbing CRL checks into 
-other modules and connecting with pcp-brokers is not yet implemented.
+The location of the pxp-agent's SSL certificate revocation list, example /etc/puppetlabs/puppet/ssl/crl.pem
 
 **logfile (optional)**
 
