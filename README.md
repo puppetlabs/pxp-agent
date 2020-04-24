@@ -1,4 +1,4 @@
-# PXP Agent
+# PXP Agent 
 
 This is the agent for the PCP Execution Protocol [(PXP)][pxp_specs_root], based
 on the the Puppet Communications Protocol [(PCP)][pcp_specs_root]. It enables
