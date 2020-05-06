@@ -8,6 +8,9 @@ STATUS_QUERY_INTERVAL_SECONDS = 2
 
 test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for it to be killed' do
 
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   extend Puppet::Acceptance::EnvironmentUtils
 
   env_name = test_file_name = File.basename(__FILE__, '.*')

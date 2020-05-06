@@ -4,6 +4,8 @@ require 'pxp-agent/test_helper.rb'
 test_name 'Attempt to start pxp-agent with invalid SSL config'
 
 skip_test 'Reworking alternate CA generation, not worth blocking release'
+tag 'audit:medium',    # service behavior unlikely to regress
+    'audit:acceptance'
 
 # On teardown, restore valid config file on each agent
 teardown do

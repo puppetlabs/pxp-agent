@@ -3,6 +3,9 @@ require 'puppet/acceptance/environment_utils'
 
 test_name 'umask inherited by puppet' do
 
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   applicable_agents = agents.reject { |agent| windows?(agent) }
   unless applicable_agents.length > 0 then
     skip_test('Windows agents have no concept of umask')

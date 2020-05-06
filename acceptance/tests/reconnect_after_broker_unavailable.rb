@@ -3,6 +3,10 @@ require 'pxp-agent/test_helper.rb'
 
 test_name 'C94789 - An associated agent should automatically reconnect when the broker was temporarily unavailable'
 
+tag 'audit:medium',      # broker failover connection behavior is critical
+                         # functionally, is this test a duplicate of failover/timeout_failover.rb  ??
+    'audit:acceptance'
+
 step 'Ensure each agent host has pxp-agent running and associated' do
   agents.each do |agent|
     on agent, puppet('resource service pxp-agent ensure=stopped')
