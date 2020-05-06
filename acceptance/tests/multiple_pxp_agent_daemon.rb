@@ -2,6 +2,10 @@ require 'pxp-agent/config_helper'
 require 'pxp-agent/test_helper'
 
 test_name 'Start pxp-agent daemon with pidfile present' do
+
+tag 'audit:high',      # not honoring pid file would be significant issue
+    'audit:acceptance'
+
   applicable_agents = agents.select { |agent| agent['platform'] !~ /aix/ && agent['platform'] !~ /osx/ }
   unless applicable_agents.length > 0 then
     skip_test('OSX and AIX hosts use --foreground')

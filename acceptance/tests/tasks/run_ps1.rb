@@ -3,6 +3,9 @@ require 'json'
 
 test_name 'run powershell task' do
 
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
+
   windows_hosts = hosts.select {|h| /windows/ =~ h[:platform]}
   if windows_hosts.empty?
     skip_test "No windows hosts to test powershell on"
