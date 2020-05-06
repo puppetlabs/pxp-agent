@@ -1,13 +1,10 @@
 require 'pxp-agent/test_helper.rb'
 require 'pxp-agent/task_helper.rb'
-require 'puppet/acceptance/environment_utils.rb'
 
 test_name 'Connect via proxy' do
 
   tag 'audit:medium',   # proxy validation not user critical
       'audit:acceptance'
-
-  extend Puppet::Acceptance::EnvironmentUtils
 
   # skip amazon6/7 tests
   agents.each do |agent|
@@ -17,10 +14,11 @@ test_name 'Connect via proxy' do
   end
 
   # init
+  test_env = 'bolt'
   squid_log = "/var/log/squid/access.log"
   proxy = setup_squid_proxy(master)
-  win_agents, nix_agents = agents.partition { |agent| windows?(agent) }
-  PUPPETSERVER_CONFIG_FILE = '/etc/puppetlabs/puppetserver/conf.d/webserver.conf'
+  non_master_agents = agents.reject { |host| host['roles'].include?('master') }
+  win_agents, nix_agents = non_master_agents.partition { |agent| windows?(agent) }
 
   # if there is a failure make sure to reset agent to NOT use proxy
   teardown do
@@ -43,7 +41,7 @@ test_name 'Connect via proxy' do
       on(agent, puppet('resource service pxp-agent ensure=running'))
       # now stop agent so that the log is available in proxy access log (only shows up when connection is "done")
       on(agent, puppet('resource service pxp-agent ensure=stopped'))
-      # prove the connection went through proxy 
+      # prove the connection went through proxy
       on(master, "cat #{squid_log}") do |result|
         assert_match(/CONNECT #{master}/, result.stdout, 'Proxy logs did not indicate use of the proxy.' )
       end
@@ -55,31 +53,12 @@ test_name 'Connect via proxy' do
     end
   end
 
-  step 'Create the downloadable tasks on the master' do
-    # Make the static content path
-    env_name = File.basename(__FILE__, '.*')
-    @static_content_path = File.join(environmentpath, mk_tmp_environment(env_name))
-
-    # Create the tasks
-    nix_task_body = "#!/bin/sh\n#Comment to change sha\necho $PT_message"
-    win_task_body = "@REM Comment to change sha\n@echo %PT_message%"
-    @nix_sha256, @win_sha256 = { "init" => nix_task_body, "init.bat" => win_task_body }.map do |filename, task_body|
-      taskpath = "#{@static_content_path}/#{filename}"
-      create_remote_file(master, taskpath, task_body)
-      on master, "chmod 1777 #{taskpath}"
-      Digest::SHA256.hexdigest(task_body + "\n")
+  step 'get shas for fixture files' do
+    fixtures = File.absolute_path('files')
+    fixture_env = File.join(fixtures, 'environments', test_env)
+    @nix_sha256, @win_sha256 = { "init" => '', "init.bat" => '' }.map do |filename,|
+      Digest::SHA256.file(File.join(fixture_env, filename)).hexdigest
     end
-  end
-
-  step 'Setup the static task file mount on puppetserver' do
-    on master, puppet('resource service puppetserver ensure=stopped')
-    hocon_file_edit_in_place_on(master, PUPPETSERVER_CONFIG_FILE) do |host, doc|
-      doc.set_config_value("webserver.static-content", Hocon::ConfigValueFactory.from_any_ref([{
-        "path" => "/task-files",
-        "resource" => @static_content_path
-      }]))
-    end
-    on master, puppet('resource service puppetserver ensure=running')
   end
 
   step 'Ensure each agent host has pxp-agent running with proxy configured and associated' do
@@ -111,7 +90,7 @@ test_name 'Connect via proxy' do
         assert_match(/ensure => 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{sha256}")).stdout)
       end
       # download task through the web proxy
-      run_successful_task(master, agents, 'echo', filename, sha256, {:message => 'hello'}, "/task-files/#{filename}") do |stdout|
+      run_successful_task(master, agents, 'echo', filename, sha256, {:message => 'hello'}, "/#{test_env}/#{filename}") do |stdout|
         assert_equal('hello', stdout.strip, "Output did not contain 'hello'")
       end
 
@@ -121,7 +100,11 @@ test_name 'Connect via proxy' do
       end
       # each agent should have two entries in squid proxy log
       on(master, "cat #{squid_log}") do |result|
-        assert_equal(result.stdout.split("\n").length, agents.length * 2)
+        agents.each do |agent|
+          agent_ip = agent.ip
+          match = result.stdout.split("\n").select { |line| line =~ /#{agent_ip}/ }
+          assert_equal(2, match.length)
+        end
         assert_match(/CONNECT #{master}/, result.stdout, 'Proxy logs did not indicate use of the proxy.' )
       end
       clear_squid_log(master)
