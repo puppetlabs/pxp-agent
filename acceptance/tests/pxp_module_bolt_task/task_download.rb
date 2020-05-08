@@ -1,17 +1,12 @@
 require 'pxp-agent/bolt_pxp_module_helper.rb'
 require 'pxp-agent/config_helper.rb'
-require 'puppet/acceptance/environment_utils.rb'
 
 test_name 'task download' do
 
   tag 'audit:high',      # module validation: no other venue exists to test
       'audit:acceptance'
 
-  extend Puppet::Acceptance::EnvironmentUtils
-
-  PUPPETSERVER_CONFIG_FILE = windows?(master) ?
-    '/cygdrive/c/ProgramData/PuppetLabs/puppetserver/etc/conf.d/webserver.conf'
-  : '/etc/puppetlabs/puppetserver/conf.d/webserver.conf'
+  test_env = 'bolt'
 
   step 'Ensure each agent host has pxp-agent running and associated' do
     agents.each do |agent|
@@ -24,34 +19,15 @@ test_name 'task download' do
     end
   end
 
-  step 'Create the downloadable tasks on the master' do
-    # Make the static content path
-    env_name = File.basename(__FILE__, '.*')
-    @static_content_path = File.join(environmentpath, mk_tmp_environment(env_name))
-
-    # Create the tasks
-    nix_task_body = "#!/bin/sh\n#Comment to change sha\necho $PT_message"
-    win_task_body = "@REM Comment to change sha\n@echo %PT_message%"
-    @nix_sha256, @win_sha256 = { "init" => nix_task_body, "init.bat" => win_task_body }.map do |filename, task_body|
-      taskpath = "#{@static_content_path}/#{filename}"
-      create_remote_file(master, taskpath, task_body)
-      on master, "chmod 1777 #{taskpath}"
-      Digest::SHA256.hexdigest(task_body + "\n")
-    end
-  end
-
-  step 'Setup the static task file mount on puppetserver' do
-    on master, puppet('resource service puppetserver ensure=stopped')
-    hocon_file_edit_in_place_on(master, PUPPETSERVER_CONFIG_FILE) do |host, doc|
-      doc.set_config_value("webserver.static-content", Hocon::ConfigValueFactory.from_any_ref([{
-        "path" => "/task-files",
-        "resource" => @static_content_path
-      }]))
-    end
-    on master, puppet('resource service puppetserver ensure=running')
-  end
-
   win_agents, nix_agents = agents.partition { |agent| windows?(agent) }
+
+  step 'get shas for fixture files' do
+    fixtures = File.absolute_path('files')
+    fixture_env = File.join(fixtures, 'environments', test_env)
+    @nix_sha256, @win_sha256 = { "init" => '', "init.bat" => '' }.map do |filename,|
+      Digest::SHA256.file(File.join(fixture_env, filename)).hexdigest
+    end
+  end
 
   step 'Download and run the task on agent hosts' do
     test_cases = { win_agents => ["init.bat", @win_sha256], nix_agents => ["init", @nix_sha256] }
@@ -111,7 +87,7 @@ test_name 'task download' do
   step 'Return a PXP-error when a 400+ response is returned from the server containing the status code and the response body' do
     # Ensure that the endpoint does result in a 404 status before performing
     # the corresponding test.
-    assert_match(/Error 404 Not Found/, on(master, "curl -k https://#{master}:8140/task-files/non_existent_task").stdout.chomp)
+    assert_match(/Error 404 Not Found/, on(master, "curl -k https://#{master}:8140/#{test_env}/non_existent_task").stdout.chomp)
 
     files = [task_file_entry('some_file', '1234', "/task-files/non_existent_task")]
     run_errored_task(master, agents, 'echo', files) do |description|
