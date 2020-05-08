@@ -8,14 +8,15 @@ test_name 'When certs have been revoked in CRL' do
 
   # init
   test_env = 'bolt'
-  win_agents, nix_agents = agents.partition { |agent| windows?(agent) }
+  non_master_agents = agents.reject { |host| host['roles'].include?('master') }
+  win_agents, nix_agents = non_master_agents.partition { |agent| windows?(agent) }
 
   empty_crl = '/etc/puppetlabs/puppet/ssl/crl.pem'
   revoked_crl = '/tmp/ssl-revoked/crl.pem'
 
   # Ensure empty CRL is restored on every agent
   teardown do
-    agents.each do |agent|
+    non_master_agents.each do |agent|
       on(agent, puppet('resource service pxp-agent ensure=stopped'))
       pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
       crl_path = pxp_config['ssl-crl']
@@ -47,7 +48,7 @@ test_name 'When certs have been revoked in CRL' do
 
 
   step 'Assert that agent will not connect to PCP-broker with revoked cert' do
-    agents.each do |agent|
+    non_master_agents.each do |agent|
       # Stop pxp-service to break (possibly) existing websocket connection
       on(agent, puppet('resource service pxp-agent ensure=stopped'))
       assert(is_not_associated?(master, "pcp://#{agent}/agent"),
@@ -85,7 +86,7 @@ test_name 'When certs have been revoked in CRL' do
   end
 
   step 'Connect each agent to a PCP broker with an empty CRL, then once websocket is established swap in revoked' do
-    agents.each do |agent|
+    non_master_agents.each do |agent|
       # Connect to broker in empty CRL
       on(agent, puppet('resource service pxp-agent ensure=stopped'))
       pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
@@ -140,7 +141,7 @@ test_name 'When certs have been revoked in CRL' do
   end
 
   step 'Do not set ssl-crl setting and esure master/broker connection still works' do
-    agents.each do |agent|
+    non_master_agents.each do |agent|
       # Connect to broker with pxp-agent.conf missing 'ssl-crl' setting
       on(agent, puppet('resource service pxp-agent ensure=stopped'))
       pxp_config = pxp_config_hash_using_puppet_certs(master, agent)
