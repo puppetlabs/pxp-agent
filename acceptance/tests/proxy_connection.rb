@@ -1,5 +1,5 @@
 require 'pxp-agent/test_helper.rb'
-require 'pxp-agent/task_helper.rb'
+require 'pxp-agent/bolt_pxp_module_helper.rb'
 
 test_name 'Connect via proxy' do
 
@@ -90,7 +90,8 @@ test_name 'Connect via proxy' do
         assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{sha256}")).stdout)
       end
       # download task through the web proxy
-      run_successful_task(master, agents, 'echo', filename, sha256, {:message => 'hello'}, "/#{test_env}/#{filename}") do |stdout|
+      files = [task_file_entry(filename, sha256, "/#{test_env}/#{filename}")]
+      run_successful_task(master, agents, 'echo', files, input: {:message => 'hello'}) do |stdout|
         assert_equal('hello', stdout.strip, "Output did not contain 'hello'")
       end
 
