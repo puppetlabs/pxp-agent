@@ -64,7 +64,7 @@ test_name 'When certs have been revoked in CRL' do
       on(agent, puppet('resource service pxp-agent ensure=running'))
       assert(is_not_associated?(master, "pcp://#{agent}/agent"),
        "Agent identity pcp://#{agent}/agent for agent host #{agent} appears in pcp-broker's client inventory " \
-       "but pxp-agent service is supposed to be stopped")
+       "but pxp-agent should not associate with revoked cert")
       # Now revert to using empty CRL and assert the agent re-connects
       on(agent, puppet('resource service pxp-agent ensure=stopped'))
       scp_from(master, empty_crl, 'tmp')
@@ -119,7 +119,7 @@ test_name 'When certs have been revoked in CRL' do
         assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{sha256}")).stdout)
       end
 
-      files = [task_file_entry(filename, sha256, "/task-files/#{filename}")]
+      files = [task_file_entry(filename, sha256, "/#{test_env}/#{filename}")]
       run_errored_task(master, agents, 'echo', files, input: {:message => 'hello'}) do |description|
         assert_match(/certificate revoked/, description)
       end
@@ -170,7 +170,7 @@ test_name 'When certs have been revoked in CRL' do
         assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{sha256}")).stdout)
       end
 
-      files = [task_file_entry(filename, sha256, "/task-files/#{filename}")]
+      files = [task_file_entry(filename, sha256, "/#{test_env}/#{filename}")]
       run_successful_task(master, agents, 'echo', files, input: {:message => 'hello'}) do |stdout|
         assert_equal('hello', stdout.strip, "Output did not contain 'hello'")
       end
