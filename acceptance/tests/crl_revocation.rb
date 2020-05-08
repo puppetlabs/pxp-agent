@@ -1,14 +1,14 @@
 require 'pxp-agent/test_helper.rb'
 require 'pxp-agent/bolt_pxp_module_helper.rb'
-require 'puppet/acceptance/environment_utils.rb'
 require 'digest/sha2'
 
 test_name 'When certs have been revoked in CRL' do
-  extend Puppet::Acceptance::EnvironmentUtils
+  tag 'audit:high',      # module validation: no other venue exists to test
+      'audit:acceptance'
 
   # init
+  test_env = 'bolt'
   win_agents, nix_agents = agents.partition { |agent| windows?(agent) }
-  PUPPETSERVER_CONFIG_FILE = '/etc/puppetlabs/puppetserver/conf.d/webserver.conf'
 
   empty_crl = '/etc/puppetlabs/puppet/ssl/crl.pem'
   revoked_crl = '/tmp/ssl-revoked/crl.pem'
@@ -64,7 +64,7 @@ test_name 'When certs have been revoked in CRL' do
       on(agent, puppet('resource service pxp-agent ensure=running'))
       assert(is_not_associated?(master, "pcp://#{agent}/agent"),
        "Agent identity pcp://#{agent}/agent for agent host #{agent} appears in pcp-broker's client inventory " \
-       "but pxp-agent service is supposed to be stopped")
+       "but pxp-agent should not associate with revoked cert")
       # Now revert to using empty CRL and assert the agent re-connects
       on(agent, puppet('resource service pxp-agent ensure=stopped'))
       scp_from(master, empty_crl, 'tmp')
@@ -76,31 +76,12 @@ test_name 'When certs have been revoked in CRL' do
     end
   end
 
-  step 'Create the downloadable tasks on the master' do
-    # Make the static content path
-    env_name = File.basename(__FILE__, '.*')
-    @static_content_path = File.join(environmentpath, mk_tmp_environment(env_name))
-
-    # Create the tasks
-    nix_task_body = "#!/bin/sh\n#Comment to change sha\necho $PT_message"
-    win_task_body = "@REM Comment to change sha\n@echo %PT_message%"
-    @nix_sha256, @win_sha256 = { "init" => nix_task_body, "init.bat" => win_task_body }.map do |filename, task_body|
-      taskpath = "#{@static_content_path}/#{filename}"
-      create_remote_file(master, taskpath, task_body)
-      on master, "chmod 1777 #{taskpath}"
-      Digest::SHA256.hexdigest(task_body + "\n")
+  step 'get shas for fixture files' do
+    fixtures = File.absolute_path('files')
+    fixture_env = File.join(fixtures, 'environments', test_env)
+    @nix_sha256, @win_sha256 = { "init" => '', "init.bat" => '' }.map do |filename,|
+      Digest::SHA256.file(File.join(fixture_env, filename)).hexdigest
     end
-  end
-
-  step 'Setup the static task file mount on puppetserver' do
-    on(master, puppet('resource service puppetserver ensure=stopped'))
-    hocon_file_edit_in_place_on(master, PUPPETSERVER_CONFIG_FILE) do |host, doc|
-      doc.set_config_value("webserver.static-content", Hocon::ConfigValueFactory.from_any_ref([{
-        "path" => "/task-files",
-        "resource" => @static_content_path
-      }]))
-    end
-    on(master, puppet('resource service puppetserver ensure=running'))
   end
 
   step 'Connect each agent to a PCP broker with an empty CRL, then once websocket is established swap in revoked' do
@@ -138,7 +119,7 @@ test_name 'When certs have been revoked in CRL' do
         assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{sha256}")).stdout)
       end
 
-      files = [task_file_entry(filename, sha256, "/task-files/#{filename}")]
+      files = [task_file_entry(filename, sha256, "/#{test_env}/#{filename}")]
       run_errored_task(master, agents, 'echo', files, input: {:message => 'hello'}) do |description|
         assert_match(/certificate revoked/, description)
       end
@@ -189,7 +170,7 @@ test_name 'When certs have been revoked in CRL' do
         assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{sha256}")).stdout)
       end
 
-      files = [task_file_entry(filename, sha256, "/task-files/#{filename}")]
+      files = [task_file_entry(filename, sha256, "/#{test_env}/#{filename}")]
       run_successful_task(master, agents, 'echo', files, input: {:message => 'hello'}) do |stdout|
         assert_equal('hello', stdout.strip, "Output did not contain 'hello'")
       end

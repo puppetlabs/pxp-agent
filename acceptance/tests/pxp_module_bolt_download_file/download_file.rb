@@ -1,9 +1,7 @@
 require 'pxp-agent/bolt_pxp_module_helper.rb'
 require 'pxp-agent/config_helper.rb'
-require 'puppet/acceptance/environment_utils.rb'
 require 'json'
 
-PUPPETSERVER_CONFIG_FILE = '/etc/puppetlabs/puppetserver/conf.d/webserver.conf'
 
 def test_file_destination(agent)
   windows?(agent) ? "C:/Windows/Temp/testing_file#{rand(10000000)}.txt" : "/opt/testing_file#{rand(1000)}.txt"
@@ -31,12 +29,13 @@ def test_file_resource_does_not_exist(agent, file)
   assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{file}")).stdout)
 end
 
-test_name 'download file tests' do
+test_name "Bolt module - download file tests" do
 
   tag 'audit:high',      # module validation: no other venue exists to test
       'audit:acceptance'
 
-  extend Puppet::Acceptance::EnvironmentUtils
+  test_env = 'bolt'
+
   step 'Ensure each agent host has pxp-agent running and associated' do
     agents.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
@@ -48,32 +47,13 @@ test_name 'download file tests' do
     end
   end
 
-  step 'Create the downloadable tasks on the master' do
-    # Make the static content path
-    env_name = File.basename(__FILE__, '.*')
-    @static_content_path = File.join(environmentpath, mk_tmp_environment(env_name))
-    # Create the file
-    file_body = '## TESTING BODY ##'
-    filename = 'testing_file.txt'
-    filepath = "#{@static_content_path}/#{filename}"
-    create_remote_file(master, filepath, file_body)
-    on master, "chmod 1777 #{filepath}"
-    @source_file = "/download-test-files/#{filename}"
-    @sha256 = Digest::SHA256.hexdigest(file_body + "\n")
-  end
-
-  step 'Setup the static task file mount on puppetserver' do
-    on master, puppet('resource service puppetserver ensure=stopped')
-    hocon_file_edit_in_place_on(master, PUPPETSERVER_CONFIG_FILE) do |host, doc|
-      doc.set_config_value("webserver.static-content", Hocon::ConfigValueFactory.from_any_ref([{
-        "path" => "/download-test-files",
-        "resource" => @static_content_path
-      }]))
-    end
-    on master, puppet('resource service puppetserver ensure=running')
-  end
-
   step 'execute successful download file with files,symlinks,directories' do
+    fixtures = File.absolute_path('files')
+    fixture_env = File.join(fixtures, 'environments', test_env)
+    filename = 'testing_file.txt'
+    @sha256 = Digest::SHA256.file(File.join(fixture_env, filename)).hexdigest
+    @source_file = "/#{test_env}/#{filename}"
+
     suts.each do |agent|
       test_dir = test_dir_destination(agent)
       test_symlink = test_file_destination(agent)
@@ -127,7 +107,7 @@ test_name 'download file tests' do
         master,
         agent,
         [download_file_entry('NOTREALSHA256',
-                            "/download-test-files/not-real-file",
+                            "/#{test_env}/not-real-file",
                             '',
                             test_file,
                             'file')]

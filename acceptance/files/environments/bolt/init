@@ -1,0 +1,3 @@
+#!/bin/sh
+#Comment to change sha
+echo $PT_message
