@@ -78,7 +78,7 @@ test_name 'Run Puppet while a Puppet Agent run is in-progress, wait for completi
 
       satisfied = false
       pid_counting_attempts = 0
-      MAX_PID_COUNTING_ATTEMPTS = 30
+      MAX_PID_COUNTING_ATTEMPTS = 60
       concurrent_samples_of_1_pid = 0
       REQUIRED_SAMPLES_OF_1_PID = 10
       at_least_two_pids_observed = false
