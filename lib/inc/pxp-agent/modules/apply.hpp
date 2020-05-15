@@ -8,7 +8,6 @@
 #include <pxp-agent/module_cache_dir.hpp>
 
 #include <leatherman/locale/locale.hpp>
-#include <leatherman/curl/client.hpp>
 
 namespace PXPAgent {
 namespace Modules {
@@ -22,8 +21,6 @@ class Apply : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeabl
               const std::string& key,
               const std::string& crl,
               const std::string& proxy,
-              uint32_t download_connect_timeout,
-              uint32_t download_timeout,
               std::shared_ptr<ModuleCacheDir> module_cache_dir,
               std::shared_ptr<ResultsStorage> storage);
 
@@ -46,10 +43,6 @@ class Apply : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeabl
       std::string key_;
       std::string crl_;
       std::string proxy_;
-
-      uint32_t download_connect_timeout_, download_timeout_;
-
-      leatherman::curl::client client_;
 };
 
 }  // namespace Modules

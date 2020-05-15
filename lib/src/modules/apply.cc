@@ -194,8 +194,6 @@ exit exit_code
                  const std::string& key,
                  const std::string& crl,
                  const std::string& proxy,
-                 uint32_t download_connect_timeout,
-                 uint32_t download_timeout,
                  std::shared_ptr<ModuleCacheDir> module_cache_dir,
                  std::shared_ptr<ResultsStorage> storage) :
         BoltModule { exec_prefix, std::move(storage), std::move(module_cache_dir) },
@@ -205,9 +203,7 @@ exit exit_code
         crt_ { crt },
         key_ { key },
         crl_ { crl },
-        proxy_ { proxy },
-        download_connect_timeout_ { download_connect_timeout },
-        download_timeout_ { download_timeout }
+        proxy_ { proxy }
     {
         module_name = "apply";
         actions.push_back(apply_ACTION);

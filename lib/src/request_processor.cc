@@ -885,8 +885,6 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
         agent_configuration.key,
         agent_configuration.crl,
         agent_configuration.master_proxy,
-        agent_configuration.task_download_connect_timeout_s,
-        agent_configuration.task_download_timeout_s,
         module_cache_dir_,
         storage_ptr_);
     registerModule(apply);
