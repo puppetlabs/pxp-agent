@@ -64,12 +64,12 @@ static const std::string DATA_TXT {
 
 TEST_CASE("Modules::Apply", "[modules]") {
     SECTION("can successfully instantiate") {
-        REQUIRE_NOTHROW(Modules::Apply(PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, MODULE_CACHE_DIR, STORAGE));
+        REQUIRE_NOTHROW(Modules::Apply(PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, CRL, "", MODULE_CACHE_DIR, STORAGE));
     }
 }
 
 TEST_CASE("Modules::Apply::hasAction", "[modules]") {
-    Modules::Apply mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
+    Modules::Apply mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, CRL, "", MODULE_CACHE_DIR, STORAGE };
     SECTION("correctly reports false") {
         REQUIRE(!mod.hasAction("foo"));
     }
@@ -95,7 +95,7 @@ TEST_CASE("Modules::Apply::purge purges old cached files", "[modules]") {
     static const auto PURGE_MODULE_CACHE_DIR = std::make_shared<ModuleCacheDir>(PURGE_CACHE, CACHE_TTL);
 
     // Start with 0 TTL to prevent initial cleanup
-    Modules::Apply mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, CRL, "", 10, 20, PURGE_MODULE_CACHE_DIR, STORAGE };
+    Modules::Apply mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, CRL, "", PURGE_MODULE_CACHE_DIR, STORAGE };
 
     unsigned int num_purged_results { 0 };
     auto purgeCallback =
@@ -125,7 +125,7 @@ TEST_CASE("Modules::buildCommandObject", "[modules]") {
         std::vector<lth_jc::JsonContainer> debug {};
         const PCPClient::ParsedChunks p_c { envelope, data, debug, 0 };
 
-        Modules::Apply mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", "", 10, 20, MODULE_CACHE_DIR, STORAGE };
+        Modules::Apply mod { PXP_AGENT_BIN_PATH, MASTER_URIS, CA, CRT, KEY, "", "", MODULE_CACHE_DIR, STORAGE };
 
         REQUIRE_THROWS_AS(mod.buildCommandObject(ActionRequest(RequestType::Blocking, p_c)), Configuration::Error);
     }
