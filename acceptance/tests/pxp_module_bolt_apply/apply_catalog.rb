@@ -4,9 +4,13 @@ require 'puppet/acceptance/environment_utils.rb'
 
 suts = agents.reject { |host| host['roles'].include?('master') }
 
-def clean_files(agent)
+def clean_files(agent, target_file = nil)
   tasks_cache = get_tasks_cache(agent)
   assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{tasks_cache}/apply_ruby_shim ensure=absent force=true")).stdout)
+  if target_file
+    assert_match(/ensure\s+=> 'absent'/,
+                 on(agent, puppet("resource file #{target_file} ensure=absent force=true")).stdout)
+  end
 end
 
 def apply_catalog_entry(catalog, apply_options: { noop: false })
@@ -169,6 +173,88 @@ def plugin_dependend_catalog(certname, environment = 'production')
   }
 end
 
+def file_dependent_catalog(certname, file_path, environment = 'production')
+  {
+    "catalog": {
+      "tags": [
+        "settings"
+      ],
+      "catalog_uuid": "db575d07-9b80-4d82-a782-475098085349",
+      "name": certname,
+      "catalog_format": 1,
+      "environment": environment,
+      "code_id": nil,
+      "version": 1590015651,
+      "resources": [
+        {
+          "type": "Stage",
+          "title": "main",
+          "tags": [
+            "stage",
+            "class"
+          ],
+          "exported": false,
+          "parameters": {
+            "name": "main"
+          }
+        },
+        {
+          "type": "Class",
+          "title": "Settings",
+          "tags": [
+            "class",
+            "settings"
+          ],
+          "exported": false
+        },
+        {
+          "type": "Class",
+          "title": "main",
+          "tags": [
+            "class"
+          ],
+          "exported": false,
+          "parameters": {
+            "name": "main"
+          }
+        },
+        {
+          "type": "File",
+          "title": file_path,
+          "tags": [
+            "file",
+            "class"
+          ],
+          "file": "/opt/puppetlabs/server/data/orchestration-services/code/environments/plan_testing_env/modules/run_plan_apply/plans/file_content.pp",
+          "line": 7,
+          "exported": false,
+          "parameters": {
+            "ensure": "file",
+            "source": "puppet:///modules/basic/data"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "source": "Stage[main]",
+          "target": "Class[Settings]"
+        },
+        {
+          "source": "Stage[main]",
+          "target": "Class[main]"
+        },
+        {
+          "source": "Class[main]",
+          "target": "File[#{file_path}]"
+        }
+      ],
+      "classes": [
+        "settings"
+      ]
+    }
+  }
+end
+
 test_name 'run script tests' do
 
   tag 'audit:high',      # module validation: no other venue exists to test
@@ -184,6 +270,7 @@ test_name 'run script tests' do
     scp_to(master, File.join(fixtures, "modules/#{test_module}"), moduledir)
     create_remote_file(master, File.join(puppetserver_env_dir, 'environment.conf'), '')
     on(master, "chmod 0644 #{puppetserver_env_dir}/environment.conf")
+    on(master, "chmod 0644 #{puppetserver_env_dir}/modules/#{test_module}/files/data")
 
     teardown do
       on master, "rm -rf #{puppetserver_env_dir}"
@@ -245,6 +332,29 @@ test_name 'run script tests' do
 
       teardown {
         clean_files(agent)
+      }
+    end
+  end
+
+  step 'Execute an apply action with plugin dependencies' do
+    suts.each do |agent|
+      windows_agent = windows?(agent)
+      target_file = windows_agent ? 'C:/tmp/data' : '/tmp/data'
+      if windows_agent
+        assert(0 == on(agent, puppet("resource file C:/tmp ensure=directory force=true")).exit_code, "Could not creat tmp file on windows")
+      end
+      catalog = file_dependent_catalog(agent.hostname, target_file, 'apply')
+      catalog_request = apply_catalog_entry(catalog)
+      run_successful_apply(master, agent, catalog_request) do |std_out|
+        apply_result = JSON.parse(std_out)
+        assert(!(apply_result['status'] =~ /failed/), "Failed to apply")
+      end
+      on(agent, "cat #{target_file}") do result
+        assert(result.stdout =~ /file content/)
+      end
+
+      teardown {
+        clean_files(agent, target_file)
       }
     end
   end
