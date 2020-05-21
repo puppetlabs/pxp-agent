@@ -77,6 +77,9 @@ cli_base.concat([
 # TODO: make sure comma separated is what --server_list expects
 server_list = args['master_uris'].map { |uri| URI.parse(uri).host }.join(',')
 
+# These settings are required for communication with puppetserver. This is primarily for
+# pluginsync but it is also required if a catalog requires files from modules served by 
+# puppetserver (Puppet[:default_file_terminus] = rest by default)
 cli_settings_pluginsync = [
   '--localcacert',
   args['ca'],
@@ -133,9 +136,6 @@ begin
   # Append the newe paths to the load path (copying them over to the new vardir takes time and seems unneeded)
   $LOAD_PATH << plugin_dest << pluginfact_dest
 
-  # Now fully isolate again
-  Puppet.settings.send(:clear_everything_for_tests)
-  Puppet.initialize_settings(cli_base)
   # Avoid extraneous output
   Puppet[:report] = false
 
@@ -143,7 +143,6 @@ begin
   # For example: `noop` or `show_diff`. (only applies to apply action)
   args['apply_options'].each { |setting, value| Puppet[setting.to_sym] = value } if args['action'] == 'apply'
 
-  Puppet[:default_file_terminus] = :file_server
   # This happens implicitly when running the Configurer, but we make it explicit here. It creates the
   # directories we configured earlier.
   Puppet.settings.use(:main)
