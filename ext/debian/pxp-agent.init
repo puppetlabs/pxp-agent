@@ -28,6 +28,8 @@ reload_pxp_agent() {
 
 start_pxp_agent() {
     mkdir -p $piddir $logdir
+    [ -n "$http_proxy" ] && export http_proxy=$http_proxy
+    [ -n "$https_proxy" ] && export https_proxy=$https_proxy
     start-stop-daemon --start --quiet --pidfile $pidfile --startas $exec -- $PXP_AGENT_OPTIONS
 }
 
