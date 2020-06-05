@@ -3,9 +3,10 @@ plan pxp_dev::build (
   String $agent_ref,
   String $target_host_type,
   Optional[String] $winrm_pass = undef,
+  Optional[Boolean] $no_bundler = false,
 ) {
   $pxp_root = pxp_root()
-  $vanagon_builder_hostname = run_task('pxp_dev::build_deps_with_vanagon', localhost, agent_ref => $agent_ref, os_type => $target_host_type).first().value()['build_host']
+  $vanagon_builder_hostname = run_task('pxp_dev::build_deps_with_vanagon', localhost, agent_ref => $agent_ref, os_type => $target_host_type, no_bundler => $no_bundler).first().value()['build_host']
   if $target_host_type =~ /^win/ {
     $build_host_opts_hash = {'uri' => $vanagon_builder_hostname,
                              'name' => 'build_host',
