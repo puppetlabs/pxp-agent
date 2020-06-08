@@ -12,8 +12,12 @@ Dir.chdir(workdir) do
   `git clone git@github.com:puppetlabs/puppet-agent.git 1>&2`
   Dir.chdir('puppet-agent') do
     `git checkout #{params['agent_ref']} 1>&2`
-    `bundle install 1>&2`
-    `bundle exec build puppet-agent #{params['os_type']} --preserve --only_build=cpp-pcp-client,cpp-hocon 1>&2`
+    if params['no_bundler']
+      `build puppet-agent #{params['os_type']} --preserve --only_build=cpp-pcp-client,cpp-hocon 1>&2`
+    else
+      `bundle install 1>&2`
+      `bundle exec build puppet-agent #{params['os_type']} --preserve --only_build=cpp-pcp-client,cpp-hocon 1>&2`
+    end
     build_host = File.read('vanagon_hosts.log').match(/Reserving\s[A-Za-z\-\.]*\s/).to_s.gsub('Reserving', '').strip
   end
 end
