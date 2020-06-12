@@ -96,12 +96,12 @@ namespace Modules {
         const fs::path& results_dir { request.resultsDir() };
 
         // get script from cache, download if necessary
-        auto script_file = Util::getCachedFile(master_uris_,
-                                               download_connect_timeout_,
-                                               download_timeout_,
-                                               client_,
-                                               module_cache_dir_->createCacheDir(script.get<std::string>("sha256")),
-                                               script);
+        auto script_file = module_cache_dir_->getCachedFile(master_uris_,
+                                                            download_connect_timeout_,
+                                                            download_timeout_,
+                                                            client_,
+                                                            module_cache_dir_->createCacheDir(script.get<std::string>("sha256")),
+                                                            script);
         Util::CommandObject cmd {
             "",         // Executable will be detremined by findExecutableAndArguments
             arguments,  // Arguments

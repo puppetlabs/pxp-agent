@@ -137,13 +137,13 @@ namespace Modules {
       auto destination = fs::path(this_file.get<std::string>("destination"));
       auto kind = this_file.get<std::string>("kind");
       if (kind == "file") {
-        Util::downloadFileFromMaster(master_uris_,
-                                     file_download_connect_timeout_,
-                                     file_download_timeout_,
-                                     client_,
-                                     module_cache_dir_->createCacheDir(this_file.get<std::string>("sha256")),
-                                     destination,
-                                     this_file);
+        module_cache_dir_->downloadFileFromMaster(master_uris_,
+                                                  file_download_connect_timeout_,
+                                                  file_download_timeout_,
+                                                  client_,
+                                                  module_cache_dir_->createCacheDir(this_file.get<std::string>("sha256")),
+                                                  destination,
+                                                  this_file);
       } else if (kind == "directory"){
         if (fs::exists(destination)) {
           if (!fs::is_directory(destination)) {
