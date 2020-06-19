@@ -433,7 +433,7 @@ def get_process_pids(host, process)
       command = "cmd.exe /C WMIC path win32_process WHERE Name=\\\"Ruby.exe\\\" get CommandLine,ProcessId | "\
         "grep 'puppet agent' | egrep -o '[0-9]+\s*$'"
     else
-      command = "ps -eW | grep '#{process}' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
+      command = "ps -eW | grep -E '\\\\#{process}\(.exe\)' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
     end
   else
     command = "ps -ef | grep '#{process}' | grep -v 'grep' | grep -v 'true' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"

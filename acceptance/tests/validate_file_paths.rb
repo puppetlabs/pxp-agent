@@ -42,7 +42,7 @@ def config_options(host)
     logdir = "#{vardir}/log"
     spooldir = "#{vardir}/spool"
     rundir = "#{vardir}/run"
-    nssm =  "#{pupdir}/service/nssm.exe"
+    nssm =  "#{pupdir}/service/nssm-pxp-agent.exe"
 
   else
     bindir = '/opt/puppetlabs/puppet/bin'
