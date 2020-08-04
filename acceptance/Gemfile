@@ -21,7 +21,7 @@ gem "beaker-vmpooler", *location_for(ENV['BEAKER_VMPOOLER_VERSION'] || "~> 1")
 gem "beaker-gke", *location_for(ENV['BEAKER_GKE_VERSION'] || "~> 0.0.3")
 gem 'rake'
 gem 'scooter', '~> 3.2.17'
-gem 'pcp-client', '~> 0.4'
+gem 'pcp-client', '~> 0.5.2'
 
 group(:test) do
   gem 'rspec', '~> 2.14.0', :require => false
