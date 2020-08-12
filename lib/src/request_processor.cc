@@ -83,7 +83,8 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            std::shared_ptr<PXPConnector> connector_ptr,
                            std::shared_ptr<ResultsStorage> storage_ptr,
                            // cppcheck-suppress passedByValue
-                           std::shared_ptr<std::atomic<bool>> done)
+                           std::shared_ptr<std::atomic<bool>> done,
+                           const uint32_t max_message_size)
 {
     ResultsMutex::Mutex_Ptr mtx_ptr;
     std::unique_ptr<ResultsMutex::Lock> lck_ptr;
@@ -149,8 +150,16 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
         LOG_ERROR(response.action_metadata.get<std::string>("execution_error"));
     }
 
+    auto action_metadata_string = response.action_metadata.toString();
+    bool message_to_large = action_metadata_string.size() > max_message_size;
+    std::string err_msg {};
+
     if (response.action_metadata.get<bool>("notify_outcome")) {
-        if (response.action_metadata.get<bool>("results_are_valid")) {
+        if (message_to_large) {
+            err_msg = lth_loc::format("Message size: {1} exceeded max-message-size {2}", action_metadata_string.size(), max_message_size);
+            LOG_ERROR(err_msg);
+            connector_ptr->sendPXPError(request, err_msg);
+        } else if (response.action_metadata.get<bool>("results_are_valid")){
             connector_ptr->sendNonBlockingResponse(response);
         } else {
             connector_ptr->sendPXPError(response);
@@ -183,7 +192,8 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
           modules_ {},
           modules_config_dir_ { agent_configuration.modules_config_dir },
           modules_config_ {},
-          is_destructing_ { false }
+          is_destructing_ { false },
+          max_message_size_ { agent_configuration.max_message_size }
 {
     assert(!spool_dir_path_.string().empty());
     registerPurgeable(storage_ptr_);
@@ -349,8 +359,15 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) cons
 void RequestProcessor::processBlockingRequest(const ActionRequest& request)
 {
     auto response = modules_[request.module()]->executeAction(request);
+    auto action_metadata_string = response.action_metadata.toString();
+    bool message_to_large = action_metadata_string.size() > max_message_size_;
+    std::string err_msg {};
 
-    if (response.action_metadata.get<bool>("results_are_valid")) {
+    if (message_to_large) {
+        err_msg = lth_loc::format("Message size: {1} exceeded max-message-size {2}", action_metadata_string.size(), max_message_size_);
+        LOG_ERROR(err_msg);
+        connector_ptr_->sendPXPError(request, err_msg);
+    } else if (response.action_metadata.get<bool>("results_are_valid")) {
         LOG_INFO("The {1}, request ID {2} by {3}, has successfully completed",
                  request.prettyLabel(), request.id(), request.sender());
         connector_ptr_->sendBlockingResponse(response, request);
@@ -405,7 +422,8 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
                                                        request,
                                                        connector_ptr_,
                                                        storage_ptr_,
-                                                       done),
+                                                       done,
+                                                       max_message_size_),
                                       done);
             }
         }
@@ -609,7 +627,19 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
 
         status_response.setValidResultsAndEnd(std::move(status_results),
                                               execution_error);
-        connector_ptr_->sendStatusResponse(status_response, request);
+
+        auto action_metadata_string = status_response.action_metadata.toString();
+        bool message_to_large = action_metadata_string.size() > max_message_size_;
+        std::string err_msg {};
+
+        if (message_to_large) {
+            err_msg = lth_loc::format("Message size: {1} exceeded max-message-size {2}", action_metadata_string.size(), max_message_size_);
+            LOG_ERROR(err_msg);
+            connector_ptr_->sendPXPError(request, err_msg);
+        } else {
+            connector_ptr_->sendStatusResponse(status_response, request);
+        }
+
         return;
     }
 

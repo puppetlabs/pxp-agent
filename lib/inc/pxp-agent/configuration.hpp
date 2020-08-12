@@ -156,6 +156,7 @@ class Configuration
         uint32_t ping_interval_s;
         uint32_t task_download_connect_timeout_s;
         uint32_t task_download_timeout_s;
+        uint32_t max_message_size;
     };
 
     /// Reset the HorseWhisperer singleton.

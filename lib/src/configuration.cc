@@ -400,7 +400,8 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         static_cast<uint32_t >(HW::GetFlag<int>("allowed-keepalive-timeouts")),
         static_cast<uint32_t >(HW::GetFlag<int>("ping-interval")),
         static_cast<uint32_t >(HW::GetFlag<int>("task-download-connect-timeout")),
-        static_cast<uint32_t >(HW::GetFlag<int>("task-download-timeout")) };
+        static_cast<uint32_t >(HW::GetFlag<int>("task-download-timeout")),
+        HW::GetFlag<uint32_t>("max-message-size") };
     return agent_configuration_;
 }
 
@@ -740,6 +741,15 @@ void Configuration::defineDefaultValues()
                     lth_loc::translate("Don't daemonize, default: false"),
                     Types::Bool,
                     false) } });
+
+    defaults_.insert(
+        Option { "max-message-size",
+                 Base_ptr { new Entry<int>(
+                    "max-message-size",
+                    "",
+                    lth_loc::translate("Maximum size in Bytes of messages to send to pcp-broker"),
+                    Types::Int,
+                    64 * 1012 * 1012) } });
 
 #ifndef _WIN32
     // NOTE(ale): we don't daemonize on Windows; we rely NSSM to start
