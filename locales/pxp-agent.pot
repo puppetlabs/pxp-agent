@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: pxp-agent 1.15.3\n"
+"Project-Id-Version: pxp-agent 1.15.7\n"
 "Report-Msgid-Bugs-To: docs@puppet.com\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -333,6 +333,10 @@ msgstr ""
 
 #: lib/src/configuration.cc
 msgid "Don't daemonize, default: false"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "Maximum size in Bytes of messages to send to pcp-broker"
 msgstr ""
 
 #: lib/src/configuration.cc
@@ -667,6 +671,46 @@ msgid_plural "Removed {1} directories from '{2}'"
 msgstr[0] ""
 msgstr[1] ""
 
+#: lib/src/module_cache_dir.cc
+msgid "Error while reading {1}"
+msgstr ""
+
+#: lib/src/module_cache_dir.cc
+msgid "{1} returned a response with HTTP status {2}. Response body: {3}"
+msgstr ""
+
+#. warning
+#: lib/src/module_cache_dir.cc
+msgid "Downloading the file from the master-uri '{1}' failed. Reason: {2}"
+msgstr ""
+
+#: lib/src/module_cache_dir.cc
+msgid "Downloading the file failed. Reason: {1}"
+msgstr ""
+
+#: lib/src/module_cache_dir.cc
+msgid "Cannot download file. No master-uris were provided"
+msgstr ""
+
+#: lib/src/module_cache_dir.cc
+msgid ""
+"Downloading file {1} failed after trying all the available master-uris. Most "
+"recent error message: {2}"
+msgstr ""
+
+#: lib/src/module_cache_dir.cc
+msgid "The downloaded file {1} has a SHA that differs from the provided SHA"
+msgstr ""
+
+#. debug
+#: lib/src/module_cache_dir.cc
+msgid "Verifying file based on {1}"
+msgstr ""
+
+#: lib/src/module_cache_dir.cc
+msgid "Failed to download file with: {1}"
+msgstr ""
+
 #: lib/src/modules/apply.cc
 msgid "ssl-crl setting is requried for apply"
 msgstr ""
@@ -792,6 +836,14 @@ msgstr ""
 #. error
 #: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
 msgid "Failed to reply to the {1} by {2}: {3}"
+msgstr ""
+
+#: lib/src/request_processor.cc
+msgid "Message size: {1} exceeded max-message-size {2}"
+msgstr ""
+
+#: lib/src/request_processor.cc
+msgid "Attempted to send an unknown response type"
 msgstr ""
 
 #. debug
@@ -1300,46 +1352,6 @@ msgstr ""
 
 #: lib/src/time.cc
 msgid "failed to create a timepoint for {1}{2}"
-msgstr ""
-
-#. debug
-#: lib/src/util/bolt_helpers.cc
-msgid "Verifying file based on {1}"
-msgstr ""
-
-#: lib/src/util/bolt_helpers.cc
-msgid "Failed to download file with: {1}"
-msgstr ""
-
-#: lib/src/util/bolt_helpers.cc
-msgid "Cannot download file. No master-uris were provided"
-msgstr ""
-
-#: lib/src/util/bolt_helpers.cc
-msgid ""
-"Downloading file {1} failed after trying all the available master-uris. Most "
-"recent error message: {2}"
-msgstr ""
-
-#: lib/src/util/bolt_helpers.cc
-msgid "The downloaded file {1} has a SHA that differs from the provided SHA"
-msgstr ""
-
-#: lib/src/util/bolt_helpers.cc
-msgid "{1} returned a response with HTTP status {2}. Response body: {3}"
-msgstr ""
-
-#. warning
-#: lib/src/util/bolt_helpers.cc
-msgid "Downloading the file from the master-uri '{1}' failed. Reason: {2}"
-msgstr ""
-
-#: lib/src/util/bolt_helpers.cc
-msgid "Downloading the file failed. Reason: {1}"
-msgstr ""
-
-#: lib/src/util/bolt_helpers.cc
-msgid "Error while reading {1}"
 msgstr ""
 
 #. debug
