@@ -102,6 +102,7 @@ class RequestProcessor {
 
     /// Flag; set to true if the dtor has been called
     bool is_destructing_;
+    const uint32_t max_message_size_;
 
     /// Resources to purge
     std::vector<std::shared_ptr<Util::Purgeable>> purgeables_;

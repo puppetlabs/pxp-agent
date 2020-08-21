@@ -75,6 +75,42 @@ static PCPClient::Validator getStatusQueryValidator()
     return validator;
 }
 
+// Check the size of the response, fail if the response
+// is too large
+void processResponse(const ActionResponse::ResponseType& response_type,
+                     const ActionResponse& response,
+                     const ActionRequest& request,
+                     std::shared_ptr<PXPConnector> connector_ptr,
+                     const uint32_t max_message_size)
+{
+    auto response_string = response.toJSON(response_type).toString();
+
+    if (response_string.size() > max_message_size) {
+        std::string err_msg {};
+        err_msg = lth_loc::format("Message size: {1} exceeded max-message-size {2}", response_string.size(), max_message_size);
+        LOG_ERROR(err_msg);
+        connector_ptr->sendPXPError(request, err_msg);
+    } else {
+        switch (response_type) {
+            case ActionResponse::ResponseType::NonBlocking :
+                connector_ptr->sendNonBlockingResponse(response);
+                break;
+            case ActionResponse::ResponseType::Blocking:
+                connector_ptr->sendBlockingResponse(response, request);
+                break;
+            case ActionResponse::ResponseType::StatusOutput :
+                connector_ptr->sendStatusResponse(response, request);
+                break;
+            default :
+                // This really shouldn't happen in normal operation, since
+                // all the calling functions should be sending one of the
+                // above response types. This is basically here for future
+                // changes and posterity
+                LOG_ERROR(lth_loc::format("Attempted to send an unknown response type"));
+        }
+    }
+}
+
 //
 // Non-blocking action task
 //
@@ -83,7 +119,8 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
                            std::shared_ptr<PXPConnector> connector_ptr,
                            std::shared_ptr<ResultsStorage> storage_ptr,
                            // cppcheck-suppress passedByValue
-                           std::shared_ptr<std::atomic<bool>> done)
+                           std::shared_ptr<std::atomic<bool>> done,
+                           const uint32_t max_message_size)
 {
     ResultsMutex::Mutex_Ptr mtx_ptr;
     std::unique_ptr<ResultsMutex::Lock> lck_ptr;
@@ -150,8 +187,8 @@ void nonBlockingActionTask(std::shared_ptr<Module> module_ptr,
     }
 
     if (response.action_metadata.get<bool>("notify_outcome")) {
-        if (response.action_metadata.get<bool>("results_are_valid")) {
-            connector_ptr->sendNonBlockingResponse(response);
+        if (response.action_metadata.get<bool>("results_are_valid")){
+            processResponse(ActionResponse::ResponseType::NonBlocking, response, request, connector_ptr, max_message_size);
         } else {
             connector_ptr->sendPXPError(response);
         }
@@ -183,7 +220,8 @@ RequestProcessor::RequestProcessor(std::shared_ptr<PXPConnector> connector_ptr,
           modules_ {},
           modules_config_dir_ { agent_configuration.modules_config_dir },
           modules_config_ {},
-          is_destructing_ { false }
+          is_destructing_ { false },
+          max_message_size_ { agent_configuration.max_message_size }
 {
     assert(!spool_dir_path_.string().empty());
     registerPurgeable(storage_ptr_);
@@ -349,11 +387,10 @@ void RequestProcessor::validateRequestContent(const ActionRequest& request) cons
 void RequestProcessor::processBlockingRequest(const ActionRequest& request)
 {
     auto response = modules_[request.module()]->executeAction(request);
-
     if (response.action_metadata.get<bool>("results_are_valid")) {
         LOG_INFO("The {1}, request ID {2} by {3}, has successfully completed",
                  request.prettyLabel(), request.id(), request.sender());
-        connector_ptr_->sendBlockingResponse(response, request);
+        processResponse(ActionResponse::ResponseType::Blocking, response, request, connector_ptr_, max_message_size_);
     } else {
         LOG_ERROR(response.action_metadata.get<std::string>("execution_error"));
         connector_ptr_->sendPXPError(response);
@@ -405,7 +442,8 @@ void RequestProcessor::processNonBlockingRequest(const ActionRequest& request)
                                                        request,
                                                        connector_ptr_,
                                                        storage_ptr_,
-                                                       done),
+                                                       done,
+                                                       max_message_size_),
                                       done);
             }
         }
@@ -469,7 +507,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
         status_response.setValidResultsAndEnd(
             std::move(status_results),
             lth_loc::translate("found no results directory"));
-        connector_ptr_->sendStatusResponse(status_response, request);
+        processResponse(ActionResponse::ResponseType::StatusOutput, status_response, request, connector_ptr_, max_message_size_);
         return;
     }
 
@@ -567,7 +605,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
         // TODO(ale): send RPC error once PXP v2.0 changes are in
         status_response.setValidResultsAndEnd(std::move(status_results),
                                               metadata_retrieval_error);
-        connector_ptr_->sendStatusResponse(status_response, request);
+        processResponse(ActionResponse::ResponseType::StatusOutput, status_response, request, connector_ptr_, max_message_size_);
         return;
     }
 
@@ -609,7 +647,8 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
 
         status_response.setValidResultsAndEnd(std::move(status_results),
                                               execution_error);
-        connector_ptr_->sendStatusResponse(status_response, request);
+        processResponse(ActionResponse::ResponseType::StatusOutput, status_response, request, connector_ptr_, max_message_size_);
+
         return;
     }
 
@@ -670,7 +709,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
 
         status_response.setValidResultsAndEnd(std::move(status_results),
                                               execution_error);
-        connector_ptr_->sendStatusResponse(status_response, request);
+        processResponse(ActionResponse::ResponseType::StatusOutput, status_response, request, connector_ptr_, max_message_size_);
         return;
     }
 
@@ -702,7 +741,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
         status_response.setValidResultsAndEnd(
                 std::move(status_results),
                 lth_loc::translate("found no results directory"));
-        connector_ptr_->sendStatusResponse(status_response, request);
+        processResponse(ActionResponse::ResponseType::StatusOutput, status_response, request, connector_ptr_, max_message_size_);
 
         // Update the metadata with a final 'status' value
         metadata.set<std::string>("status", AS.at(ActionStatus::Undetermined));
@@ -768,7 +807,7 @@ void RequestProcessor::processStatusRequest(const ActionRequest& request)
 
     status_response.setValidResultsAndEnd(std::move(status_results),
                                           execution_error);
-    connector_ptr_->sendStatusResponse(status_response, request);
+    processResponse(ActionResponse::ResponseType::StatusOutput, status_response, request, connector_ptr_, max_message_size_);
 }
 
 //

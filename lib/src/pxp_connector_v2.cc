@@ -127,7 +127,6 @@ void PXPConnectorV2::sendNonBlockingResponse(const ActionResponse& response)
 {
     assert(response.valid(ActionResponse::ResponseType::NonBlocking));
     assert(response.action_metadata.get<std::string>("status") != "undetermined");
-
     try {
         // NOTE(ale): assuming debug was sent in provisional response
         send(response.action_metadata.get<std::string>("requester"),

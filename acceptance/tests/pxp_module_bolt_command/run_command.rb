@@ -24,4 +24,17 @@ test_name 'run_command task' do
       end
     end
   end # test step
+
+  step 'Responses that create large output which exceedes max-message-size error' do
+    agents.each do |agent|
+      # Escaping quotes for powershell turns out to be more confusing than just
+      # getting away from quotes by coercing an integer to a string
+      win_cmd = '$x = 1; $y = $x.ToString() * 65 * 1012 * 1012; Write-Output($y)'
+      nix_cmd = '/opt/puppetlabs/puppet/bin/ruby -e "puts \'a\'* 65 * 1012 * 1012"'
+      cmd = agent.platform =~ /windows/ ? win_cmd : nix_cmd
+      run_errored_command(master, [agent], cmd) do |stdout|
+        assert_match(/exceeded max-message-size/, stdout)
+      end
+    end
+  end # test step
 end # test
