@@ -5,8 +5,10 @@ test_name 'run_command task' do
   tag 'audit:high',      # module validation: no other venue exists to test
       'audit:acceptance'
 
+  suts = agents.reject { |host| host['roles'].include?('master') }
+
   step 'Ensure each agent host has pxp-agent running and associated' do
-    agents.each do |agent|
+    suts.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
       create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
       on agent, puppet('resource service pxp-agent ensure=running')
@@ -17,7 +19,7 @@ test_name 'run_command task' do
   end
 
   step 'Run a command (`echo`) on agent hosts' do
-    agents.each do |agent|
+    suts.each do |agent|
       cmd = agent.platform =~ /windows/ ? 'write-host hello' : 'echo hello'
       run_successful_command(master, [agent], cmd) do |stdout|
         assert_equal('hello', stdout.chomp)
@@ -26,14 +28,20 @@ test_name 'run_command task' do
   end # test step
 
   step 'Responses that create large output which exceedes max-message-size error' do
-    agents.each do |agent|
-      # Escaping quotes for powershell turns out to be more confusing than just
-      # getting away from quotes by coercing an integer to a string
-      win_cmd = '$x = 1; $y = $x.ToString() * 65 * 1012 * 1012; Write-Output($y)'
-      nix_cmd = '/opt/puppetlabs/puppet/bin/ruby -e "puts \'a\'* 65 * 1012 * 1012"'
-      cmd = agent.platform =~ /windows/ ? win_cmd : nix_cmd
-      run_errored_command(master, [agent], cmd) do |stdout|
-        assert_match(/exceeded max-message-size/, stdout)
+    suts.each do |agent|
+      # This test takes a bunch of resources to process correctly (and
+      # not produce false positive failures). Platforms like MacOS, AIX
+      # and older windows have a hard time reliably running the test
+      # so we just confine the platforms to the standard Linuxes
+      if agent.platform =~ /(el|ubuntu)/
+        teardown do
+          on(agent, 'rm /tmp/test.out')
+        end
+        on(agent, '/opt/puppetlabs/puppet/bin/ruby -e "puts \'a\'* 70 * 1012 * 1012" > /tmp/test.out')
+        cmd = 'cat /tmp/test.out'
+        run_errored_command(master, [agent], cmd) do |stdout|
+          assert_match(/exceeded max-message-size/, stdout)
+        end
       end
     end
   end # test step

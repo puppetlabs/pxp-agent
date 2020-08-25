@@ -326,7 +326,7 @@ def rpc_request(broker, targets,
     client.send(message)
   end
 
-  rpc_action_expiry = 60 # Seconds for the entire RPC action to be considered failed
+  rpc_action_expiry = 360 # Seconds for the entire RPC action to be considered failed
 
   begin
     Timeout::timeout(rpc_action_expiry) do
@@ -566,7 +566,7 @@ def get_package_manager(host)
       pkg_manager = 'apt-get'
   end
   pkg_manager
-end  
+end
 
 def setup_squid_proxy(host)
   pkg_manager = get_package_manager(host)
