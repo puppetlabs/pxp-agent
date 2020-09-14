@@ -27,7 +27,7 @@ test_name 'run_command task' do
     end
   end # test step
 
-  step 'Responses that create large output which exceedes max-message-size error' do
+  step 'Responses that create large output which exceeds max-message-size error' do
     suts.each do |agent|
       # This test takes a bunch of resources to process correctly (and
       # not produce false positive failures). Platforms like MacOS, AIX
@@ -37,7 +37,7 @@ test_name 'run_command task' do
         teardown do
           on(agent, 'rm /tmp/test.out')
         end
-        on(agent, '/opt/puppetlabs/puppet/bin/ruby -e "puts \'a\'* 70 * 1012 * 1012" > /tmp/test.out')
+        on(agent, '/opt/puppetlabs/puppet/bin/ruby -e "puts \'a\'* 70 * 1024 * 1024" > /tmp/test.out')
         cmd = 'cat /tmp/test.out'
         run_errored_command(master, [agent], cmd) do |stdout|
           assert_match(/exceeded max-message-size/, stdout)

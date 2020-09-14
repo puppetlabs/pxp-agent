@@ -55,7 +55,7 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   15,    // ping interval
                                                   30,    // task download connection timeout
                                                   120,   // task download timeout
-                                                  64 * 1012 * 1012 };  // default max-message-size
+                                                  64 * 1024 * 1024 };  // default max-message-size
 
 static const std::string VALID_ENVELOPE_TXT {
     " { \"id\" : \"123456\","
