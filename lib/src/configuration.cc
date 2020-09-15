@@ -749,7 +749,7 @@ void Configuration::defineDefaultValues()
                     "",
                     lth_loc::translate("Maximum size in Bytes of messages to send to pcp-broker"),
                     Types::Int,
-                    64 * 1012 * 1012) } });
+                    64 * 1024 * 1024) } });
 
 #ifndef _WIN32
     // NOTE(ale): we don't daemonize on Windows; we rely NSSM to start
