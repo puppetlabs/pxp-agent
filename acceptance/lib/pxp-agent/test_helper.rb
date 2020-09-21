@@ -431,7 +431,7 @@ def get_process_pids(host, process)
       # Need to check ruby's command line string to check it is actually puppet agent
       # because pxp-module-puppet will also appear in ps as Ruby.exe
       command = "cmd.exe /C WMIC path win32_process WHERE Name=\\\"Ruby.exe\\\" get CommandLine,ProcessId | "\
-        "grep 'puppet agent' | egrep -o '[0-9]+\s*$'"
+        "grep 'puppet(\")? agent' | egrep -o '[0-9]+\s*$'"
     else
       command = "ps -eW | grep -E '\\\\#{process}\(.exe\)' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
     end
