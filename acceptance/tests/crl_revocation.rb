@@ -28,7 +28,7 @@ test_name 'When certs have been revoked in CRL' do
   end
 
   step 'Create a CRL with the master/broker cert revoked' do
-    on(master, 'yes | cp -r /etc/puppetlabs/puppet/ssl /tmp/ssl-bkp')
+    on(master, 'yes | cp -rL /etc/puppetlabs/puppet/ssl /tmp/ssl-bkp')
     original_crl = on(master, 'cat /etc/puppetlabs/puppet/ssl/crl.pem').stdout
     original_crl_hash = Digest::SHA256.hexdigest(original_crl)
     on(master, "/opt/puppetlabs/bin/puppetserver ca revoke --certname #{master.hostname}")
@@ -40,7 +40,7 @@ test_name 'When certs have been revoked in CRL' do
       updated_crl_hash = Digest::SHA256.hexdigest(updated_crl)
       wait_for_crl = updated_crl_hash == original_crl_hash
     end
-    on(master, 'yes | cp -r /etc/puppetlabs/puppet/ssl /tmp/ssl-revoked')
+    on(master, 'yes | cp -rL /etc/puppetlabs/puppet/ssl /tmp/ssl-revoked')
     on(master, "yes | cp /tmp/ssl-bkp/ca/ca_crl.pem /etc/puppetlabs/puppet/ssl/ca/ca_crl.pem")
     on(master, "yes | cp /tmp/ssl-bkp/ca/infra_crl.pem /etc/puppetlabs/puppet/ssl/ca/infra_crl.pem")
     on(master, "yes | cp /tmp/ssl-bkp/crl.pem /etc/puppetlabs/puppet/ssl/crl.pem")
