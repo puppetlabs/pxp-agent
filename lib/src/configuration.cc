@@ -266,7 +266,7 @@ HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
     for (const auto& option : options) {
         auto val = HW::GetFlag<std::string>(option);
         // Ignore not-a-directory options
-        if (val == "-")
+        if (val == "-" || val == "eventlog")
             continue;
 
         fs::path val_path { lth_file::tilde_expand(val) };
@@ -280,13 +280,68 @@ HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
     return parse_result;
 }
 
+lth_log::log_level string_to_log_level(std::string loglevel)
+{
+    lth_log::log_level lvl = lth_log::log_level::none;
+    try {
+        // NOTE(ale): ignoring HorseWhisperer's vlevel ("-v" flag)
+        const std::map<std::string, lth_log::log_level> option_to_log_level {
+            { "none", lth_log::log_level::none },
+            { "trace", lth_log::log_level::trace },
+            { "debug", lth_log::log_level::debug },
+            { "info", lth_log::log_level::info },
+            { "warning", lth_log::log_level::warning },
+            { "error", lth_log::log_level::error },
+            { "fatal", lth_log::log_level::fatal }
+        };
+        lvl = option_to_log_level.at(loglevel);
+    } catch (const std::out_of_range& e) {
+        throw Configuration::Error {
+            lth_loc::format("invalid log level: '{1}'", loglevel) };
+    }
+    return lvl;
+}
+
 std::string Configuration::setupLogging()
 {
     logfile_ = HW::GetFlag<std::string>("logfile");
+    auto log_on_eventlog = (logfile_ == "eventlog");
+    auto loglevel = HW::GetFlag<std::string>("loglevel");
+
+    if (log_on_eventlog) {
+      loglevel = Configuration::setupEventLogLogging(loglevel);
+    } else {
+      loglevel = Configuration::setupFileLogging(loglevel);
+    }
+    return loglevel;
+}
+
+std::string Configuration::setupEventLogLogging(std::string loglevel)
+{
+#ifdef _WIN32
+
+#ifdef HAS_LTH_EVENTLOG
+    lth_log::setup_eventlog_logging("pxp-agent");
+
+    lth_log::log_level lvl = string_to_log_level(loglevel);
+    lth_log::set_level(lvl);
+#else  // HAS_LTH_EVENTLOG
+    throw Configuration::Error {
+    lth_loc::format("Leatherman version does not support event log") };
+#endif  // HAS_LTH_EVENTLOG
+
+#else  // _WIN32
+    throw Configuration::Error {
+      lth_loc::format("eventlog is available only on windows") };
+#endif  // _WIN32
+    return loglevel;
+}
+
+std::string Configuration::setupFileLogging(std::string loglevel)
+{
     pcp_access_logfile_ = HW::GetFlag<std::string>("pcp-access-logfile");
     auto log_access = HW::GetFlag<bool>("log-pcp-access");
     auto log_on_stdout = (logfile_ == "-");
-    auto loglevel = HW::GetFlag<std::string>("loglevel");
     std::ostream *log_stream = nullptr;
 
     if (!log_on_stdout) {
@@ -318,24 +373,7 @@ std::string Configuration::setupLogging()
     }
 #endif
 
-    lth_log::log_level lvl = lth_log::log_level::none;
-    try {
-        // NOTE(ale): ignoring HorseWhisperer's vlevel ("-v" flag)
-        const std::map<std::string, lth_log::log_level> option_to_log_level {
-            { "none", lth_log::log_level::none },
-            { "trace", lth_log::log_level::trace },
-            { "debug", lth_log::log_level::debug },
-            { "info", lth_log::log_level::info },
-            { "warning", lth_log::log_level::warning },
-            { "error", lth_log::log_level::error },
-            { "fatal", lth_log::log_level::fatal }
-        };
-        lvl = option_to_log_level.at(loglevel);
-    } catch (const std::out_of_range& e) {
-        throw Configuration::Error {
-            lth_loc::format("invalid log level: '{1}'", loglevel) };
-    }
-
+    lth_log::log_level lvl = string_to_log_level(loglevel);
     // Configure logging for pxp-agent
     lth_log::setup_logging(*log_stream);
     lth_log::set_level(lvl);
