@@ -315,6 +315,8 @@ class Configuration
     std::string getInvalidFlagError(const std::string& flagname);
     std::string getUnknownFlagError(const std::string& flagname);
     void checkValidForSetting();
+    std::string setupEventLogLogging(std::string loglevel);
+    std::string setupFileLogging(std::string loglevel);
 };
 
 }  // namespace PXPAgent

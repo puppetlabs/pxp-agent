@@ -89,6 +89,26 @@ if (WIN32)
       endif()
 endif()
 
+#set CHECK_CXX_SOURCE_COMPILES environment to use leatherman
+set(CMAKE_REQUIRED_FLAGS "-std=c++11")
+set(CMAKE_REQUIRED_LIBRARIES ${LEATHERMAN_LIBRARIES})
+set(CMAKE_REQUIRED_INCLUDES ${LEATHERMAN_INCLUDE_DIRS})
+
+CHECK_CXX_SOURCE_COMPILES("
+#define LEATHERMAN_LOGGING_NAMESPACE \"puppetlabs.pxp_agent.main\"
+#include <leatherman/logging/logging.hpp>
+
+int main() {
+    leatherman::logging::setup_eventlog_logging(\"pxp-agent\");
+    return 0;
+}
+" HAS_LTH_EVENTLOG)
+
+if (HAS_LTH_EVENTLOG)
+    add_definitions(-DHAS_LTH_EVENTLOG)
+endif()
+
+
 # TODO(ale): enable translation with set(LEATHERMAN_LOCALES "...;...") and
 # gettext_compile(${CMAKE_CURRENT_SOURCE_DIR}/locales share/locale)
 
