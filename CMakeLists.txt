@@ -108,6 +108,21 @@ if (HAS_LTH_EVENTLOG)
     add_definitions(-DHAS_LTH_EVENTLOG)
 endif()
 
+CHECK_CXX_SOURCE_COMPILES("
+#define LEATHERMAN_LOGGING_NAMESPACE \"puppetlabs.pxp_agent.main\"
+#include <leatherman/logging/logging.hpp>
+
+using namespace leatherman::logging;
+
+int main() {
+    setup_syslog_logging(\"pxp-agent\", syslog_facility::local5);
+    return 0;
+}
+" HAS_LTH_SYSLOG)
+
+if (HAS_LTH_SYSLOG)
+    add_definitions(-DHAS_LTH_SYSLOG)
+endif()
 
 # TODO(ale): enable translation with set(LEATHERMAN_LOCALES "...;...") and
 # gettext_compile(${CMAKE_CURRENT_SOURCE_DIR}/locales share/locale)
