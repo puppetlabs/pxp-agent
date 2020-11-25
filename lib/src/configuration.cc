@@ -382,8 +382,14 @@ std::string Configuration::setupSyslogLogging(std::string loglevel)
       lth_loc::format("eventlog is available only on POSIX platforms") };
 #else  // _WIN32
 #ifdef HAS_LTH_SYSLOG
-    std::string facility_ = HW::GetFlag<std::string>("syslog-facility");
-    lth_log::syslog_facility fac = string_to_syslog_facility(facility_);
+    std::string facility = HW::GetFlag<std::string>("syslog-facility");
+    lth_log::syslog_facility fac = string_to_syslog_facility(facility);
+
+    // Some syslog implementations won't write to a non-existent logfile,
+    // so create an empty file if it does not exist.
+    if (!fs::exists(logfile_)) {
+        boost::nowide::ofstream file(logfile_.c_str());
+    }
 
     lth_log::setup_syslog_logging(APPLICATION_NAME, fac);
 
