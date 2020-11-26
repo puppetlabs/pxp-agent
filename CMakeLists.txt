@@ -115,7 +115,7 @@ CHECK_CXX_SOURCE_COMPILES("
 using namespace leatherman::logging;
 
 int main() {
-    setup_syslog_logging(\"pxp-agent\", syslog_facility::local5);
+    setup_syslog_logging(\"pxp-agent\", \"local5\");
     return 0;
 }
 " HAS_LTH_SYSLOG)

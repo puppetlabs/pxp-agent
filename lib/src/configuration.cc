@@ -282,41 +282,6 @@ HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
     return parse_result;
 }
 
-#ifdef HAS_LTH_SYSLOG
-lth_log::syslog_facility string_to_syslog_facility(std::string facility)
-{
-    lth_log::syslog_facility fac;
-    try {
-        // NOTE(ale): ignoring HorseWhisperer's vlevel ("-v" flag)
-        const std::map<std::string, lth_log::syslog_facility> option_to_syslog_facility {
-            { "kern", lth_log::syslog_facility::kern },
-            { "user", lth_log::syslog_facility::user },
-            { "mail", lth_log::syslog_facility::mail },
-            { "daemon", lth_log::syslog_facility::daemon },
-            { "auth", lth_log::syslog_facility::auth },
-            { "syslog", lth_log::syslog_facility::syslog },
-            { "lpr", lth_log::syslog_facility::lpr },
-            { "news", lth_log::syslog_facility::news },
-            { "uucp", lth_log::syslog_facility::uucp },
-            { "cron", lth_log::syslog_facility::cron },
-            { "local0", lth_log::syslog_facility::local0 },
-            { "local1", lth_log::syslog_facility::local1 },
-            { "local2", lth_log::syslog_facility::local2 },
-            { "local3", lth_log::syslog_facility::local3 },
-            { "local4", lth_log::syslog_facility::local4 },
-            { "local5", lth_log::syslog_facility::local5 },
-            { "local6", lth_log::syslog_facility::local6 },
-            { "local7", lth_log::syslog_facility::local7 },
-        };
-        fac = option_to_syslog_facility.at(facility);
-    } catch (const std::out_of_range& e) {
-        throw Configuration::Error {
-            lth_loc::format("invalid syslog facility: '{1}'", facility) };
-    }
-    return fac;
-}
-#endif
-
 lth_log::log_level string_to_log_level(std::string loglevel)
 {
     lth_log::log_level lvl = lth_log::log_level::none;
@@ -382,17 +347,9 @@ std::string Configuration::setupSyslogLogging(std::string loglevel)
       lth_loc::format("eventlog is available only on POSIX platforms") };
 #else  // _WIN32
 #ifdef HAS_LTH_SYSLOG
-    std::string facility = HW::GetFlag<std::string>("syslog-facility");
-    lth_log::syslog_facility fac = string_to_syslog_facility(facility);
+    const std::string facility = HW::GetFlag<std::string>("syslog-facility");
 
-    // Some syslog implementations won't write to a non-existent logfile,
-    // so create an empty file if it does not exist.
-    if (!fs::exists(logfile_)) {
-        boost::nowide::ofstream file(logfile_.c_str());
-    }
-
-    lth_log::setup_syslog_logging(APPLICATION_NAME, fac);
-
+    lth_log::setup_syslog_logging(APPLICATION_NAME, facility);
     lth_log::log_level lvl = string_to_log_level(loglevel);
     lth_log::set_level(lvl);
 #else  // HAS_LTH_SYSLOG
