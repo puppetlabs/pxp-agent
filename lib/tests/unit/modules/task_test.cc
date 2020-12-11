@@ -227,6 +227,35 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
 #endif
     }
 
+    SECTION("passes input on both stdin and env when method is both") {
+        auto echo_txt =
+#ifndef _WIN32
+            (DATA_FORMAT % "\"0632\""
+                         % "\"task\""
+                         % "\"run\""
+                         % "{\"input\":{\"message\":\"hello\"}, \"input_method\": \"both\", \"files\" : [{\"sha256\": \"823c013467ce03b12dbe005757a6c842894373e8bcfb0cf879329afb5abcd543\", \"filename\": \"multi\"}]}").str();
+#else
+            (DATA_FORMAT % "\"0632\""
+                         % "\"task\""
+                         % "\"run\""
+                         % "{\"input\":{\"message\":\"hello\"}, \"input_method\": \"both\", \"files\" : [{\"sha256\": \"88a07e5b672aa44a91aa7d63e22c91510af5d4707e12f75e0d5de2dfdbde1dec\", \"filename\": \"multi.bat\"}]}").str();
+#endif
+        PCPClient::ParsedChunks echo_content {
+            lth_jc::JsonContainer(ENVELOPE_TXT),
+            lth_jc::JsonContainer(echo_txt),
+            {},
+            0 };
+        ActionRequest request { RequestType::Blocking, echo_content };
+
+        auto output = e_m.executeAction(request).action_metadata.get<std::string>({ "results", "stdout" });
+        boost::trim(output);
+#ifdef _WIN32
+        REQUIRE(output == "hello\r\n{\"message\":\"hello\"}");
+#else
+        REQUIRE(output == "hello\n{\"message\":\"hello\"}");
+#endif
+    }
+
     SECTION("passes input as env variables") {
         auto echo_txt =
 #ifndef _WIN32

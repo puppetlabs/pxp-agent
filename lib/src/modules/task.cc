@@ -455,7 +455,7 @@ ActionResponse Task::callAction(const ActionRequest& request)
     auto task_input_method = task_execution_params.includes("input_method") ?
         task_execution_params.get<std::string>("input_method") : std::string{""};
 
-    static std::set<std::string> input_methods{{"stdin", "environment", "powershell"}};
+    static std::set<std::string> input_methods{{"stdin", "environment", "powershell", "both"}};
     if (!task_input_method.empty() && input_methods.count(task_input_method) == 0) {
         throw Module::ProcessingError {
             lth_loc::format("unsupported task input method: {1}", task_input_method) };
@@ -469,9 +469,9 @@ ActionResponse Task::callAction(const ActionRequest& request)
                                        client_,
                                        task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files"));
 
-    // Use powershell input method by default if task uses .ps1 extension.
-    if (task_input_method.empty() && task_file.extension().string() == ".ps1") {
-        task_input_method = "powershell";
+    // If input_method is unset use the default "powershell" for a powershell task or "both" for any other task
+    if (task_input_method.empty()) {
+      task_input_method = task_file.extension().string() == ".ps1" ? "powershell" : "both";
     }
 
     std::map<std::string, std::string> task_environment;
@@ -485,11 +485,11 @@ ActionResponse Task::callAction(const ActionRequest& request)
         // Pass input on stdin ($input)
         task_input = task_execution_params.get<lth_jc::JsonContainer>("input").toString();
     } else {
-        if (task_input_method.empty() || task_input_method == "stdin") {
+        if (task_input_method == "both" || task_input_method == "stdin") {
             task_input = task_execution_params.get<lth_jc::JsonContainer>("input").toString();
         }
 
-        if (task_input_method.empty() || task_input_method == "environment") {
+        if (task_input_method == "both" || task_input_method == "environment") {
             addParametersToEnvironment(task_execution_params.get<lth_jc::JsonContainer>("input"), task_environment);
         }
 
