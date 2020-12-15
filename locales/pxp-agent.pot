@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: pxp-agent 1.15.9\n"
+"Project-Id-Version: pxp-agent 1.15.10\n"
 "Report-Msgid-Bugs-To: docs@puppet.com\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -205,6 +205,14 @@ msgstr ""
 msgid "eventlog is available only on windows"
 msgstr ""
 
+#: lib/src/configuration.cc
+msgid "eventlog is available only on POSIX platforms"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "Leatherman version does not support logging to syslog"
+msgstr ""
+
 #. info
 #: lib/src/configuration.cc
 msgid "Reopening the pxp-agent log file"
@@ -291,6 +299,10 @@ msgstr ""
 
 #: lib/src/configuration.cc
 msgid "Log file, default: {1}"
+msgstr ""
+
+#: lib/src/configuration.cc
+msgid "Syslog facility to log to. Defaults to 'local5'"
 msgstr ""
 
 #: lib/src/configuration.cc
