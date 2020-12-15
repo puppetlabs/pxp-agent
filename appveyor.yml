@@ -11,7 +11,7 @@ install:
   - choco install -y pl-openssl-x64 -Version 1.0.24.1 -source https://www.myget.org/F/puppetlabs
   - choco install -y pl-curl-x64 -Version 7.46.0.1 -source https://www.myget.org/F/puppetlabs
   - choco install -y pl-zlib-x64 -Version 1.2.8.1 -source https://www.myget.org/F/puppetlabs
-  - choco install -y pester
+  - choco install -y pester -Version 4.10.1
 
     # Minimize environment polution; previously we were linking against the wrong OpenSSL DLLs.
     # Include Ruby and Powershell for unit tests.
