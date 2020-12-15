@@ -120,6 +120,8 @@ namespace lth_util = leatherman::util;
         std::string("/var/run/puppetlabs/pxp-agent.pid") : (DATA_DIR / "var" / "run" / "pxp-agent.pid").string() };
     static const std::string DEFAULT_MODULES_DIR { "/opt/puppetlabs/pxp-agent/modules" };
 
+    const char* APPLICATION_NAME = "pxp-agent";
+
     static fs::path conf_dir()     { return "/etc/puppetlabs/pxp-agent"; }
     static fs::path log_dir()      { return "/var/log/puppetlabs/pxp-agent"; }
     static std::string spool_dir() { return "/opt/puppetlabs/pxp-agent/spool"; }
@@ -266,7 +268,7 @@ HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
     for (const auto& option : options) {
         auto val = HW::GetFlag<std::string>(option);
         // Ignore not-a-directory options
-        if (val == "-" || val == "eventlog")
+        if (val == "-" || val == "eventlog" || val == "syslog")
             continue;
 
         fs::path val_path { lth_file::tilde_expand(val) };
@@ -305,11 +307,12 @@ lth_log::log_level string_to_log_level(std::string loglevel)
 std::string Configuration::setupLogging()
 {
     logfile_ = HW::GetFlag<std::string>("logfile");
-    auto log_on_eventlog = (logfile_ == "eventlog");
     auto loglevel = HW::GetFlag<std::string>("loglevel");
 
-    if (log_on_eventlog) {
+    if (logfile_ == "eventlog") {
       loglevel = Configuration::setupEventLogLogging(loglevel);
+    } else if (logfile_ == "syslog") {
+      loglevel = Configuration::setupSyslogLogging(loglevel);
     } else {
       loglevel = Configuration::setupFileLogging(loglevel);
     }
@@ -333,6 +336,26 @@ std::string Configuration::setupEventLogLogging(std::string loglevel)
 #else  // _WIN32
     throw Configuration::Error {
       lth_loc::format("eventlog is available only on windows") };
+#endif  // _WIN32
+    return loglevel;
+}
+
+std::string Configuration::setupSyslogLogging(std::string loglevel)
+{
+#ifdef _WIN32
+    throw Configuration::Error {
+      lth_loc::format("eventlog is available only on POSIX platforms") };
+#else  // _WIN32
+#ifdef HAS_LTH_SYSLOG
+    const std::string facility = HW::GetFlag<std::string>("syslog-facility");
+
+    lth_log::setup_syslog_logging(APPLICATION_NAME, facility);
+    lth_log::log_level lvl = string_to_log_level(loglevel);
+    lth_log::set_level(lvl);
+#else  // HAS_LTH_SYSLOG
+  throw Configuration::Error{
+      lth_loc::format("Leatherman version does not support logging to syslog")};
+#endif  // HAS_LTH_SYSLOG
 #endif  // _WIN32
     return loglevel;
 }
@@ -657,6 +680,17 @@ void Configuration::defineDefaultValues()
                     lth_loc::format("Log file, default: {1}", DEFAULT_LOG_FILE),
                     Types::String,
                     DEFAULT_LOG_FILE) } });
+
+#ifdef HAS_LTH_SYSLOG
+    defaults_.insert(
+        Option { "syslog-facility",
+                 Base_ptr { new Entry<std::string>(
+                    "syslog-facility",
+                    "",
+                    lth_loc::translate("Syslog facility to log to. Defaults to 'local5'"),
+                    Types::String,
+                    "local5") } });
+#endif
 
     defaults_.insert(
         Option { "loglevel",

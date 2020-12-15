@@ -316,6 +316,7 @@ class Configuration
     std::string getUnknownFlagError(const std::string& flagname);
     void checkValidForSetting();
     std::string setupEventLogLogging(std::string loglevel);
+    std::string setupSyslogLogging(std::string loglevel);
     std::string setupFileLogging(std::string loglevel);
 };
 
