@@ -367,7 +367,7 @@ Util::CommandObject Task::buildCommandObject(const ActionRequest& request)
         implementation.input_method = task_metadata.get<std::string>("input_method");
     }
 
-    static std::set<std::string> input_methods{{"stdin", "environment", "powershell"}};
+    static std::set<std::string> input_methods{{"stdin", "environment", "powershell", "both"}};
     if (!implementation.input_method.empty() && input_methods.count(implementation.input_method) == 0) {
         throw Module::ProcessingError {
                 lth_loc::format("unsupported task input method: {1}", implementation.input_method) };
@@ -381,9 +381,9 @@ Util::CommandObject Task::buildCommandObject(const ActionRequest& request)
                                                       client_,
                                                       module_cache_dir_->createCacheDir(file.get<std::string>("sha256")),
                                                       file);
-    // Use powershell input method by default if task uses .ps1 extension.
-    if (implementation.input_method.empty() && task_file.extension().string() == ".ps1") {
-        implementation.input_method = "powershell";
+    // If input_method is unset use the default "powershell" for a powershell task or "both" for any other task
+    if (implementation.input_method.empty()) {
+        implementation.input_method = task_file.extension().string() == ".ps1" ? "powershell" : "both";
     }
 
     auto task_params = task_execution_params.get<lth_jc::JsonContainer>("input");
@@ -426,12 +426,12 @@ Util::CommandObject Task::buildCommandObject(const ActionRequest& request)
     }
 
     if (implementation.input_method == "powershell" ||
-        (implementation.input_method.empty() || implementation.input_method == "stdin")) {
+        implementation.input_method == "both" || implementation.input_method == "stdin") {
         task_command.input = task_params.toString();
     }
 
     // Set the environment variables ($PT_*) for the task parameters
-    if (implementation.input_method.empty() || implementation.input_method == "environment") {
+    if (implementation.input_method == "both" || implementation.input_method == "environment") {
         addParametersToEnvironment(task_params, task_command.environment);
     }
 
