@@ -31,6 +31,10 @@ static const std::string CONFIG { std::string { PXP_AGENT_ROOT_PATH }
                                   + "/lib/tests/resources/config/empty-pxp-agent.conf" };
 static const std::string MULTI_BROKER_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
                                                + "/lib/tests/resources/config/multi-broker.conf" };
+static const std::string MULTI_URI_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
+                                               + "/lib/tests/resources/config/multi-broker-both-uris.conf" };
+static const std::string MASTER_URI_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
+                                               + "/lib/tests/resources/config/multi-broker-master-uris.conf" };
 static const std::string DUPLICATE_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
                                             + "/lib/tests/resources/config/duplicate.conf" };
 static const std::string BAD_BROKER_CONFIG { std::string { PXP_AGENT_ROOT_PATH }
@@ -463,9 +467,59 @@ TEST_CASE("Configuration::validate multiple brokers", "[configuration]") {
         REQUIRE(uris == std::vector<std::string>({"wss://test_pcp_broker", "wss://alt_pcp_broker"}));
     }
 
-    SECTION("it parses multiple arguments to master-uris") {
+    SECTION("it parses multiple arguments to primary-uris") {
         REQUIRE_NOTHROW(Configuration::Instance().validate());
-        auto uris = Configuration::Instance().get_master_uris();
+        auto uris = Configuration::Instance().get_primary_uris();
+        REQUIRE(uris == std::vector<std::string>({"https://test_master:8140", "https://alt_master:8140"}));
+    }
+}
+
+TEST_CASE("Configuration::validate primary-uris precedence", "[configuration]") {
+    const char* altArgv[] = {
+    "test-command",
+    "--config-file", MULTI_URI_CONFIG.c_str(),
+    "--ssl-ca-cert", CA.c_str(),
+    "--ssl-cert", CERT.c_str(),
+    "--ssl-key", KEY.c_str(),
+    "--modules-dir", MODULES_DIR.c_str(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
+    "--spool-dir", SPOOL_DIR.c_str(),
+    "--task-cache-dir", TASK_CACHE_DIR.c_str(),
+    "--foreground=true",
+    nullptr };
+
+    lth_util::scope_exit config_cleaner { resetTest };
+    configureTest();
+    Configuration::Instance().parseOptions(ARGUMENT_COUNT(altArgv), const_cast<char**>(altArgv));
+
+    SECTION("primary-uris takes precedence over master-uris") {
+        REQUIRE_NOTHROW(Configuration::Instance().validate());
+        auto uris = Configuration::Instance().get_primary_uris();
+        REQUIRE(uris == std::vector<std::string>({"https://test_master:8140", "https://alt_master_one:8140", "https://alt_master_two:8140"}));
+    }
+}
+
+TEST_CASE("Configuration::validate deprecated master-uris works when no primary-uris", "[configuration]") {
+    const char* altArgv[] = {
+    "test-command",
+    "--config-file", MASTER_URI_CONFIG.c_str(),
+    "--ssl-ca-cert", CA.c_str(),
+    "--ssl-cert", CERT.c_str(),
+    "--ssl-key", KEY.c_str(),
+    "--modules-dir", MODULES_DIR.c_str(),
+    "--modules-config-dir", MODULES_CONFIG_DIR.c_str(),
+    "--spool-dir", SPOOL_DIR.c_str(),
+    "--task-cache-dir", TASK_CACHE_DIR.c_str(),
+    "--foreground=true",
+    nullptr };
+
+    lth_util::scope_exit config_cleaner { resetTest };
+    configureTest();
+    Configuration::Instance().parseOptions(ARGUMENT_COUNT(altArgv), const_cast<char**>(altArgv));
+
+    SECTION("it parses multiple arguments to master-uris when primary-uris not present") {
+        REQUIRE_NOTHROW(Configuration::Instance().validate());
+        auto uris = Configuration::Instance().get_primary_uris();
         REQUIRE(uris == std::vector<std::string>({"https://test_master:8140", "https://alt_master:8140"}));
     }
 }

@@ -877,7 +877,9 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
     registerModule(command);
     auto task = std::make_shared<Modules::Task>(
         Configuration::Instance().getExecPrefix(),
-        agent_configuration.master_uris,
+        agent_configuration.task_cache_dir,
+        agent_configuration.task_cache_dir_purge_ttl,
+        agent_configuration.primary_uris,
         agent_configuration.ca,
         agent_configuration.crt,
         agent_configuration.key,

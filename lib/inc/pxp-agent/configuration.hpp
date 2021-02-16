@@ -134,7 +134,7 @@ class Configuration
     {
         std::string modules_dir;
         std::vector<std::string> broker_ws_uris;
-        std::vector<std::string> master_uris;
+        std::vector<std::string> primary_uris;
         std::string pcp_version;
         std::string ca;
         std::string crt;
@@ -222,9 +222,9 @@ class Configuration
     }
 
     /// Return the list of configured masters.
-    std::vector<std::string> get_master_uris()
+    std::vector<std::string> get_primary_uris()
     {
-        return master_uris_;
+        return primary_uris_;
     }
 
     /// Set the specified value for a given configuration flag.
@@ -283,7 +283,7 @@ class Configuration
     std::vector<std::string> broker_ws_uris_;
 
     // List of masters
-    std::vector<std::string> master_uris_;
+    std::vector<std::string> primary_uris_;
 
     // Path to the logfile
     std::string logfile_;
