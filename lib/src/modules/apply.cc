@@ -75,7 +75,7 @@ cli_base.concat([
 ])
 # There will always be at least a single master URI
 # TODO: make sure comma separated is what --server_list expects
-server_list = args['master_uris'].map { |uri| URI.parse(uri).host }.join(',')
+server_list = args['primary_uris'].map { |uri| URI.parse(uri).host }.join(',')
 
 # These settings are required for communication with puppetserver. This is primarily for
 # pluginsync but it is also required if a catalog requires files from modules served by 
@@ -187,7 +187,7 @@ exit exit_code
 )" };
 
     Apply::Apply(const fs::path& exec_prefix,
-                 const std::vector<std::string>& master_uris,
+                 const std::vector<std::string>& primary_uris,
                  const std::string& ca,
                  const std::string& crt,
                  const std::string& key,
@@ -197,7 +197,7 @@ exit exit_code
                  std::shared_ptr<ResultsStorage> storage) :
         BoltModule { exec_prefix, std::move(storage), std::move(module_cache_dir) },
         Purgeable { module_cache_dir_->purge_ttl_ },
-        master_uris_ { master_uris },
+        primary_uris_ { primary_uris },
         ca_ { ca },
         crt_ { crt },
         key_ { key },
@@ -265,7 +265,7 @@ exit exit_code
 
         const auto plugin_cache = module_cache_dir_->createCacheDir(plugin_cache_name);
         params.set<std::string>("plugin_cache", plugin_cache.string());
-        params.set<std::vector<std::string>>("master_uris", master_uris_);
+        params.set<std::vector<std::string>>("primary_uris", primary_uris_);
         Util::CommandObject cmd {
             "",  // Executable will be detremined by findExecutableAndArguments
             {},  // No args for invoking shim

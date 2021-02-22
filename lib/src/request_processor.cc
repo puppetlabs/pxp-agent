@@ -877,8 +877,6 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
     registerModule(command);
     auto task = std::make_shared<Modules::Task>(
         Configuration::Instance().getExecPrefix(),
-        agent_configuration.task_cache_dir,
-        agent_configuration.task_cache_dir_purge_ttl,
         agent_configuration.primary_uris,
         agent_configuration.ca,
         agent_configuration.crt,
@@ -892,7 +890,7 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
     registerModule(task);
     registerPurgeable(task);
     auto dl_file = std::make_shared<Modules::File>(
-        agent_configuration.master_uris,
+        agent_configuration.primary_uris,
         agent_configuration.ca,
         agent_configuration.crt,
         agent_configuration.key,
@@ -906,7 +904,7 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
     registerPurgeable(dl_file);
     auto script = std::make_shared<Modules::Script>(
         Configuration::Instance().getExecPrefix(),
-        agent_configuration.master_uris,
+        agent_configuration.primary_uris,
         agent_configuration.ca,
         agent_configuration.crt,
         agent_configuration.key,
@@ -920,7 +918,7 @@ void RequestProcessor::loadInternalModules(const Configuration::Agent& agent_con
     registerPurgeable(script);
     auto apply = std::make_shared<Modules::Apply>(
         Configuration::Instance().getExecPrefix(),
-        agent_configuration.master_uris,
+        agent_configuration.primary_uris,
         agent_configuration.ca,
         agent_configuration.crt,
         agent_configuration.key,
