@@ -15,7 +15,7 @@ namespace Modules {
 class Apply : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable {
     public:
         Apply(const boost::filesystem::path& exec_prefix,
-              const std::vector<std::string>& master_uris,
+              const std::vector<std::string>& primary_uris,
               const std::string& ca,
               const std::string& crt,
               const std::string& key,
@@ -37,7 +37,7 @@ class Apply : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeabl
     private:
       boost::filesystem::path exec_prefix_;
 
-      std::vector<std::string> master_uris_;
+      std::vector<std::string> primary_uris_;
       std::string ca_;
       std::string crt_;
       std::string key_;

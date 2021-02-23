@@ -230,9 +230,9 @@ HW::ParseResult parseArguments(const int argc, char* const argv[])
 
 HW::ParseResult Configuration::parseOptions(int argc, char *argv[])
 {
-    // If parsing options, clear the previous value for master_uris.
+    // If parsing options, clear the previous value for primary_uris.
     // This is primarily for testing.
-    master_uris_.clear();
+    primary_uris_.clear();
 
     // Remember the path to the pxp-agent executable used to start
     // this process, it is supposed to be used to start executables
@@ -440,7 +440,7 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
     agent_configuration_ = Configuration::Agent {
         HW::GetFlag<std::string>("modules-dir"),
         broker_ws_uris_,
-        master_uris_,
+        primary_uris_,
         HW::GetFlag<std::string>("pcp-version"),
         HW::GetFlag<std::string>("ssl-ca-cert"),
         HW::GetFlag<std::string>("ssl-cert"),
@@ -544,7 +544,16 @@ void Configuration::defineDefaultValues()
                  Base_ptr { new Entry<std::string>(
                     "master-uri",
                     "",
-                    lth_loc::translate("URI of the Puppet Master"),
+                    lth_loc::translate("URI of the Puppet Primary"),
+                    Types::String,
+                    "") } });
+
+    defaults_.insert(
+        Option { "primary-uri",
+                 Base_ptr { new Entry<std::string>(
+                    "primary-uri",
+                    "",
+                    lth_loc::translate("URI of the Puppet Primary"),
                     Types::String,
                     "") } });
 
@@ -955,16 +964,21 @@ void Configuration::parseConfigFile()
             // broker-ws-uris is restricted to the config file, so it's handled
             // specially here. It's not part of defaults_ because all the extra
             // meta-data for Horsewhisperer isn't needed.
-            // TODO: add `servers`, which will populate broker-ws-uris and master-uris
+            // TODO: add `servers`, which will populate broker-ws-uris and primary-uris
             //       using default ports; expects hostnames only
             if (key == "broker-ws-uris") {
                 wrap(key, lth_loc::translate("array of strings"), [&]() {
                     broker_ws_uris_ = config->get_string_list(key);
                 });
                 continue;
-            } else if (key == "master-uris") {
+            } else if (key == "primary-uris") {
                 wrap(key, lth_loc::translate("array of strings"), [&]() {
-                    master_uris_ = config->get_string_list(key);
+                    primary_uris_ = config->get_string_list(key);
+                });
+                continue;
+            } else if (key == "master-uris" && primary_uris_.size() == 0) {
+                wrap(key, lth_loc::translate("array of strings"), [&]() {
+                    primary_uris_ = config->get_string_list(key);
                 });
                 continue;
             } else {
@@ -1076,13 +1090,13 @@ void Configuration::validateAndNormalizeWebsocketSettings()
         }
     }
 
-    for (auto &uri : master_uris_) {
+    for (auto &uri : primary_uris_) {
         auto parsed = lth_util::uri(uri);
         if (parsed.protocol.empty()) {
             parsed.protocol = "https";
         } else if (parsed.protocol != "https") {
             throw Configuration::Error {
-                lth_loc::format("master-uris value \"{1}\" must start with https://", uri) };
+                lth_loc::format("primary-uris value \"{1}\" must start with https://", uri) };
         }
 
         if (parsed.port.empty()) {

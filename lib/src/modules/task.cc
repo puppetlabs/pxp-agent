@@ -133,7 +133,7 @@ static const std::string TASK_RUN_ACTION_INPUT_SCHEMA { R"(
 )" };
 
 Task::Task(const fs::path& exec_prefix,
-           const std::vector<std::string>& master_uris,
+           const std::vector<std::string>& primary_uris,
            const std::string& ca,
            const std::string& crt,
            const std::string& key,
@@ -146,7 +146,7 @@ Task::Task(const fs::path& exec_prefix,
     BoltModule { exec_prefix, std::move(storage), std::move(module_cache_dir) },
     Purgeable { module_cache_dir_->purge_ttl_ },
     exec_prefix_ { exec_prefix },
-    master_uris_ { master_uris },
+    primary_uris_ { primary_uris },
     task_download_connect_timeout_ { task_download_connect_timeout },
     task_download_timeout_ { task_download_timeout },
 #ifdef _WIN32
@@ -257,7 +257,7 @@ fs::path Task::downloadMultiFile(std::vector<lth_jc::JsonContainer> const& files
         auto file_object = selectLibFile(files, file_name);
 
         // get file from cache, download if necessary
-        auto lib_file = module_cache_dir_->getCachedFile(master_uris_,
+        auto lib_file = module_cache_dir_->getCachedFile(primary_uris_,
                                                          task_download_connect_timeout_,
                                                          task_download_timeout_,
                                                          client_,
@@ -375,7 +375,7 @@ Util::CommandObject Task::buildCommandObject(const ActionRequest& request)
 
     auto files = task_execution_params.get<std::vector<lth_jc::JsonContainer>>("files");
     auto file = selectTaskFile(files, implementation);
-    auto task_file = module_cache_dir_->getCachedFile(master_uris_,
+    auto task_file = module_cache_dir_->getCachedFile(primary_uris_,
                                                       task_download_connect_timeout_,
                                                       task_download_timeout_,
                                                       client_,

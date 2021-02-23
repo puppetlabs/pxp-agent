@@ -17,7 +17,7 @@ namespace Modules {
 class Task : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable {
   public:
     Task(const boost::filesystem::path& exec_prefix,
-         const std::vector<std::string>& master_uris,
+         const std::vector<std::string>& primary_uris,
          const std::string& ca,
          const std::string& crt,
          const std::string& key,
@@ -42,7 +42,7 @@ class Task : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable
   private:
     boost::filesystem::path exec_prefix_;
 
-    std::vector<std::string> master_uris_;
+    std::vector<std::string> primary_uris_;
 
     uint32_t task_download_connect_timeout_, task_download_timeout_;
 
