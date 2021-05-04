@@ -113,6 +113,7 @@ begin
   Puppet.initialize_settings(cli_base + cli_settings_pluginsync)
 
   remote_env_for_plugins = Puppet::Node::Environment.remote(args['environment'])
+  Puppet[:environment] = remote_env_for_plugins.name.to_s
   downloader = Puppet::Configurer::Downloader.new(
     "plugin",
     Puppet[:plugindest],
