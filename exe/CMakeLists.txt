@@ -9,6 +9,9 @@ add_executable(pxp-agent main.cc)
 target_link_libraries(pxp-agent libpxp-agent)
 install(TARGETS pxp-agent DESTINATION bin)
 
+install(FILES apply_ruby_shim.rb DESTINATION bin
+    PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
 set(EXECUTION_WRAPPER_LIBS ${Boost_LIBRARIES} ${LEATHERMAN_LIBRARIES})
 if (CMAKE_SYSTEM_NAME MATCHES "AIX")
     find_package(Threads)

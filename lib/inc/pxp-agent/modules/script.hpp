@@ -38,8 +38,6 @@ class Script : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeab
             std::function<void(const std::string& dir_path)> purge_callback = nullptr) override;
 
     private:
-      boost::filesystem::path exec_prefix_;
-
       std::vector<std::string> master_uris_;
 
       uint32_t download_connect_timeout_, download_timeout_;

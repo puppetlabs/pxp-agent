@@ -145,7 +145,6 @@ Task::Task(const fs::path& exec_prefix,
            std::shared_ptr<ResultsStorage> storage) :
     BoltModule { exec_prefix, std::move(storage), std::move(module_cache_dir) },
     Purgeable { module_cache_dir_->purge_ttl_ },
-    exec_prefix_ { exec_prefix },
     primary_uris_ { primary_uris },
     task_download_connect_timeout_ { task_download_connect_timeout },
     task_download_timeout_ { task_download_timeout },

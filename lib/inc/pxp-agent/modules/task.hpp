@@ -40,8 +40,6 @@ class Task : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeable
     std::set<std::string> const& features() const;
 
   private:
-    boost::filesystem::path exec_prefix_;
-
     std::vector<std::string> primary_uris_;
 
     uint32_t task_download_connect_timeout_, task_download_timeout_;

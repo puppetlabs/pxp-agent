@@ -39,8 +39,6 @@ namespace Modules {
           std::function<void(const std::string& dir_path)> purge_callback = nullptr) override;
 
     private:
-      boost::filesystem::path exec_prefix_;
-
       std::vector<std::string> master_uris_;
 
       uint32_t file_download_connect_timeout_, file_download_timeout_;

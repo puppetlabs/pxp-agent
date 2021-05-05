@@ -35,8 +35,6 @@ class Apply : public PXPAgent::Util::BoltModule, public PXPAgent::Util::Purgeabl
             std::function<void(const std::string& dir_path)> purge_callback = nullptr) override;
 
     private:
-      boost::filesystem::path exec_prefix_;
-
       std::vector<std::string> primary_uris_;
       std::string ca_;
       std::string crt_;
