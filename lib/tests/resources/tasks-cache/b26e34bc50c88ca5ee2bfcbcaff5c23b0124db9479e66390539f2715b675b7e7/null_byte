@@ -1,0 +1,3 @@
+#!/bin/sh
+
+printf "foo\0bar"

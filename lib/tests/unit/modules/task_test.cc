@@ -429,13 +429,42 @@ TEST_CASE("Modules::Task::executeAction", "[modules][output]") {
         REQUIRE_FALSE(response.action_metadata.includes("results"));
         REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
         REQUIRE(response.action_metadata.includes("execution_error"));
-        REQUIRE(response.action_metadata.get<std::string>("execution_error") == "The task executed for the blocking 'task run' request (transaction 0632) returned invalid UTF-8 on stdout - stderr: (empty)");
+        REQUIRE(response.action_metadata.get<std::string>("execution_error") == "The task executed for the blocking 'task run' request (transaction 0632) returned invalid UTF-8 on stdout");
         boost::trim(response.output.std_out);
         unsigned char badchar[3] = {0xed, 0xbf, 0xbf};
         REQUIRE(response.output.std_out == std::string(reinterpret_cast<char*>(badchar), 3));
         REQUIRE(response.output.std_err == "");
         REQUIRE(response.output.exitcode == 0);
     }
+
+// Unclear how to create a script on Windows that can print a null byte...
+#ifndef _WIN32
+    SECTION("errors on output with null bytes") {
+        auto echo_txt =
+            (DATA_FORMAT % "\"0632\""
+                         % "\"task\""
+                         % "\"run\""
+                         % "{\"task\": \"null_byte\", \"input\":{\"message\":\"hello\"}, "
+                           "\"files\" : [{\"sha256\": \"b26e34bc50c88ca5ee2bfcbcaff5c23b0124db9479e66390539f2715b675b7e7\", \"filename\": \"null_byte\"}]}").str();
+        PCPClient::ParsedChunks echo_content {
+            lth_jc::JsonContainer(ENVELOPE_TXT),
+            lth_jc::JsonContainer(echo_txt),
+            {},
+            0 };
+        ActionRequest request { RequestType::Blocking, echo_content };
+        auto response = e_m.executeAction(request);
+
+        REQUIRE_FALSE(response.action_metadata.includes("results"));
+        REQUIRE_FALSE(response.action_metadata.get<bool>("results_are_valid"));
+        REQUIRE(response.action_metadata.includes("execution_error"));
+        REQUIRE(response.action_metadata.get<std::string>("execution_error") == "The task executed for the blocking 'task run' request (transaction 0632) returned invalid UTF-8 on stdout");
+        boost::trim(response.output.std_out);
+        unsigned char badchar[7] = {'f', 'o', 'o', 0x00, 'b', 'a', 'r'};
+        REQUIRE(response.output.std_out == std::string(reinterpret_cast<char*>(badchar), 7));
+        REQUIRE(response.output.std_err == "");
+        REQUIRE(response.output.exitcode == 0);
+    }
+#endif
 
     SECTION("errors on download when no master-uri is provided") {
         Modules::Task e_m { PXP_AGENT_BIN_PATH, {}, CA, CRT, KEY, CRL, "", 10, 20, MODULE_CACHE_DIR, STORAGE };
