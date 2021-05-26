@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: pxp-agent 1.15.11\n"
+"Project-Id-Version: pxp-agent 1.15.13\n"
 "Report-Msgid-Bugs-To: docs@puppet.com\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -530,7 +530,7 @@ msgid ""
 "The task executed for the {1} returned invalid JSON on stdout - stderr:{2}"
 msgstr ""
 
-#: lib/src/external_module.cc lib/src/util/bolt_module.cc
+#: lib/src/external_module.cc
 msgid " (empty)"
 msgstr ""
 
@@ -1382,8 +1382,7 @@ msgid ""
 msgstr ""
 
 #: lib/src/util/bolt_module.cc
-msgid ""
-"The task executed for the {1} returned invalid UTF-8 on stdout - stderr:{2}"
+msgid "The task executed for the {1} returned invalid UTF-8 on stdout"
 msgstr ""
 
 #. info
