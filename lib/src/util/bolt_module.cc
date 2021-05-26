@@ -74,11 +74,8 @@ void BoltModule::processOutputAndUpdateMetadata(PXPAgent::ActionResponse &respon
                   response.prettyRequestLabel(), output);
         std::string execution_error {
                 lth_loc::format("The task executed for the {1} returned invalid "
-                                "UTF-8 on stdout - stderr:{2}",
-                                response.prettyRequestLabel(),
-                                (response.output.std_err.empty()
-                                 ? lth_loc::translate(" (empty)")
-                                 : "\n" + response.output.std_err)) };
+                                "UTF-8 on stdout",
+                                response.prettyRequestLabel()) };
         response.setBadResultsAndEnd(execution_error);
     }
 }

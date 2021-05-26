@@ -4,6 +4,7 @@
 #include <rapidjson/stream.h>
 #endif
 
+#include <algorithm>
 #include <string>
 
 namespace PXPAgent {
@@ -18,7 +19,15 @@ namespace Util {
                 return false;
             }
         }
-        return true;
+
+        // rapidjson::UTF8<char>::Validate accepts null bytes as valid UTF-8.
+        // They technically are valid since they're the null character. But
+        // null characters aren't valid in a string, so we want to disallow
+        // them regardless.
+        bool has_null = std::any_of(s.begin(), s.end(), [](char c) {
+                            return c == 0;
+                        });
+        return !has_null;
     }
 }  // namespace Util
 }  // namespace PXPAgent
