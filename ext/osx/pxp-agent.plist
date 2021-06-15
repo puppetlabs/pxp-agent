@@ -13,7 +13,7 @@
         <true/>
         <key>ProgramArguments</key>
         <array>
-                <string>/opt/puppetlabs/puppet/bin/pxp-agent</string>
+                <string>/opt/puppetlabs/bin/pxp-agent</string>
                 <string>--foreground</string>
         </array>
         <key>RunAtLoad</key>
