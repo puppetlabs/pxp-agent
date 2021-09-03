@@ -57,10 +57,6 @@ def expect_file_on_host_to_contain(host, file, expected, seconds=30)
   end
 end
 
-def append_jvm_limits(command)
-  "export JVM_OPTS=\"-Xms2g -Xmx2g\"; export LEIN_JVM_OPTS=\"-Xms2g -Xmx2g\"; #{command}"
-end
-
 # Some helpers for working with a pcp-broker 'lein tk' instance
 def run_pcp_broker(host, instance=0)
   timeout = 120
@@ -68,7 +64,10 @@ def run_pcp_broker(host, instance=0)
 
   lein_command = "cd #{GIT_CLONE_FOLDER}/pcp-broker#{instance}; export LEIN_ROOT=ok; \
      lein with-profile #{LEIN_PROFILE} tk </dev/null >/var/log/puppetlabs/pcp-broker.log.#{SecureRandom.uuid} 2>&1 &"
-  lein_command = append_jvm_limits(lein_command) if host[:gke_container]
+
+  jvm_opts = ['-Djdk.tls.ephemeralDHKeySize=2048']
+  jvm_opts << '-Xms2g -Xmx2g' if host[:gke_container]
+  lein_command = "export JVM_OPTS='#{jvm_opts.join(' ')}'; export LEIN_JVM_OPTS='#{jvm_opts.join(' ')}'; #{lein_command}"
   on(host, lein_command)
 
   assert(port_open_within?(host, PCP_BROKER_PORTS[instance], timeout),
