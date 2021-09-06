@@ -12,6 +12,10 @@ have_broker_replica = NUM_BROKERS > 1
 PCP_BROKER_FORK = ENV['PCP_BROKER_FORK'] || nil
 PCP_BROKER_REF  = ENV['PCP_BROKER_REF'] || 'refs/tags/1.4.0'
 
+step 'Terminate existing pcp-brokers if running' do
+  kill_all_pcp_brokers(master)
+end
+
 step 'Clone pcp-broker to broker_hosts' do
   pcp_broker_url = build_git_url('pcp-broker', PCP_BROKER_FORK, nil, 'https')
   if PCP_BROKER_REF
@@ -55,7 +59,10 @@ step 'Run lein deps to download dependencies' do
   # some time and will eat into the polling period we allow for the broker to start
   for i in 0..NUM_BROKERS-1
     lein_command = "cd #{GIT_CLONE_FOLDER}/pcp-broker#{i}; export LEIN_ROOT=ok; lein with-profile #{LEIN_PROFILE} deps"
-    lein_command = append_jvm_limits(lein_command) if master[:gke_container]
+    if master[:gke_container]
+      jvm_opts = ['-Xms2g -Xmx2g']
+      lein_command = "export JVM_OPTS='#{jvm_opts.join(' ')}'; export LEIN_JVM_OPTS='#{jvm_opts.join(' ')}'; #{lein_command}"
+    end
     on(master, lein_command)
   end
 end
