@@ -8,6 +8,10 @@
 #include <pxp-agent/action_request.hpp>
 #include <pxp-agent/action_response.hpp>
 
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.test"
+
+#include <leatherman/logging/logging.hpp>
+
 #include <atomic>
 #include <vector>
 #include <string>
@@ -55,7 +59,8 @@ static Configuration::Agent AGENT_CONFIGURATION { MODULES,
                                                   15,    // ping interval
                                                   30,    // task download connection timeout
                                                   120,   // task download timeout
-                                                  64 * 1024 * 1024 };  // default max-message-size
+                                                  64 * 1024 * 1024,  // default max-message-size
+                                                  leatherman::logging::log_level::none };
 
 static const std::string VALID_ENVELOPE_TXT {
     " { \"id\" : \"123456\","

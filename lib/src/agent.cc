@@ -20,20 +20,20 @@ namespace pcp_util = PCPClient::Util;
 // Pause between PCP connection attempts after Association errors
 static const uint32_t ASSOCIATE_SESSION_TIMEOUT_PAUSE_S { 5 };
 
-static std::shared_ptr<PXPConnector> make_connector(const Configuration::Agent& agent_configuration) {
+static std::shared_ptr<PXPConnector> make_connector(const Configuration::Agent& agent_configuration, boost::nowide::ofstream* logstream) {
     if (agent_configuration.pcp_version == "1") {
         LOG_INFO("Connecting using PCP v1");
-        return std::make_shared<PXPConnectorV1>(agent_configuration);
+        return std::make_shared<PXPConnectorV1>(agent_configuration, logstream);
     } else {
         assert(agent_configuration.pcp_version == "2");
         LOG_INFO("Connecting using PCP v2");
-        return std::make_shared<PXPConnectorV2>(agent_configuration);
+        return std::make_shared<PXPConnectorV2>(agent_configuration, logstream);
     }
 }
 
 Agent::Agent(const Configuration::Agent& agent_configuration)
         try
-            : connector_ptr_ { make_connector(agent_configuration) },
+            : connector_ptr_ { make_connector(agent_configuration, Configuration::Instance().get_logfile_fstream()) },
               request_processor_ { connector_ptr_, agent_configuration },
               ping_interval_s_ { agent_configuration.ping_interval_s } {
 } catch (const PCPClient::connection_config_error& e) {

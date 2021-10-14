@@ -39,7 +39,7 @@ TEST_CASE("ActionRequest::ActionRequest", "[request]") {
     }
 
     SECTION("throw a ActionRequest::Error if binary data") {
-        const PCPClient::ParsedChunks p_c { envelope, "bin data", debug, 0 };
+        const PCPClient::ParsedChunks p_c { envelope, std::string{"bin data"}, debug, 0 };
 
         REQUIRE_THROWS_AS(ActionRequest(RequestType::Blocking, p_c),
                           ActionRequest::Error);

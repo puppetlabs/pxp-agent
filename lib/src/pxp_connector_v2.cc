@@ -16,7 +16,7 @@ namespace lth_jc = leatherman::json_container;
 // PXPConnector V2
 //
 
-PXPConnectorV2::PXPConnectorV2(const Configuration::Agent& agent_configuration)
+PXPConnectorV2::PXPConnectorV2(const Configuration::Agent& agent_configuration, boost::nowide::ofstream* logstream)
         : PCPClient::v2::Connector(agent_configuration.broker_ws_uris,
                                    agent_configuration.client_type,
                                    agent_configuration.ca,
@@ -24,6 +24,8 @@ PXPConnectorV2::PXPConnectorV2(const Configuration::Agent& agent_configuration)
                                    agent_configuration.key,
                                    agent_configuration.crl,
                                    agent_configuration.broker_ws_proxy,
+                                   agent_configuration.loglevel,
+                                   logstream,
                                    agent_configuration.ws_connection_timeout_ms,
                                    agent_configuration.allowed_keepalive_timeouts+1)
 {

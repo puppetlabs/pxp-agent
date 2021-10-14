@@ -8,6 +8,6 @@ using namespace PXPAgent;
 
 TEST_CASE("PXPConnectorV2::PXPConnectorV2", "[agent]") {
     SECTION("successfully instantiates with valid arguments") {
-        REQUIRE_NOTHROW(PXPConnectorV2{AGENT_CONFIGURATION});
+        REQUIRE_NOTHROW((PXPConnectorV2{AGENT_CONFIGURATION, nullptr}));
     };
 }

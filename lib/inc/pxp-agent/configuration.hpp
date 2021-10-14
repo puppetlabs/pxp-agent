@@ -16,6 +16,13 @@
 #include <stdexcept>
 #include <cstdint>
 
+// Forward declaration for leatherman::logging::log_level
+namespace leatherman {
+  namespace logging {
+    enum class log_level;
+  }
+}
+
 namespace PXPAgent {
 
 //
@@ -157,6 +164,7 @@ class Configuration
         uint32_t task_download_connect_timeout_s;
         uint32_t task_download_timeout_s;
         uint32_t max_message_size;
+        leatherman::logging::log_level loglevel;
     };
 
     /// Reset the HorseWhisperer singleton.
@@ -225,6 +233,12 @@ class Configuration
     std::vector<std::string> get_primary_uris()
     {
         return primary_uris_;
+    }
+
+    /// Return the stream abstraction object for the logfile
+    boost::nowide::ofstream* get_logfile_fstream()
+    {
+        return &logfile_fstream_;
     }
 
     /// Set the specified value for a given configuration flag.
