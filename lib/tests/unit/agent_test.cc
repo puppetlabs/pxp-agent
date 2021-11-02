@@ -5,6 +5,10 @@
 #include <pxp-agent/agent.hpp>
 #include <pxp-agent/configuration.hpp>
 
+#define LEATHERMAN_LOGGING_NAMESPACE "puppetlabs.pxp_agent.test"
+
+#include <leatherman/logging/logging.hpp>
+
 #include <catch.hpp>
 
 #include <boost/filesystem.hpp>
@@ -35,7 +39,8 @@ TEST_CASE("Agent::Agent", "[agent]") {
                                                "test_agent",
                                                "",    // don't set broker proxy
                                                "",    // don't set master proxy
-                                               5000, 10, 5, 5, 2, 15, 30, 120 };
+                                               5000, 10, 5, 5, 2, 15, 30, 120, 1024,
+                                               leatherman::logging::log_level::none };
 
     SECTION("does not throw if it fails to find the external modules directory") {
         agent_configuration.modules_dir = MODULES + "/fake_dir";
@@ -73,7 +78,8 @@ TEST_CASE("Agent::Agent without CRL", "[agent]") {
                                                "test_agent",
                                                "",    // don't set broker proxy
                                                "",    // don't set master proxy
-                                               5000, 10, 5, 5, 2, 15, 30, 120 };
+                                               5000, 10, 5, 5, 2, 15, 30, 120, 1024,
+                                               leatherman::logging::log_level::none };
 
     SECTION("does not throw if it fails to find the external modules directory") {
         agent_configuration.modules_dir = MODULES + "/fake_dir";

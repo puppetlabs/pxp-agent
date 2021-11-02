@@ -462,7 +462,8 @@ const Configuration::Agent& Configuration::getAgentConfiguration() const
         static_cast<uint32_t >(HW::GetFlag<int>("ping-interval")),
         static_cast<uint32_t >(HW::GetFlag<int>("task-download-connect-timeout")),
         static_cast<uint32_t >(HW::GetFlag<int>("task-download-timeout")),
-        HW::GetFlag<uint32_t>("max-message-size") };
+        HW::GetFlag<uint32_t>("max-message-size"),
+        string_to_log_level(HW::GetFlag<std::string>("loglevel")) };
     return agent_configuration_;
 }
 

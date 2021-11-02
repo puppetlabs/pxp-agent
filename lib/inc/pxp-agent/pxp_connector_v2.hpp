@@ -11,7 +11,7 @@ namespace PXPAgent {
 
 class PXPConnectorV2 : public PCPClient::v2::Connector, public PXPConnector {
   public:
-    PXPConnectorV2(const Configuration::Agent& agent_configuration);
+    PXPConnectorV2(const Configuration::Agent& agent_configuration, boost::nowide::ofstream* logstream);
 
     void sendPCPError(const std::string& request_id,
                       const std::string& description,

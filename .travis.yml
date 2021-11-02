@@ -24,7 +24,7 @@ script:
 env:
   global:
     - LEATHERMAN_VERSION=1.11.0
-    - CPP_PCP_CLIENT_VERSION=1.7.1
+    - CPP_PCP_CLIENT_VERSION=1.7.6
     - CPP_HOCON_VERSION=0.2.0
   matrix:
     - TARGET=cpplint

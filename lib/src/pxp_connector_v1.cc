@@ -35,7 +35,7 @@ wrapDebug(const PCPClient::ParsedChunks& parsed_chunks)
     return debug;
 }
 
-PXPConnectorV1::PXPConnectorV1(const Configuration::Agent& agent_configuration)
+PXPConnectorV1::PXPConnectorV1(const Configuration::Agent& agent_configuration, boost::nowide::ofstream* logstream)
         : PCPClient::v1::Connector(agent_configuration.broker_ws_uris,
                                    agent_configuration.client_type,
                                    agent_configuration.ca,
@@ -43,6 +43,8 @@ PXPConnectorV1::PXPConnectorV1(const Configuration::Agent& agent_configuration)
                                    agent_configuration.key,
                                    agent_configuration.crl,
                                    agent_configuration.broker_ws_proxy,
+                                   agent_configuration.loglevel,
+                                   logstream,
                                    agent_configuration.ws_connection_timeout_ms,
                                    agent_configuration.association_timeout_s,
                                    agent_configuration.association_request_ttl_s,
