@@ -2,6 +2,7 @@ require 'pxp-agent/test_helper'
 
 step 'Install build dependencies for broker' do
   # Assumes RedHat master
+  master.install_package('make')
   master.install_package('git')
   master.install_package('java-1.8.0-openjdk-devel')
 end
