@@ -430,9 +430,15 @@ def get_process_pids(host, process)
       # Need to check ruby's command line string to check it is actually puppet agent
       # because pxp-module-puppet will also appear in ps as Ruby.exe
       command = "cmd.exe /C WMIC path win32_process WHERE Name=\\\"Ruby.exe\\\" get CommandLine,ProcessId | "\
-        "grep 'puppet agent' | egrep -o '[0-9]+\s*$'"
+        "grep 'puppet agent' | egrep -o '[0-9]+\\s*$'"
     else
-      command = "ps -eW | grep -E '\\\\#{process}\(.exe\)' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
+      # pxp-agent.exe is launched outside of cygwin/bash so it must be killed
+      # using taskkill not kill. To do that we must find the Windows PID. Before
+      # cygwin 3, ps -eW returned the Windows PID. But now it returns the Cygwin
+      # PID. To avoid that confusion and to avoid the naming collision between
+      # pxp-agent.exe and nssm-pxp-agent.exe, just use WMI to search for the
+      # exact process name.
+      command = "cmd.exe /C WMIC path win32_process WHERE Name=\\\"pxp-agent.exe\\\" get ProcessId | egrep -o '[0-9]+\\s*$'"
     end
   else
     command = "ps -ef | grep '#{process}' | grep -v 'grep' | grep -v 'true' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
@@ -447,9 +453,13 @@ end
 
 def wait_for_sleep_process(target, seconds_to_sleep)
   begin
-    ps_cmd = target['platform'] =~ /win/ ? 'ps -efW' : 'ps -ef'
-    sleep_process = target['platform'] =~ /win/ ? 'PING' : " /bin/sleep #{seconds_to_sleep}"
-    retry_on(target, "#{ps_cmd} | grep '#{sleep_process}' | grep -v 'grep'", {:max_retries => 120, :retry_interval => 1})
+    command = if target['platform'] =~ /win/
+                "cmd.exe /C WMIC path win32_process WHERE Name=\\\"PING.EXE\\\" get ProcessId | egrep -o '[0-9]+\\s*$'"
+              else
+                sleep_process = " /bin/sleep #{seconds_to_sleep}"
+                "ps -ef | grep '#{sleep_process}' | grep -v 'grep'"
+              end
+    retry_on(target, command, {:max_retries => 120, :retry_interval => 1})
   rescue
     raise("After triggering a puppet run on #{target} the expected sleep process did not appear in process list")
   end
@@ -463,14 +473,14 @@ def stop_sleep_process(targets, seconds_to_sleep, accept_no_pid_found = false)
     when /osx/
       command = "ps -e -o pid,comm | grep sleep | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
     when /win/
-      command = "ps -efW | grep PING | sed 's/^[^0-9]*[0-9]*[^0-9]*//g' | cut -d ' ' -f1"
+      command = "cmd.exe /C WMIC path win32_process WHERE Name=\\\"PING.EXE\\\" get ProcessId | egrep -o '[0-9]+\\s*$'"
     else
       command = "ps -ef | grep ' /bin/sleep #{seconds_to_sleep}' | grep -v 'grep' | grep -v 'true' | sed 's/^[^0-9]*//g' | cut -d\\  -f1"
     end
 
     # A failed test may leave an orphaned sleep process, handle multiple matches.
     pids = nil
-    on(target, command) do |output|
+    on(target, command, accept_all_exit_codes: accept_no_pid_found) do |output|
       pids = output.stdout.chomp.split
       if pids.empty? && !accept_no_pid_found
         raise("Did not find a pid for a sleep process on #{target}")
