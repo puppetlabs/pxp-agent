@@ -408,7 +408,7 @@ end
 def create_sleep_manifest(master, manifest, seconds_to_sleep)
     create_remote_file(master, manifest, <<-MODULEPP)
 node default {
-  case $::osfamily {
+  case $facts['os']['family'] {
     'windows': { exec { 'sleep': command => 'C:/Windows/system32/ping.exe 127.0.0.1 -n #{seconds_to_sleep}', returns => 1 } }
     'Darwin':  { exec { 'sleep': command => '/bin/sleep #{seconds_to_sleep} || /usr/bin/true', } }
     default:   { exec { 'sleep': command => '/bin/sleep #{seconds_to_sleep} || /bin/true', } }
