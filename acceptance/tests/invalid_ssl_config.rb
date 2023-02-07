@@ -17,7 +17,7 @@ end
 
 agents.each do |agent|
 
-  temp_ca_dir = agent.tmpdir('alternate_ssl')
+  temp_ca_dir = agent.tmpdir('alternate_ca')
   if windows?(agent) then
     alternate_cert = "#{temp_ca_dir}\\certs\\#{agent}.pem"
     alternate_key = "#{temp_ca_dir}\\private_keys\\#{agent}.pem"
@@ -29,9 +29,9 @@ agents.each do |agent|
   end
 
   step 'Create alternate CA on the master and copy to agent temp folder' do
-    master_temp_ca_dir = master.tmpdir('alternate_ssl')
+    master_temp_ca_dir = master.tmpdir('alternate_ca')
     master_temp_conf = File.join(master_temp_ca_dir, 'puppet.conf')
-    create_remote_file(master, master_temp_conf, "ssldir = #{master_temp_ca_dir}")
+    create_remote_file(master, master_temp_conf, "cadir = #{master_temp_ca_dir}\nssldir = #{master_temp_ca_dir}")
     on master, "puppetserver ca setup --conf #{master_temp_conf} --certname #{agent}"
 
     on agent, "mkdir -p #{temp_ca_dir}/certs #{temp_ca_dir}/private_keys"

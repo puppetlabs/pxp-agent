@@ -1,11 +1,9 @@
-# Specifies a gem mirror; duplicated in acceptance setup
-# to ensure a similar environment on acceptance hosts.
-source ENV['GEM_SOURCE'] || 'https://artifactory.delivery.puppetlabs.net/artifactory/api/gems/rubygems/'
+source ENV['GEM_SOURCE'] || 'https://rubygems.org'
 
 def location_for(place, fake_version = nil)
-  if place =~ /^((?:git[:@]|https:)[^#]*)#(.*)/
+  if place.is_a?(String) && place =~ /^((?:git[:@]|https:)[^#]*)#(.*)/
     [fake_version, { :git => $1, :branch => $2, :require => false }].compact
-  elsif place =~ /^file:\/\/(.*)/
+  elsif place.is_a?(String) && place =~ /^file:\/\/(.*)/
     ['>= 0', { :path => File.expand_path($1), :require => false }]
   else
     [place, { :require => false }]
@@ -20,7 +18,7 @@ gem "beaker-vagrant", *location_for(ENV['BEAKER_VAGRANT_VERSION'] || "~> 0")
 gem "beaker-vmpooler", *location_for(ENV['BEAKER_VMPOOLER_VERSION'] || "~> 1")
 gem "beaker-gke", *location_for(ENV['BEAKER_GKE_VERSION'] || "~> 0.0.3")
 gem 'rake'
-gem 'scooter', '~> 3.2.17'
+gem 'scooter', '~> 4.0'
 gem 'pcp-client', '~> 0.5.2'
 
 group(:test) do
@@ -28,6 +26,6 @@ group(:test) do
   gem 'mocha', '~> 0.10.5', :require => false
 end
 
-if File.exists? "#{__FILE__}.local"
+if File.exist? "#{__FILE__}.local"
   eval(File.read("#{__FILE__}.local"), binding)
 end
