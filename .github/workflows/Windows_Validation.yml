@@ -1,0 +1,70 @@
+name: Windows_Validation
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.config.name }}
+    strategy:
+      matrix:
+        config: # Create matrix with combinations
+          - { name  : windows-latest,
+              family: gnu,
+              cxx   : g++,
+              cc    : gcc,
+              extend: ON,
+              logs  : ON,
+              test  : OFF
+            }
+      
+    env:
+      LEATHERMAN_VERSION: 1.9.0
+      CPP_PCP_CLIENT_VERSION: 0.11.0
+      CPPHOCON_VERSION: 0.1.5
+#choco install -y mingw-w64 -Version 5.2.0 -source https://www.myget.org/F/puppetlabs
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install dependencies
+      run: |
+        choco install -y gettext -Version 0.19.6 -source https://www.myget.org/F/puppetlabs
+        choco install -y pl-toolchain-x64 -Version 2015.12.01.1 -source https://www.myget.org/F/puppetlabs
+        choco install -y pl-boost-x64 -Version 1.58.0.2 -source https://www.myget.org/F/puppetlabs
+        choco install -y pl-openssl-x64 -Version 1.0.24.1 -source https://www.myget.org/F/puppetlabs
+        choco install -y pl-curl-x64 -Version 7.46.0.1 -source https://www.myget.org/F/puppetlabs
+        choco install -y pl-zlib-x64 -Version 1.2.8.1 -source https://www.myget.org/F/puppetlabs
+        choco install -y pester -Version 4.10.1
+        choco install -y wget
+        wget "https://github.com/puppetlabs/leatherman/releases/download/$env:LEATHERMAN_VERSION/leatherman.7z" -OutFile "$pwd\leatherman.7z"
+        wget "https://github.com/puppetlabs/cpp-pcp-client/releases/download/$env:CPP_PCP_CLIENT_VERSION/cpp-pcp-client.7z" -OutFile "$pwd\cpp-pcp-client.7z"
+        wget "https://github.com/puppetlabs/cpp-hocon/releases/download/$env:CPPHOCON_VERSION/cpp-hocon.7z" -OutFile "$env:temp\cpp-hocon.7z"
+        7z.exe x leatherman.7z -oC:\tools | FIND /V "ing "
+        7z.exe x cpp-pcp-client.7z -oC:\tools | FIND /V "ing "
+        7z.exe x $env:temp\cpp-hocon.7z -oC:\tools | FIND /V "ing "
+
+  #  - name: Set PATH
+  #    run: |
+  #      echo "C:\tools\pl-build-tools\bin;C:\tools\mingw64\bin;C:\ProgramData\chocolatey\bin;C:\Ruby22-x64\bin;C:\Program Files\7-Zip;C:\Windows\system32;C:\Windows;C:\Windows\System32\WindowsPowerShell\v1.0" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+    # Echo the PATH to verify that it is correct
+    - name: Echo PATH
+      run: |
+        echo $env:PATH
+
+    - name: Verify GCC version
+      run: gcc --version
+ # cmake -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND" -DCMAKE_TOOLCHAIN_FILE="C:\tools\pl-build-tools\pl-build-toolchain.cmake" -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\cpp-pcp-client;C:\tools\cpp-hocon" .
+
+    - name: Running cmake
+      run: |
+        cmake -G "MinGW Makefiles" -DCMAKE_TOOLCHAIN_FILE="C:\tools\pl-build-tools\pl-build-toolchain.cmake" -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\cpp-pcp-client;C:\tools\cpp-hocon" .
+
+      
+    - name: Running make
+      run: |
+        mingw32-make install
+
+    - name: Test
+      run: |
+        cp C:\Tools\pl-build-tools\bin\libeay32.dll .\bin
+        cp C:\Tools\pl-build-tools\bin\ssleay32.dll .\bin
+        ctest -V 2>&1 | %{ if ($_ -is [System.Management.Automation.ErrorRecord]) { $_ | c++filt } else { $_ } }
