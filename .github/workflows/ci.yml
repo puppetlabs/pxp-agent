@@ -39,7 +39,7 @@ jobs:
 
           # Minimize environment polution; previously we were linking against the wrong OpenSSL DLLs.
           # Include Ruby and Powershell for unit tests.
-          # $env:PATH = "C:\tools\pl-build-tools\bin;C:\tools\mingw64\bin;$env:PATH"
+          $env:PATH = "C:\tools\pl-build-tools\bin;C:\tools\mingw64\bin;$env:PATH"
 
           Write-Host $env:PATH
           where openssl
