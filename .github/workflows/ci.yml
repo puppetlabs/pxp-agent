@@ -16,19 +16,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: install dependencies
+        env:
+          LEATHERMAN_VERSION: 1.11.0
+          CPP_PCP_CLIENT_VERSION: 1.7.6
+          CPPHOCON_VERSION: 0.2.0
         run: |
-          Remove-Item -Path C:\ProgramData\chocolatey\ -Recurse -Force
-          $env:chocolateyVersion = '1.4.0'
-          [System.Net.ServicePointManager]::SecurityProtocol = 3072
-          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-          $env:PATH += "%ALLUSERSPROFILE%\chocolatey\bin"
-          choco install -y mingw-w64 -Version 5.2.0 -source https://www.myget.org/F/puppetlabs
-          choco install -y cmake -Version 3.2.2 -source https://www.myget.org/F/puppetlabs
-          choco install -y gettext -Version 0.19.6 -source https://www.myget.org/F/puppetlabs
+          # Remove-Item -Path C:\ProgramData\chocolatey\ -Recurse -Force
+          # $env:chocolateyVersion = '1.4.0'
+          # [System.Net.ServicePointManager]::SecurityProtocol = 3072
+          # iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          # $env:PATH = "$env:PATH;%ALLUSERSPROFILE%\chocolatey\bin"
+          #choco install -y mingw-w64 -Version 5.2.0 -source https://www.myget.org/F/puppetlabs
+          #choco install -y cmake -Version 3.2.2 -source https://www.myget.org/F/puppetlabs
+          #choco install -y gettext -Version 0.19.6 -source https://www.myget.org/F/puppetlabs
           # choco install -y pl-toolchain-x64 -Version 2015.12.01.1 -source https://www.myget.org/F/puppetlabs
           # choco install -y pl-boost-x64 -Version 1.58.0.2 -source https://www.myget.org/F/puppetlabs
           # choco install -y pl-openssl-x64 -Version 1.0.24.1 -source https://www.myget.org/F/puppetlabs
           # choco install -y pl-curl-x64 -Version 7.46.0.1 -source https://www.myget.org/F/puppetlabs
           # choco install -y pl-zlib-x64 -Version 1.2.8.1 -source https://www.myget.org/F/puppetlabs
-          choco install -y pester -Version 4.10.1
+          #choco install -y pester -Version 4.10.1
+
+          # Minimize environment polution; previously we were linking against the wrong OpenSSL DLLs.
+          # Include Ruby and Powershell for unit tests.
+          #$env:PATH = "C:\tools\pl-build-tools\bin;C:\tools\mingw64\bin;$env:PATH"
+
+          Write-Host $env:PATH
+          where openssl
+          # rm -r C:\OpenSSL-Win64
+
+          wget "https://github.com/puppetlabs/leatherman/releases/download/$env:LEATHERMAN_VERSION/leatherman.7z" -OutFile "$pwd\leatherman.7z"
+          7z.exe x leatherman.7z -oC:\tools | FIND /V "ing "
+
+          # wget "https://github.com/puppetlabs/cpp-pcp-client/releases/download/$env:CPP_PCP_CLIENT_VERSION/cpp-pcp-client.7z" -OutFile "$pwd\cpp-pcp-client.7z"
+          # 7z.exe x cpp-pcp-client.7z -oC:\tools | FIND /V "ing "
+
+          # wget "https://github.com/puppetlabs/cpp-hocon/releases/download/$env:CPPHOCON_VERSION/cpp-hocon.7z" -OutFile "$env:temp\cpp-hocon.7z"
+          # 7z.exe x $env:temp\cpp-hocon.7z -oC:\tools | FIND /V "ing "
+
+          #cmake -G "MinGW Makefiles" -DCMAKE_TOOLCHAIN_FILE="C:\tools\pl-build-tools\pl-build-toolchain.cmake" -DCMAKE_PREFIX_PATH="C:\tools\leatherman;C:\tools\cpp-pcp-client;C:\tools\cpp-hocon" -DCMAKE_INSTALL_PREFIX=C:\tools -DBOOST_STATIC=ON .
+          #mingw32-make install
         shell: pwsh
