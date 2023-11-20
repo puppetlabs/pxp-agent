@@ -35,7 +35,7 @@ jobs:
           # choco install -y pl-curl-x64 -Version 7.46.0.1 -source https://www.myget.org/F/puppetlabs
           # choco install -y pl-zlib-x64 -Version 1.2.8.1 -source https://www.myget.org/F/puppetlabs
           #choco install -y pester -Version 4.10.1
-          choco install -y wget
+          choco install -y 7zip.install
 
           # Minimize environment polution; previously we were linking against the wrong OpenSSL DLLs.
           # Include Ruby and Powershell for unit tests.
@@ -45,7 +45,7 @@ jobs:
           where openssl
           # rm -r C:\OpenSSL-Win64
 
-          wget "https://github.com/puppetlabs/leatherman/releases/download/$env:LEATHERMAN_VERSION/leatherman.7z" -OutFile "$pwd\leatherman.7z"
+          gh release download -R puppetlabs/leatherman $env:LEATHERMAN_VERSION --pattern "*.7z"
           7z.exe x leatherman.7z -oC:\tools | FIND /V "ing "
 
           # wget "https://github.com/puppetlabs/cpp-pcp-client/releases/download/$env:CPP_PCP_CLIENT_VERSION/cpp-pcp-client.7z" -OutFile "$pwd\cpp-pcp-client.7z"
