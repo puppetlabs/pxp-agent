@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <cstdint>
 
 namespace PCPClient {
 struct ParsedChunks;
