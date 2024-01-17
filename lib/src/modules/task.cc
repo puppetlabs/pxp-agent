@@ -166,7 +166,7 @@ Task::Task(const fs::path& exec_prefix,
     client_.set_ca_cert(ca);
     client_.set_client_cert(crt, key);
     client_.set_client_crl(crl);
-    client_.set_supported_protocols(CURLPROTO_HTTPS);
+    client_.set_supported_protocols("HTTPS");
     client_.set_proxy(proxy);
 }
 

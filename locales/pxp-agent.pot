@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: pxp-agent 1.15.13\n"
+"Project-Id-Version: pxp-agent 1.15.20\n"
 "Report-Msgid-Bugs-To: docs@puppet.com\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -19,11 +19,13 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
 #: exe/execution_wrapper.cc
+#, c++-format
 msgid "Executable '{1}' failed to run: {2}"
 msgstr ""
 
 #. error
 #: exe/main.cc
+#, c++-format
 msgid "Failed to daemonize: {1}"
 msgstr ""
 
@@ -34,21 +36,26 @@ msgstr ""
 
 #. error
 #: exe/main.cc
+#, c++-format
 msgid "PCP configuration error: {1}"
 msgstr ""
 
 #. error
 #: exe/main.cc
+#, c++-format
 msgid "WebSocket configuration error: {1}"
 msgstr ""
 
 #. error
 #: exe/main.cc
+#, c++-format
 msgid "Fatal error: {1}"
 msgstr ""
 
 #. error
-#: exe/main.cc lib/src/module.cc
+#: exe/main.cc
+#: lib/src/module.cc
+#, c++-format
 msgid "Unexpected error: {1}"
 msgstr ""
 
@@ -58,6 +65,7 @@ msgid "Unexpected error"
 msgstr ""
 
 #: exe/main.cc
+#, c++-format
 msgid ""
 "{1}\n"
 "Cannot start pxp-agent"
@@ -68,6 +76,7 @@ msgid "Invalid parse result (%1%)"
 msgstr ""
 
 #: exe/main.cc
+#, c++-format
 msgid ""
 "Failed to parse command line ({1})\n"
 "Cannot start pxp-agent"
@@ -75,10 +84,12 @@ msgstr ""
 
 #. info
 #: exe/main.cc
+#, c++-format
 msgid "pxp-agent {1} started at {2} level"
 msgstr ""
 
 #: exe/main.cc
+#, c++-format
 msgid ""
 "Failed to configure logging: {1}\n"
 "Cannot start pxp-agent"
@@ -91,6 +102,7 @@ msgstr ""
 
 #. error
 #: exe/main.cc
+#, c++-format
 msgid "Fatal configuration error: {1}; cannot start pxp-agent"
 msgstr ""
 
@@ -98,12 +110,15 @@ msgstr ""
 msgid "DownloadFile module does not implement buildCommandObject!"
 msgstr ""
 
-#: lib/src/action_request.cc lib/src/action_response.cc
+#: lib/src/action_request.cc
+#: lib/src/action_response.cc
+#, c++-format
 msgid "{1} '{2} {3}' request (transaction {4})"
 msgstr ""
 
 #. debug
 #: lib/src/action_request.cc
+#, c++-format
 msgid ""
 "Validating {1} request {2} by {3}:\n"
 "{4}"
@@ -137,6 +152,7 @@ msgstr ""
 
 #. warning
 #: lib/src/agent.cc
+#, c++-format
 msgid ""
 "Error during the PCP Session Association ({1}); will retry to connect in {2} "
 "s"
@@ -152,6 +168,7 @@ msgid "failure getting HOME directory"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "failure getting Windows AppData directory: {1}"
 msgstr ""
 
@@ -160,28 +177,34 @@ msgid "failed to retrive pxp-agent binary path"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "failed to determine the modules directory path: {1}"
 msgstr ""
 
 #. info
 #: lib/src/configuration.cc
+#, c++-format
 msgid "Creating the {1} '{2}'"
 msgstr ""
 
 #. debug
 #: lib/src/configuration.cc
+#, c++-format
 msgid "Failed to create the {1} '{2}': {3}"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "failed to create the {1} '{2}'"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "the {1} '{2}' does not exist"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "the {1} '{2}' is not a directory"
 msgstr ""
 
@@ -194,6 +217,7 @@ msgid "An error occurred while parsing cli options"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "invalid log level: '{1}'"
 msgstr ""
 
@@ -254,6 +278,7 @@ msgid "PCP Access logging was not configured; no file will be reopened"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "Config file, default: {1}"
 msgstr ""
 
@@ -298,6 +323,7 @@ msgid "pxp-agent SSL certificate revocation list"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "Log file, default: {1}"
 msgstr ""
 
@@ -316,30 +342,37 @@ msgid "Enable PCP Access logging, default: false"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "PCP Access log file, default: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "Modules directory, default (relative to the pxp-agent.exe path): {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "Module config files directory, default: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "Tasks cache directory, default: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "Spool action results directory, default: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "TTL for action results before being deleted, default: '{1}' (days)"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "TTL for cached tasks before being deleted, default: '{1}' (days)"
 msgstr ""
 
@@ -360,23 +393,28 @@ msgid "Maximum size in Bytes of messages to send to pcp-broker"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "PID file path, default: {1}"
 msgstr ""
 
 #. debug
 #: lib/src/configuration.cc
+#, c++-format
 msgid "Config file {1} absent"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "config-file {1} must end with .conf or .json"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "cannot parse config file: {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "field '{1}' must be of type {2}"
 msgstr ""
 
@@ -386,6 +424,7 @@ msgstr ""
 
 #. info
 #: lib/src/configuration.cc
+#, c++-format
 msgid "Ignoring unrecognized option '{1}'"
 msgstr ""
 
@@ -411,22 +450,27 @@ msgid ""
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "{1} value must be defined"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "{1} file '{2}' not found"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "{1} file '{2}' not readable"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "{1} value \"{2}\" must start with wss://"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "primary-uris value \"{1}\" must start with https://"
 msgstr ""
 
@@ -440,37 +484,45 @@ msgstr ""
 
 #. debug
 #: lib/src/configuration.cc
+#, c++-format
 msgid ""
 "Failed to create the test dir in spool path '{1}' duringconfiguration "
 "validation: {2}"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "the spool-dir '{1}' is not writable"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "the PID file '{1}' is not a regular file"
 msgstr ""
 
 #. LOCALE: invalid configuration option
 #: lib/src/configuration.cc
+#, c++-format
 msgid "invalid {1}: {2}"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "{1} must be positive"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "no default value for {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "invalid value for {1}"
 msgstr ""
 
 #: lib/src/configuration.cc
+#, c++-format
 msgid "unknown flag name: {1}"
 msgstr ""
 
@@ -485,6 +537,7 @@ msgstr ""
 
 #. error
 #: lib/src/configuration/posix/configuration.cc
+#, c++-format
 msgid "Failed to reopen logfile: {1}"
 msgstr ""
 
@@ -499,26 +552,31 @@ msgstr ""
 
 #. debug
 #: lib/src/external_module.cc
+#, c++-format
 msgid "Found no configuration schema for module '{1}'"
 msgstr ""
 
 #. error
 #: lib/src/external_module.cc
+#, c++-format
 msgid "Failed to retrieve metadata of module {1}: {2}"
 msgstr ""
 
 #: lib/src/external_module.cc
+#, c++-format
 msgid "invalid metadata of module {1}"
 msgstr ""
 
 #. debug
 #: lib/src/external_module.cc
+#, c++-format
 msgid ""
 "The '{1}' configuration will not be validated; no JSON schema is available"
 msgstr ""
 
 #. debug
 #: lib/src/external_module.cc
+#, c++-format
 msgid ""
 "Obtained invalid JSON on stdout for the {1}; (validation error: {2}); "
 "stdout:\n"
@@ -526,6 +584,7 @@ msgid ""
 msgstr ""
 
 #: lib/src/external_module.cc
+#, c++-format
 msgid ""
 "The task executed for the {1} returned invalid JSON on stdout - stderr:{2}"
 msgstr ""
@@ -536,6 +595,7 @@ msgstr ""
 
 #. error
 #: lib/src/external_module.cc
+#, c++-format
 msgid "Failed to load the external module metadata from {1}: {2}"
 msgstr ""
 
@@ -545,85 +605,103 @@ msgstr ""
 
 #. debug
 #: lib/src/external_module.cc
+#, c++-format
 msgid "External module {1}: metadata is valid JSON"
 msgstr ""
 
 #: lib/src/external_module.cc
+#, c++-format
 msgid "metadata is not in a valid JSON format: {1}"
 msgstr ""
 
 #. debug
 #: lib/src/external_module.cc
+#, c++-format
 msgid "External module {1}: metadata validation OK"
 msgstr ""
 
 #: lib/src/external_module.cc
+#, c++-format
 msgid "metadata validation failure: {1}"
 msgstr ""
 
 #. debug
 #: lib/src/external_module.cc
+#, c++-format
 msgid "Registering module configuration schema for '{1}'"
 msgstr ""
 
 #. error
 #: lib/src/external_module.cc
+#, c++-format
 msgid "Failed to parse the configuration schema of module '{1}': {2}"
 msgstr ""
 
 #: lib/src/external_module.cc
+#, c++-format
 msgid "invalid configuration schema of module {1}"
 msgstr ""
 
 #. debug
 #: lib/src/external_module.cc
+#, c++-format
 msgid "Validating action '{1} {2}'"
 msgstr ""
 
 #. debug
 #: lib/src/external_module.cc
+#, c++-format
 msgid "Action '{1} {2}' has been validated"
 msgstr ""
 
 #. error
 #: lib/src/external_module.cc
+#, c++-format
 msgid "Failed to parse metadata schemas of action '{1} {2}': {3}"
 msgstr ""
 
 #: lib/src/external_module.cc
+#, c++-format
 msgid "invalid schemas of '{1} {2}'"
 msgstr ""
 
 #. error
 #: lib/src/external_module.cc
+#, c++-format
 msgid "Failed to retrieve metadata schemas of action '{1} {2}': {3}"
 msgstr ""
 
 #: lib/src/external_module.cc
+#, c++-format
 msgid "invalid metadata of '{1} {2}'"
 msgstr ""
 
 #. info
 #: lib/src/external_module.cc
+#, c++-format
 msgid "Executing the {1}"
 msgstr ""
 
 #. info
 #: lib/src/external_module.cc
+#, c++-format
 msgid "Starting a task for the {1}; stdout and stderr will be stored in {2}"
 msgstr ""
 
 #. info
 #: lib/src/external_module.cc
+#, c++-format
 msgid "The execution of the {1} has completed"
 msgstr ""
 
-#: lib/src/external_module.cc lib/src/module.cc
+#: lib/src/external_module.cc
+#: lib/src/module.cc
 msgid "(empty)"
 msgstr ""
 
 #. warning
 #: lib/src/external_module.cc
+#, c++-format
 msgid ""
 "The execution process failed to write output on file for the {1}; stdout: "
 "{2}; stderr: {3}"
@@ -635,14 +713,17 @@ msgstr ""
 
 #. fatal
 #: lib/src/module.cc
+#, c++-format
 msgid "Module does not support output processing: {1}"
 msgstr ""
 
 #: lib/src/module.cc
+#, c++-format
 msgid "The task executed for the {1} returned invalid results."
 msgstr ""
 
 #: lib/src/module.cc
+#, c++-format
 msgid "The task executed for the {1} returned "
 msgstr ""
 
@@ -651,10 +732,12 @@ msgid "no results on stdout - stderr: "
 msgstr ""
 
 #: lib/src/module.cc
+#, c++-format
 msgid "invalid results on stdout: {1} - stderr: "
 msgstr ""
 
 #: lib/src/module.cc
+#, c++-format
 msgid "Error: {1}"
 msgstr ""
 
@@ -663,48 +746,60 @@ msgid "Unexpected exception."
 msgstr ""
 
 #: lib/src/module.cc
+#, c++-format
 msgid "Failed to execute the task for the {1}. {2}"
 msgstr ""
 
 #: lib/src/module_cache_dir.cc
+#, c++-format
 msgid "No such file or directory: {1}"
 msgstr ""
 
 #: lib/src/module_cache_dir.cc
+#, c++-format
 msgid "Failed to create cache dir {1} to download file to: {2}"
 msgstr ""
 
 #. info
 #: lib/src/module_cache_dir.cc
+#, c++-format
 msgid "About to purge cached files from '{1}'; TTL = {2}"
 msgstr ""
 
 #. error
-#: lib/src/module_cache_dir.cc lib/src/results_storage.cc
+#: lib/src/module_cache_dir.cc
+#: lib/src/results_storage.cc
+#, c++-format
 msgid "Failed to remove '{1}': {2}"
 msgstr ""
 
 #. LOCALE: info
-#: lib/src/module_cache_dir.cc lib/src/results_storage.cc
+#: lib/src/module_cache_dir.cc
+#: lib/src/results_storage.cc
+#, c++-format
 msgid "Removed {1} directory from '{2}'"
 msgid_plural "Removed {1} directories from '{2}'"
 msgstr[0] ""
 msgstr[1] ""
 
 #: lib/src/module_cache_dir.cc
+#, c++-format
 msgid "Error while reading {1}"
 msgstr ""
 
 #: lib/src/module_cache_dir.cc
+#, c++-format
 msgid "{1} returned a response with HTTP status {2}. Response body: {3}"
 msgstr ""
 
 #. warning
 #: lib/src/module_cache_dir.cc
+#, c++-format
 msgid "Downloading the file from the master-uri '{1}' failed. Reason: {2}"
 msgstr ""
 
 #: lib/src/module_cache_dir.cc
+#, c++-format
 msgid "Downloading the file failed. Reason: {1}"
 msgstr ""
 
@@ -713,21 +808,25 @@ msgid "Cannot download file. No master-uris were provided"
 msgstr ""
 
 #: lib/src/module_cache_dir.cc
+#, c++-format
 msgid ""
 "Downloading file {1} failed after trying all the available master-uris. Most "
 "recent error message: {2}"
 msgstr ""
 
 #: lib/src/module_cache_dir.cc
+#, c++-format
 msgid "The downloaded file {1} has a SHA that differs from the provided SHA"
 msgstr ""
 
 #. debug
 #: lib/src/module_cache_dir.cc
+#, c++-format
 msgid "Verifying file based on {1}"
 msgstr ""
 
 #: lib/src/module_cache_dir.cc
+#, c++-format
 msgid "Failed to download file with: {1}"
 msgstr ""
 
@@ -742,14 +841,17 @@ msgid ""
 msgstr ""
 
 #: lib/src/modules/file.cc
+#, c++-format
 msgid "Destination {1} already exists and is not a directory!"
 msgstr ""
 
 #: lib/src/modules/file.cc
+#, c++-format
 msgid "Destination {1} already exists and is not a symlink!"
 msgstr ""
 
 #: lib/src/modules/file.cc
+#, c++-format
 msgid "Not a valid file type! {1}"
 msgstr ""
 
@@ -760,11 +862,13 @@ msgstr ""
 
 #. error
 #: lib/src/modules/ping.cc
+#, c++-format
 msgid "Failed to parse debug entry: {1}"
 msgstr ""
 
 #. debug
 #: lib/src/modules/ping.cc
+#, c++-format
 msgid "Debug entry: {1}"
 msgstr ""
 
@@ -773,10 +877,12 @@ msgid "debug entry is not valid JSON"
 msgstr ""
 
 #: lib/src/modules/task.cc
+#, c++-format
 msgid "'{1}' file requested as additional task dependency not found"
 msgstr ""
 
 #: lib/src/modules/task.cc
+#, c++-format
 msgid "no implementations match supported features: {1}"
 msgstr ""
 
@@ -785,80 +891,104 @@ msgid "at least one file must be specified for a task"
 msgstr ""
 
 #: lib/src/modules/task.cc
+#, c++-format
 msgid "'{1}' file requested by implementation not found"
 msgstr ""
 
 #. debug
 #: lib/src/modules/task.cc
+#, c++-format
 msgid "Running task {1} with features: {2}"
 msgstr ""
 
 #: lib/src/modules/task.cc
+#, c++-format
 msgid "unsupported task input method: {1}"
 msgstr ""
 
 #. debug
 #: lib/src/modules/task.cc
+#, c++-format
 msgid "Multi file task _installdir: '{1}'"
 msgstr ""
 
 #. LOCALE: warning
 #: lib/src/pxp_connector_v1.cc
+#, c++-format
 msgid "Message {1} contained {2} bad debug chunk"
 msgid_plural "Message {1} contained {2} bad debug chunks"
 msgstr[0] ""
 msgstr[1] ""
 
 #. info
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
+#, c++-format
 msgid "Replied to request {1} with a PCP error message"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
+#, c++-format
 msgid "Failed to send PCP error message for request {1}: {2}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
+#, c++-format
 msgid "Sent provisional response for the {1} by {2}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
+#, c++-format
 msgid ""
 "Failed to send provisional response for the {1} by {2} (no further attempts "
 "will be made): {3}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
+#, c++-format
 msgid "Replied to {1} by {2}, request ID {3}, with a PXP error message"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
+#, c++-format
 msgid ""
 "Failed to send a PXP error message for the {1} by {2} (no further sending "
 "attempts will be made): {3}"
 msgstr ""
 
 #. info
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
+#, c++-format
 msgid "Sent response for the {1} by {2}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
+#, c++-format
 msgid "Failed to reply to {1} by {2}, (no further attempts will be made): {3}"
 msgstr ""
 
 #. error
-#: lib/src/pxp_connector_v1.cc lib/src/pxp_connector_v2.cc
+#: lib/src/pxp_connector_v1.cc
+#: lib/src/pxp_connector_v2.cc
+#, c++-format
 msgid "Failed to reply to the {1} by {2}: {3}"
 msgstr ""
 
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Message size: {1} exceeded max-message-size {2}"
 msgstr ""
 
@@ -868,26 +998,31 @@ msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Mutex for transaction ID {1} is already cached"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Failed to obtain the mutex pointer for transaction {1}: {2}"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Failed to remove the mutex pointer for transaction {1}: {2}"
 msgstr ""
 
 #. info
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "The {1}, request ID {2} by {3}, has successfully completed"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Failed to write metadata of the {1}: {2}"
 msgstr ""
 
@@ -899,11 +1034,13 @@ msgstr ""
 
 #. info
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Processing {1}, request ID {2}, by {3}"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "Invalid {1}, request ID {2} by {3}. Will reply with an RPC Error message. "
 "Error: {4}"
@@ -911,16 +1048,19 @@ msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "The {1} has been successfully validated"
 msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "The {1}, request ID {2} by {3}, has been successfully processed"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "Failed to process {1}, request ID {2} by {3}. Will reply with an RPC Error "
 "message. Error: {4}"
@@ -928,42 +1068,51 @@ msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "Invalid request with ID {1} by {2}. Will reply with a PCP error. Error: {3}"
 msgstr ""
 
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "no configuration loaded for the module '{1}'"
 msgstr ""
 
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "unknown action '{1}' for module '{2}'"
 msgstr ""
 
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "unknown module: {1}"
 msgstr ""
 
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "the module '{1}' supports only blocking PXP requests"
 msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Validating input parameters of the {1}, request ID {2} by {3}"
 msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Invalid input parameters of the {1}, request ID {2} by {3}: {4}"
 msgstr ""
 
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "invalid input for {1}"
 msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "Preparing the task for the {1}, request ID {2} by {3} (using the transaction "
 "ID as identifier)"
@@ -971,25 +1120,30 @@ msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "already exists an ongoing task with transaction id {1}"
 msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "already exists a previous task with transaction id {1}"
 msgstr ""
 
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Failed to initialize the metadata file: {1}"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Failed to spawn the action job for transaction {1}; error: {2}"
 msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Found no results for the {1}"
 msgstr ""
 
@@ -999,54 +1153,65 @@ msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "The PID file for the transaction {1} task does not exist"
 msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "The PID of the action process for the transaction {1} is {2}"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Failed to get the PID for transaction {1}: {2}"
 msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Retrieving metadata and output for the transaction {1}"
 msgstr ""
 
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "unknown action stored in metadata file: '{1} {2}'"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Cannot access the stored metadata for the transaction {1}: {2}"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "Unexpected failure while retrieving metadata for the transaction {1}: {2}"
 msgstr ""
 
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "unexpected failure while retrieving metadata{1}"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Failed to get the output of the trasaction {1}: {2}"
 msgstr ""
 
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "failed to retrieve the output: {1}"
 msgstr ""
 
 #. warning
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "The action process of the transaction {1} is not running; updating its "
 "status to 'undetermined' on its metadata file"
@@ -1058,11 +1223,13 @@ msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Failed to update the metadata file of the transaction {1}: {2}"
 msgstr ""
 
 #. warning
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "We cannot determine the status of the transaction {1} from the action "
 "process' PID"
@@ -1074,6 +1241,7 @@ msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "The output for the transaction {1} is now available, but the action process "
 "was still executing when this handler started; wait for {2} ms before "
@@ -1082,6 +1250,7 @@ msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "Failed to get the output of the transaction {1} (it status will be updated "
 "to 'undetermined' on its metadata file): {2}"
@@ -1089,31 +1258,37 @@ msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Failed to update metadata for the {1}: {2}"
 msgstr ""
 
 #. info
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Setting the status of the transaction {1} to '{2}' on its metadata file"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Failed to update metadata of the transaction {1}: {2}"
 msgstr ""
 
 #. info
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Loading external modules configuration from {1}"
 msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Loaded module configuration for module '{1}' from {2}"
 msgstr ""
 
 #. warning
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "Cannot load module config file '{1}'; invalid JSON format. If the module's "
 "metadata contains the 'configuration' entry, the module won't be loaded. "
@@ -1122,6 +1297,7 @@ msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "Directory '{1}' specified by modules-config-dir doesn't exist; no module "
 "configuration file will be loaded"
@@ -1129,11 +1305,13 @@ msgstr ""
 
 #. warning
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Ignoring attempt to re-register module: {1}"
 msgstr ""
 
 #. warning
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "Failed to locate the modules directory '{1}'; no external modules will be "
 "loaded"
@@ -1141,31 +1319,37 @@ msgstr ""
 
 #. info
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Loading external modules from {1}"
 msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "The '{1}' module configuration has been validated: {2}"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Failed to load {1}; {2}"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Failed to configure {1}; {2}"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Unexpected error when loading {1}; {2}"
 msgstr ""
 
 #. error
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Unexpected error when loading {1}"
 msgstr ""
 
@@ -1183,11 +1367,13 @@ msgstr ""
 
 #. debug
 #: lib/src/request_processor.cc
+#, c++-format
 msgid "Loaded '{1}' module - {2}{3}"
 msgstr ""
 
 #. LOCALE: info
 #: lib/src/request_processor.cc
+#, c++-format
 msgid ""
 "Scheduling the check every {1} minute for directories to purge; thread id {2}"
 msgid_plural ""
@@ -1209,79 +1395,96 @@ msgid "does not exist"
 msgstr ""
 
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "failed to write metadata: {1}"
 msgstr ""
 
 #. debug
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "Creating results directory for the  transaction {1} in '{2}'"
 msgstr ""
 
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "failed to create results directory '{1}'"
 msgstr ""
 
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "no results directory for the transaction {1}"
 msgstr ""
 
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "metadata file of the transaction {1} does not exist"
 msgstr ""
 
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "failed to read metadata file of the transaction {1}"
 msgstr ""
 
 #. debug
 #: lib/src/results_storage.cc
+#, c++-format
 msgid ""
 "The file '{1}' contains invalid action metadata:\n"
 "{2}"
 msgstr ""
 
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "invalid action metadata of the transaction {1}"
 msgstr ""
 
 #. debug
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "The metadata file '{1}' is not valid JSON: {2}"
 msgstr ""
 
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "invalid JSON in metadata file of the transaction {1}"
 msgstr ""
 
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "failed to read file '{1}'"
 msgstr ""
 
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "invalid value stored in file '{1}'{2}"
 msgstr ""
 
 #. error
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "Failed to read error file '{1}'; this failure will be ignored"
 msgstr ""
 
 #. debug
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "Output file '{1}' does not exist"
 msgstr ""
 
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "failed to read '{1}'"
 msgstr ""
 
 #. info
 #: lib/src/results_storage.cc
+#, c++-format
 msgid "About to purge the results directories from '{1}'; TTL = {2}"
 msgstr ""
 
 #. warning
 #: lib/src/results_storage.cc
+#, c++-format
 msgid ""
 "Failed to retrieve the metadata for the transaction {1} (the results "
 "directory will not be removed): {2}"
@@ -1289,6 +1492,7 @@ msgstr ""
 
 #. warning
 #: lib/src/results_storage.cc
+#, c++-format
 msgid ""
 "Failed to process the metadata for the transaction {1} (the results "
 "directory will not be removed): {2}"
@@ -1296,6 +1500,7 @@ msgstr ""
 
 #. warning
 #: lib/src/thread_container.cc
+#, c++-format
 msgid ""
 "Not all threads stored by the '{1}' ThreadContainer have completed; pxp-"
 "agent will not terminate gracefully"
@@ -1303,6 +1508,7 @@ msgstr ""
 
 #. LOCALE: trace
 #: lib/src/thread_container.cc
+#, c++-format
 msgid ""
 "Adding thread {1} (named '{2}') to the '{3}' ThreadContainer; added {4} "
 "thread so far"
@@ -1318,6 +1524,7 @@ msgstr ""
 
 #. LOCALE: debug
 #: lib/src/thread_container.cc
+#, c++-format
 msgid ""
 "{1} thread stored in the '{2}' ThreadContainer; about to start the "
 "monitoring thread"
@@ -1334,16 +1541,19 @@ msgstr ""
 
 #. debug
 #: lib/src/thread_container.cc
+#, c++-format
 msgid "Starting monitoring task for the '{1}' ThreadContainer, with id {2}"
 msgstr ""
 
 #. debug
 #: lib/src/thread_container.cc
+#, c++-format
 msgid "Deleting thread {1} (named '{2}')"
 msgstr ""
 
 #. debug
 #: lib/src/thread_container.cc
+#, c++-format
 msgid ""
 "Deleted {1} thread objects that have completed their execution; in total, "
 "deleted {2} threads so far"
@@ -1355,10 +1565,12 @@ msgid "Stopping the monitoring task"
 msgstr ""
 
 #: lib/src/time.cc
+#, c++-format
 msgid "invalid duration string: {1}"
 msgstr ""
 
 #: lib/src/time.cc
+#, c++-format
 msgid "invalid duration string: {1}{2}"
 msgstr ""
 
@@ -1367,36 +1579,43 @@ msgid "empty time string"
 msgstr ""
 
 #: lib/src/time.cc
+#, c++-format
 msgid "invalid time string: {1}"
 msgstr ""
 
 #: lib/src/time.cc
+#, c++-format
 msgid "failed to create a timepoint for {1}{2}"
 msgstr ""
 
 #. debug
 #: lib/src/util/bolt_module.cc
+#, c++-format
 msgid ""
 "Obtained invalid UTF-8 on stdout for the {1}; stdout:\n"
 "{2}"
 msgstr ""
 
 #: lib/src/util/bolt_module.cc
+#, c++-format
 msgid "The task executed for the {1} returned invalid UTF-8 on stdout"
 msgstr ""
 
 #. info
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Caught signal {1} - removing PID file '{2}'"
 msgstr ""
 
 #. info
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Already a daemon with PID={1}"
 msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Already running with PID={1}"
 msgstr ""
 
@@ -1409,6 +1628,7 @@ msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed get a read lock for the PID file: {1}"
 msgstr ""
 
@@ -1428,16 +1648,19 @@ msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed to check if we can lock the PID file: {1}"
 msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed to perform the first fork; {1} ({2})"
 msgstr ""
 
 #. debug
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "First child spawned, with PID={1}"
 msgstr ""
 
@@ -1448,11 +1671,13 @@ msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed get a read lock after first fork: {1}"
 msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed to create new session for first child process; {1} ({2})"
 msgstr ""
 
@@ -1468,11 +1693,13 @@ msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed to perform the second fork; {1} ({2})"
 msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid ""
 "Unexpected error while waiting for pending signals after second fork; {1} "
 "({2})"
@@ -1485,16 +1712,19 @@ msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed get a read lock after second fork: {1}"
 msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed to reset signal mask after second fork; {1} ({2})"
 msgstr ""
 
 #. debug
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Second child spawned, with PID={1}"
 msgstr ""
 
@@ -1510,59 +1740,71 @@ msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed to convert to write lock after second fork: {1}"
 msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed to change work directory to '{1}'; {2} ({3})"
 msgstr ""
 
 #. debug
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Changed working directory to '{1}'"
 msgstr ""
 
 #. error
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed to set signal handler for sig {1}"
 msgstr ""
 
 #. warning
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed to redirect stdin to /dev/null; {1} ({2})"
 msgstr ""
 
 #. warning
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed to redirect stdout to /dev/null; {1} ({2})"
 msgstr ""
 
 #. warning
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Failed to redirect stderr to /dev/null; {1} ({2})"
 msgstr ""
 
 #. info
 #: lib/src/util/posix/daemonize.cc
+#, c++-format
 msgid "Daemonization completed; pxp-agent PID={1}, PID lock file in '{2}'"
 msgstr ""
 
 #: lib/src/util/posix/pid_file.cc
+#, c++-format
 msgid "failed to open PID file '{1}'; {2} ({3})"
 msgstr ""
 
 #. error
 #: lib/src/util/posix/pid_file.cc
+#, c++-format
 msgid "Failed to clean up PID file '{1}': {2}"
 msgstr ""
 
 #. debug
 #: lib/src/util/posix/pid_file.cc
+#, c++-format
 msgid "Couldn't retrieve PID from file '{1}': {2}"
 msgstr ""
 
 #: lib/src/util/posix/pid_file.cc
+#, c++-format
 msgid "failed to write '{1}': {2}"
 msgstr ""
 
@@ -1588,26 +1830,31 @@ msgstr ""
 
 #. debug
 #: lib/src/util/posix/pid_file.cc
+#, c++-format
 msgid "Unlocking PID file {1} and closing its open file descriptor"
 msgstr ""
 
 #. error
 #: lib/src/util/posix/pid_file.cc
+#, c++-format
 msgid "Failed to remove PID file '{1}'"
 msgstr ""
 
 #. debug
 #: lib/src/util/posix/pid_file.cc
+#, c++-format
 msgid "Removed PID file '{1}'"
 msgstr ""
 
 #. debug
 #: lib/src/util/posix/pid_file.cc
+#, c++-format
 msgid "Cannot access PID file '{1}'"
 msgstr ""
 
 #. debug
 #: lib/src/util/posix/pid_file.cc
+#, c++-format
 msgid "PID file '{1}' does not exist"
 msgstr ""
 
@@ -1620,6 +1867,7 @@ msgid "deadlock"
 msgstr ""
 
 #: lib/src/util/posix/pid_file.cc
+#, c++-format
 msgid "unexpected error with errno={1}"
 msgstr ""
 
@@ -1628,16 +1876,19 @@ msgid "caught an interrupt signal"
 msgstr ""
 
 #: lib/src/util/posix/pid_file.cc
+#, c++-format
 msgid "errno={1}"
 msgstr ""
 
 #. info
 #: lib/src/util/windows/daemonize.cc
+#, c++-format
 msgid "Caught signal {1} - shutting down"
 msgstr ""
 
 #. error
 #: lib/src/util/windows/daemonize.cc
+#, c++-format
 msgid "Unable to acquire process lock: {1}"
 msgstr ""
 
@@ -1653,15 +1904,18 @@ msgstr ""
 
 #. error
 #: lib/src/util/windows/daemonize.cc
+#, c++-format
 msgid "Could not set control handler: {1}"
 msgstr ""
 
 #. info
 #: lib/src/util/windows/daemonize.cc
+#, c++-format
 msgid "Daemonization completed; pxp-agent PID={1}, process lock '{2}'"
 msgstr ""
 
 #. debug
 #: lib/src/util/windows/daemonize.cc
+#, c++-format
 msgid "Removing process lock '{1}'"
 msgstr ""
