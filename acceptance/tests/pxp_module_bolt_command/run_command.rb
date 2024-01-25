@@ -10,7 +10,8 @@ test_name 'run_command task' do
   step 'Ensure each agent host has pxp-agent running and associated' do
     suts.each do |agent|
       on agent, puppet('resource service pxp-agent ensure=stopped')
-      create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent))
+      # don't capture /tmp/test.out in pxp-agent.log
+      create_remote_file(agent, pxp_agent_config_file(agent), pxp_config_hocon_using_puppet_certs(master, agent, loglevel: "info"))
       on agent, puppet('resource service pxp-agent ensure=running')
 
       assert(is_associated?(master, "pcp://#{agent}/agent"),
