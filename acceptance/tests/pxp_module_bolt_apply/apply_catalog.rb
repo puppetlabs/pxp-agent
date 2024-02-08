@@ -349,7 +349,7 @@ test_name 'run script tests' do
         apply_result = JSON.parse(std_out)
         assert(!(apply_result['status'] =~ /failed/), "Failed to apply")
       end
-      on(agent, "cat #{target_file}") do result
+      on(agent, "cat #{target_file}") do |result|
         assert(result.stdout =~ /file content/)
       end
 

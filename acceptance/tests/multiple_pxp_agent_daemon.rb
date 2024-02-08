@@ -12,8 +12,9 @@ tag 'audit:high',      # not honoring pid file would be significant issue
   end
 
   applicable_agents = applicable_agents.reject do |agent|
-    on(agent, 'ls -l /proc/1/exe | grep \'systemd\'', :accept_all_exit_codes => true)
-    stdout =~ /systemd/
+    on(agent, 'ls -l /proc/1/exe | grep \'systemd\'', :accept_all_exit_codes => true) do |result|
+      result.stdout =~ /systemd/
+    end
   end
   unless applicable_agents.length > 0 then
     skip_test('systemd hosts use --foreground')
