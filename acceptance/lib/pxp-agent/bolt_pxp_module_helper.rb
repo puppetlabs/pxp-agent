@@ -139,7 +139,7 @@ def ensure_failed(broker, targets, response_dataset, max_retries: 30, query_inte
     check_non_blocking_response(broker, identity, transaction_id, max_retries, query_interval) do |result|
       assert_equal('failure', result['status'], 'Action was expected to fail')
       assert_equal(nil, result['stdout'], 'Successful action expected to have no output on stdout')
-      assert_equal(1, result['exitcode'], "Successful action expected to have exit code #{exit_code}")
+      assert_equal(1, result['exitcode'], "Successful action expected to have exit code #{result['exitcode']}")
       yield result['stderr'] if block_given?
     end
   end
