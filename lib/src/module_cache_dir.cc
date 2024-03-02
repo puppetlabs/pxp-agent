@@ -1,9 +1,12 @@
+#include <typeinfo>
 #include <pxp-agent/module_cache_dir.hpp>
 #include <pxp-agent/module.hpp>
 #include <pxp-agent/util/purgeable.hpp>
 #include <pxp-agent/util/bolt_helpers.hpp>
 #include <pxp-agent/configuration.hpp>
 #include <pxp-agent/time.hpp>
+#include <cpp-pcp-client/util/thread.hpp>   // this_thread::sleep_for
+#include <cpp-pcp-client/util/chrono.hpp>
 
 #include <leatherman/locale/locale.hpp>
 #include <leatherman/file_util/file.hpp>
@@ -27,6 +30,7 @@ namespace lth_curl    = leatherman::curl;
 namespace lth_loc     = leatherman::locale;
 namespace lth_file    = leatherman::file_util;
 namespace lth_jc      = leatherman::json_container;
+namespace pcp_util = PCPClient::Util;
 
 namespace PXPAgent {
   ModuleCacheDir::ModuleCacheDir(const std::string& cache_dir,
@@ -184,6 +188,7 @@ namespace PXPAgent {
 
       try {
         lth_curl::response resp;
+        // if filepath.string is already in FS, then don't call download_file
         client.download_file(req, file_path.string(), resp, NIX_DOWNLOADED_FILE_PERMS);
         if (resp.status_code() >= 400) {
           throw lth_curl::http_file_download_exception(
@@ -290,13 +295,31 @@ namespace PXPAgent {
                                          lth_jc::JsonContainer& file) {
       LOG_DEBUG("Verifying file based on {1}", file.toString());
 
-      try {
-          // files remain in the cache_dir rather than being written out to a destination
-          // elsewhere on the filesystem.
-          auto destination = cache_dir / fs::path(file.get<std::string>("filename")).filename();
-          return downloadFileFromMaster(master_uris, connect_timeout, timeout, client, cache_dir, destination, file);
-      } catch (Module::ProcessingError& e) {
-          throw Module::ProcessingError { lth_loc::format("Failed to download file with: {1}", e.what()) };
+      // files remain in the cache_dir rather than being written out to a destination
+      // elsewhere on the filesystem.
+      auto destination = cache_dir / fs::path(file.get<std::string>("filename")).filename();
+      // retry logic for failed downloadFileFromMaster calls
+      // 2^5 = 32, so the maximum time it will wait is cumulatively: 2 + 4 + 8 + 16 + 32 = 62 seconds
+      int retry_count = 5;
+      int retry_wait = 1;
+      fs::path* dlpath = nullptr;
+      while (dlpath == nullptr && retry_count > 0) {
+        try {
+          LOG_INFO("getCachedFile: try max #{1} times", retry_count);
+          fs::path p = downloadFileFromMaster(master_uris, connect_timeout, timeout, client, cache_dir, destination, file);
+          dlpath = &p;
+        } catch (std::runtime_error &e) {
+          LOG_INFO("getCachedFile: (std::runtime_error) typeid(e): {1}, e: {2}", typeid(e).name(), e.what());
+          LOG_INFO("getCachedFile: waiting {1} seconds", retry_wait);
+          auto wait_seconds = pcp_util::chrono::seconds(retry_wait);
+          pcp_util::this_thread::sleep_for(wait_seconds);
+          retry_count -= 1;
+          retry_wait *= 2;
+          if(retry_count == 0 && dlpath == nullptr) {
+            throw Module::ProcessingError{lth_loc::format("Failed to download file with: {1}", e.what())};
+          }
+        }
       }
+      return *dlpath;
   }
 }  // PXPAgent
