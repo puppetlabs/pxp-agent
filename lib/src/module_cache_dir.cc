@@ -1,4 +1,3 @@
-#include <typeinfo>
 #include <pxp-agent/module_cache_dir.hpp>
 #include <pxp-agent/module.hpp>
 #include <pxp-agent/util/purgeable.hpp>
@@ -188,7 +187,6 @@ namespace PXPAgent {
 
       try {
         lth_curl::response resp;
-        // if filepath.string is already in FS, then don't call download_file
         client.download_file(req, file_path.string(), resp, NIX_DOWNLOADED_FILE_PERMS);
         if (resp.status_code() >= 400) {
           throw lth_curl::http_file_download_exception(
@@ -305,12 +303,11 @@ namespace PXPAgent {
       fs::path* dlpath = nullptr;
       while (dlpath == nullptr && retry_count > 0) {
         try {
-          LOG_INFO("getCachedFile: try max #{1} times", retry_count);
+          LOG_DEBUG("getCachedFile: try max #{1} times", retry_count);
           fs::path p = downloadFileFromMaster(master_uris, connect_timeout, timeout, client, cache_dir, destination, file);
           dlpath = &p;
         } catch (std::runtime_error &e) {
-          LOG_INFO("getCachedFile: (std::runtime_error) typeid(e): {1}, e: {2}", typeid(e).name(), e.what());
-          LOG_INFO("getCachedFile: waiting {1} seconds", retry_wait);
+          LOG_ERROR("getCachedFile: (std::runtime_error) {1}, waiting {2} seconds", e.what(), retry_wait);
           auto wait_seconds = pcp_util::chrono::seconds(retry_wait);
           pcp_util::this_thread::sleep_for(wait_seconds);
           retry_count -= 1;
