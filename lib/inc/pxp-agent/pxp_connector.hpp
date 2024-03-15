@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <boost/cstdint.hpp>
 
 namespace PCPClient {
 struct ParsedChunks;
