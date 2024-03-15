@@ -296,27 +296,28 @@ namespace PXPAgent {
       // files remain in the cache_dir rather than being written out to a destination
       // elsewhere on the filesystem.
       auto destination = cache_dir / fs::path(file.get<std::string>("filename")).filename();
-      // retry logic for failed downloadFileFromMaster calls
-      // 2^5 = 32, so the maximum time it will wait is cumulatively: 2 + 4 + 8 + 16 + 32 = 62 seconds
+
+      // Try to download the file at most retry_count times. Catch any error and retry, on the last
+      // loop through throw the last caught error.
       int retry_count = 5;
       int retry_wait = 1;
-      fs::path* dlpath = nullptr;
-      while (dlpath == nullptr && retry_count > 0) {
+      for (int i = 1; i <= retry_count; i++) {
         try {
           LOG_DEBUG("getCachedFile: try max #{1} times", retry_count);
-          fs::path p = downloadFileFromMaster(master_uris, connect_timeout, timeout, client, cache_dir, destination, file);
-          dlpath = &p;
-        } catch (std::runtime_error &e) {
+          // Return early on success
+          return downloadFileFromMaster(master_uris, connect_timeout, timeout, client, cache_dir, destination, file);
+        }
+        catch (std::runtime_error &e) {
+          if (i == retry_count) {
+            throw Module::ProcessingError{lth_loc::format("Failed to download file with: {1}", e.what())};
+          }
           LOG_ERROR("getCachedFile: (std::runtime_error) {1}, waiting {2} seconds", e.what(), retry_wait);
           auto wait_seconds = pcp_util::chrono::seconds(retry_wait);
           pcp_util::this_thread::sleep_for(wait_seconds);
-          retry_count -= 1;
           retry_wait *= 2;
-          if(retry_count == 0 && dlpath == nullptr) {
-            throw Module::ProcessingError{lth_loc::format("Failed to download file with: {1}", e.what())};
-          }
         }
       }
-      return *dlpath;
+    // This line should never be hit (either returns early or raises), just satisfying warning about no return
+    return downloadFileFromMaster(master_uris, connect_timeout, timeout, client, cache_dir, destination, file);
   }
 }  // PXPAgent
