@@ -1,7 +1,6 @@
 require 'pxp-agent/test_helper.rb'
 require 'pxp-agent/bolt_pxp_module_helper.rb'
 require 'digest/sha2'
-extend Beaker::HostPrebuiltSteps
 
 test_name 'When certs have been revoked in CRL' do
   tag 'audit:high',      # module validation: no other venue exists to test
@@ -116,8 +115,6 @@ test_name 'When certs have been revoked in CRL' do
       # Ensure that the task file does not exist beforehand so we know that
       # if it runs successfully in the later assertions, then it was downloaded.
       agents.each do |agent|
-        # Temporarily sync time on AIX to account for incorrect system time (PA-7090)
-        timesync(agent, {:logger => logger}) if agent.platform.start_with?('aix')
         tasks_cache = get_tasks_cache(agents.first)
         on(agent, "rm -rf #{tasks_cache}/#{sha256}")
         assert_match(/ensure\s+=> 'absent'/, on(agent, puppet("resource file #{tasks_cache}/#{sha256}")).stdout)
