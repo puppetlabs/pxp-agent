@@ -1,5 +1,7 @@
 # PXP Agent
 
+This repository is archived and Perforce will no longer be updating this repository. For more information, see https://www.puppet.com/blog/open-source-puppet-updates-2025.
+
 This is the agent for the PCP Execution Protocol [(PXP)][pxp_specs_root], based
 on the the Puppet Communications Protocol [(PCP)][pcp_specs_root]. It enables
 the execution of [actions][pxp_specs_actions] on remote nodes.
