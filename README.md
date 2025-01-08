@@ -1,5 +1,6 @@
 # PXP Agent
 
+This repo has been archived.
 This is the agent for the PCP Execution Protocol [(PXP)][pxp_specs_root], based
 on the the Puppet Communications Protocol [(PCP)][pcp_specs_root]. It enables
 the execution of [actions][pxp_specs_actions] on remote nodes.
